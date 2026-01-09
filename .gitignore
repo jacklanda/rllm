@@ -218,3 +218,4 @@ verl/
 
 # Experimental artifacts
 experiments/**
+rllm/data/datasets/**
