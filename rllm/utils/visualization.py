@@ -16,9 +16,9 @@ class VisualizationConfig:
 
     # Colors for different elements
     masked_token_style: dict[str, Any] = field(default_factory=lambda: {"dim": True})
-    unmasked_token_style: dict[str, Any] = field(default_factory=lambda: {"fg": "blue"})
-    reward_pos_style: dict[str, Any] = field(default_factory=lambda: {"bg": "green"})
-    reward_neg_style: dict[str, Any] = field(default_factory=lambda: {"bg": "red"})
+    unmasked_token_style: dict[str, Any] = field(default_factory=lambda: {"fg": "bright_blue"})
+    reward_pos_style: dict[str, Any] = field(default_factory=lambda: {"fg": "black", "bg": "bright_green"})
+    reward_neg_style: dict[str, Any] = field(default_factory=lambda: {"fg": "black", "bg": "bright_red"})
 
     header_style: dict[str, Any] = field(default_factory=lambda: {"fg": "cyan", "bold": True})
     label_style: dict[str, Any] = field(default_factory=lambda: {"fg": "yellow"})

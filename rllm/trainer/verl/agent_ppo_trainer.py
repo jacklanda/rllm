@@ -183,7 +183,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         batch = batch.union(final_gen_batch_output)
                         batch = self._pad_dataproto_to_world_size(batch=batch)
                     else:
-                        final_gen_batch_output, generate_metrics = self.generate_agent_trajectory(timing_raw=timing_raw, meta_info=batch.meta_info)
+                        final_gen_batch_output, generate_metrics = self.generate_agent_trajectory(timing_raw=timing_raw, meta_info=batch.meta_info, batch=batch)
                         batch = batch.union(final_gen_batch_output)
                         metrics.update(generate_metrics)
 
@@ -479,7 +479,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 last_step_indices = np.where(is_last_step == True)[0]
                 test_output_gen_batch = test_output_gen_batch.select_idxs(last_step_indices)  # This batch only has last steps
             else:
-                test_output_gen_batch, _ = self.generate_agent_trajectory(meta_info=test_batch.meta_info)
+                test_output_gen_batch, _ = self.generate_agent_trajectory(meta_info=test_batch.meta_info, batch=test_batch)
 
             test_batch = test_batch.union(test_output_gen_batch)
 
@@ -530,7 +530,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         return metric_dict
 
-    def generate_agent_trajectory(self, timing_raw=None, meta_info=None):
+    def generate_agent_trajectory(self, timing_raw=None, meta_info=None, batch=None):
         """
         Generates agent trajectories by interacting with the environment. Does not close or reset the environment afterwards
 
@@ -559,7 +559,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         with marked_timer("transform_trajectory", timing_raw):
             # Transform the raw trajectories into DataProto format.
-            final_gen_batch_output, metrics = self._transform_agent_trajectories(trajectories)
+            final_gen_batch_output, metrics = self._transform_agent_trajectories(trajectories, batch=batch)
         return final_gen_batch_output, metrics
 
     def generate_agent_steps(self, timing_raw=None, meta_info=None, uids=None):
@@ -587,7 +587,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             final_gen_batch_output = self._transform_agent_steps(steps, uids=uids)
         return final_gen_batch_output
 
-    def _transform_agent_trajectories(self, trajectories: list[dict]):
+    def _transform_agent_trajectories(self, trajectories: list[dict], batch: DataProto = None):
         """
         Helper function to transform a list of trajectories into tokenized DataProto format.
 
@@ -607,7 +607,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         traj_metrics = []
         metrics = {}
 
-        for traj in trajectories:
+        for idx, traj in enumerate(trajectories):
             prompt_tokens = traj["prompt_tokens"]
             response_tokens = traj["response_tokens"]
             # test if trajectory is empty
@@ -616,7 +616,14 @@ class AgentPPOTrainer(RayPPOTrainer):
             all_response_tokens_list.append(response_tokens)
             all_masks_list.append(traj["response_masks"])
             traj_scores.append(traj["trajectory_reward"])
-            chat_completions.append(traj["chat_completions"])
+            trajectories_w_metadata = traj["chat_completions"].copy()
+            trajectories_w_metadata.append(
+                {
+                    "reward": traj["trajectory_reward"].item(),
+                    "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", ""), 
+                }
+            )
+            chat_completions.append(trajectories_w_metadata)
             traj_metrics.append(traj["metrics"])
 
         # Flatten traj_metrics into a dict of lists
@@ -639,9 +646,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
         os.makedirs(save_dir, exist_ok=True)
         # Save it into a jsonl files (self.global_steps)
-        with open(os.path.join(save_dir, f"{self.global_steps}.jsonl"), "w") as f:
-            for chat_completion in chat_completions:
-                f.write(json.dumps(chat_completion) + "\n")
+        with open(os.path.join(save_dir, f"global_steps_{self.global_steps}.json"), "w") as f:
+            json.dump(chat_completions, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length

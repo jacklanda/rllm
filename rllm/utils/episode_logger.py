@@ -117,7 +117,7 @@ class EpisodeLogger:
 
         try:
             with open(filepath, "w") as f:
-                json_str = json.dumps(episode_data, indent=2, default=str)
+                json_str = json.dumps(episode_data, indent=4, default=str)
                 f.write(json_str + "\n")
                 f.flush()  # Ensure data is written to disk
         except Exception as e:

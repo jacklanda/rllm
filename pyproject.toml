@@ -21,7 +21,7 @@ dependencies = [
     # Core ML/AI packages
     "torch",
     "torchvision",
-    "transformers>=4.55.0",
+    "transformers>=4.57.3",
 
     # Data processing
     "datasets>=2.20.0",
@@ -73,10 +73,10 @@ dev = [
 
 verl = [
     "verl==0.6.1",
-    "torch>=2.8.0",
-    "torchvision>=0.23.0",
-    "vllm>=0.10.2,<=0.11.0",
-    "flash-attn>=2.8.1",
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+    "vllm==0.10.0",
+    #"flash-attn==2.6.3",
     "qwen-vl-utils",
 ]
 
