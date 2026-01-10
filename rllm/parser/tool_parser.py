@@ -242,6 +242,9 @@ class QwenToolParser(ToolParser):
             except json.JSONDecodeError:
                 print(f"Error parsing tool call: {json_content}")
                 text = text[end + len(self.tool_call_end) :]
+                # Dump invalid tool call request
+                with open("experiments/logs/invalid_tool_calls.log", "a+") as f:
+                    f.write(f"{json_content}\n")
                 continue
 
             # Move to next potential tool call

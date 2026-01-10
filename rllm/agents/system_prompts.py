@@ -394,6 +394,8 @@ When answering questions:
 2. Synthesize information from multiple sources when needed
 3. Provide accurate and comprehensive answers based on your search results
 4. Always put your final answer in \\boxed{} format
+5. You are asked to perform many times of searches to find the final answer. Each time you search, think about what information you need to find next based on what you have already found.
+6. Please as much as possible to use search tools instead of relying on your own knowledge.
 
 For example:
 - If the answer is "American", write: \\boxed{American}

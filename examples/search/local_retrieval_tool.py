@@ -59,7 +59,8 @@ class LocalRetrievalTool(Tool):
         try:
             response = self.client.get(f"{self.server_url}/health")
             if response.status_code == 200:
-                logger.info(f"Successfully connected to retrieval server at {self.server_url}")
+                # logger.info(f"Successfully connected to retrieval server at {self.server_url}")
+                pass
             else:
                 logger.warning(f"Retrieval server returned status code {response.status_code}")
         except Exception as e:

@@ -37,6 +37,14 @@ def prepare_hotpotqa_data(train_size=None, test_size=None):
         return processed
 
     print("Loading HotpotQA dataset...")
+    # Clear corrupted cache before loading
+    import shutil
+    from pathlib import Path
+    cache_dir = Path.home() / ".cache" / "huggingface" / "datasets" / "hotpotqa___hotpot_qa"
+    if cache_dir.exists():
+        print(f"Removing corrupted cache at {cache_dir}")
+        shutil.rmtree(cache_dir)
+
     hotpot_dataset = load_dataset("hotpotqa/hotpot_qa", "distractor")
 
     train_processed = process_split(hotpot_dataset["train"], train_size)
