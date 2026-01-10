@@ -97,9 +97,10 @@ class LocalRetrievalTool(Tool):
             content = result.get("content", "")  # Fixed: use "content" not "contents"
             score = result.get("score", 0.0)
 
-            # Truncate content if too long (keep first 300 characters)
-            if len(content) > 300:
-                content = content[:300] + "..."
+            # Truncate content if too long (keep first 512 characters)
+            # TODO: Consider to implement smarter summarization if needed
+            if len(content) > 512:
+                content = content[:512] + "..."
 
             formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             formatted_results.append(formatted_result)
