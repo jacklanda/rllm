@@ -74,7 +74,7 @@ def prepare_gem_search_data(train_size=None, test_size=None):
         if max_size is not None:
             split_data = split_data.select(range(min(max_size, len(split_data))))
 
-        print(split_data)
+        # print(split_data)
 
         processed = [{"question": example["extra_info.question"], "ground_truth": example["gt_answer"], "data_source": "gem_search"} for example in split_data]
 
@@ -112,7 +112,7 @@ def main(config):
     tool_map = {"local_search": LocalRetrievalTool}
 
     env_args = {
-        "max_steps": 20,
+        "max_steps": 16,
         "tool_map": tool_map,
         "reward_fn": search_reward_fn,
     }
