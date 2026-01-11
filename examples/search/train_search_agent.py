@@ -40,6 +40,7 @@ def prepare_hotpotqa_data(train_size=None, test_size=None):
     # Clear corrupted cache before loading
     import shutil
     from pathlib import Path
+
     cache_dir = Path.home() / ".cache" / "huggingface" / "datasets" / "hotpotqa___hotpot_qa"
     if cache_dir.exists():
         print(f"Removing corrupted cache at {cache_dir}")
@@ -75,14 +76,7 @@ def prepare_gem_search_data(train_size=None, test_size=None):
 
         print(split_data)
 
-        processed = [
-            {
-                "question": example["extra_info.question"],
-                "ground_truth": example["gt_answer"],
-                "data_source": "gem_search"
-            }
-            for example in split_data
-        ]
+        processed = [{"question": example["extra_info.question"], "ground_truth": example["gt_answer"], "data_source": "gem_search"} for example in split_data]
 
         print(f"Processed {len(processed)} examples")
         return processed
