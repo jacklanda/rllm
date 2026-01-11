@@ -56,6 +56,24 @@ rllm:
     mask_max_response_length_exceeded: True
     mask_max_turns_exceeded: True
     mask_timeout: True
+  trajectory_filtering:
+    # SimpleTIR-style trajectory-level filtering for search agents
+    # Filters out individual trajectories from batches before gradient updates
+    enable: False
+
+    # 5.4.1: Model-induced anomalies (Break + 0 Reward)
+    max_tool_calls_per_turn: 10      # Filter if assistant makes >N tool calls in a single turn
+
+    # 5.4.3: Exceeding search turn limit (Stop + 0 Reward)
+    max_search_turns: null           # Filter trajectories exceeding N search turns (null = disabled)
+
+    # 5.4.4: Exceeding maximum token count (Compute advantages, no gradients)
+    max_tokens: null                 # Mark trajectories >N tokens as no_grad (null = disabled)
+
+    # Note: The following are automatically detected and do not require configuration:
+    # - Tool parse errors (unclosed <think> tags, malformed JSON, etc.)
+    # - Repeated queries (identical search queries within a trajectory)
+    # - Search errors (environment timeouts, retrieval errors, etc.)
   rejection_sample:
     enable: False
     multiplier: 1

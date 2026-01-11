@@ -1,0 +1,115 @@
+# Example Configuration for SimpleTIR-style Search Agent Trajectory Filtering
+#
+# This configuration demonstrates how to enable trajectory-level filtering
+# for multi-turn search agents to exclude abnormal trajectories from PPO training.
+#
+# Based on SimpleTIR Section 5.4: Abnormal Trajectory Handling
+#
+# Key features:
+# - Automatically detects and filters model-induced anomalies
+# - Discards environment-induced errors
+# - Handles max token count exceeded trajectories specially
+# - Maintains proper advantage normalization and PPO batch structure
+
+rllm:
+  # ... other rllm config ...
+
+  # SimpleTIR-style search agent trajectory filtering
+  trajectory_filtering:
+    # Enable trajectory filtering (default: False)
+    enable: True
+
+    # 5.4.1: Model-induced anomalies (Break + 0 Reward)
+    # These trajectories are kept for advantage computation but assigned 0 reward
+
+    # Limit concurrent tool calls in a single turn
+    # Prevents abnormal behaviors like 10+ concurrent searches in one message
+    max_tool_calls_per_turn: 10
+
+    # The following are automatically detected (no configuration needed):
+    # - Tool parse errors: Unclosed <think> tags, malformed JSON parameters
+    # - Repeated queries: Identical search queries within the same trajectory
+    # - Tool call parse exceptions: "Error parsing tool call" critical errors (DISCARD)
+
+    # 5.4.3: Exceeding search turn limit (Stop + 0 Reward)
+    # Trajectories exceeding this limit are stopped and assigned 0 reward
+    max_search_turns: 20  # Set to null to disable
+
+    # 5.4.4: Exceeding maximum token count
+    # These trajectories participate in advantage computation but NOT in gradient updates
+    # This is different from zero_reward - they still use their original rewards for advantages
+    max_tokens: 8192  # Set to null to disable
+
+  # Compact filtering (episode-level) - can be used together
+  compact_filtering:
+    enable: True
+    mask_max_prompt_length_exceeded: True
+    mask_max_response_length_exceeded: True
+    mask_max_turns_exceeded: True
+    mask_timeout: True
+    mask_error: True
+
+# Filtering Behavior Summary:
+#
+# 1. DISCARD (5.4.2): Critical Parse Exceptions + Environment-induced errors
+#    - Tool call parse exceptions: "Error parsing tool call", "Failed to parse tool call", etc.
+#    - Search timeouts, retrieval errors, connection errors
+#    - Completely removed from batch, not used in any computation
+#    - Tracked in monitoring metrics only
+#
+# 2. ZERO REWARD (5.4.1, 5.4.3): Model-induced anomalies
+#    - Excessive tool calls (>max_tool_calls_per_turn)
+#    - Tool parse errors (unclosed tags, malformed JSON)
+#    - Repeated queries (duplicate search queries)
+#    - Exceeding search turn limit (>max_search_turns)
+#    - Kept in batch, participate in advantage computation AND gradient updates
+#    - Reward set to 0 to suppress abnormal behaviors
+#
+# 3. NO GRADIENT (5.4.4): Token limit exceeded
+#    - Exceeding maximum token count (>max_tokens)
+#    - Kept in batch, participate in advantage computation
+#    - NOT used in gradient updates (no_grad=True)
+#    - Reduces gradient contamination while maintaining statistical validity
+
+# Example Usage Scenarios:
+
+# Scenario 1: SimpleTIR Reproduction (strict filtering)
+# trajectory_filtering:
+#   enable: True
+#   max_tool_calls_per_turn: 10
+#   max_search_turns: 20
+#   max_tokens: 8192
+
+# Scenario 2: Relaxed Filtering (more lenient)
+# trajectory_filtering:
+#   enable: True
+#   max_tool_calls_per_turn: 20  # Allow more concurrent calls
+#   max_search_turns: 50         # Allow longer search sessions
+#   max_tokens: 16384            # Allow longer trajectories
+
+# Scenario 3: Minimal Filtering (only critical errors)
+# trajectory_filtering:
+#   enable: True
+#   max_tool_calls_per_turn: 50  # Very high limit
+#   max_search_turns: null       # Disabled
+#   max_tokens: null             # Disabled
+#   # Still filters: tool parse errors, repeated queries, search errors
+
+# Expected Log Output:
+#
+# When filtering is active, you'll see logs like:
+#
+# INFO - Discarding trajectory 1234567890_agent: tool_call_parse_exception
+# INFO - Discarding trajectory 1234567891_agent: search_error_environment
+# INFO - Setting zero reward for trajectory 1234567892_agent: tool_call_limit_exceeded_15
+# INFO - Setting zero reward for trajectory 1234567893_agent: tool_parse_error
+# INFO - Setting zero reward for trajectory 1234567894_agent: repeated_query
+# INFO - Setting zero reward for trajectory 1234567895_agent: max_search_turns_exceeded_20
+# INFO - Marking trajectory 1234567896_agent as no_grad: token_count=9000 > max_tokens=8192
+
+# Notes:
+# - Filtering happens BEFORE tokenization for efficiency
+# - Each filtering category has different semantics (discard/zero_reward/no_grad)
+# - Proper advantage normalization is maintained across all filtering modes
+# - Compatible with existing compact_filtering for comprehensive filtering
+

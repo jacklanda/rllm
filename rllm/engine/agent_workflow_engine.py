@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from rllm.agents.agent import Episode
+from rllm.agents.agent import Episode, Trajectory
 from rllm.engine.rollout import ModelOutput, RolloutEngine
 from rllm.utils import colorful_print
 from rllm.workflows.workflow import TerminationReason, Workflow
@@ -19,6 +19,314 @@ if TYPE_CHECKING:
     from verl import DataProto
 
 logger = logging.getLogger(__name__)
+
+
+def _count_tool_calls_in_message(message_content: str) -> int:
+    """Count the number of tool calls in a message.
+
+    Args:
+        message_content: The assistant message content to check.
+
+    Returns:
+        Number of tool calls found in the message.
+    """
+    import re
+
+    # Count tool call patterns (common patterns for search tools)
+    # Pattern 1: <tool_call> tags
+    tool_call_tags = len(re.findall(r'<tool_call[^>]*>', message_content))
+
+    # Pattern 2: Function call patterns like search(query="...")
+    function_calls = len(re.findall(r'\b(?:search|query|retrieve)\s*\([^)]*\)', message_content, re.IGNORECASE))
+
+    # Pattern 3: JSON tool call format
+    json_calls = len(re.findall(r'"type"\s*:\s*"(?:function|tool_call)"', message_content))
+
+    # Return the maximum count (whichever pattern matches)
+    return max(tool_call_tags, function_calls, json_calls)
+
+
+def _has_tool_parse_error(text: str) -> bool:
+    """Check if text contains tool parsing errors.
+
+    Args:
+        text: Text to check for parse errors.
+
+    Returns:
+        True if there are parse errors, False otherwise.
+    """
+    import re
+
+    # Check for unclosed <think> tags
+    think_open = len(re.findall(r'<think>', text))
+    think_close = len(re.findall(r'</think>', text))
+    if think_open != think_close:
+        return True
+
+    # Check for unclosed tool_call tags
+    tool_open = len(re.findall(r'<tool_call[^>]*>', text))
+    tool_close = len(re.findall(r'</tool_call>', text))
+    if tool_open != tool_close:
+        return True
+
+    # Check for malformed JSON in common tool call patterns
+    # Look for JSON-like structures that are clearly broken
+    json_patterns = re.findall(r'\{[^}]*"(?:query|function|tool)"[^}]*\}', text, re.DOTALL)
+    for pattern in json_patterns:
+        # Simple checks for obviously malformed JSON
+        if pattern.count('{') != pattern.count('}'):
+            return True
+        if pattern.count('[') != pattern.count(']'):
+            return True
+        # Check for unmatched quotes (rough heuristic)
+        quote_count = len(re.findall(r'(?<!\\)"', pattern))
+        if quote_count % 2 != 0:
+            return True
+
+    return False
+
+
+def _has_tool_call_parse_exception(trajectory: Trajectory) -> bool:
+    """Check if trajectory contains 'Error parsing tool call' exception messages.
+
+    These are critical parsing errors that indicate the model output cannot be properly
+    parsed into tool calls. Such trajectories should be completely discarded.
+
+    Args:
+        trajectory: Trajectory to check for tool call parsing exceptions.
+
+    Returns:
+        True if there are tool call parsing exceptions, False otherwise.
+    """
+    parse_error_keywords = [
+        'error parsing tool call',
+        'failed to parse tool call',
+        'tool call parse error',
+        'cannot parse tool call',
+        'invalid tool call format',
+        'tool call parsing failed'
+    ]
+
+    for step in trajectory.steps:
+        # Check in observation
+        if step.observation:
+            obs_str = str(step.observation).lower()
+            if any(keyword in obs_str for keyword in parse_error_keywords):
+                return True
+
+        # Check in model_response
+        if hasattr(step, 'model_response') and step.model_response:
+            response_str = step.model_response.lower()
+            if any(keyword in response_str for keyword in parse_error_keywords):
+                return True
+
+        # Check in step info
+        if step.info:
+            # Check for explicit error flags
+            if step.info.get('tool_call_parse_error', False):
+                return True
+            if step.info.get('parse_error', False):
+                return True
+
+            # Check in error message if present
+            if 'error' in step.info or 'error_message' in step.info:
+                error_msg = str(step.info.get('error', '') or step.info.get('error_message', '')).lower()
+                if any(keyword in error_msg for keyword in parse_error_keywords):
+                    return True
+
+        # Check in chat_completions
+        if step.chat_completions:
+            for msg in step.chat_completions:
+                content = str(msg.get('content', '')).lower()
+                if any(keyword in content for keyword in parse_error_keywords):
+                    return True
+
+    return False
+
+
+def _extract_search_query(text: str) -> str | None:
+    """Extract search query from text.
+
+    Args:
+        text: Text to extract query from.
+
+    Returns:
+        The extracted query, or None if not found.
+    """
+    import re
+
+    # Pattern 1: query="..." or query='...'
+    match = re.search(r'query\s*=\s*["\']([^"\']+)["\']', text, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+
+    # Pattern 2: "query": "..."
+    match = re.search(r'"query"\s*:\s*"([^"]+)"', text, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+
+    # Pattern 3: <query>...</query>
+    match = re.search(r'<query>([^<]+)</query>', text, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+
+    return None
+
+
+def _has_repeated_query(trajectory: Trajectory) -> bool:
+    """Check if trajectory contains repeated queries.
+
+    Args:
+        trajectory: Trajectory to check for repeated queries.
+
+    Returns:
+        True if there are repeated queries, False otherwise.
+    """
+    seen_queries = set()
+
+    for step in trajectory.steps:
+        # Check in model_response
+        if hasattr(step, 'model_response') and step.model_response:
+            query = _extract_search_query(step.model_response)
+            if query:
+                if query in seen_queries:
+                    return True
+                seen_queries.add(query)
+
+        # Check in chat_completions
+        if step.chat_completions:
+            for msg in step.chat_completions:
+                if msg.get('role') == 'assistant' and msg.get('content'):
+                    query = _extract_search_query(msg['content'])
+                    if query:
+                        if query in seen_queries:
+                            return True
+                        seen_queries.add(query)
+
+    return False
+
+
+def _has_search_error(trajectory: Trajectory) -> bool:
+    """Check if trajectory contains environment-induced search errors.
+
+    Args:
+        trajectory: Trajectory to check for search errors.
+
+    Returns:
+        True if there are search errors (retrieval timeout, etc.), False otherwise.
+    """
+    for step in trajectory.steps:
+        # Check observation for environment errors
+        if step.observation:
+            obs_str = str(step.observation).lower()
+            # Environment-specific error keywords
+            env_error_keywords = [
+                'timeout', 'timed out', 'connection error',
+                'retrieval error', 'search error', 'service unavailable',
+                'network error', 'connection refused'
+            ]
+            if any(keyword in obs_str for keyword in env_error_keywords):
+                return True
+
+        # Check info dict for environment error flags
+        if step.info:
+            if step.info.get('search_error', False):
+                return True
+            if step.info.get('env_error', False):
+                return True
+
+    return False
+
+
+def _validate_trajectory(trajectory: Trajectory, config) -> tuple[str, str]:
+    """Validate a trajectory based on SimpleTIR search filtering criteria.
+
+    Args:
+        trajectory: Trajectory to validate.
+        config: Configuration object with trajectory_filtering settings.
+
+    Returns:
+        Tuple of (action, reason) where action is one of:
+        - "keep": trajectory is valid
+        - "discard": trajectory should be completely discarded (not used in advantage computation)
+        - "zero_reward": trajectory should get 0 reward but kept for advantage computation
+        - "no_grad": trajectory participates in advantage computation but not gradient updates
+    """
+    if not config or not hasattr(config, 'rllm') or not hasattr(config.rllm, 'trajectory_filtering'):
+        return "keep", ""
+
+    tf = config.rllm.trajectory_filtering
+    if not tf.enable:
+        return "keep", ""
+
+    # Critical: Check for "Error parsing tool call" exceptions first
+    # These are complete failures and should be discarded entirely
+    if _has_tool_call_parse_exception(trajectory):
+        return "discard", "tool_call_parse_exception"
+
+    # 5.4.2 Search Errors: Direct Discard (environment-induced)
+    if _has_search_error(trajectory):
+        return "discard", "search_error_environment"
+
+    # 5.4.1 Break + 0 Reward (model-induced anomalies)
+
+    # Check tool call count in single turn exceeds limit
+    max_tool_calls = getattr(tf, 'max_tool_calls_per_turn', 10)
+    for step in trajectory.steps:
+        if step.chat_completions:
+            for msg in step.chat_completions:
+                if msg.get('role') == 'assistant' and msg.get('content'):
+                    tool_count = _count_tool_calls_in_message(msg['content'])
+                    if tool_count > max_tool_calls:
+                        return "zero_reward", f"tool_call_limit_exceeded_{tool_count}"
+
+    # Check for tool parse errors (structural issues in model output)
+    for step in trajectory.steps:
+        if hasattr(step, 'model_response') and step.model_response:
+            if _has_tool_parse_error(step.model_response):
+                return "zero_reward", "tool_parse_error"
+
+        if step.chat_completions:
+            for msg in step.chat_completions:
+                if msg.get('role') == 'assistant' and msg.get('content'):
+                    if _has_tool_parse_error(msg['content']):
+                        return "zero_reward", "tool_parse_error"
+
+    # Check for repeated queries
+    if _has_repeated_query(trajectory):
+        return "zero_reward", "repeated_query"
+
+    # 5.4.3 Exceeding Search Turn Limit: Stop + 0 Reward
+    max_steps = getattr(tf, 'max_search_turns', None)
+    if max_steps is not None and len(trajectory.steps) > max_steps:
+        return "zero_reward", f"max_search_turns_exceeded_{max_steps}"
+
+    return "keep", ""
+
+
+def _compute_token_count(trajectory: Trajectory) -> int:
+    """Compute total token count for a trajectory.
+
+    Args:
+        trajectory: Trajectory to compute token count for.
+
+    Returns:
+        Total token count across all steps.
+    """
+    total_tokens = 0
+    for step in trajectory.steps:
+        if hasattr(step, 'model_output') and step.model_output:
+            # Count prompt + completion tokens
+            total_tokens += len(step.model_output.prompt_ids) + len(step.model_output.completion_ids)
+        else:
+            # Fallback: estimate from chat_completions
+            if step.chat_completions:
+                for msg in step.chat_completions:
+                    content = msg.get('content', '')
+                    # Rough estimate: ~4 chars per token
+                    total_tokens += len(content) // 4
+
+    return total_tokens
 
 
 class AgentWorkflowEngine:
@@ -246,6 +554,7 @@ class AgentWorkflowEngine:
         multi_modal_inputs_list = []
         chat_completions_list = []
         rollout_log_probs_list = []
+        no_grad_flags = []  # 5.4.4: Track trajectories that should not participate in gradient updates
 
         for i, episode in enumerate(episodes):
             total_steps = 0
@@ -270,6 +579,37 @@ class AgentWorkflowEngine:
                 if len(trajectory.steps) == 0:
                     logger.info(f"Trajectory {trajectory_id} has no steps, skipping")
                     continue
+
+                # Apply trajectory-level filtering (SimpleTIR search-specific filtering)
+                action, reason = _validate_trajectory(trajectory, self.config)
+
+                # 5.4.2: Discard trajectories with environment-induced errors
+                if action == "discard":
+                    logger.info(f"Discarding trajectory {trajectory_id}: {reason}")
+                    continue
+
+                # 5.4.1, 5.4.3: Zero reward for model-induced anomalies
+                # Keep in batch for advantage computation but set reward to 0
+                if action == "zero_reward":
+                    logger.info(f"Setting zero reward for trajectory {trajectory_id}: {reason}")
+                    # Override trajectory reward to 0
+                    original_reward = trajectory.reward
+                    trajectory.reward = 0.0
+                    # Also set all step rewards to 0
+                    for step in trajectory.steps:
+                        step.reward = 0.0
+
+                # 5.4.4: Check if trajectory exceeds max token count
+                # These trajectories participate in advantage computation but not gradient updates
+                no_grad = False
+                if self.config.rllm.trajectory_filtering.enable:
+                    tf = self.config.rllm.trajectory_filtering
+                    max_tokens = getattr(tf, 'max_tokens', None)
+                    if max_tokens is not None:
+                        token_count = _compute_token_count(trajectory)
+                        if token_count > max_tokens:
+                            logger.info(f"Marking trajectory {trajectory_id} as no_grad: token_count={token_count} > max_tokens={max_tokens}")
+                            no_grad = True
 
                 if not self.config.rllm.stepwise_advantage.enable:
                     if len(trajectory.steps) > 1:
@@ -352,6 +692,7 @@ class AgentWorkflowEngine:
                 traj_rewards.extend([trajectory.reward] * n_steps)
                 is_last_step.extend([False] * n_steps)
                 is_last_step[-1] = True
+                no_grad_flags.extend([no_grad] * n_steps)  # 5.4.4: Mark steps for no gradient
                 total_steps += n_steps
 
             episode_ids.extend([episode.id] * total_steps)
@@ -445,6 +786,7 @@ class AgentWorkflowEngine:
             "is_valid": np.array(is_valid),
             "is_last_step": np.array(is_last_step),
             "is_pad_step": np.array([False] * len(episode_ids)),
+            "no_grad": np.array(no_grad_flags),  # 5.4.4: Mark trajectories for no gradient updates
             "chat_completions": np.array(chat_completions_list, dtype=object),  # chat completions for distillation
         }
 
