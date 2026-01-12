@@ -246,11 +246,7 @@ class AgentExecutionEngine:
             # DAPO-styled dynamic sampling: Retry mechanism for handling invalid outputs
             # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
             # Instead of failing, we feed the error back and let the model retry
-            max_step_retries = (
-                self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 8)
-                if self.config is not None
-                else 3
-            )
+            max_step_retries = self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 8)
 
             retry_count = 0
             validation_success = False
@@ -315,6 +311,11 @@ class AgentExecutionEngine:
                         "yellow",
                     )
                     continue
+
+            # Dump step which had retries times >= max_step_retries
+            if retry_count >= max_step_retries:
+                with open(f"experiments/failed_trajectory.log", "a+") as f:
+                    f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
 
             # Use the final response (successful or last attempt after max retries)
             response = final_response
