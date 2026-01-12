@@ -11,9 +11,9 @@ actor_rollout_ref:
     mode: async
     agent:
       num_workers: 0
-    max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
     val_kwargs:
       do_sample: True
+      max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
 
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}

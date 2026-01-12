@@ -545,7 +545,14 @@ class AgentSdkTrainer(RayPPOTrainer):
         uid_lst = []
         workflow_metrics_by_source = defaultdict(lambda: defaultdict(list))
 
-        for test_data in self.val_dataloader:
+        # Get max_val_num from config (-1 means use all batches)
+        max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
+
+        for batch_idx, test_data in enumerate(self.val_dataloader):
+            # Break if we've reached the maximum number of validation batches
+            if max_val_num > 0 and batch_idx >= max_val_num:
+                break
+
             test_batch = DataProto.from_single_dict(test_data)
             test_batch.non_tensor_batch["task_ids"] = np.array([str(uuid.uuid4()) for _ in range(len(test_batch.batch))], dtype=object)
 
