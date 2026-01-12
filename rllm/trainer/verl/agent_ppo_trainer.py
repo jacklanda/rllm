@@ -627,7 +627,14 @@ class AgentPPOTrainer(RayPPOTrainer):
             traj_metrics.append(traj["metrics"])
 
         # Flatten traj_metrics into a dict of lists
-        traj_metrics = {k: [d[k] for d in traj_metrics] for k in traj_metrics[0]}
+        # Collect all unique keys from all trajectories to handle missing metrics
+        all_keys = set()
+        for d in traj_metrics:
+            all_keys.update(d.keys())
+
+        # Use .get() to handle missing keys gracefully
+        traj_metrics = {k: [d.get(k, None) for d in traj_metrics] for k in all_keys}
+
         # Aggregate metrics (mean, min, max)
         for k, v_list in traj_metrics.items():
             v_list = [v for v in v_list if v is not None and v >= 0]
