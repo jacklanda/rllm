@@ -64,6 +64,7 @@ rllm:
     # SimpleTIR-style trajectory-level filtering for search agents
     # Filters out individual trajectories from batches before gradient updates
     enable: False
+    max_step_retries: 8
 
     # 5.4.1: Model-induced anomalies (Break + 0 Reward)
     max_tool_calls_per_turn: 10      # Filter if assistant makes >N tool calls in a single turn
