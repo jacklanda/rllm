@@ -13,6 +13,7 @@ actor_rollout_ref:
       num_workers: 0
     val_kwargs:
       do_sample: True
+      max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
 
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}

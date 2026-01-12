@@ -140,7 +140,15 @@ class TinkerWorkflowTrainer(TinkerAgentTrainer):
         all_episodes = []
         all_episode_metrics = {}  # episode_id -> episode.metrics dict
         self.agent_execution_engine.rollout_engine.set_sampling_client(sampling_client)
-        for batch in dataloader:
+
+        # Get max_val_num from config (-1 means use all batches)
+        max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
+
+        for batch_idx, batch in enumerate(dataloader):
+            # Break if we've reached the maximum number of validation batches
+            if max_val_num > 0 and batch_idx >= max_val_num:
+                break
+
             batch = self.build_interleave_batch(batch, 1)
             self.init_envs_and_agents(batch)
             # For validation, collect all episodes from generator

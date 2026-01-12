@@ -49,10 +49,13 @@ class LocalRetrievalTool(Tool):
         self.max_results = max_results
         self.client = httpx.Client(timeout=timeout)
 
+        # Suppress httpx INFO logs
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+
         super().__init__(name=name, description=description)
 
         # Test server connection
-        self._test_connection()
+        # self._test_connection()
 
     def _test_connection(self):
         """Test connection to the retrieval server."""
