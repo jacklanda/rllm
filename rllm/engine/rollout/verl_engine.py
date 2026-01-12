@@ -91,6 +91,10 @@ class VerlEngine(RolloutEngine):
         # TODO: implement parse_completion for the standard parser
         parsed_output = self.chat_parser.parse_completion(completion_ids)
         tool_calls = parsed_output.get("tool_calls", [])
+        if tool_calls:
+            print(f"Tool calls made during generation:\n{tool_calls}")
+        else:
+            print("No tool calls made during generation.")
 
         return ModelOutput(
             text=completion_text,
