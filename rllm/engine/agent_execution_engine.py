@@ -239,12 +239,82 @@ class AgentExecutionEngine:
 
             kwargs["max_tokens"] = max_tokens
 
-            start_time = time.time()
-            model_output = await self.get_model_response(prompt_messages, application_id, **kwargs)
-            response = model_output.text
-            delta_time = time.time() - start_time
-            llm_time += delta_time
-            total_time += delta_time
+            # DAPO-styled dynamic sampling: Retry mechanism for handling invalid outputs
+            # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
+            # Instead of failing, we feed the error back and let the model retry
+            max_step_retries = (
+                self.config.get("rllm", {}).get("max_step_retries", 3)
+                if self.config is not None
+                else 3
+            )
+
+            retry_count = 0
+            validation_success = False
+            final_response = None
+            final_model_output = None
+            retry_prompt_messages = prompt_messages.copy()  # Work with a copy for retries
+
+            while retry_count <= max_step_retries and not validation_success:
+                start_time = time.time()
+                model_output = await self.get_model_response(
+                    retry_prompt_messages, application_id, **kwargs
+                )
+                response = model_output.text
+                tool_calls = model_output.tool_calls
+
+                delta_time = time.time() - start_time
+                llm_time += delta_time
+                total_time += delta_time
+
+                # Validate output based on tool_calls and \boxed{} presence
+                # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in text
+                # - Valid: tool_calls is empty BUT "\boxed" IS in text (final answer step)
+                # - Valid: tool_calls is NOT empty (action step, regardless of \boxed)
+                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+
+                if not is_invalid:
+                    # Valid output
+                    validation_success = True
+                    final_response = response
+                    final_model_output = model_output
+                else:
+                    # Invalid output - retry
+                    retry_count += 1
+
+                    if retry_count > max_step_retries:
+                        # Max retries exhausted, use the last response anyway
+                        colorful_print(
+                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. "
+                            f"No tool calls and no \\boxed{{}} found. Using last response.",
+                            "yellow",
+                        )
+                        final_response = response
+                        final_model_output = model_output
+                        validation_success = True  # Force exit with last attempt
+                        break
+
+                    # Add error feedback to conversation for retry
+                    error_msg = (
+                        "Your previous response is invalid. You must either: "
+                        "1) Use a tool call (e.g., search) to gather information, OR "
+                        "2) Provide a final answer in \\boxed{} format. "
+                        "Please provide a valid response."
+                    )
+
+                    # Extend retry prompt with failed attempt and error feedback
+                    retry_prompt_messages.append({"role": "assistant", "content": response})
+                    retry_prompt_messages.append({"role": "user", "content": error_msg})
+
+                    colorful_print(
+                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
+                        f"No tool calls and no \\boxed{{}} found",
+                        "yellow",
+                    )
+                    continue
+
+            # Use the final response (successful or last attempt after max retries)
+            response = final_response
+            model_output = final_model_output
             # Update steps
             prompt_response_pair = {
                 "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
