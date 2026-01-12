@@ -46,7 +46,6 @@ class VerlEngine(RolloutEngine):
         self.validate = False  # flag enabled/disabled by AgentWorkflowEngine.execute_tasks_verl
 
     async def get_model_response(self, messages: list[dict], **kwargs) -> ModelOutput:
-        print("exit with debug here.")
         application_id = kwargs.pop("application_id", str(uuid.uuid4()))
         validate = self.validate or kwargs.pop("validate", False)
         enforce_max_prompt_length = kwargs.pop("enforce_max_prompt_length", True)
