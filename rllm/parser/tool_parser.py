@@ -244,7 +244,7 @@ class QwenToolParser(ToolParser):
                 text = text[end + len(self.tool_call_end) :]
                 # Dump invalid tool call request
                 with open("experiments/logs/invalid_tool_calls.log", "a+") as f:
-                    f.write(f"{json_content}\n")
+                    f.write("-" * 100 + f"\n{json_content}\n" + "-" * 100 + "\n")
                 continue
 
             # Move to next potential tool call
@@ -254,7 +254,6 @@ class QwenToolParser(ToolParser):
 
     def get_tool_prompt(self, tools_schema: str) -> str:
         return f"""
-
 # Tools
 
 You may call one or more functions to assist with the user query.
@@ -264,8 +263,10 @@ You are provided with function signatures within <tools></tools> XML tags:
 {tools_schema}
 </tools>
 
-For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+For each function call, return a valid json object with function name and arguments within a pairwise <tool_call></tool_call> XML tags:
 <tool_call>
 {{"name": <function-name>, "arguments": <args-json-object>}}
 </tool_call>
+
+Make sure all curly braces and XML tags are correctly balanced and closed strictly.
 """.rstrip()
