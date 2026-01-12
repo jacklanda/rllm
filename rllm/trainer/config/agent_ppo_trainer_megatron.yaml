@@ -14,9 +14,9 @@ actor_rollout_ref:
     mode: async # only async is supported
     agent:
       num_workers: 0 # we bypass the agent loop
+    max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
     val_kwargs:
       do_sample: True # if do_sample is False, temperature is overridden to 0.0
-      max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
 
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}
