@@ -108,3 +108,17 @@ fireworks:
 trainer:
   log_episodes: false
   episode_log_dir: logs/${trainer.project_name}/${trainer.experiment_name}
+
+# Reward configuration for search agents
+reward:
+  # Tool call bonus/penalty configuration
+  toolcall_bonus: 0.5                    # Bonus for single good tool call, penalty for invalid/multiple
+
+  # Repetition penalty configuration
+  apply_repetition_penalty: false        # Enable repetition penalty
+  repetition_penalty_weight: 0.5         # Weight for repetition penalty
+  repetition_max_n: 4                    # Maximum n-gram length for detection
+
+  # Base reward values
+  correct_reward: 1.0                    # Reward for correct answers
+  incorrect_reward: 0.0                  # Reward for incorrect answers

@@ -30,6 +30,11 @@ class RewardConfig:
     # Bonus reward for calling tools.
     toolcall_bonus: float = 0.5
 
+    # Repetition penalty config
+    apply_repetition_penalty: bool = False
+    repetition_penalty_weight: float = 0.5
+    repetition_max_n: int = 4
+
     # Toggle for using Together Code Interpreter
     use_together_code_interpreter: bool = False
 

@@ -62,18 +62,20 @@ def math_reward_fn(task_info: dict, action: str) -> RewardOutput:
     return reward_fn(task_info, action)
 
 
-def search_reward_fn(task_info: dict, action: str) -> RewardOutput:
+def search_reward_fn(task_info: dict, action: str, reward_config: RewardConfig = None) -> RewardOutput:
     """
     A reward function for search tasks that implements the RewardFunction protocol.
 
     Args:
         task_info: The task dictionary containing data_source, ground_truth and other metadata
         action: The agent's response/solution
+        reward_config: Optional reward configuration. If None, uses default RewardConfig()
 
     Returns:
         RewardOutput: The calculated reward value based on search evaluation
     """
-    reward_config = RewardConfig()
+    if reward_config is None:
+        reward_config = RewardConfig()
     reward_fn = RewardSearchFn(reward_config)
     if isinstance(action, Action):
         action = action.action
@@ -82,6 +84,47 @@ def search_reward_fn(task_info: dict, action: str) -> RewardOutput:
     reward_input = RewardInput(task_info=task_info, action=action)
 
     return reward_fn(reward_input)
+
+
+def create_search_reward_fn(
+    toolcall_bonus: float = 0.5,
+    apply_repetition_penalty: bool = False,
+    repetition_penalty_weight: float = 0.5,
+    repetition_max_n: int = 4,
+    correct_reward: float = 1.0,
+    incorrect_reward: float = 0.0,
+):
+    """
+    Factory function to create a configurable search reward function.
+
+    Args:
+        toolcall_bonus: Bonus/penalty value for tool calls (default: 0.5)
+        apply_repetition_penalty: Whether to apply repetition penalty (default: False)
+        repetition_penalty_weight: Weight for repetition penalty (default: 0.5)
+        repetition_max_n: Maximum n-gram length for repetition detection (default: 4)
+        correct_reward: Reward for correct answers (default: 1.0)
+        incorrect_reward: Reward for incorrect answers (default: 0.0)
+
+    Returns:
+        A reward function with the specified configuration
+
+    Example:
+        >>> reward_fn = create_search_reward_fn(toolcall_bonus=0.7, apply_repetition_penalty=True)
+        >>> env_args = {"reward_fn": reward_fn, ...}
+    """
+    reward_config = RewardConfig(
+        toolcall_bonus=toolcall_bonus,
+        apply_repetition_penalty=apply_repetition_penalty,
+        repetition_penalty_weight=repetition_penalty_weight,
+        repetition_max_n=repetition_max_n,
+        correct_reward=correct_reward,
+        incorrect_reward=incorrect_reward,
+    )
+
+    def configured_reward_fn(task_info: dict, action: str) -> RewardOutput:
+        return search_reward_fn(task_info, action, reward_config)
+
+    return configured_reward_fn
 
 
 def code_reward_fn(task_info: dict, action: str) -> RewardOutput:

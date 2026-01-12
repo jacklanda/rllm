@@ -7,7 +7,7 @@ from rllm.agents.system_prompts import SEARCH_SYSTEM_PROMPT
 from rllm.agents.tool_agent import ToolAgent
 from rllm.data import DatasetRegistry
 from rllm.environments.tools.tool_env import ToolEnvironment
-from rllm.rewards.reward_fn import search_reward_fn
+from rllm.rewards.reward_fn import create_search_reward_fn
 from rllm.trainer.agent_trainer import AgentTrainer
 
 from .local_retrieval_tool import LocalRetrievalTool
@@ -111,10 +111,22 @@ def main(config):
 
     tool_map = {"local_search": LocalRetrievalTool}
 
+    # Create configurable reward function
+    # Get reward config from hydra config if available, otherwise use defaults
+    reward_config = config.get("reward", {})
+    reward_fn = create_search_reward_fn(
+        toolcall_bonus=reward_config.get("toolcall_bonus", 0.5),
+        apply_repetition_penalty=reward_config.get("apply_repetition_penalty", False),
+        repetition_penalty_weight=reward_config.get("repetition_penalty_weight", 0.5),
+        repetition_max_n=reward_config.get("repetition_max_n", 4),
+        correct_reward=reward_config.get("correct_reward", 1.0),
+        incorrect_reward=reward_config.get("incorrect_reward", 0.0),
+    )
+
     env_args = {
         "max_steps": 16,
         "tool_map": tool_map,
-        "reward_fn": search_reward_fn,
+        "reward_fn": reward_fn,
     }
 
     agent_args = {"system_prompt": SEARCH_SYSTEM_PROMPT, "tool_map": tool_map, "parser_name": "qwen"}

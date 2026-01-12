@@ -392,6 +392,47 @@ class AgentExecutionEngine:
             return trajectory
         elif mode == "Token":
             prompt_tokens, response_tokens, response_masks, is_valid_trajectory = self.assemble_steps(episode_steps)
+
+            # Extract reward components from the last step's metadata
+            reward_metrics = {}
+            if trajectory.steps:
+                last_step = trajectory.steps[-1]
+                if "metadata" in last_step.info:
+                    metadata = last_step.info["metadata"]
+
+                    # Extract individual reward components for separate logging
+                    # These will be logged as traj/rewards/pass@1, traj/rewards/tool_call, etc.
+                    if "f1_score" in metadata:
+                        reward_metrics["rewards/pass@1"] = metadata["f1_score"]
+                    if "exact_match" in metadata:
+                        reward_metrics["rewards/exact_match"] = 1.0 if metadata["exact_match"] else 0.0
+                    if "base_reward" in metadata:
+                        reward_metrics["rewards/base_reward"] = metadata["base_reward"]
+                    if "tool_call_adjustment" in metadata:
+                        reward_metrics["rewards/tool_call"] = metadata["tool_call_adjustment"]
+                    if "tool_call_count" in metadata:
+                        reward_metrics["rewards/tool_call_count"] = metadata["tool_call_count"]
+                    if "tool_call_status" in metadata:
+                        # Convert tool_call_status to a numeric indicator for easier tracking
+                        status_map = {
+                            "single_call_bonus": 1.0,
+                            "no_tool_call": 0.0,
+                            "single_call_no_bonus": -0.5,
+                            "multiple_calls_penalty": -1.0,
+                            "invalid_tags_penalty": -1.0,
+                        }
+                        reward_metrics["rewards/tool_call_status"] = status_map.get(metadata["tool_call_status"], 0.0)
+                    if "repetition_penalty" in metadata and metadata["repetition_penalty"] is not None:
+                        reward_metrics["rewards/repetition_penalty"] = metadata["repetition_penalty"]
+                    if "repetition_penalty_weighted" in metadata and metadata["repetition_penalty_weighted"] is not None:
+                        reward_metrics["rewards/repetition_penalty_weighted"] = metadata["repetition_penalty_weighted"]
+
+                    # Check if step.reward contains intermediate rewards
+                    # Sum all intermediate step rewards as a separate metric
+                    intermediate_rewards = sum(step.reward for step in trajectory.steps[:-1])
+                    if intermediate_rewards != 0:
+                        reward_metrics["rewards/intermediate_steps"] = intermediate_rewards
+
             token_result = {
                 "prompt_tokens": prompt_tokens,
                 "response_tokens": response_tokens,
@@ -411,6 +452,8 @@ class AgentExecutionEngine:
                     # Total time spent in the trajectory
                     "total_time": total_time,
                     "token_mismatch": 0.0 if is_valid_trajectory else 1.0,
+                    # Add individual reward components
+                    **reward_metrics,
                 },
             }
             return token_result
