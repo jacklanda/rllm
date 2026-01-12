@@ -198,6 +198,10 @@ class AgentExecutionEngine:
         # for step return
         episode_steps = []
 
+        # Retry tracking
+        total_retries = 0
+        steps_with_retries = 0
+
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
         observation, info = await loop.run_in_executor(self.executor, env.reset)
@@ -243,7 +247,7 @@ class AgentExecutionEngine:
             # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
             # Instead of failing, we feed the error back and let the model retry
             max_step_retries = (
-                self.config.get("rllm", {}).get("max_step_retries", 3)
+                self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 8)
                 if self.config is not None
                 else 3
             )
