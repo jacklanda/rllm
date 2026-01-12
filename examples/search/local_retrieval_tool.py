@@ -93,16 +93,18 @@ class LocalRetrievalTool(Tool):
         formatted_results = []
         for i, result in enumerate(results[: self.max_results], 1):
             # Extract key information
-            doc_id = result.get("id", f"doc_{i}")
-            content = result.get("content", "")  # Fixed: use "content" not "contents"
-            score = result.get("score", 0.0)
+            # doc_id = result.get("id", f"doc_{i}")
+            # content = result.get("content", "").get("original_text")  # use full text
+            content = result.get("content", "").get("chunk_text")  # use chunked text
+            # score = result.get("score", 0.0)
 
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
             if len(content) > 512:
                 content = content[:512] + "..."
 
-            formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
+            # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
+            formatted_result = f"[Document {i}] {content}\n\n"
             formatted_results.append(formatted_result)
 
         return "\n".join(formatted_results)
