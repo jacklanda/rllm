@@ -314,7 +314,8 @@ class AgentExecutionEngine:
 
             # Dump step which had retries times >= max_step_retries
             if retry_count >= max_step_retries:
-                with open(f"experiments/failed_trajectory.log", "a+") as f:
+                print(f"Logging {retry_count} times retrying failed trajectory...")
+                with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
                     f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
 
             # Use the final response (successful or last attempt after max retries)

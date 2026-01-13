@@ -237,6 +237,8 @@ class QwenToolParser(ToolParser):
             json_content = text[start:end].strip()
             try:
                 call_data = json.loads(json_content)
+                if "name" not in call_data or "arguments" not in call_data:
+                    raise json.JSONDecodeError("Missing required fields", json_content, 0)
                 # Convert to common format matching parse_tool_calls output
                 tool_calls.append({"name": call_data["name"], "arguments": call_data["arguments"]})
             except json.JSONDecodeError:

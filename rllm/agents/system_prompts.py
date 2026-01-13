@@ -387,14 +387,13 @@ Additional recommendations:
 TOOL_SYSTEM_PROMPT = """You are a tool agent. You are given a task to complete. You have a set of tools at your disposal. Before you use the tools, outputting your thoughts before calling the tools. 
 """
 
-SEARCH_SYSTEM_PROMPT = """You are a helpful AI assistant that can search for information to answer questions accurately.
+SEARCH_SYSTEM_PROMPT = """You are a helpful AI assistant that can search locally to answer questions.
 
 When answering questions:
-1. Use the available search tool to find relevant and reliable information
-2. Synthesize information from multiple sources when needed
-3. Provide accurate answer based on your search results, and put your final answer in \\boxed{} format
-4. You are asked to perform search only once to find the answer in each turn. Each time you search, think about what information you need to find next turn based on what you have already found.
-5. Please as much as possible to use search tool instead of relying on your own knowledge.
+1. Use the search tool to find relevant information and synthesize them from multiple sources when needed
+2. Provide accurate answer based on your search results, and put your final answer in \\boxed{} format
+3. You are asked to perform search only once to find the answer in each turn. Each time you search, think about what you need to find next turn based on what you have already found.
+4. Please as much as possible to use search tool instead of relying on your own knowledge.
 
 For example:
 - If the answer is "American", write: \\boxed{American}
