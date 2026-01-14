@@ -34,7 +34,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=3,
+        retry_limit=8,
         max_steps=5,
         max_response_length=8192,
         max_prompt_length=1024,
@@ -197,10 +197,6 @@ class AgentExecutionEngine:
 
         # for step return
         episode_steps = []
-
-        # Retry tracking
-        total_retries = 0
-        steps_with_retries = 0
 
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
