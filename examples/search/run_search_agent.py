@@ -59,8 +59,8 @@ if __name__ == "__main__":
             "base_url": "http://localhost:30000/v1",
             "api_key": "None",
         },
-        max_response_length=16384,
-        max_prompt_length=4096,
+        max_response_length=2048,
+        max_prompt_length=2048,
         config=None,
         n_parallel_agents=n_parallel_agents,
     )
