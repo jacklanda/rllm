@@ -117,8 +117,9 @@ class ToolEnvironment(BaseEnv):
         threads = []
 
         def execute_tool(tool_call):
-            tool_name = tool_call["function"]["name"]
-            tool_args = json.loads(tool_call["function"]["arguments"])
+            tool_name = tool_call["function"]["name"] or tool_call.get("name", "")
+            tool_args = tool_call["function"]["arguments"] or tool_call.get("arguments", "{}")
+            tool_args = json.loads(tool_args)
             tool_output = self.tools(tool_name=tool_name, **tool_args)
             tool_output_str = tool_output.to_string()
 
