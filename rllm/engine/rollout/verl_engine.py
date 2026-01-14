@@ -105,9 +105,8 @@ class VerlEngine(RolloutEngine):
                   f"Adjusting to {safe_max_tokens} (prompt_length: {prompt_length}, max_model_len: {self.max_model_len})")
             max_tokens = safe_max_tokens
 
-        # Pass max_tokens in a special key that the vLLM server can use
-        # to avoid recalculating and getting negative values
-        sampling_params['_override_max_tokens'] = max_tokens
+        # Pass max_tokens directly to the sampling_params
+        sampling_params['max_tokens'] = max_tokens
 
         token_output: TokenOutput = await self.server_manager.generate(request_id=application_id, prompt_ids=request_prompt_ids, image_data=image_data, sampling_params=sampling_params)  # type: ignore
         completion_ids: list[int] = token_output.token_ids
