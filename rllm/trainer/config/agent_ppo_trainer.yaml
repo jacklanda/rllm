@@ -106,10 +106,12 @@ fireworks:
   deployment_id: null
   model_id_prefix: test-model
   concurrency: 32
+  return_token_ids: True
 
 trainer:
   log_episodes: false
   episode_log_dir: logs/${trainer.project_name}/${trainer.experiment_name}
+<<<<<<< HEAD
 
 # Reward configuration for search agents
 reward:
@@ -124,3 +126,5 @@ reward:
   # Base reward values
   correct_reward: 1.0                    # Reward for correct answers
   incorrect_reward: 0.0                  # Reward for incorrect answers
+=======
+>>>>>>> b1bc068653ba370227c413c7c8aec132525f343f
