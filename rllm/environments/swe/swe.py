@@ -1,8 +1,14 @@
 import json
 import os
+import warnings
 
 import numpy as np
 from datasets import Dataset, load_dataset
+
+# Suppress gym deprecation warnings from r2egym dependency
+# r2egym uses deprecated gym package, but rLLM uses gymnasium
+warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
 
 try:
     import r2egym

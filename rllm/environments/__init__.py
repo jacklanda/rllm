@@ -1,3 +1,15 @@
+"""rLLM Environments Module
+
+This module provides various environment implementations for RL training.
+Note: Some dependencies (e.g., r2egym) use deprecated gym package.
+We suppress these warnings as rLLM itself uses gymnasium.
+"""
+import warnings
+
+# Suppress gym deprecation warnings from dependencies
+warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
+
 from rllm.environments.base.base_env import BaseEnv
 from rllm.environments.base.single_turn_env import SingleTurnEnvironment
 from rllm.environments.tools.tool_env import ToolEnvironment
