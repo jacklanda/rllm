@@ -242,7 +242,7 @@ class AgentExecutionEngine:
             # DAPO-styled dynamic sampling: Retry mechanism for handling invalid outputs
             # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
             # Instead of failing, we feed the error back and let the model retry
-            max_step_retries = self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 8)
+            max_step_retries = self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 32)
 
             retry_count = 0
             validation_success = False
