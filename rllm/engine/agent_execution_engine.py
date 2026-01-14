@@ -314,6 +314,7 @@ class AgentExecutionEngine:
 
             # Dump step which had retries times >= max_step_retries
             if retry_count >= max_step_retries:
+                # Drop the failed retried trajectory
                 print(f"Error parsing tool call after {retry_count} retries: {response}")
                 with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
                     f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
