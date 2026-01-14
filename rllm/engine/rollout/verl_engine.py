@@ -92,6 +92,15 @@ class VerlEngine(RolloutEngine):
         parsed_output = self.chat_parser.parse_completion(completion_ids)
         tool_calls = parsed_output.get("tool_calls", [])
 
+        # Fields validation for "tool_calls"
+        valid_tool_calls = []
+        for tool_call in tool_calls:
+            if "function" not in tool_call or "name" not in tool_call["function"] or "arguments" not in tool_call["function"]:
+                continue
+            valid_tool_calls.append(tool_call)
+
+        parsed_output["tool_calls"] = valid_tool_calls
+
         return ModelOutput(
             text=completion_text,
             content=parsed_output["content"],
