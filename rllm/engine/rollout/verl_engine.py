@@ -26,16 +26,6 @@ class VerlEngine(RolloutEngine):
         self.max_response_length = config.data.max_response_length
         self.accumulate_reasoning = config.get("rllm", {}).get("accumulate_reasoning", False)
 
-        # Get max_model_len from the model config or use a reasonable default
-        # vLLM will calculate max_tokens as: max_model_len - prompt_length
-        # We need to ensure prompt_length + requested_max_tokens doesn't exceed this
-        # Try to get it from rollout config first, then model config, otherwise use default
-        self.max_model_len = (
-            getattr(config.actor_rollout_ref.rollout, 'max_model_len', None) or
-            getattr(config.actor_rollout_ref.model, 'max_model_len', None) or
-            32768  # Default for Qwen3 and similar models
-        )
-
         self.train_sampling_params = dict(
             temperature=0.0 if config.actor_rollout_ref.rollout.do_sample is False else config.actor_rollout_ref.rollout.temperature,
             top_k=config.actor_rollout_ref.rollout.top_k,
@@ -50,7 +40,6 @@ class VerlEngine(RolloutEngine):
             logprobs=1,
         )
 
-        print(f"max_model_len: {self.max_model_len}")
         print(f"train_sampling_params: {self.train_sampling_params}")
         print(f"val_sampling_params: {self.val_sampling_params}")
 
@@ -87,26 +76,6 @@ class VerlEngine(RolloutEngine):
         prompt_length = len(prompt_ids)
         if enforce_max_prompt_length and prompt_length > self.max_prompt_length:
             raise TerminationEvent(TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED)
-
-        # CRITICAL: Prevent negative max_tokens in vLLM
-        # vLLM calculates: max_tokens = max_model_len - len(prompt_ids)
-        # We need to ensure prompt_length doesn't exceed max_model_len
-        # and adjust max_tokens if necessary to prevent vLLM errors
-        if prompt_length >= self.max_model_len:
-            raise TerminationEvent(TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED)
-
-        # Calculate the maximum tokens we can safely request
-        # Leave some buffer (e.g., 10 tokens) for safety
-        safe_max_tokens = max(1, self.max_model_len - prompt_length - 10)
-
-        # If the requested max_tokens would cause issues, adjust it
-        if max_tokens > safe_max_tokens:
-            print(f"Warning: Requested max_tokens ({max_tokens}) would exceed model capacity. "
-                  f"Adjusting to {safe_max_tokens} (prompt_length: {prompt_length}, max_model_len: {self.max_model_len})")
-            max_tokens = safe_max_tokens
-
-        # Pass max_tokens directly to the sampling_params
-        sampling_params['max_tokens'] = max_tokens
 
         token_output: TokenOutput = await self.server_manager.generate(request_id=application_id, prompt_ids=request_prompt_ids, image_data=image_data, sampling_params=sampling_params)  # type: ignore
         completion_ids: list[int] = token_output.token_ids
