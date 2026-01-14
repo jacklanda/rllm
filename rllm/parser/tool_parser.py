@@ -242,11 +242,11 @@ class QwenToolParser(ToolParser):
                 # Convert to common format matching parse_tool_calls output
                 tool_calls.append({"name": call_data["name"], "arguments": call_data["arguments"]})
             except json.JSONDecodeError:
-                print(f"Error parsing tool call: {json_content}")
+                # print(f"Error parsing tool call: {json_content}")
                 text = text[end + len(self.tool_call_end) :]
                 # Dump invalid tool call request
-                with open("experiments/logs/invalid_tool_calls.log", "a+") as f:
-                    f.write("-" * 100 + f"\n{json_content}\n" + "-" * 100 + "\n")
+                # with open("experiments/logs/invalid_tool_calls.log", "a+") as f:
+                    # f.write("-" * 100 + f"\n{json_content}\n" + "-" * 100 + "\n")
                 continue
 
             # Move to next potential tool call
