@@ -461,8 +461,6 @@ class AgentExecutionEngine:
         compute_trajectory_reward(trajectory)
         compute_mc_return(trajectory, gamma=self.gamma)
 
-        mode = "Token"
-
         if mode == "Text":
             return trajectory
         elif mode == "Token":
