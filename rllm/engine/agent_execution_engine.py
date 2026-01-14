@@ -307,7 +307,7 @@ class AgentExecutionEngine:
 
                     colorful_print(
                         f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
-                        f"No tool calls and no \\boxed{{}} found",
+                        f"No tool calls and no \\boxed{{}}",
                         "yellow",
                     )
                     continue
