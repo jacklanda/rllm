@@ -102,8 +102,91 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     return train_dataset, test_dataset
 
 
+def _patch_vllm_generate():
+    """
+    Monkey patch the vLLM server's generate method to respect _override_max_tokens.
+    This prevents negative max_tokens errors when prompts are close to max_model_len.
+    """
+    try:
+        from verl.workers.rollout.vllm_rollout.vllm_async_server import vLLMHttpServer
+
+        original_generate = vLLMHttpServer.generate
+
+        async def patched_generate(self, prompt_ids, sampling_params, request_id, image_data=None):
+            """Patched generate that respects _override_max_tokens from sampling_params."""
+            # Check if we have an override value
+            override_max_tokens = sampling_params.pop('_override_max_tokens', None)
+
+            if override_max_tokens is not None:
+                # Use the override value instead of recalculating
+                max_tokens = override_max_tokens
+                print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
+            else:
+                # Original calculation
+                max_tokens = self.config.max_model_len - len(prompt_ids)
+
+            # Ensure max_tokens is at least 1
+            if max_tokens < 1:
+                print(f"Warning: Calculated max_tokens ({max_tokens}) is less than 1. "
+                      f"Setting to 1. (prompt_length: {len(prompt_ids)}, max_model_len: {self.config.max_model_len})")
+                max_tokens = 1
+
+            # Continue with the rest of the original method
+            from vllm.sampling_params import SamplingParams
+            from verl.workers.rollout.vllm_rollout.vllm_async_server import _qwen2_5_vl_dedup_image_tokens, VLLM_LORA_INT_ID, VLLM_LORA_NAME, VLLM_LORA_PATH
+            from vllm import LoRARequest
+            from vllm.inputs import TokensPrompt
+            from verl.workers.rollout.replica import TokenOutput
+
+            sampling_params["logprobs"] = 0 if sampling_params.pop("logprobs", False) else None
+            sampling_params.setdefault("repetition_penalty", self.config.get("repetition_penalty", 1.0))
+            sampling_params = SamplingParams(max_tokens=max_tokens, **sampling_params)
+            prompt_ids = _qwen2_5_vl_dedup_image_tokens(prompt_ids, self.model_config.processor)
+            prompt = TokensPrompt(
+                prompt_token_ids=prompt_ids, multi_modal_data={"image": image_data} if image_data else None
+            )
+
+            # Add lora request
+            lora_request = None
+            if self.model_config.lora_rank > 0:
+                lora_loaded = VLLM_LORA_INT_ID in await self.engine.list_loras()
+                if lora_loaded:
+                    lora_request = LoRARequest(
+                        lora_name=VLLM_LORA_NAME, lora_int_id=VLLM_LORA_INT_ID, lora_path=VLLM_LORA_PATH
+                    )
+
+            generator = self.engine.generate(
+                prompt=prompt, sampling_params=sampling_params, request_id=request_id, lora_request=lora_request
+            )
+
+            token_ids = []
+            log_probs = []
+            finish_reason = None
+
+            async for request_output in generator:
+                # Process the generator output as in the original method
+                if hasattr(request_output, 'outputs') and len(request_output.outputs) > 0:
+                    output = request_output.outputs[0]
+                    token_ids = output.token_ids
+                    if hasattr(output, 'log_probs'):
+                        log_probs = [lp[tid].logprob if lp and tid in lp else 0.0
+                                    for lp, tid in zip(output.log_probs or [], output.token_ids)]
+                    finish_reason = output.finish_reason
+
+            return TokenOutput(token_ids=token_ids, log_probs=log_probs, finish_reason=finish_reason)
+
+        vLLMHttpServer.generate = patched_generate
+        print("Successfully patched vLLMHttpServer.generate to respect _override_max_tokens")
+    except Exception as e:
+        print(f"Warning: Failed to patch vLLMHttpServer.generate: {e}")
+        print("Training will continue but may encounter max_tokens errors")
+
+
 @hydra.main(config_path="pkg://rllm.trainer.config", config_name="agent_ppo_trainer", version_base=None)
 def main(config):
+    # Apply monkey patch for vLLM server
+    _patch_vllm_generate()
+
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
     train_dataset, _ = prepare_gem_search_data()
