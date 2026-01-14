@@ -95,7 +95,7 @@ class VerlEngine(RolloutEngine):
         # Fields validation for "tool_calls"
         valid_tool_calls = []
         for tool_call in tool_calls:
-            if not tool_call.name.strip() or not tool_call.arguments.strip():
+            if not tool_call.name or not tool_call.arguments:
                 continue
             valid_tool_calls.append(tool_call)
 
