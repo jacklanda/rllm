@@ -110,7 +110,7 @@ fireworks:
 
 trainer:
   log_episodes: false
-  episode_log_dir: logs/${trainer.project_name}/${trainer.experiment_name}
+  episode_log_dir: experiments/logs/${trainer.project_name}/${trainer.experiment_name}
 
 # Reward configuration for search agents
 reward:
