@@ -481,24 +481,20 @@ class AgentExecutionEngine:
                         reward_metrics["rewards/exact_match"] = 1.0 if metadata["exact_match"] else 0.0
                     if "base_reward" in metadata:
                         reward_metrics["rewards/base_reward"] = metadata["base_reward"]
-                    if "tool_call_adjustment" in metadata:
-                        reward_metrics["rewards/tool_call"] = metadata["tool_call_adjustment"]
-                    if "tool_call_count" in metadata:
-                        reward_metrics["rewards/tool_call_count"] = metadata["tool_call_count"]
-                    if "tool_call_status" in metadata:
-                        # Convert tool_call_status to a numeric indicator for easier tracking
-                        status_map = {
-                            "single_call_bonus": 1.0,
-                            "no_tool_call": 0.0,
-                            "single_call_no_bonus": -0.5,
-                            "multiple_calls_penalty": -1.0,
-                            "invalid_tags_penalty": -1.0,
-                        }
-                        reward_metrics["rewards/tool_call_status"] = status_map.get(metadata["tool_call_status"], 0.0)
-                    if "repetition_penalty" in metadata and metadata["repetition_penalty"] is not None:
-                        reward_metrics["rewards/repetition_penalty"] = metadata["repetition_penalty"]
-                    if "repetition_penalty_weighted" in metadata and metadata["repetition_penalty_weighted"] is not None:
-                        reward_metrics["rewards/repetition_penalty_weighted"] = metadata["repetition_penalty_weighted"]
+                    if "tool_call_reward" in metadata:
+                        reward_metrics["rewards/tool_call"] = metadata["tool_call_reward"]
+                    # if "tool_call_status" in metadata:
+                        # # Convert tool_call_status to a numeric indicator for easier tracking
+                        # status_map = {
+                            # "single_call_bonus": 1.0,
+                            # "no_tool_call": 0.0,
+                            # "single_call_no_bonus": -0.5,
+                            # "multiple_calls_penalty": -1.0,
+                            # "invalid_tags_penalty": -1.0,
+                        # }
+                        # reward_metrics["rewards/tool_call_status"] = status_map.get(metadata["tool_call_status"], 0.0)
+                    if "repetition_penalty_reward" in metadata and metadata["repetition_penalty_reward"] is not None:
+                        reward_metrics["rewards/repetition_penalty"] = metadata["repetition_penalty_reward"]
 
                     # Check if step.reward contains intermediate rewards
                     # Sum all intermediate step rewards as a separate metric

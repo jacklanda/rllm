@@ -365,6 +365,7 @@ class RewardSearchFn:
         # 4. No tool call -> 0 adjustment
         tool_call_adjustment = 0.0
 
+        """
         if not is_valid_parsing:
             # Invalid/unparseable tool call tags - penalize
             tool_call_adjustment = -self.config.toolcall_bonus
@@ -386,11 +387,13 @@ class RewardSearchFn:
             # No tool call detected
             tool_call_adjustment = 0.0
             metadata["tool_call_status"] = "no_tool_call"
+        """
 
         # Store base reward before adjustments
         base_reward = reward
 
-        reward += tool_call_adjustment
+        if self.config.tool_call_bonus != 0.0:
+            reward += tool_call_adjustment
 
         # Apply repetition penalty if enabled
         repetition_penalty = 0.0
@@ -405,12 +408,9 @@ class RewardSearchFn:
 
         # Add tool call information and other reward components to metadata
         metadata.update({
-            "tool_call_count": tool_call_count,
-            "tool_call_adjustment": tool_call_adjustment,
-            "tool_call_parsing_valid": is_valid_parsing,
             "base_reward": base_reward,
-            "repetition_penalty": repetition_penalty if self.config.apply_repetition_penalty else None,
-            "repetition_penalty_weighted": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
+            "tool_call_reward": tool_call_adjustment,
+            "repetition_penalty_reward": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
         })
 
         return RewardOutput(reward=reward, is_correct=is_correct, metadata=metadata)
