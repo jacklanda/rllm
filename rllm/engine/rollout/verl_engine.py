@@ -26,6 +26,11 @@ class VerlEngine(RolloutEngine):
         self.max_response_length = config.data.max_response_length
         self.accumulate_reasoning = config.get("rllm", {}).get("accumulate_reasoning", False)
 
+        # Get the model's maximum context length from tokenizer or config
+        self.max_model_length = getattr(tokenizer, 'model_max_length', None)
+        if self.max_model_length is None or self.max_model_length > 1e9:  # Some tokenizers have very large default values
+            self.max_model_length = self.max_prompt_length + self.max_response_length
+
         self.train_sampling_params = dict(
             temperature=0.0 if config.actor_rollout_ref.rollout.do_sample is False else config.actor_rollout_ref.rollout.temperature,
             top_k=config.actor_rollout_ref.rollout.top_k,
@@ -77,15 +82,33 @@ class VerlEngine(RolloutEngine):
         if enforce_max_prompt_length and prompt_length > self.max_prompt_length:
             raise TerminationEvent(TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED)
 
+        # Adjust max_tokens to prevent negative values in vLLM
+        # Calculate remaining tokens based on model's maximum context length
+        remaining_tokens = self.max_model_length - prompt_length
+        if remaining_tokens < 1:
+            # If prompt is too long, we can't generate anything
+            raise TerminationEvent(TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED)
+
+        # Ensure max_tokens doesn't exceed remaining capacity
+        adjusted_max_tokens = min(max_tokens, remaining_tokens)
+        if adjusted_max_tokens < 1:
+            adjusted_max_tokens = 1
+            print(f"Warning: Adjusted max_tokens to 1 (prompt_length={prompt_length}, remaining={remaining_tokens})")
+        elif adjusted_max_tokens < max_tokens:
+            print(f"Warning: Decreased max_tokens from {max_tokens} to {adjusted_max_tokens} to stay within max_model_length={self.max_model_length}")
+
+        # Add max_tokens back to sampling_params for verl
+        sampling_params['max_tokens'] = adjusted_max_tokens
+
         token_output: TokenOutput = await self.server_manager.generate(request_id=application_id, prompt_ids=request_prompt_ids, image_data=image_data, sampling_params=sampling_params)  # type: ignore
         completion_ids: list[int] = token_output.token_ids
         logprobs: list[float] = token_output.log_probs
 
         finish_reason = "stop"
-        if len(completion_ids) >= max_tokens:
+        if len(completion_ids) >= adjusted_max_tokens:
             finish_reason = "length"
-            completion_ids = completion_ids[:max_tokens]
-            logprobs = logprobs[:max_tokens]
+            completion_ids = completion_ids[:adjusted_max_tokens]
+            logprobs = logprobs[:adjusted_max_tokens]
 
         completion_text = self.tokenizer.decode(completion_ids, skip_special_tokens=True)
         # TODO: implement parse_completion for the standard parser
