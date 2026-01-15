@@ -252,22 +252,9 @@ class AgentExecutionEngine:
 
             while retry_count <= max_step_retries and not validation_success:
                 start_time = time.time()
-                try:
-                    model_output = await self.get_model_response(
-                        retry_prompt_messages, application_id, **kwargs
-                    )
-                except Exception as e:
-                    retry_count += 1
-                    # print(f"Exception during model response retrieval, retrying: {e}")
-                    # print(f"retry_prompt_messages: {retry_prompt_messages}")
-                    # shrink history dialogue for retry
-                    if len(retry_prompt_messages) >= 2 and retry_prompt_messages[-2]["role"] == "assistant":
-                        retry_prompt_messages = retry_prompt_messages[:-2]
-                    elif len(retry_prompt_messages) >= 3 and retry_prompt_messages[-3]["role"] == "assistant":
-                        retry_prompt_messages = retry_prompt_messages[:-3]
-                    elif len(retry_prompt_messages) >= 1:
-                        retry_prompt_messages = retry_prompt_messages[:-1]
-                    continue
+                model_output = await self.get_model_response(
+                    retry_prompt_messages, application_id, **kwargs
+                )
                 response = model_output.text
                 tool_calls = model_output.tool_calls
 
@@ -325,32 +312,20 @@ class AgentExecutionEngine:
             if retry_count >= max_step_retries:
                 # Drop the failed retried trajectory
                 print(f"Error parsing tool call after {retry_count} retries: {response}")
-                if final_response is None:
-                    final_response = ""
-                    final_model_output = ""
-                else:
-                    with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
-                        f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
+                with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
+                    f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
 
             # Use the final response (successful or last attempt after max retries)
             response = final_response
             model_output = final_model_output
             # Update steps
-            if isinstance(model_output.prompt_ids, torch.Tensor):
-                prompt_response_pair = {
-                    "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
-                    "response": response,
-                    "prompt_ids": model_output.prompt_ids,
-                    "completion_ids": model_output.completion_ids,
-                    "logprobs": model_output.logprobs,
-                }
-            else:
-                prompt_response_pair = {
-                    "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
-                    "response": response,
-                    "prompt_ids": self.tokenizer.encode(prompt_messages, add_special_tokens=False),
-                    "completion_ids": self.tokenizer.encode(response, add_special_tokens=False)
-                }
+            prompt_response_pair = {
+                "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
+                "response": response,
+                "prompt_ids": model_output.prompt_ids,
+                "completion_ids": model_output.completion_ids,
+                "logprobs": model_output.logprobs,
+            }
             episode_steps.append(prompt_response_pair)
 
             # Update agent with model response
