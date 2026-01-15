@@ -252,9 +252,12 @@ class AgentExecutionEngine:
 
             while retry_count <= max_step_retries and not validation_success:
                 start_time = time.time()
-                model_output = await self.get_model_response(
-                    retry_prompt_messages, application_id, **kwargs
-                )
+                try:
+                    model_output = await self.get_model_response(
+                        retry_prompt_messages, application_id, **kwargs
+                    )
+                except Exception as _:
+                    continue
                 response = model_output.text
                 tool_calls = model_output.tool_calls
 
