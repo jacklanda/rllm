@@ -609,7 +609,7 @@ class AgentExecutionEngine:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=7200)
             except Exception:
-                traceback.print_exc()
+                # traceback.print_exc()
                 continue
         traceback.print_exc()
         raise Exception(f"Trajectory {idx} cannot complete. Please check the log message")
