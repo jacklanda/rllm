@@ -59,7 +59,7 @@ class VerlEngine(RolloutEngine):
 
         max_tokens = sampling_params.pop("max_tokens", sampling_params.pop("max_new_tokens", self.max_response_length))
         if max_tokens < 0:
-            sampling_params["max_tokens"] = 4096
+            sampling_params["max_tokens"] = 8192
 
         prompt = self.chat_parser.parse(messages, add_generation_prompt=True, is_first_msg=True, tools=tools, accumulate_reasoning=accumulate_reasoning)
         request_prompt_ids = self.tokenizer.encode(prompt, add_special_tokens=False)  # list[int]

@@ -226,9 +226,9 @@ class AgentExecutionEngine:
             # Max remaining tokens left for the response
             # For enforced max prompt at each step, no need to deduct here
             if not self.enforce_max_prompt_length:
-                max_tokens = max(self.max_response_length - response_token_len, 16384)
+                max_tokens = max(self.max_response_length - response_token_len, 2048)
             else:
-                max_tokens = max(self.max_response_length, 16384)
+                max_tokens = max(self.max_response_length, 2048)
 
                 # since max prompt is enforced, we filter out too long prompts.
                 prompt_str = self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)

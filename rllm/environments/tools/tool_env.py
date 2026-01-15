@@ -119,7 +119,10 @@ class ToolEnvironment(BaseEnv):
         def execute_tool(tool_call):
             tool_name = tool_call["function"]["name"] or tool_call.get("name", "")
             tool_args = tool_call["function"]["arguments"] or tool_call.get("arguments", "{}")
-            tool_args = json.loads(tool_args)
+            try:
+                tool_args = json.loads(tool_args)
+            except json.JSONDecodeError:
+                tool_args = {}
             tool_output = self.tools(tool_name=tool_name, **tool_args)
             tool_output_str = tool_output.to_string()
 
