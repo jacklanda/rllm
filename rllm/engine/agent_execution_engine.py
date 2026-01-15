@@ -258,8 +258,15 @@ class AgentExecutionEngine:
                     )
                 except Exception as e:
                     retry_count += 1
-                    print(f"Exception during model response retrieval, retrying: {e}")
-                    print(f"retry_prompt_messages: {retry_prompt_messages}")
+                    # print(f"Exception during model response retrieval, retrying: {e}")
+                    # print(f"retry_prompt_messages: {retry_prompt_messages}")
+                    # shrink history dialogue for retry
+                    if len(retry_prompt_messages) >= 2 and retry_prompt_messages[-2]["role"] == "assistant":
+                        retry_prompt_messages = retry_prompt_messages[:-2]
+                    elif len(retry_prompt_messages) >= 3 and retry_prompt_messages[-3]["role"] == "assistant":
+                        retry_prompt_messages = retry_prompt_messages[:-3]
+                    elif len(retry_prompt_messages) >= 1:
+                        retry_prompt_messages = retry_prompt_messages[:-1]
                     continue
                 response = model_output.text
                 tool_calls = model_output.tool_calls
@@ -318,8 +325,12 @@ class AgentExecutionEngine:
             if retry_count >= max_step_retries:
                 # Drop the failed retried trajectory
                 print(f"Error parsing tool call after {retry_count} retries: {response}")
-                with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
-                    f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
+                if final_response is None:
+                    final_response = ""
+                    final_model_output = ""
+                else:
+                    with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
+                        f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
 
             # Use the final response (successful or last attempt after max retries)
             response = final_response
