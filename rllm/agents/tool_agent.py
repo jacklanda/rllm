@@ -52,7 +52,7 @@ class ToolAgent(BaseAgent):
         parser_class: type[ToolParser] = get_tool_parser(parser_name=parser_name)
         self.tool_parser = parser_class()
 
-        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools.json, indent=2))
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools.json, indent=4, ensure_ascii=False))
 
         # Initialize state according to BaseAgent
         self._trajectory = Trajectory()
@@ -175,7 +175,7 @@ class MCPToolAgent(ToolAgent):
         self.tool_parser = parser_class()
 
         tools_json = [tool.json for tool in self.tool_map.values()]
-        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(tools_json, indent=2))
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(tools_json, indent=4, ensure_ascii=False))
 
         self._trajectory = Trajectory()
         self.messages: list[dict[str, Any]] = []

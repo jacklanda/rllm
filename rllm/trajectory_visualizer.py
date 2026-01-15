@@ -64,7 +64,7 @@ def main(trajectory_file: str = "./trajectories/sample_trajectories/search_traje
             response = args.get("response", "No response")
             return f"✅ **Finish Action:**\n```\n{response}\n```\n*Tool ID: {tool_id}*"
         else:
-            return f"🛠️ **Tool:** `{name}`\n**Arguments:**\n```json\n{json.dumps(args, indent=2)}\n```\n*Tool ID: {tool_id}*"
+            return f"🛠️ **Tool:** `{name}`\n**Arguments:**\n```json\n{json.dumps(args, indent=4, ensure_ascii=False)}\n```\n*Tool ID: {tool_id}*"
 
     def format_tool_outputs(tool_outputs: dict) -> str:
         """Format tool execution results"""

@@ -138,7 +138,7 @@ def setup_search_data(data_dir: str = "./search_data", max_docs: int | None = No
 
     summary_file = os.path.join(data_dir, "data_summary.json")
     with open(summary_file, "w") as f:
-        json.dump(summary, f, indent=2)
+        json.dump(summary, f, indent=4, ensure_ascii=False)
 
     print(f"\nData setup {'completed' if summary['setup_complete'] else 'partially completed'}!")
     print(f"Summary saved to {summary_file}")

@@ -191,7 +191,7 @@ class DatasetRegistry:
         """Save the dataset registry to the registry file."""
         cls._ensure_directories()
         with open(cls._REGISTRY_FILE, "w", encoding="utf-8") as f:
-            json.dump(registry, f, indent=2)
+            json.dump(registry, f, indent=4, ensure_ascii=False)
 
     @classmethod
     def register_dataset(cls, name: str, data: list[dict[str, Any]] | Any, split: str = "default") -> Dataset:

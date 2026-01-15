@@ -177,4 +177,4 @@ class EpisodeLogger:
             step_dir = self.get_step_dir(step, mode, epoch)
             summary_file = step_dir / "batch_summary.json"
             with open(summary_file, "w") as f:
-                json.dump(summary_data, f, indent=2)
+                json.dump(summary_data, f, indent=4, ensure_ascii=False)
