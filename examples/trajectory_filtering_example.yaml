@@ -38,7 +38,7 @@ rllm:
     # 5.4.4: Exceeding maximum token count
     # These trajectories participate in advantage computation but NOT in gradient updates
     # This is different from zero_reward - they still use their original rewards for advantages
-    max_tokens: 8192  # Set to null to disable
+    max_tokens: 65536  # Set to null to disable
 
   # Compact filtering (episode-level) - can be used together
   compact_filtering:
