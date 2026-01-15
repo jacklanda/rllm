@@ -256,7 +256,10 @@ class AgentExecutionEngine:
                     model_output = await self.get_model_response(
                         retry_prompt_messages, application_id, **kwargs
                     )
-                except Exception as _:
+                except Exception as e:
+                    retry_count += 1
+                    print(f"Exception during model response retrieval, retrying: {e}")
+                    print(f"retry_prompt_messages: {retry_prompt_messages}")
                     continue
                 response = model_output.text
                 tool_calls = model_output.tool_calls
