@@ -199,7 +199,7 @@ def main(config):
     reward_config = config.get("reward", {})
     reward_fn = create_search_reward_fn(
         toolcall_bonus=reward_config.get("toolcall_bonus", 0.5),
-        apply_repetition_penalty=reward_config.get("apply_repetition_penalty", False),
+        apply_repetition_penalty=reward_config.get("apply_repetition_penalty", True),
         repetition_penalty_weight=reward_config.get("repetition_penalty_weight", 0.5),
         repetition_max_n=reward_config.get("repetition_max_n", 4),
         correct_reward=reward_config.get("correct_reward", 1.0),
