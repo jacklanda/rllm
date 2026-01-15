@@ -185,7 +185,7 @@ def _patch_vllm_generate():
 @hydra.main(config_path="pkg://rllm.trainer.config", config_name="agent_ppo_trainer", version_base=None)
 def main(config):
     # Apply monkey patch for vLLM server
-    _patch_vllm_generate()
+    # _patch_vllm_generate()
 
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
