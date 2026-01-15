@@ -392,7 +392,7 @@ class RewardSearchFn:
         # Store base reward before adjustments
         base_reward = reward
 
-        if self.config.tool_call_bonus != 0.0:
+        if self.config.toolcall_bonus != 0.0:
             reward += tool_call_adjustment
 
         # Apply repetition penalty if enabled
