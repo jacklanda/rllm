@@ -336,13 +336,21 @@ class AgentExecutionEngine:
             response = final_response
             model_output = final_model_output
             # Update steps
-            prompt_response_pair = {
-                "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
-                "response": response,
-                "prompt_ids": model_output.prompt_ids,
-                "completion_ids": model_output.completion_ids,
-                "logprobs": model_output.logprobs,
-            }
+            if isinstance(model_output.prompt_ids, torch.Tensor):
+                prompt_response_pair = {
+                    "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
+                    "response": response,
+                    "prompt_ids": model_output.prompt_ids,
+                    "completion_ids": model_output.completion_ids,
+                    "logprobs": model_output.logprobs,
+                }
+            else:
+                prompt_response_pair = {
+                    "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
+                    "response": response,
+                    "prompt_ids": self.tokenizer.encode(prompt_messages, add_special_tokens=False),
+                    "completion_ids": self.tokenizer.encode(response, add_special_tokens=False)
+                }
             episode_steps.append(prompt_response_pair)
 
             # Update agent with model response
