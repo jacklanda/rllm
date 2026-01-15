@@ -52,13 +52,13 @@ rllm:
     mode: broadcast # [broadcast, per_step]
     normalize_by_steps: False
   compact_filtering:
-    enable: False
+    enable: True
     mask_max_prompt_length_exceeded: True
     mask_max_response_length_exceeded: True
     mask_env_done: False
     mask_max_turns_exceeded: True
     mask_timeout: True
-    mask_unknown: False
+    mask_unknown: True
     mask_error: True
   trajectory_filtering:
     # SimpleTIR-style trajectory-level filtering for search agents
