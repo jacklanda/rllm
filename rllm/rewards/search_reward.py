@@ -8,7 +8,7 @@ from rllm.rewards.reward_types import RewardConfig, RewardInput, RewardOutput
 
 def repetition_penalty_reward(
     text: str,
-    max_n: int = 4,
+    max_n: int = 2,
     weights: List[float] = None,
 ) -> float:
     """
@@ -392,8 +392,10 @@ class RewardSearchFn:
         # Store base reward before adjustments
         base_reward = reward
 
-        if self.config.toolcall_bonus != 0.0:
+        """
+        if self.config.toolcall_bonus > 0.0:
             reward += tool_call_adjustment
+        """
 
         # Apply repetition penalty if enabled
         repetition_penalty = 0.0

@@ -30,11 +30,11 @@ class AgentExecutionEngine:
         tokenizer=None,
         rollout_engine=None,
         chat_parser=None,
-        n_parallel_agents=256,  # The number of active agents
+        n_parallel_agents=512,  # The number of active agents
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=32,
+        retry_limit=64,
         max_steps=8,
         max_response_length=2048,
         max_prompt_length=2048,
