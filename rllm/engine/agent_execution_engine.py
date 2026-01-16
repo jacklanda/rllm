@@ -34,7 +34,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=64,
+        retry_limit=128,
         max_steps=8,
         max_response_length=2048,
         max_prompt_length=2048,
