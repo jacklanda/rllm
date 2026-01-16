@@ -189,8 +189,9 @@ def main(config):
 
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
-    train_dataset, _ = prepare_gem_search_data()
-    _, val_dataset = prepare_hotpotqa_data()
+    # train_dataset, _ = prepare_gem_search_data()
+    # _, val_dataset = prepare_hotpotqa_data()
+    train_dataset, val_dataset = prepare_hotpotqa_data()
 
     tool_map = {"local_search": LocalRetrievalTool}
 

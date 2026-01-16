@@ -112,7 +112,7 @@ class LocalRetrievalTool(Tool):
 
         return "\n".join(formatted_results)
 
-    def forward(self, query: str, top_k: int | None = None, **kwargs: Any) -> ToolOutput:
+    def forward(self, query: str, top_k: int | None = None, *args, **kwargs: Any) -> ToolOutput:
         """
         Execute a search query using the dense retrieval server.
 
