@@ -365,7 +365,7 @@ class RewardSearchFn:
         # 4. No tool call -> 0 adjustment
         tool_call_adjustment = 0.0
 
-        """
+        # """
         if not is_valid_parsing:
             # Invalid/unparseable tool call tags - penalize
             tool_call_adjustment = -self.config.toolcall_bonus
@@ -375,27 +375,27 @@ class RewardSearchFn:
             tool_call_adjustment = -self.config.toolcall_bonus
             metadata["tool_call_status"] = "multiple_calls_penalty"
         elif tool_call_count == 1 and reward > 0:
+            # Invalid tool call: single tool call but generating answer with positive reward - no bonus
+            tool_call_adjustment = 0.0
+            metadata["tool_call_status"] = "single_call_no_bonus"
+        elif tool_call_count == 1 and reward <= 0:
             # Single tool call with positive reward - give bonus
             # This encourages tool use only when it leads to correct/partially correct answers
             tool_call_adjustment = self.config.toolcall_bonus
             metadata["tool_call_status"] = "single_call_bonus"
-        elif tool_call_count == 1 and reward <= 0:
-            # Single tool call but incorrect answer - no bonus (avoid reward hacking)
-            tool_call_adjustment = 0.0
-            metadata["tool_call_status"] = "single_call_no_bonus"
         else:
             # No tool call detected
             tool_call_adjustment = 0.0
             metadata["tool_call_status"] = "no_tool_call"
-        """
+        # """
 
         # Store base reward before adjustments
         base_reward = reward
 
-        """
+        # """
         if self.config.toolcall_bonus > 0.0:
             reward += tool_call_adjustment
-        """
+        # """
 
         # Apply repetition penalty if enabled
         repetition_penalty = 0.0
