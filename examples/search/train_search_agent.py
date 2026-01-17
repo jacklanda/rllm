@@ -85,7 +85,10 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # v1
     # with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
     # v2
-    with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
+    # with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
+        # data = json.load(f)
+    # ASearcher (Baseline)
+    with open("experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
         data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
