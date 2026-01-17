@@ -52,7 +52,7 @@ class ToolAgent(BaseAgent):
         parser_class: type[ToolParser] = get_tool_parser(parser_name=parser_name)
         self.tool_parser = parser_class()
 
-        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools.json, indent=4, ensure_ascii=False))
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools.json, indent=0, ensure_ascii=False))
 
         # Initialize state according to BaseAgent
         self._trajectory = Trajectory()

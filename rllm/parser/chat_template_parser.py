@@ -192,9 +192,9 @@ class DeepseekQwenChatTemplateParser(ChatTemplateParser):
                 tool_schema_strs = []
                 for tool in tools:
                     if isinstance(tool, Tool):
-                        tool_schema_str = json.dumps(tool.json)
+                        tool_schema_str = json.dumps(tool.json, indent=0, ensure_ascii=False)
                     elif isinstance(tool, dict):
-                        tool_schema_str = json.dumps(tool)
+                        tool_schema_str = json.dumps(tool, indent=0, ensure_ascii=False)
                     else:
                         tool_schema_str = tool
                     tool_schema_strs.append(tool_schema_str)
@@ -280,7 +280,7 @@ class DeepseekQwenChatTemplateParser(ChatTemplateParser):
                                 arguments_obj = json.loads(arguments_obj)
                             except json.JSONDecodeError:
                                 pass
-                        tool_call_json = f"```json\n{json.dumps(arguments_obj)}\n```"
+                        tool_call_json = f"```json\n{json.dumps(arguments_obj, indent=0, ensure_ascii=False)}\n```"
                         tool_call_str = f"{self.tool_parser.tool_call_begin}function{self.tool_parser.tool_sep}{tool_call_dict['name']}\n{tool_call_json}\n{self.tool_parser.tool_call_end}"
                         tool_calls_strs.append(tool_call_str)
                     joined_calls_str = "\n".join(tool_calls_strs)
@@ -381,9 +381,9 @@ class QwenChatTemplateParser(ChatTemplateParser):
                 tool_schema_strs = []
                 for tool in tools:
                     if isinstance(tool, Tool):
-                        tool_schema_str = json.dumps(tool.json)
+                        tool_schema_str = json.dumps(tool.json, indent=0, ensure_ascii=False)
                     elif isinstance(tool, dict):
-                        tool_schema_str = json.dumps(tool)
+                        tool_schema_str = json.dumps(tool, indent=0, ensure_ascii=False)
                     else:
                         tool_schema_str = tool
                     tool_schema_strs.append(tool_schema_str)
@@ -473,7 +473,7 @@ class QwenChatTemplateParser(ChatTemplateParser):
                         tool_call_for_dump = dict(tool_call_dict)
                         if arguments_obj is not None:
                             tool_call_for_dump["arguments"] = arguments_obj
-                        tool_call_str = f"{self.tool_parser.tool_call_begin}\n{json.dumps(tool_call_for_dump)}\n{self.tool_parser.tool_call_end}"
+                        tool_call_str = f"{self.tool_parser.tool_call_begin}\n{json.dumps(tool_call_for_dump, indent=0, ensure_ascii=False)}\n{self.tool_parser.tool_call_end}"
                         tool_calls_strs.append(tool_call_str)
                     tool_calls_str = "\n".join(tool_calls_strs)
                 except Exception as e:
