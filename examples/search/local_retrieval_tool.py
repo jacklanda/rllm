@@ -131,7 +131,7 @@ class LocalRetrievalTool(Tool):
             payload = {
                 "query": query,
                 "top_k": min(top_k, 50),  # Cap at 50 results
-                **kwargs,
+                # **kwargs,
             }
 
             # Make request to retrieval server
