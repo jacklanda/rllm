@@ -250,7 +250,7 @@ class AgentExecutionEngine:
             final_model_output = None
             retry_prompt_messages = prompt_messages.copy()  # Work with a copy for retries
 
-            while retry_count <= max_step_retries and not validation_success:
+            while retry_count < max_step_retries and not validation_success:
                 start_time = time.time()
                 model_output = await self.get_model_response(
                     retry_prompt_messages, application_id, **kwargs
@@ -262,10 +262,10 @@ class AgentExecutionEngine:
                 llm_time += delta_time
                 total_time += delta_time
 
-                # Validate output based on tool_calls and \boxed{} presence
-                # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in text
-                # - Valid: tool_calls is empty BUT "\boxed" IS in text (final answer step)
-                # - Valid: tool_calls is NOT empty (action step, regardless of \boxed)
+                # Validate step based on tool_calls and \boxed{} presence
+                # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
+                # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
+                # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
                 is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
 
                 if not is_invalid:
@@ -273,8 +273,9 @@ class AgentExecutionEngine:
                     validation_success = True
                     final_response = response
                     final_model_output = model_output
+                    break
                 else:
-                    # Invalid output - retry
+                    # Invalid output --> retry
                     retry_count += 1
 
                     if retry_count > max_step_retries:
@@ -289,7 +290,8 @@ class AgentExecutionEngine:
                         validation_success = True  # Force exit with last attempt
                         break
 
-                    # Add error feedback to conversation for retry
+                    """
+                    # Add error feedback (hint) to conversation for retry
                     error_msg = (
                         "Your previous response is invalid. You must either: "
                         "1) Use a tool call (e.g., search) to gather information, OR "
@@ -300,6 +302,7 @@ class AgentExecutionEngine:
                     # Extend retry prompt with failed attempt and error feedback
                     retry_prompt_messages.append({"role": "assistant", "content": response})
                     retry_prompt_messages.append({"role": "user", "content": error_msg})
+                    """
 
                     colorful_print(
                         f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
@@ -311,11 +314,12 @@ class AgentExecutionEngine:
             # Dump step which had retries times >= max_step_retries
             if retry_count >= max_step_retries:
                 # Drop the failed retried trajectory
-                print(f"Error parsing tool call after {retry_count} retries: {response}")
+                print(f"Error parsing step after {retry_count} retries: {response}")
                 with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
-                    f.write("-" * 100 + "".join(self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
+                    f.write("-" * 100 + "".join(self.chat_parser.parse(retry_prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
 
             # Use the final response (successful or last attempt after max retries)
+            prompt_messages = retry_prompt_messages
             response = final_response
             model_output = final_model_output
             # Update steps
@@ -483,16 +487,6 @@ class AgentExecutionEngine:
                         reward_metrics["rewards/base_reward"] = metadata["base_reward"]
                     if "tool_call_reward" in metadata:
                         reward_metrics["rewards/tool_call"] = metadata["tool_call_reward"]
-                    # if "tool_call_status" in metadata:
-                        # # Convert tool_call_status to a numeric indicator for easier tracking
-                        # status_map = {
-                            # "single_call_bonus": 1.0,
-                            # "no_tool_call": 0.0,
-                            # "single_call_no_bonus": -0.5,
-                            # "multiple_calls_penalty": -1.0,
-                            # "invalid_tags_penalty": -1.0,
-                        # }
-                        # reward_metrics["rewards/tool_call_status"] = status_map.get(metadata["tool_call_status"], 0.0)
                     if "repetition_penalty_reward" in metadata and metadata["repetition_penalty_reward"] is not None:
                         reward_metrics["rewards/repetition_penalty"] = metadata["repetition_penalty_reward"]
 
@@ -607,8 +601,8 @@ class AgentExecutionEngine:
         for _ in range(self.retry_limit):
             try:
                 application_id = str(uuid.uuid4())
-                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=7200)
-            except Exception:
+                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
+            except Exception as _:
                 # traceback.print_exc()
                 continue
         traceback.print_exc()
