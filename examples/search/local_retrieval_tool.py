@@ -99,7 +99,7 @@ class LocalRetrievalTool(Tool):
             # doc_id = result.get("id", f"doc_{i}")
             # content = result.get("content", "").get("original_text")  # use full text
             if "document" in result and "score" in result:
-                content = result.get("document", "")  # use full document text
+                content = result.get("document", "").get("contents")  # use full document text
                 # score = result.get("score", 0.0)
             elif "content" in result and "chunk_text" in result["content"]:
                 content = result.get("content", "").get("chunk_text")  # use chunked text
