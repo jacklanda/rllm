@@ -107,9 +107,9 @@ class LocalRetrievalTool(Tool):
 
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
-            if len(content.split()) >= 256:
+            if len(content.split()) >= 64:
                 # content = content[:512] + "..."
-                content = " ".join(content.split()) + "..."
+                content = " ".join(content.split()[:64]) + "..."
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             formatted_result = f"[Document {i}] {content}\n\n"
@@ -135,10 +135,10 @@ class LocalRetrievalTool(Tool):
             # Prepare request payload
             payload = {
                 "query": query,
-                "top_k": min(top_k, 16),
+                "top_k": min(top_k, 5),
                 "description": "",
-                "args": [],      # Add empty args
-                "kwargs": {}     # Add empty kwargs
+                "args": [],  # Add empty args
+                "kwargs": {},  # Add empty kwargs
             }
 
             # Make request to retrieval server
