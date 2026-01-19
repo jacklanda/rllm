@@ -98,13 +98,18 @@ class LocalRetrievalTool(Tool):
             # Extract key information
             # doc_id = result.get("id", f"doc_{i}")
             # content = result.get("content", "").get("original_text")  # use full text
-            content = result.get("content", "").get("chunk_text")  # use chunked text
-            # score = result.get("score", 0.0)
+            if "document" in result and "score" in result:
+                content = result.get("document", "")  # use full document text
+                # score = result.get("score", 0.0)
+            elif "content" in result and "chunk_text" in result["content"]:
+                content = result.get("content", "").get("chunk_text")  # use chunked text
+                # score = result.get("score", 0.0)
 
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
-            if len(content) > 512:
-                content = content[:512] + "..."
+            if len(content.split()) >= 256:
+                # content = content[:512] + "..."
+                content = " ".join(content.split()) + "..."
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             formatted_result = f"[Document {i}] {content}\n\n"
