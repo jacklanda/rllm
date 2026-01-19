@@ -627,6 +627,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             trajectories_w_metadata = traj["chat_completions"].copy()
             trajectories_w_metadata.append(
                 {
+                    "steps": len([turn for turn in trajectories_w_metadata if turn["role"] not in ["system", "user"]]),
                     "reward": traj["trajectory_reward"].item(),
                     "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", ""), 
                 }
