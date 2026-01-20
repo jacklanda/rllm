@@ -98,12 +98,24 @@ class LocalRetrievalTool(Tool):
             # Extract key information
             # doc_id = result.get("id", f"doc_{i}")
             # content = result.get("content", "").get("original_text")  # use full text
-            if "document" in result and "score" in result:
-                content = result.get("document", "").get("contents")  # use full document text
-                # score = result.get("score", 0.0)
-            elif "content" in result and "chunk_text" in result["content"]:
-                content = result.get("content", "").get("chunk_text")  # use chunked text
-                # score = result.get("score", 0.0)
+            try:
+                if "document" in result and "score" in result:
+                    content = result.get("document")  # use full document text
+                    # score = result.get("score", 0.0)
+                elif "content" in result and "chunk_text" in result["content"]:
+                    content = result.get("content")  # use chunked text
+                    # score = result.get("score", 0.0)
+                elif "chunk_text" in result:
+                    content = result.get("chunk_text")
+                else:
+                    raise ValueError("Unknown result format")
+            except Exception as _:
+                logger.warning(f"Error parsing content {content}")
+                content = "Nothing retrieved, please tweak your search query and search again."
+            else:
+                if not content:
+                    logger.warning(f"Error parsing content {content}")
+                    content = "Nothing retrieved, please tweak your search query and search again."
 
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
@@ -137,8 +149,8 @@ class LocalRetrievalTool(Tool):
                 "query": query,
                 "top_k": min(top_k, 5),
                 "description": "",
-                "args": [],      # Add empty args
-                "kwargs": {}     # Add empty kwargs
+                "args": [],  # Add empty args
+                "kwargs": {},  # Add empty kwargs
             }
 
             # Make request to retrieval server
