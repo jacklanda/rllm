@@ -136,7 +136,15 @@ class AgentTrainer:
                 ray_init_settings = {k: v for k, v in self.config.ray_init.items() if v is not None}
             else:
                 ray_init_settings = {}
-            ray.init(runtime_env=get_ppo_ray_runtime_env(), **ray_init_settings)
+            runtime_env = get_ppo_ray_runtime_env()
+            # 如果已经在 Job 级别设置了这些变量，就从 ray.init 的 runtime_env 中移除
+            if 'env_vars' in runtime_env:
+                # 移除已经在 Job 环境中设置的变量
+                runtime_env['env_vars'].pop('CUDA_DEVICE_MAX_CONNECTIONS', None)
+                runtime_env['env_vars'].pop('TORCH_NCCL_AVOID_RECORD_STREAMS', None)
+
+            ray.init(runtime_env=runtime_env, **ray_init_settings)
+            # ray.init(runtime_env=get_ppo_ray_runtime_env(), **ray_init_settings)
 
         runner = TaskRunner.remote()
 
