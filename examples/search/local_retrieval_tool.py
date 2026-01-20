@@ -93,6 +93,7 @@ class LocalRetrievalTool(Tool):
         if not results:
             return "No relevant documents found."
 
+        content = None
         formatted_results = []
         for i, result in enumerate(results[: self.max_results], 1):
             # Extract key information
@@ -103,7 +104,7 @@ class LocalRetrievalTool(Tool):
                     content = result.get("document")  # use full document text
                     # score = result.get("score", 0.0)
                 elif "content" in result and "chunk_text" in result["content"]:
-                    content = result.get("content")  # use chunked text
+                    content = result.get("content").get("chunk_text")  # use chunked text
                     # score = result.get("score", 0.0)
                 elif "chunk_text" in result:
                     content = result.get("chunk_text")
@@ -121,7 +122,7 @@ class LocalRetrievalTool(Tool):
             # TODO: Consider to implement smarter summarization if needed
             if len(content.split()) >= 128:
                 # content = content[:512] + "..."
-                content = " ".join(content.split()) + "..."
+                content = " ".join(content.split()[:128]) + "..."
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             formatted_result = f"[Document {i}] {content}\n\n"
