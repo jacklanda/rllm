@@ -144,6 +144,7 @@ class AgentTrainer:
                 runtime_env['env_vars'].pop('TORCH_NCCL_AVOID_RECORD_STREAMS', None)
 
             ray.init(runtime_env=runtime_env, **ray_init_settings)
+
             # ray.init(runtime_env=get_ppo_ray_runtime_env(), **ray_init_settings)
 
         runner = TaskRunner.remote()
