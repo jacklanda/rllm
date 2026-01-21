@@ -121,8 +121,8 @@ class LocalRetrievalTool(Tool):
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
             if len(content.split()) >= 64:
-                print("content:", content)
-                exit()
+                # print("content:", content)
+                # exit()
                 # content = content[:512] + "..."
                 content = " ".join(content.split()[:64]) + "..."
 
