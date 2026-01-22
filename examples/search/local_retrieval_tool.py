@@ -120,6 +120,8 @@ class LocalRetrievalTool(Tool):
 
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
+            # Postprocess retrieved documents
+            content = content.replace("\n", "")
             if len(content.split()) >= 64:
                 # print("content:", content)
                 # exit()
