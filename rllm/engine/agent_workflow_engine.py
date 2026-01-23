@@ -554,7 +554,7 @@ class AgentWorkflowEngine:
         multi_modal_inputs_list = []
         chat_completions_list = []
         rollout_log_probs_list = []
-        no_grad_flags = []  # 5.4.4: Track trajectories that should not participate in gradient updates
+        # no_grad_flags = []  # 5.4.4: Track trajectories that should not participate in gradient updates
 
         for i, episode in enumerate(episodes):
             total_steps = 0
@@ -580,6 +580,7 @@ class AgentWorkflowEngine:
                     logger.info(f"Trajectory {trajectory_id} has no steps, skipping")
                     continue
 
+                """
                 # Apply trajectory-level filtering (SimpleTIR search-specific filtering)
                 action, reason = _validate_trajectory(trajectory, self.config)
 
@@ -610,6 +611,7 @@ class AgentWorkflowEngine:
                         if token_count > max_tokens:
                             logger.info(f"Marking trajectory {trajectory_id} as no_grad: token_count={token_count} > max_tokens={max_tokens}")
                             no_grad = True
+                """
 
                 if not self.config.rllm.stepwise_advantage.enable:
                     if len(trajectory.steps) > 1:
@@ -692,7 +694,7 @@ class AgentWorkflowEngine:
                 traj_rewards.extend([trajectory.reward] * n_steps)
                 is_last_step.extend([False] * n_steps)
                 is_last_step[-1] = True
-                no_grad_flags.extend([no_grad] * n_steps)  # 5.4.4: Mark steps for no gradient
+                # no_grad_flags.extend([no_grad] * n_steps)  # 5.4.4: Mark steps for no gradient
                 total_steps += n_steps
 
             episode_ids.extend([episode.id] * total_steps)
@@ -786,7 +788,7 @@ class AgentWorkflowEngine:
             "is_valid": np.array(is_valid),
             "is_last_step": np.array(is_last_step),
             "is_pad_step": np.array([False] * len(episode_ids)),
-            "no_grad": np.array(no_grad_flags),  # 5.4.4: Mark trajectories for no gradient updates
+            # "no_grad": np.array(no_grad_flags),  # 5.4.4: Mark trajectories for no gradient updates
             "chat_completions": np.array(chat_completions_list, dtype=object),  # chat completions for distillation
         }
 
