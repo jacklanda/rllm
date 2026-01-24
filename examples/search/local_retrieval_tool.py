@@ -28,7 +28,7 @@ class LocalRetrievalTool(Tool):
         description: str = DESCRIPTION,
         server_url: str = None,
         timeout: float = 3600.0,
-        max_results: int = 10,
+        max_results: int = 3,
     ):
         """
         Initialize the Local Retrieval Tool.
@@ -131,7 +131,7 @@ class LocalRetrievalTool(Tool):
                             },
                         ],
                         # "query": query or "Summarize the above document.",
-                        "max_length": 256,
+                        "max_length": 128,
                     }
                     response = self.client.post(f"{base_url}/summarize", json=payload)
                     if response.status_code == 200:
@@ -140,11 +140,11 @@ class LocalRetrievalTool(Tool):
                 except Exception as e:
                     logger.warning(f"Error during summarization: {e}")
 
-            if len(content.split()) >= 256:
+            if len(content.split()) >= 128:
                 # print("content:", content)
                 # exit()
                 # content = content[:512] + "..."
-                content = " ".join(content.split()[:256]) + "..."
+                content = " ".join(content.split()[:128]) + "..."
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             # formatted_result = f"[Document {i}] {content}\n\n"
@@ -223,7 +223,7 @@ class LocalRetrievalTool(Tool):
 
 
 # Convenience function for tool registry
-def create_local_retrieval_tool(server_url: str = "http://127.0.0.1:8000", max_results: int = 10) -> LocalRetrievalTool:
+def create_local_retrieval_tool(server_url: str = "http://127.0.0.1:8000", max_results: int = 3) -> LocalRetrievalTool:
     """
     Create a LocalRetrievalTool instance with specified configuration.
 

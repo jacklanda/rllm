@@ -393,7 +393,7 @@ When answering the question:
 1. Use the search tool to find relevant information and synthesize them from multiple sources when needed
 2. Provide accurate answer based on your search results, and put your final answer in \\boxed{} format
 3. You are asked to perform search only once to find the answer in each turn. Each time you search, think about what you need to find next turn based on what you have already found.
-4. Please as much as possible to use search tool instead of relying on your own knowledge.
+4. Please as much as possible to use search tool instead of relying on your own knowledge, make sure that you must perform >=3 turns of search tool calls before concluding the \\boxed{} answer.
 5. Your middle turns of the conversation must contain valid tool call and your final turn of the conversation must contain the final answer in \\boxed{} format.
 
 For example:
