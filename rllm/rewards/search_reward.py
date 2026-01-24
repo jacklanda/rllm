@@ -343,7 +343,7 @@ class RewardSearchFn:
             return RewardOutput(reward=self.config.unk_error_reward, is_correct=False, metadata={"error": "No ground truth provided"})
 
         # Parse tool calls from the response
-        tool_call_count, tool_call_contents, is_valid_parsing = self.parse_tool_calls(model_response)
+        # tool_call_count, tool_call_contents, is_valid_parsing = self.parse_tool_calls(model_response)
 
         is_correct, score, metadata = self.evaluate_answer(model_response, ground_truth)
 
@@ -358,14 +358,13 @@ class RewardSearchFn:
         else:
             reward = self.config.incorrect_reward
 
+        """
         # Apply tool call bonus/penalty based on new strategy:
         # 1. Invalid tags -> -0.5 penalty
         # 2. Single tool call + reward > 0 -> +0.5 bonus (only if answer is correct/partially correct)
         # 3. Multiple tool calls (>= 2) -> -0.5 penalty (regardless of correctness)
         # 4. No tool call -> 0 adjustment
         tool_call_adjustment = 0.0
-
-        # """
         if not is_valid_parsing:
             # Invalid/unparseable tool call tags - penalize
             tool_call_adjustment = -self.config.toolcall_bonus
@@ -387,16 +386,17 @@ class RewardSearchFn:
             # No tool call detected
             tool_call_adjustment = 0.0
             metadata["tool_call_status"] = "no_tool_call"
-        # """
+        """
 
         # Store base reward before adjustments
         base_reward = reward
 
-        # """
+        """
         if self.config.toolcall_bonus > 0.0:
             reward += tool_call_adjustment
-        # """
+        """
 
+        """
         # Apply repetition penalty if enabled
         repetition_penalty = 0.0
         if self.config.apply_repetition_penalty:
@@ -407,12 +407,15 @@ class RewardSearchFn:
             # Scale by weight and add to total reward
             repetition_penalty_weighted = repetition_penalty * self.config.repetition_penalty_weight
             reward += repetition_penalty_weighted
+        """
 
         # Add tool call information and other reward components to metadata
         metadata.update({
             "base_reward": base_reward,
-            "tool_call_reward": tool_call_adjustment,
-            "repetition_penalty_reward": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
+            # "tool_call_reward": tool_call_adjustment,
+            "tool_call_reward": 0,
+            # "repetition_penalty_reward": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
+            "repetition_penalty_reward": 0,
         })
 
         return RewardOutput(reward=reward, is_correct=is_correct, metadata=metadata)

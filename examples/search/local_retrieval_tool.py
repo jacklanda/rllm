@@ -94,7 +94,8 @@ class LocalRetrievalTool(Tool):
             return "No relevant documents found."
 
         content = None
-        formatted_results = []
+        raw_documents = []
+        base_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
         for i, result in enumerate(results[: self.max_results], 1):
             # Extract key information
             # doc_id = result.get("id", f"doc_{i}")
@@ -118,40 +119,34 @@ class LocalRetrievalTool(Tool):
                     logger.warning(f"Error parsing content {content}")
                     content = "Nothing retrieved, please tweak your search query and search again."
 
-            # Truncate content if too long (keep first 512 characters)
-            # TODO: Consider to implement smarter summarization if needed
-            # Postprocess retrieved documents
-            base_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
-            if True:  # TODO: replace the condition to check if summarization is enabled
-                try:
-                    payload = {
-                        "documents": [
-                            {
-                                "content": content,
-                            },
-                        ],
-                        # "query": query or "Summarize the above document.",
-                        "max_length": 128,
-                    }
-                    response = self.client.post(f"{base_url}/summarize", json=payload)
-                    if response.status_code == 200:
-                        summary = response.json()
-                        content = summary.get("summary", content).split("# Summary:", 1)[-1].strip().replace("\n", "")
-                except Exception as e:
-                    logger.warning(f"Error during summarization: {e}")
+            raw_documents.append(content)
 
-            if len(content.split()) >= 128:
-                # print("content:", content)
-                # exit()
-                # content = content[:512] + "..."
-                content = " ".join(content.split()[:128]) + "..."
+        # Truncate content if too long (keep first 512 characters)
+        if True:  # TODO: replace the condition to check if summarization is enabled
+            try:
+                payload = {
+                    "documents": [
+                        {
+                            "content": document,
+                        }
+                        for document in raw_documents
+                    ],
+                    # "query": query or "Summarize the above document.",
+                    "max_length": 256,
+                }
+                response = self.client.post(f"{base_url}/summarize", json=payload)
+                if response.status_code == 200:
+                    summary = response.json()
+                    content = summary.get("summary", content).split("# Summary:", 1)[-1].strip().replace("\n", "")
+            except Exception as e:
+                logger.warning(f"Error during summarization: {e}")
 
-            # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
-            # formatted_result = f"[Document {i}] {content}\n\n"
-            formatted_result = content
-            formatted_results.append(formatted_result)
+        if len(content.split()) >= 256:
+            summary = " ".join(content.split()[:256]) + "..."
+        else:
+            summary = content
 
-        return "\n".join(formatted_results)
+        return summary
 
     def forward(self, query: str, top_k: int | None = None, *args, **kwargs: Any) -> ToolOutput:
         """
