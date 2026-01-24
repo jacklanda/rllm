@@ -45,6 +45,7 @@ class LocalRetrievalTool(Tool):
             server_url = os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:8000")
 
         self.server_url = server_url.rstrip("/")
+        self.context_manager_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
         self.timeout = timeout
         self.max_results = max_results
         self.client = httpx.Client(timeout=timeout)
@@ -88,14 +89,13 @@ class LocalRetrievalTool(Tool):
             },
         }
 
-    def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> str:
+    def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> list[str]:
         """Format search results for LLM consumption."""
         if not results:
             return "No relevant documents found."
 
         content = None
-        raw_documents = []
-        base_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
+        documents = []
         for i, result in enumerate(results[: self.max_results], 1):
             # Extract key information
             # doc_id = result.get("id", f"doc_{i}")
@@ -119,34 +119,9 @@ class LocalRetrievalTool(Tool):
                     logger.warning(f"Error parsing content {content}")
                     content = "Nothing retrieved, please tweak your search query and search again."
 
-            raw_documents.append(content)
+            documents.append(content)
 
-        # Truncate content if too long (keep first 512 characters)
-        if True:  # TODO: replace the condition to check if summarization is enabled
-            try:
-                payload = {
-                    "documents": [
-                        {
-                            "content": document,
-                        }
-                        for document in raw_documents
-                    ],
-                    # "query": query or "Summarize the above document.",
-                    "max_length": 256,
-                }
-                response = self.client.post(f"{base_url}/summarize", json=payload)
-                if response.status_code == 200:
-                    summary = response.json()
-                    content = summary.get("summary", content).split("# Summary:", 1)[-1].strip().replace("\n", "")
-            except Exception as e:
-                logger.warning(f"Error during summarization: {e}")
-
-        if len(content.split()) >= 256:
-            summary = " ".join(content.split()[:256]) + "..."
-        else:
-            summary = content
-
-        return summary
+        return documents
 
     def forward(self, query: str, top_k: int | None = None, *args, **kwargs: Any) -> ToolOutput:
         """
@@ -194,12 +169,37 @@ class LocalRetrievalTool(Tool):
                 return ToolOutput(name=self.name, output="No relevant documents found for the query.")
 
             # Format results
-            formatted_output = self._format_search_results(results, query)
+            documents = self._format_search_results(results, query)
 
-            # Create metadata for potential downstream use
-            metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url}
+            # Truncate content if too long (keep first 512 characters)
+            if True:  # TODO: replace the condition to check if summarization is enabled
+                try:
+                    payload = {
+                        "documents": [
+                            {
+                                "content": document,
+                            }
+                            for document in documents
+                        ],
+                        # "query": query or "Summarize the above document.",
+                        "max_length": 256,
+                    }
+                    response = self.client.post(f"{self.context_manager_url}/summarize", json=payload)
+                    if response.status_code == 200:
+                        summary = response.json()
+                        content = summary.get("summary", "").split("# Summary:", 1)[-1].strip()
+                except Exception as e:
+                    logger.warning(f"Error during summarization: {e}")
 
-            return ToolOutput(name=self.name, output=formatted_output, metadata=metadata)
+            if len(content.split()) >= 256:
+                summary = " ".join(content.split()[:256]) + "..."
+            else:
+                summary = content
+
+                # Create metadata for potential downstream use
+                metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url, "summary": summary}
+
+            return ToolOutput(name=self.name, output=summary, metadata=metadata)
 
         except httpx.TimeoutException:
             return ToolOutput(name=self.name, error=f"Request timeout after {self.timeout} seconds. Please check if the retrieval server is running.")

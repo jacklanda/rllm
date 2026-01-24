@@ -30,7 +30,7 @@ class AgentExecutionEngine:
         tokenizer=None,
         rollout_engine=None,
         chat_parser=None,
-        n_parallel_agents=512,  # The number of active agents
+        n_parallel_agents=1024,  # The number of active agents
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
@@ -44,7 +44,7 @@ class AgentExecutionEngine:
         agent_args=None,
         rollout_engine_args=None,
         env_args=None,
-        max_workers=64,  # The number of concurrent env operations
+        max_workers=512,  # The number of concurrent env operations
         enforce_max_prompt_length=False,  # If enabled, applies max_prompt check per step
         overlong_filter=False,  # Filter for overlong trajectories (i.e. TRUNCATION, MAX_STEPS, TIMEOUT)
         **kwargs,
