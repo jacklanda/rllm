@@ -131,7 +131,7 @@ class LocalRetrievalTool(Tool):
                             },
                         ],
                         "query": query or "Summarize the above document.",
-                        "max_length": 400,
+                        "max_length": 256,
                     }
                     response = self.client.post(f"{base_url}/summarize", json=payload)
                     if response.status_code == 200:
@@ -140,11 +140,11 @@ class LocalRetrievalTool(Tool):
                 except Exception as e:
                     logger.warning(f"Error during summarization: {e}")
 
-            if len(content.split()) >= 512:
+            if len(content.split()) >= 256:
                 # print("content:", content)
                 # exit()
                 # content = content[:512] + "..."
-                content = " ".join(content.split()[:512])
+                content = " ".join(content.split()[:256]) + "..."
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
             # formatted_result = f"[Document {i}] {content}\n\n"
