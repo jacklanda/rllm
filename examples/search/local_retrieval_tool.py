@@ -121,7 +121,7 @@ class LocalRetrievalTool(Tool):
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
             # Postprocess retrieved documents
-            base_url = "http://10.2.152.50:61000"
+            base_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
             if True:  # TODO: replace the condition to check if summarization is enabled
                 try:
                     payload = {
@@ -131,7 +131,7 @@ class LocalRetrievalTool(Tool):
                             },
                         ],
                         "query": query or "Summarize the above document.",
-                        "max_length": 512,
+                        "max_length": 400,
                     }
                     response = self.client.post(f"{base_url}/summarize", json=payload)
                     if response.status_code == 200:
