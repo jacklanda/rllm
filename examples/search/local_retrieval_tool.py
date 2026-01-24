@@ -130,7 +130,7 @@ class LocalRetrievalTool(Tool):
                                 "content": content,
                             },
                         ],
-                        "query": query or "Summarize the above document.",
+                        # "query": query or "Summarize the above document.",
                         "max_length": 256,
                     }
                     response = self.client.post(f"{base_url}/summarize", json=payload)
