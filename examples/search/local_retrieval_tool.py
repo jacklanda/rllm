@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import logging
 import os
-from typing import Any
+import logging
+from typing import Any, Optional
 
 import httpx
 
@@ -88,7 +88,7 @@ class LocalRetrievalTool(Tool):
             },
         }
 
-    def _format_search_results(self, results: list[dict[str, Any]]) -> str:
+    def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> str:
         """Format search results for LLM consumption."""
         if not results:
             return "No relevant documents found."
@@ -121,15 +121,34 @@ class LocalRetrievalTool(Tool):
             # Truncate content if too long (keep first 512 characters)
             # TODO: Consider to implement smarter summarization if needed
             # Postprocess retrieved documents
-            content = content.replace("\n", "")
-            if len(content.split()) >= 64:
+            base_url = "http://10.2.152.50:61000"
+            if True:  # TODO: replace the condition to check if summarization is enabled
+                try:
+                    payload = {
+                        "documents": [
+                            {
+                                "content": content,
+                            },
+                        ],
+                        "query": query or "Summarize the above document.",
+                        "max_length": 512,
+                    }
+                    response = self.client.post(f"{base_url}/summarize", json=payload)
+                    if response.status_code == 200:
+                        summary = response.json()
+                        content = summary.get("summary", content).split("# Summary:", 1)[-1].strip().replace("\n", "")
+                except Exception as e:
+                    logger.warning(f"Error during summarization: {e}")
+
+            if len(content.split()) >= 512:
                 # print("content:", content)
                 # exit()
                 # content = content[:512] + "..."
-                content = " ".join(content.split()[:64]) + "..."
+                content = " ".join(content.split()[:512])
 
             # formatted_result = f"[Document {i}] (ID: {doc_id}, Score: {score:.3f})\n{content}\n"
-            formatted_result = f"[Document {i}] {content}\n\n"
+            # formatted_result = f"[Document {i}] {content}\n\n"
+            formatted_result = content
             formatted_results.append(formatted_result)
 
         return "\n".join(formatted_results)
@@ -180,7 +199,7 @@ class LocalRetrievalTool(Tool):
                 return ToolOutput(name=self.name, output="No relevant documents found for the query.")
 
             # Format results
-            formatted_output = self._format_search_results(results)
+            formatted_output = self._format_search_results(results, query)
 
             # Create metadata for potential downstream use
             metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url}
