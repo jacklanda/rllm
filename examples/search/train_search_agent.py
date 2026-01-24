@@ -86,13 +86,13 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
     # v2
     # with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
-        # data = json.load(f)
+    # data = json.load(f)
     # v3
     # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
-        # data = json.load(f)
+    # data = json.load(f)
     # v3.1
     # with open("experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-        # data = json.load(f)
+    # data = json.load(f)
     # ASearcher (Baseline)
     with open("experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
         data = json.load(f)
@@ -124,7 +124,7 @@ def _patch_vllm_generate():
         async def patched_generate(self, prompt_ids, sampling_params, request_id, image_data=None):
             """Patched generate that respects _override_max_tokens from sampling_params."""
             # Check if we have an override value
-            override_max_tokens = sampling_params.pop('_override_max_tokens', None)
+            override_max_tokens = sampling_params.pop("_override_max_tokens", None)
 
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
@@ -136,8 +136,7 @@ def _patch_vllm_generate():
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
-                print(f"Warning: Calculated max_tokens ({max_tokens}) is less than 1. "
-                      f"Setting to 1. (prompt_length: {len(prompt_ids)}, max_model_len: {self.config.max_model_len})")
+                print(f"Warning: Calculated max_tokens ({max_tokens}) is less than 1. " f"Setting to 1. (prompt_length: {len(prompt_ids)}, max_model_len: {self.config.max_model_len})")
                 max_tokens = 1
 
             # Continue with the rest of the original method
@@ -151,22 +150,16 @@ def _patch_vllm_generate():
             sampling_params.setdefault("repetition_penalty", self.config.get("repetition_penalty", 1.0))
             sampling_params = SamplingParams(max_tokens=max_tokens, **sampling_params)
             prompt_ids = _qwen2_5_vl_dedup_image_tokens(prompt_ids, self.model_config.processor)
-            prompt = TokensPrompt(
-                prompt_token_ids=prompt_ids, multi_modal_data={"image": image_data} if image_data else None
-            )
+            prompt = TokensPrompt(prompt_token_ids=prompt_ids, multi_modal_data={"image": image_data} if image_data else None)
 
             # Add lora request
             lora_request = None
             if self.model_config.lora_rank > 0:
                 lora_loaded = VLLM_LORA_INT_ID in await self.engine.list_loras()
                 if lora_loaded:
-                    lora_request = LoRARequest(
-                        lora_name=VLLM_LORA_NAME, lora_int_id=VLLM_LORA_INT_ID, lora_path=VLLM_LORA_PATH
-                    )
+                    lora_request = LoRARequest(lora_name=VLLM_LORA_NAME, lora_int_id=VLLM_LORA_INT_ID, lora_path=VLLM_LORA_PATH)
 
-            generator = self.engine.generate(
-                prompt=prompt, sampling_params=sampling_params, request_id=request_id, lora_request=lora_request
-            )
+            generator = self.engine.generate(prompt=prompt, sampling_params=sampling_params, request_id=request_id, lora_request=lora_request)
 
             token_ids = []
             log_probs = []
@@ -174,12 +167,11 @@ def _patch_vllm_generate():
 
             async for request_output in generator:
                 # Process the generator output as in the original method
-                if hasattr(request_output, 'outputs') and len(request_output.outputs) > 0:
+                if hasattr(request_output, "outputs") and len(request_output.outputs) > 0:
                     output = request_output.outputs[0]
                     token_ids = output.token_ids
-                    if hasattr(output, 'log_probs'):
-                        log_probs = [lp[tid].logprob if lp and tid in lp else 0.0
-                                    for lp, tid in zip(output.log_probs or [], output.token_ids)]
+                    if hasattr(output, "log_probs"):
+                        log_probs = [lp[tid].logprob if lp and tid in lp else 0.0 for lp, tid in zip(output.log_probs or [], output.token_ids)]
                     finish_reason = output.finish_reason
 
             return TokenOutput(token_ids=token_ids, log_probs=log_probs, finish_reason=finish_reason)
