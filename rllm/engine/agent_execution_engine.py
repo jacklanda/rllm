@@ -34,7 +34,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=4,
-        retry_limit=64,
+        retry_limit=128,
         max_steps=32,
         max_response_length=32768,
         max_prompt_length=2048,
@@ -244,7 +244,7 @@ class AgentExecutionEngine:
             # DAPO-styled dynamic sampling: Retry mechanism for handling invalid outputs
             # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
             # Instead of failing, we feed the error back and let the model retry
-            max_step_retries = self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 32)
+            max_step_retries = self.config.get("rllm", {}).get("trajectory_filtering", {}).get("max_step_retries", 64)
 
             retry_count = 0
             validation_success = False
@@ -281,14 +281,13 @@ class AgentExecutionEngine:
                     final_model_output = model_output
                     break
                 else:
-                    break
                     # Invalid output --> retry
                     retry_count += 1
 
                     if retry_count > max_step_retries:
                         # Max retries exhausted, use the last response anyway
                         colorful_print(
-                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. ",
+                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries.",
                             # f"(No tool calls and no \\boxed{{}} found) or exceeded max tokens. Using last response.",
                             "yellow",
                         )
@@ -312,7 +311,7 @@ class AgentExecutionEngine:
                     """
 
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): ",
+                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}).",
                         # f"(No tool calls and no \\boxed{{}}) or exceeded max tokens",
                         "yellow",
                     )
