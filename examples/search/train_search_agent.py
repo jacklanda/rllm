@@ -88,11 +88,11 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260110/search_data_processed.json", "r") as f:
     # data = json.load(f)
     # v3
-    # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
-    # data = json.load(f)
-    # v3.1
-    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
+    with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
         data = json.load(f)
+    # v3.1
+    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
+        # data = json.load(f)
     # ASearcher (Baseline)
     # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json") as f:
         # data = json.load(f)
