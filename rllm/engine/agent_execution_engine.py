@@ -259,8 +259,8 @@ class AgentExecutionEngine:
                 )
                 response = model_output.text
                 tool_calls = model_output.tool_calls
-                prompt_length = model_output.prompt_length
-                completion_len = model_output.completion_length
+                # prompt_length = model_output.prompt_length
+                # completion_len = model_output.completion_length
                 finish_reason = model_output.finish_reason
 
                 delta_time = time.time() - start_time
@@ -271,8 +271,8 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response) or finish_reason == "length"
-                # is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+                # is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and r"\boxed" not in response) or finish_reason == "length"
+                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
 
                 if not is_invalid:
                     # Valid output
@@ -288,7 +288,7 @@ class AgentExecutionEngine:
                         # Max retries exhausted, use the last response anyway
                         colorful_print(
                             f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. "
-                            f"(No tool calls and no \\boxed{{}} found) or exceeded max tokens. Using last response.",
+                            # f"(No tool calls and no \\boxed{{}} found) or exceeded max tokens. Using last response.",
                             "yellow",
                         )
                         final_response = response
@@ -312,7 +312,7 @@ class AgentExecutionEngine:
 
                     colorful_print(
                         f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
-                        f"(No tool calls and no \\boxed{{}}) or exceeded max tokens",
+                        # f"(No tool calls and no \\boxed{{}}) or exceeded max tokens",
                         "yellow",
                     )
                     continue
