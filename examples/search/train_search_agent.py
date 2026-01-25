@@ -129,12 +129,12 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
-                max_tokens = 32768
+                # print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
+                max_tokens = 40960
             else:
                 # Original calculation
                 max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 32768
+                max_tokens = 40960
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
@@ -192,9 +192,9 @@ def main(config):
 
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
-    # train_dataset, _ = prepare_gem_search_data()
+    # train_dataset, val_dataset = prepare_hotpotqa_data()
     # _, val_dataset = prepare_hotpotqa_data()
-    train_dataset, val_dataset = prepare_hotpotqa_data()
+    train_dataset, _ = prepare_gem_search_data()
 
     tool_map = {"local_search": LocalRetrievalTool}
 
@@ -211,7 +211,7 @@ def main(config):
     )
 
     env_args = {
-        "max_steps": 32,
+        "max_steps": 64,
         "tool_map": tool_map,
         "reward_fn": reward_fn,
     }
