@@ -149,7 +149,7 @@ class Encoder:
 class Config:
     """Configuration class for retrieval server."""
 
-    def __init__(self, retrieval_method: str = "e5", retrieval_topk: int = 10, index_path: str = "./index/e5_Flat.index", corpus_path: str = "./data/corpus.jsonl", faiss_gpu: bool = True, gpu_id: int = 0, retrieval_model_path: str = "intfloat/e5-base-v2", retrieval_pooling_method: str = "mean", retrieval_query_max_length: int = 256, retrieval_use_fp16: bool = True, retrieval_batch_size: int = 512):
+    def __init__(self, retrieval_method: str = "e5", retrieval_topk: int = 10, index_path: str = "./index/e5_Flat.index", corpus_path: str = "./data/corpus.jsonl", faiss_gpu: bool = True, gpu_id: int = 0, retrieval_model_path: str = "intfloat/e5-base-v2", retrieval_pooling_method: str = "mean", retrieval_query_max_length: int = 2048, retrieval_use_fp16: bool = True, retrieval_batch_size: int = 512):
         self.retrieval_method = retrieval_method
         self.retrieval_topk = retrieval_topk
         self.index_path = index_path
@@ -224,7 +224,7 @@ class BM25Retriever(BaseRetriever):
         else:
             results = load_docs(self.corpus, [hit.docid for hit in hits])
 
-        if return_score:
+        # if return_score:
             return results, scores
         else:
             return results
@@ -434,7 +434,7 @@ def main():
     parser.add_argument("--faiss_gpu", action="store_true", help="Move FAISS index to GPU for faster search")
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID to use for encoding")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size for encoding")
-    parser.add_argument("--max_length", type=int, default=256, help="Maximum query length for tokenization")
+    parser.add_argument("--max_length", type=int, default=2048, help="Maximum query length for tokenization")
     parser.add_argument("--use_fp16", action="store_true", default=True, help="Use FP16 for model inference")
     parser.add_argument("--no_fp16", dest="use_fp16", action="store_false", help="Disable FP16")
     parser.add_argument("--pooling_method", type=str, default="mean", choices=["mean", "cls", "pooler"], help="Pooling method for embeddings")

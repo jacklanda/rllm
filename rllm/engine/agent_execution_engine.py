@@ -36,7 +36,7 @@ class AgentExecutionEngine:
         api_retries=3,
         retry_limit=128,
         max_steps=8,
-        max_response_length=2048,
+        max_response_length=32768,
         max_prompt_length=2048,
         config=None,
         agent_class=None,
@@ -226,9 +226,11 @@ class AgentExecutionEngine:
             # Max remaining tokens left for the response
             # For enforced max prompt at each step, no need to deduct here
             if not self.enforce_max_prompt_length:
-                max_tokens = max(self.max_response_length - response_token_len, 2048)
+                # max_tokens = max(self.max_response_length - response_token_len, 2048)
+                max_tokens = self.max_response_length - response_token_len
             else:
-                max_tokens = max(self.max_response_length, 2048)
+                # max_tokens = max(self.max_response_length, 2048)
+                max_tokens = self.max_response_length
 
                 # since max prompt is enforced, we filter out too long prompts.
                 prompt_str = self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True)

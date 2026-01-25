@@ -128,11 +128,13 @@ def _patch_vllm_generate():
 
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
-                max_tokens = override_max_tokens
+                # max_tokens = override_max_tokens
                 print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
+                max_tokens = 32768
             else:
                 # Original calculation
                 max_tokens = self.config.max_model_len - len(prompt_ids)
+                max_tokens = 32768
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
@@ -186,7 +188,7 @@ def _patch_vllm_generate():
 @hydra.main(config_path="pkg://rllm.trainer.config", config_name="agent_ppo_trainer", version_base=None)
 def main(config):
     # Apply monkey patch for vLLM server
-    # _patch_vllm_generate()
+    _patch_vllm_generate()
 
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")

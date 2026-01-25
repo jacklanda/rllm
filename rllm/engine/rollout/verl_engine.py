@@ -31,6 +31,7 @@ class VerlEngine(RolloutEngine):
             top_k=config.actor_rollout_ref.rollout.top_k,
             top_p=config.actor_rollout_ref.rollout.top_p,
             logprobs=1,
+            max_tokens=32768
         )
 
         self.val_sampling_params = dict(

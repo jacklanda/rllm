@@ -18,6 +18,7 @@ actor_rollout_ref:
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}
   return_multi_modal_inputs: False
+  max_response_length: 32768
 
 rllm:
   agent:
@@ -80,7 +81,7 @@ rllm:
     # - Repeated queries (identical search queries within a trajectory)
     # - Search errors (environment timeouts, retrieval errors, etc.)
   rejection_sample:
-    enable: False
+    enable: True
     multiplier: 1
   distill:
     enable: False
@@ -89,7 +90,7 @@ rllm:
       model: "default"
       base_url: "http://localhost:8000/v1"
       api_key: "EMPTY"
-      max_prompt_length: 32768
+      max_prompt_length: 2048
   sdk:
     store:
       path: ~/.rllm/traces.db
