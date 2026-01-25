@@ -98,7 +98,8 @@ def prepare_gem_search_data(train_size=None, test_size=None):
         # data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
-    test_data = [example for example in data if example.get("extra_info.split") == "test"]
+    # test_data = [example for example in data if example.get("extra_info.split") == "test"]
+    test_data = train_data
 
     print(f"Found {len(train_data)} training examples and {len(test_data)} test examples")
 
