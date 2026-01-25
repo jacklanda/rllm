@@ -281,13 +281,14 @@ class AgentExecutionEngine:
                     final_model_output = model_output
                     break
                 else:
+                    break
                     # Invalid output --> retry
                     retry_count += 1
 
                     if retry_count > max_step_retries:
                         # Max retries exhausted, use the last response anyway
                         colorful_print(
-                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. "
+                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. ",
                             # f"(No tool calls and no \\boxed{{}} found) or exceeded max tokens. Using last response.",
                             "yellow",
                         )
@@ -311,7 +312,7 @@ class AgentExecutionEngine:
                     """
 
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
+                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): ",
                         # f"(No tool calls and no \\boxed{{}}) or exceeded max tokens",
                         "yellow",
                     )
