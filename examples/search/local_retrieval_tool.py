@@ -45,7 +45,6 @@ class LocalRetrievalTool(Tool):
             server_url = os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:8000")
 
         self.server_url = server_url.rstrip("/")
-        self.context_manager_url = os.environ.get("SUMMARIZATION_SERVER_URL", "http://127.0.0.1:8001")
         self.timeout = timeout
         self.max_results = max_results
         self.client = httpx.Client(timeout=timeout)
@@ -184,7 +183,7 @@ class LocalRetrievalTool(Tool):
                         # "query": query or "Summarize the above document.",
                         "max_length": 256,
                     }
-                    response = self.client.post(f"{self.context_manager_url}/summarize", json=payload)
+                    response = self.client.post(f"{self.server_url}/summarize", json=payload)
                     if response.status_code == 200:
                         summary = response.json()
                         content = summary.get("summary", "").split("# Summary:", 1)[-1].strip()

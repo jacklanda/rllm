@@ -39,7 +39,7 @@ rllm:
       agent_args: {}
       env_cls: null
       env_args: {}
-      timeout: 1e6
+      timeout: 60
       gamma: 0.0 # no discounting
       reward_bonus_coeff: 0.0 # no reward shaping
     n_parallel_tasks: 512
