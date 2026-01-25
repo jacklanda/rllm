@@ -34,7 +34,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=4,
-        retry_limit=4,
+        retry_limit=64,
         max_steps=32,
         max_response_length=32768,
         max_prompt_length=2048,
@@ -612,6 +612,7 @@ class AgentExecutionEngine:
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=32)
             except Exception as _:
                 # traceback.print_exc()
+                colorful_print(f"Trajectory {idx} failed, retrying...", "yellow")
                 continue
         traceback.print_exc()
         raise Exception(f"Trajectory {idx} cannot complete. Please check the log message")
