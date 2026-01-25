@@ -269,6 +269,4 @@ For each function call, return a valid json object with function name and argume
 <tool_call>
 {{"name": <function-name>, "arguments": <args-json-object>}}
 </tool_call>
-
-Make sure all curly braces and XML tags are correctly balanced and closed strictly.
 """.rstrip()

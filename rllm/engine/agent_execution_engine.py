@@ -82,7 +82,7 @@ class AgentExecutionEngine:
 
         self.trajectory_timeout = trajectory_timeout
         if not trajectory_timeout:
-            self.trajectory_timeout = int(1e9)
+            self.trajectory_timeout = int(60)
 
         if env_class is not None:
             assert env_class.is_multithread_safe(), "Environment must be multithread safe for async engine"
@@ -271,7 +271,8 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response) or finish_reason == "length"
+                # is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response) or finish_reason == "length"
+                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
 
                 if not is_invalid:
                     # Valid output
@@ -311,7 +312,7 @@ class AgentExecutionEngine:
 
                     colorful_print(
                         f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
-                        f"No tool calls and no \\boxed{{}}",
+                        f"(No tool calls and no \\boxed{{}}) or exceeded max tokens",
                         "yellow",
                     )
                     continue
@@ -425,6 +426,7 @@ class AgentExecutionEngine:
                 cur_step = agent.get_current_state()
                 done = True
                 cur_step.done = done
+                cur_step.reward = 0.0
                 break
 
             # Check if episode is done
