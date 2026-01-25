@@ -33,7 +33,7 @@ class AgentExecutionEngine:
         n_parallel_agents=512,  # The number of active agents
         trajectory_timeout=None,
         gamma=0.2,
-        api_retries=3,
+        api_retries=4,
         retry_limit=128,
         max_steps=8,
         max_response_length=32768,
@@ -271,8 +271,8 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                # is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response) or finish_reason == "length"
-                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response) or finish_reason == "length"
+                # is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
 
                 if not is_invalid:
                     # Valid output
