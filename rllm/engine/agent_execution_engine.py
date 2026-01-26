@@ -271,9 +271,9 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                # is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and r"\boxed" not in response) or finish_reason == "length"
+                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and r"\boxed" not in response) or finish_reason == "length"
                 # is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
-                is_invalid = False
+                # is_invalid = False
 
                 if not is_invalid:
                     # Valid output

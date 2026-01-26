@@ -190,8 +190,9 @@ def main(config):
     # Apply monkey patch for vLLM server
     _patch_vllm_generate()
 
-    train_dataset, _ = prepare_gem_search_data()
-    _, val_dataset = prepare_hotpotqa_data()
+    # train_dataset, _ = prepare_gem_search_data()
+    # _, val_dataset = prepare_hotpotqa_data()
+    train_dataset, val_dataset = prepare_hotpotqa_data()
 
     tool_map = {"local_search": LocalRetrievalTool}
 
