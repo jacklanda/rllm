@@ -94,11 +94,12 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
     # data = json.load(f)
     # ASearcher (Baseline)
-    with open("experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
         data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
-    test_data = [example for example in data if example.get("extra_info.split") == "test"]
+    # test_data = [example for example in data if example.get("extra_info.split") == "test"]
+    test_data = train_data
 
     print(f"Found {len(train_data)} training examples and {len(test_data)} test examples")
 
