@@ -195,8 +195,8 @@ class LocalRetrievalTool(Tool):
             else:
                 summary = content
 
-                # Create metadata for potential downstream use
-                metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url, "summary": summary}
+            # Create metadata for potential downstream use
+            metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url, "summary": summary}
 
             return ToolOutput(name=self.name, output=summary, metadata=metadata)
 
