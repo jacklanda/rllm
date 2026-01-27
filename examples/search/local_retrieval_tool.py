@@ -140,7 +140,7 @@ class LocalRetrievalTool(Tool):
             # Prepare request payload
             payload = {
                 "query": query,
-                "top_k": min(top_k, 3),
+                "top_k": min(top_k, 5),
                 "description": "",
                 "args": [],  # Add empty args
                 "kwargs": {},  # Add empty kwargs
@@ -190,8 +190,8 @@ class LocalRetrievalTool(Tool):
                 except Exception as e:
                     logger.warning(f"Error during summarization: {e}")
 
-            if len(content.split()) >= 256:
-                summary = " ".join(content.split()[:256]) + "..."
+            if len(content.split()) >= 128:
+                summary = " ".join(content.split()[:128]) + "..."
             else:
                 summary = content
 
