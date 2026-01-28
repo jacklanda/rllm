@@ -131,11 +131,11 @@ def _patch_vllm_generate():
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
                 print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
-                max_tokens = 60000
+                max_tokens = 40960
             else:
                 # Original calculation
                 max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 60000
+                max_tokens = 40960
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
