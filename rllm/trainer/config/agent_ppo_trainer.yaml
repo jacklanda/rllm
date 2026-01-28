@@ -18,12 +18,12 @@ actor_rollout_ref:
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}
   return_multi_modal_inputs: False
-  max_response_length: 32768
+  max_response_length: 60000
 
 rllm:
   agent:
     name: math_agent
-    max_steps: 20
+    max_steps: 32
     trajectory_timeout: null
     overlong_filter: False
     agent_args: {}
