@@ -287,9 +287,9 @@ class AgentExecutionEngine:
                             f"No tool calls and no \\boxed{{}} found. Using last response.",
                             "yellow",
                         )
+                        validation_success = True  # Force exit with last attempt
                         final_response = response
                         final_model_output = model_output
-                        validation_success = True  # Force exit with last attempt
                         break
 
                     """
