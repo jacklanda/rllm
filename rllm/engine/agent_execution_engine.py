@@ -259,6 +259,7 @@ class AgentExecutionEngine:
                 )
                 response = model_output.text
                 tool_calls = model_output.tool_calls
+                finish_reason = model_output.finish_reason
 
                 delta_time = time.time() - start_time
                 llm_time += delta_time
@@ -268,7 +269,8 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+                # is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+                is_invalid = len(tool_calls) == 0 if tool_calls else True
 
                 if not is_invalid:
                     # Valid output
