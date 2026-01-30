@@ -140,7 +140,7 @@ class LocalRetrievalTool(Tool):
             # Prepare request payload
             payload = {
                 "query": query,
-                "top_k": min(top_k, 5),
+                "top_k": min(top_k, 10),
                 "description": "",
                 "args": [],  # Add empty args
                 "kwargs": {},  # Add empty kwargs
