@@ -209,8 +209,6 @@ def main(config):
         repetition_max_n=reward_config.get("repetition_max_n", 4),
         correct_reward=reward_config.get("correct_reward", 1.0),
         incorrect_reward=reward_config.get("incorrect_reward", 0.0),
-        format_error_reward=-1.0,
-        unk_error_reward=-1.0
     )
 
     env_args = {
