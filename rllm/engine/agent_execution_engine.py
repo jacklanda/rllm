@@ -197,6 +197,8 @@ class AgentExecutionEngine:
 
         # for step return
         episode_steps = []
+        seen_queries = set()
+        should_discard = False
 
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
@@ -283,15 +285,13 @@ class AgentExecutionEngine:
                     retry_count += 1
 
                     if retry_count > max_step_retries:
-                        # Max retries exhausted, use the last response anyway
+                        # Max retries exhausted, treat as abnormal parse error (5.4.1)
                         colorful_print(
                             f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. "
-                            f"No tool calls and no \\boxed{{}} found. Using last response.",
+                            f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
                         )
-                        validation_success = True  # Force exit with last attempt
-                        final_response = response
-                        final_model_output = model_output
+                        # Handled outside loop
                         break
 
                     """
@@ -315,17 +315,71 @@ class AgentExecutionEngine:
                     )
                     continue
 
-            # Dump step which had retries times >= max_step_retries
+            # 5.4.1 Handle abnormal trajectories: Parse Error
             if retry_count >= max_step_retries and not validation_success:
-                # Drop the failed retried trajectory
                 print(f"Error parsing step after {retry_count} retries: {response}")
-                # with open(f"experiments/logs/failed_trajectory.log", "a+") as f:
-                    # f.write("-" * 100 + "".join(self.chat_parser.parse(retry_prompt_messages, add_generation_prompt=True, is_first_msg=True)) + "-" * 100 + "\n" + final_response)
+                termination_reason = "ABNORMAL_PARSE_ERROR"
+                reward = 0.0
+                done = True
+                cur_step = agent.get_current_state()
+                cur_step.reward = reward
+                cur_step.done = done
+                break
 
             # Use the final response (successful or last attempt after max retries)
             prompt_messages = retry_prompt_messages
             response = final_response
             model_output = final_model_output
+            tool_calls = model_output.tool_calls
+            
+            # 5.4.1 Handle abnormal trajectories: Tool Burst (> 10 tool calls)
+            if tool_calls and len(tool_calls) > 10:
+                termination_reason = "ABNORMAL_TOOL_BURST"
+                reward = 0.0
+                done = True
+                cur_step = agent.get_current_state()
+                cur_step.reward = reward
+                cur_step.done = done
+                break
+
+            # 5.4.1 Handle abnormal trajectories: Repeated Query
+            is_repeated = False
+            if tool_calls:
+                for tool_call in tool_calls:
+                    if hasattr(tool_call, "function") and tool_call.function.name == "search":
+                        try:
+                            # Attempt to parse arguments to find query
+                            args_str = tool_call.function.arguments
+                            # Handle simple JSON parsing if needed, though arguments usually string
+                            # We assume simple string check or parsed dict
+                            if isinstance(args_str, str):
+                                import json
+                                try:
+                                    args = json.loads(args_str)
+                                except:
+                                    args = {}
+                            else:
+                                args = args_str
+                            
+                            query = args.get("query")
+                            if query:
+                                if query in seen_queries:
+                                    is_repeated = True
+                                    break
+                                seen_queries.add(query)
+                        except Exception:
+                            # If parsing fails, ignore (or could be strict)
+                            pass
+            
+            if is_repeated:
+                termination_reason = "ABNORMAL_REPEATED_QUERY"
+                reward = 0.0
+                done = True
+                cur_step = agent.get_current_state()
+                cur_step.reward = reward
+                cur_step.done = done
+                break
+
             # Update steps
             prompt_response_pair = {
                 "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
@@ -346,11 +400,11 @@ class AgentExecutionEngine:
             try:
                 next_observation, reward, done, info = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
             except asyncio.TimeoutError:
+                # 5.4.2 Search errors: discard directly
                 termination_reason = "ENV_TIMEOUT"
-                if step_idx == 0:
-                    colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason} before able to perform 1 complete action. This might cause unexpected behavior. Consider increasing trajectory timeout limit.\n", "red")
+                should_discard = True
+                colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
                 reward = 0
-
                 cur_step = agent.get_current_state()
                 done = True
                 cur_step.done = done
@@ -435,7 +489,14 @@ class AgentExecutionEngine:
             response_masks.extend(env_msg_masks)
 
             if step_idx == self.max_steps - 1:
+                # 5.4.3 Exceeding search step limit: stop + 0 reward
                 termination_reason = "MAX_STEPS"
+                reward = 0.0 # Force 0 reward
+                
+        # 5.4.2 Search errors: discard directly
+        if should_discard:
+            await loop.run_in_executor(self.executor, env.close)
+            return None
 
         masked_out = False
         if self.overlong_filter:
@@ -444,7 +505,9 @@ class AgentExecutionEngine:
                 response_masks = [0] * len(response_masks)
                 masked_out = True
 
-        if hasattr(env, "compute_final_reward") and not masked_out:
+        # Calculate final reward if not stopped abnormally
+        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "MAX_STEPS"}
+        if hasattr(env, "compute_final_reward") and not masked_out and termination_reason not in abnormal_reasons:
             cur_step = agent.get_current_state()
             start_time = time.time()
             reward = await loop.run_in_executor(self.executor, env.compute_final_reward)
@@ -652,7 +715,8 @@ class AgentExecutionEngine:
                 result = await coro
                 tasks_completed += 1
                 colorful_print(f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed", "cyan")
-                yield result
+                if result is not None:
+                    yield result
             except Exception as e:
                 raise e
 

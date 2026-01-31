@@ -175,6 +175,12 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                     if self.config.rllm.stepwise_advantage.enable:
                         final_gen_batch_output = self.generate_agent_steps(timing_raw=timing_raw, meta_info=batch.meta_info, uids=batch.non_tensor_batch["uid"])
+                        
+                        if "idxs" in final_gen_batch_output.non_tensor_batch:
+                            valid_indices = np.unique(final_gen_batch_output.non_tensor_batch["idxs"])
+                            if len(valid_indices) < len(batch.batch):
+                                batch = batch.select_idxs(valid_indices)
+
                         repeat_counts = final_gen_batch_output.meta_info["repeat_counts"]
                         # need to repeat to make shape match
                         batch = batch.sample_level_repeat(repeat_counts)
@@ -184,6 +190,12 @@ class AgentPPOTrainer(RayPPOTrainer):
                         batch = self._pad_dataproto_to_world_size(batch=batch)
                     else:
                         final_gen_batch_output, generate_metrics = self.generate_agent_trajectory(timing_raw=timing_raw, meta_info=batch.meta_info, batch=batch)
+                        
+                        if "idxs" in final_gen_batch_output.non_tensor_batch:
+                            valid_indices = final_gen_batch_output.non_tensor_batch["idxs"]
+                            if len(valid_indices) < len(batch.batch):
+                                batch = batch.select_idxs(valid_indices)
+
                         batch = batch.union(final_gen_batch_output)
                         metrics.update(generate_metrics)
 
@@ -614,6 +626,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         chat_completions = []
         traj_metrics = []
         metrics = {}
+        valid_indices = []
 
         for idx, traj in enumerate(trajectories):
             prompt_tokens = traj["prompt_tokens"]
@@ -625,11 +638,15 @@ class AgentPPOTrainer(RayPPOTrainer):
             all_masks_list.append(traj["response_masks"])
             traj_scores.append(traj["trajectory_reward"])
             trajectories_w_metadata = traj["chat_completions"].copy()
+            
+            original_idx = traj["idx"]
+            valid_indices.append(original_idx)
+            
             trajectories_w_metadata.append(
                 {
                     "steps": len([turn for turn in trajectories_w_metadata if turn["role"] not in ["system", "user"]]),
                     "reward": traj["trajectory_reward"].item(),
-                    "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", ""), 
+                    "ground_truth": batch.non_tensor_batch.get("extra_info")[original_idx].get("ground_truth", ""), 
                 }
             )
             chat_completions.append(trajectories_w_metadata)
@@ -726,9 +743,13 @@ class AgentPPOTrainer(RayPPOTrainer):
             "response_mask": traj_mask,
         }
 
-        self.visualize_trajectory(DataProto.from_dict(tensors=tensor_batch))
+        non_tensor_batch = {
+            "idxs": np.array(valid_indices),
+        }
 
-        return DataProto.from_dict(tensors=tensor_batch), metrics
+        self.visualize_trajectory(DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch))
+
+        return DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch), metrics
 
     def visualize_trajectory(self, tensor_batch, sample_idx=0, max_samples=1, mask_key="response_mask"):
         """
