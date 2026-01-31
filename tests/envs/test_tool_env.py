@@ -27,6 +27,33 @@ class MockTool(Tool):
         return self.call(**kwargs)
 
 
+class StrictTool(Tool):
+    """Tool that enforces argument requirements for testing."""
+
+    def __init__(self, name="strict_tool"):
+        super().__init__(name=name, description="A strict tool")
+
+    @property
+    def json(self):
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                    },
+                    "required": ["query"],
+                },
+            },
+        }
+
+    def forward(self, query: str, *args, **kwargs) -> ToolOutput:
+        return ToolOutput(name=self.name, output=f"Received: {query}")
+
+
 class MockRewardFunction(RewardFunction):
     """Mock reward function for testing."""
 
@@ -442,3 +469,30 @@ class TestToolEnvironment:
 
         assert reward2 > reward1  # Longer response should get higher reward
         assert info1["metadata"]["length"] < info2["metadata"]["length"]
+
+    def test_missing_argument_handling(self):
+        """Test handling of tool calls with missing required arguments."""
+        env = ToolEnvironment(tool_map={"strict_tool": StrictTool})
+        env.reset()
+
+        # Create an action calling the tool WITHOUT 'query' argument
+        action = [
+            {
+                "type": "function",
+                "id": "call_1",
+                "function": {
+                    "name": "strict_tool",
+                    "arguments": "{}"
+                }
+            }
+        ]
+
+        obs, reward, done, info = env.step(action)
+
+        tool_outputs = obs["tool_outputs"]
+        assert "call_1" in tool_outputs
+        output_str = tool_outputs["call_1"]
+
+        # Verify error message
+        assert "Error executing tool" in output_str
+        assert "missing" in output_str and "query" in output_str

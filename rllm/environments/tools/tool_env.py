@@ -6,7 +6,7 @@ from typing import Any
 from rllm.environments.base.base_env import BaseEnv
 from rllm.rewards.reward_fn import RewardFunction, zero_reward
 from rllm.tools.multi_tool import MultiTool
-from rllm.tools.tool_base import Tool
+from rllm.tools.tool_base import Tool, ToolOutput
 
 
 class ToolEnvironment(BaseEnv):
@@ -119,11 +119,20 @@ class ToolEnvironment(BaseEnv):
         def execute_tool(tool_call):
             tool_name = tool_call["function"]["name"] or tool_call.get("name", "")
             tool_args = tool_call["function"]["arguments"] or tool_call.get("arguments", "{}")
-            try:
-                tool_args = json.loads(tool_args)
-            except json.JSONDecodeError:
+
+            if isinstance(tool_args, str):
+                try:
+                    tool_args = json.loads(tool_args)
+                except json.JSONDecodeError:
+                    tool_args = {}
+            elif not isinstance(tool_args, dict):
                 tool_args = {}
-            tool_output = self.tools(tool_name=tool_name, **tool_args)
+
+            try:
+                tool_output = self.tools(tool_name=tool_name, **tool_args)
+            except Exception as e:
+                tool_output = ToolOutput(name=tool_name, error=f"Error executing tool: {str(e)}")
+
             tool_output_str = tool_output.to_string()
 
             output_queue.put((tool_call["id"], tool_output_str))
