@@ -673,7 +673,8 @@ class AgentExecutionEngine:
                 # traceback.print_exc()
                 continue
         traceback.print_exc()
-        raise Exception(f"Trajectory {idx} cannot complete. Please check the log message")
+        colorful_print(f"Trajectory {idx} cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
+        return None
 
     async def trajectory_generator(self, reset_seed=0, timing_raw=None, mode="Text", **kwargs):
         if timing_raw is None:
