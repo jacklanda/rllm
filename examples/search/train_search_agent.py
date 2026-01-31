@@ -91,11 +91,11 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
     # data = json.load(f)
     # v3.1
-    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-        data = json.load(f)
-    # ASearcher (Baseline)
-    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
         # data = json.load(f)
+    # ASearcher (Baseline)
+    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+        data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
     # test_data = [example for example in data if example.get("extra_info.split") == "test"]
@@ -192,9 +192,9 @@ def main(config):
 
     # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
     # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
-    # train_dataset, _ = prepare_gem_search_data()
-    # _, val_dataset = prepare_hotpotqa_data()
-    train_dataset, val_dataset = prepare_hotpotqa_data()
+    train_dataset, _ = prepare_gem_search_data()
+    _, val_dataset = prepare_hotpotqa_data()
+    # train_dataset, val_dataset = prepare_hotpotqa_data()
 
     tool_map = {"local_search": LocalRetrievalTool}
 

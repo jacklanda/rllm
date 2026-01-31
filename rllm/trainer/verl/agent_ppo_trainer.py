@@ -693,7 +693,21 @@ class AgentPPOTrainer(RayPPOTrainer):
             json.dump(chat_completions, f, ensure_ascii=False, indent=4)
 
         # Collect and save termination reason statistics
-        termination_stats = {}
+        all_reasons = [
+            "ENV_DONE",
+            "TIMEOUT",
+            "MAX_STEPS",
+            "TRUNCATION",
+            "PROMPT_TRUNCATION",
+            "ABNORMAL_PARSE_ERROR",
+            "ABNORMAL_TOOL_BURST",
+            "ABNORMAL_REPEATED_QUERY",
+            "INVALID_REACT_STRUCTURE",
+            "UNFINISHED_TOOL_CALL",
+            "ENV_TIMEOUT",
+            "UNKNOWN",
+        ]
+        termination_stats = {r: 0 for r in all_reasons}
         for traj in trajectories:
             reason = traj.get("termination_reason") or "UNKNOWN"
             termination_stats[reason] = termination_stats.get(reason, 0) + 1
