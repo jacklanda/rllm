@@ -207,7 +207,7 @@ trainer:
   val_before_train: true
   val_only: false
   test_freq: -1
-  log_episodes: false
+  log_episodes: true
   episode_log_dir: logs/${trainer.project_name}/${trainer.experiment_name}
   critic_warmup: 0
   default_hdfs_dir: null

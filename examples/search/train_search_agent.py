@@ -91,11 +91,11 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
     # data = json.load(f)
     # v3.1
-    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-        # data = json.load(f)
-    # ASearcher (Baseline)
-    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
         data = json.load(f)
+    # ASearcher (Baseline)
+    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+        # data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
     # test_data = [example for example in data if example.get("extra_info.split") == "test"]
@@ -130,12 +130,11 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                print(f"Using override max_tokens: {max_tokens} (prompt_length: {len(prompt_ids)})")
-                max_tokens = 60000
+                max_tokens = 32768
             else:
                 # Original calculation
-                max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 60000
+                # max_tokens = self.config.max_model_len - len(prompt_ids)
+                max_tokens = 32768
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:

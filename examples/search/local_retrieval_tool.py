@@ -28,7 +28,7 @@ class LocalRetrievalTool(Tool):
         description: str = DESCRIPTION,
         server_url: str = None,
         timeout: float = 3600.0,
-        max_results: int = 3,
+        max_results: int = 8,
     ):
         """
         Initialize the Local Retrieval Tool.

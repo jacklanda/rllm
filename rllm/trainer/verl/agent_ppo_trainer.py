@@ -663,6 +663,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         os.makedirs(save_dir, exist_ok=True)
         # Save it into a jsonl files (self.global_steps)
         with open(os.path.join(save_dir, f"global_steps_{self.global_steps}.json"), "w") as f:
+            print(f"Saving chat completions to {os.path.join(save_dir, f'global_steps_{self.global_steps}.json')}")
             json.dump(chat_completions, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
