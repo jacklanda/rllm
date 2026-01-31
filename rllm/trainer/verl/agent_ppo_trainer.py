@@ -695,7 +695,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         # Collect and save termination reason statistics
         termination_stats = {}
         for traj in trajectories:
-            reason = traj.get("termination_reason", "UNKNOWN")
+            reason = traj.get("termination_reason") or "UNKNOWN"
             termination_stats[reason] = termination_stats.get(reason, 0) + 1
         
         stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats_{batch_uuid}.json")

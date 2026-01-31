@@ -501,9 +501,9 @@ class AgentExecutionEngine:
         # Also filter out trajectories ending with a tool call but no boxed answer
         if not should_discard:
             step_count = len(episode_steps)
-            if step_count < 3 or step_count % 2 == 0:
-                # raise InvalidReactStructureError(f"Trajectory {idx} discarded: INVALID_REACT_STRUCTURE (Steps: {step_count})")
+            if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
+                raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
@@ -588,6 +588,7 @@ class AgentExecutionEngine:
                 "response_masks": response_masks,
                 "trajectory_reward": trajectory.reward,
                 "idx": env.idx,
+                "termination_reason": termination_reason,
                 "chat_completions": agent.chat_completions,
                 "metrics": {
                     # Total number of steps taken in the trajectory
@@ -693,7 +694,7 @@ class AgentExecutionEngine:
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
             except InvalidReactStructureError as e:
                 # Retry 8 times for this specific error (total 9 attempts)
-                if attempt < 8:
+                if attempt < 4:
                     colorful_print(f"Trajectory {idx} retry {attempt+1}/8 due to: {e}", "yellow")
                     continue
                 else:
