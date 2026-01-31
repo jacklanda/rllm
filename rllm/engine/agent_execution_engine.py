@@ -23,6 +23,10 @@ from rllm.utils import colorful_print
 logger = logging.getLogger(__name__)
 
 
+class InvalidReactStructureError(Exception):
+    pass
+
+
 class AgentExecutionEngine:
     def __init__(
         self,
@@ -493,14 +497,12 @@ class AgentExecutionEngine:
                 termination_reason = "MAX_STEPS"
                 reward = 0.0 # Force 0 reward
 
-        # Enforce ReAct workflow: >= 5 steps and odd number of steps
+        # Enforce ReAct workflow: >= 3 steps and only enable odd number of steps
         # Also filter out trajectories ending with a tool call but no boxed answer
         if not should_discard:
             step_count = len(episode_steps)
             if step_count < 3 or step_count % 2 == 0:
-                termination_reason = "INVALID_REACT_STRUCTURE"
-                should_discard = True
-                colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
+                raise InvalidReactStructureError(f"Trajectory {idx} discarded: INVALID_REACT_STRUCTURE (Steps: {step_count})")
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
@@ -681,15 +683,29 @@ class AgentExecutionEngine:
         return prompt_tokens, response_tokens, response_masks, is_valid_trajectory
 
     async def run_agent_trajectory_with_retry(self, idx, seed=0, mode="Text", **kwargs):
-        for _ in range(self.retry_limit):
+        # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
+        max_attempts = max(self.retry_limit, 8) + 1
+        
+        for attempt in range(max_attempts):
             try:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
+            except InvalidReactStructureError as e:
+                # Retry 8 times for this specific error (total 9 attempts)
+                if attempt < 8:
+                    colorful_print(f"Trajectory {idx} retry {attempt+1}/8 due to: {e}", "yellow")
+                    continue
+                else:
+                    colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after 8 retries.", "red")
+                    return None
             except Exception as _:
-                # traceback.print_exc()
-                continue
-        traceback.print_exc()
-        colorful_print(f"Trajectory {idx} cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
+                # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
+                if attempt < self.retry_limit - 1:
+                    continue
+                else:
+                    traceback.print_exc()
+                    colorful_print(f"Trajectory {idx} cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
+                    return None
         return None
 
     async def trajectory_generator(self, reset_seed=0, timing_raw=None, mode="Text", **kwargs):

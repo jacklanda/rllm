@@ -681,13 +681,27 @@ class AgentPPOTrainer(RayPPOTrainer):
                 }
             )
 
-        # Save chat completions to a file
+        # Save chat completions and stats to files
         save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
         os.makedirs(save_dir, exist_ok=True)
-        # Save it into a jsonl files (self.global_steps)
-        with open(os.path.join(save_dir, f"global_steps_{self.global_steps}.json"), "w") as f:
-            print(f"Saving chat completions to {os.path.join(save_dir, f'global_steps_{self.global_steps}.json')}")
+        batch_uuid = str(uuid.uuid4())[:8]
+
+        # Save chat completions
+        file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_{batch_uuid}.json")
+        with open(file_path, "w") as f:
+            print(f"Saving chat completions to {file_path}")
             json.dump(chat_completions, f, ensure_ascii=False, indent=4)
+
+        # Collect and save termination reason statistics
+        termination_stats = {}
+        for traj in trajectories:
+            reason = traj.get("termination_reason", "UNKNOWN")
+            termination_stats[reason] = termination_stats.get(reason, 0) + 1
+        
+        stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats_{batch_uuid}.json")
+        with open(stats_path, "w") as f:
+            print(f"Saving trajectory stats to {stats_path}")
+            json.dump(termination_stats, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length
