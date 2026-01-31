@@ -178,6 +178,9 @@ class AgentPPOTrainer(RayPPOTrainer):
                         
                         if "idxs" in final_gen_batch_output.non_tensor_batch:
                             valid_indices = np.unique(final_gen_batch_output.non_tensor_batch["idxs"])
+                            if len(valid_indices) == 0:
+                                print("No valid trajectories found in this batch (Stepwise). Skipping...")
+                                continue
                             if len(valid_indices) < len(batch.batch):
                                 batch = batch.select_idxs(valid_indices)
 
@@ -193,6 +196,9 @@ class AgentPPOTrainer(RayPPOTrainer):
                         
                         if "idxs" in final_gen_batch_output.non_tensor_batch:
                             valid_indices = final_gen_batch_output.non_tensor_batch["idxs"]
+                            if len(valid_indices) == 0:
+                                print("No valid trajectories found in this batch. Skipping...")
+                                continue
                             if len(valid_indices) < len(batch.batch):
                                 batch = batch.select_idxs(valid_indices)
 

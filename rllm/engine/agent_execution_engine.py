@@ -271,7 +271,7 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response
+                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response or finish_reason == "length")
                 # is_invalid = len(tool_calls) == 0 if tool_calls else True
 
                 if not is_invalid:
@@ -492,7 +492,23 @@ class AgentExecutionEngine:
                 # 5.4.3 Exceeding search step limit: stop + 0 reward
                 termination_reason = "MAX_STEPS"
                 reward = 0.0 # Force 0 reward
-                
+
+        # Enforce ReAct workflow: >= 5 steps and odd number of steps
+        # Also filter out trajectories ending with a tool call but no boxed answer
+        if not should_discard:
+            step_count = len(episode_steps)
+            if step_count < 5 or step_count % 2 == 0:
+                termination_reason = "INVALID_REACT_STRUCTURE"
+                should_discard = True
+                colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
+            else:
+                # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
+                last_response = episode_steps[-1]["response"]
+                if "<tool_call>" in last_response and "\\boxed" not in last_response:
+                    termination_reason = "UNFINISHED_TOOL_CALL"
+                    should_discard = True
+                    colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
+
         # 5.4.2 Search errors: discard directly
         if should_discard:
             await loop.run_in_executor(self.executor, env.close)

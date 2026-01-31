@@ -190,8 +190,8 @@ class LocalRetrievalTool(Tool):
                 except Exception as e:
                     logger.warning(f"Error during summarization: {e}")
 
-            if len(content.split()) >= 128:
-                summary = " ".join(content.split()[:128]) + "..."
+            if len(content.split()) >= 256:
+                summary = " ".join(content.split()[:256]) + "..."
             else:
                 summary = content
 
