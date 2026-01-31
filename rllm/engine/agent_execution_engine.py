@@ -326,8 +326,9 @@ class AgentExecutionEngine:
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
-                cur_step.reward = reward
-                cur_step.done = done
+                if cur_step is not None:
+                    cur_step.reward = reward
+                    cur_step.done = done
                 break
 
             # Use the final response (successful or last attempt after max retries)
@@ -342,8 +343,9 @@ class AgentExecutionEngine:
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
-                cur_step.reward = reward
-                cur_step.done = done
+                if cur_step is not None:
+                    cur_step.reward = reward
+                    cur_step.done = done
                 break
 
             # 5.4.1 Handle abnormal trajectories: Repeated Query
@@ -380,8 +382,9 @@ class AgentExecutionEngine:
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
-                cur_step.reward = reward
-                cur_step.done = done
+                if cur_step is not None:
+                    cur_step.reward = reward
+                    cur_step.done = done
                 break
 
             # Update steps
@@ -408,10 +411,10 @@ class AgentExecutionEngine:
                 termination_reason = "ENV_TIMEOUT"
                 should_discard = True
                 colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
-                reward = 0
                 cur_step = agent.get_current_state()
                 done = True
-                cur_step.done = done
+                if cur_step is not None:
+                    cur_step.done = done
                 break
 
             delta_time = time.time() - start_time
