@@ -673,7 +673,6 @@ class AgentPPOTrainer(RayPPOTrainer):
             if not v_list:
                 continue
             v_list = np.array(v_list)
-            )
             metrics.update(
                 {
                     f"traj/{k}_mean": v_list.mean(),
