@@ -38,7 +38,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=4,
+        retry_limit=16,
         max_steps=8,
         max_response_length=32768,
         max_prompt_length=2048,
@@ -504,6 +504,8 @@ class AgentExecutionEngine:
             if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
                 # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
+                colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
+                should_discard = True
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
@@ -514,6 +516,11 @@ class AgentExecutionEngine:
                     # should_discard = True
                     # colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
                     colorful_print(f"Trajectory {idx} completed: {termination_reason} (Last step has boxed answer)", "green")
+                else:
+                    termination_reason = "INVALID_FINAL_STEP"
+                    # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)")
+                    colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has no boxed answer)", "yellow")
+                    should_discard = True
 
         # 5.4.2 Search errors: discard directly
         if should_discard:
@@ -696,12 +703,13 @@ class AgentExecutionEngine:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
             except InvalidReactStructureError as e:
-                # Retry 8 times for this specific error (total 9 attempts)
-                if attempt < 4:
-                    colorful_print(f"Trajectory {idx} retry {attempt+1}/8 due to: {e}", "yellow")
+                # Retry 16 times for this specific error
+                if attempt < 16:
+                    colorful_print(f"Trajectory {idx} retry {attempt+1}/16 due to: {e}", "yellow")
                     continue
                 else:
-                    colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after 8 retries.", "red")
+                    colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after {attempt+1} retries.", "red")
+                    should_discard = True
                     return None
             except Exception as _:
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
