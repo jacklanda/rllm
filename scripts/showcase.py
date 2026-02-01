@@ -65,7 +65,15 @@ def main():
     # 读取数据
     try:
         with open(args.file_path, "r") as f:
-            data_list = json.load(f)
+            raw_data = json.load(f)
+        
+        # Handle both old list format and new dictionary format
+        if isinstance(raw_data, dict) and "chat_completions" in raw_data:
+            data_list = raw_data["chat_completions"]
+            stats = {k: v for k, v in raw_data.items() if k != "chat_completions"}
+        else:
+            data_list = raw_data
+            stats = None
 
         if args.case_index >= len(data_list) or args.case_index < 0:
             console.print(f"[bold {GRUVBOX['red']}]错误: 索引 {args.case_index} 超出范围 (0-{len(data_list)-1})[/bold {GRUVBOX['red']}]")
@@ -80,6 +88,8 @@ def main():
         console.print(f"[bold {GRUVBOX['red']}]错误: JSON 格式错误[/bold {GRUVBOX['red']}]")
         return
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         console.print(f"[bold {GRUVBOX['red']}]错误: {str(e)}[/bold {GRUVBOX['red']}]")
         return
 
@@ -89,6 +99,17 @@ def main():
     console.print(f"[{GRUVBOX['aqua']}]File Path:[/{GRUVBOX['aqua']}] {args.file_path}")
     console.print(f"[{GRUVBOX['aqua']}]Case Index:[/{GRUVBOX['aqua']}] {args.case_index}")
     console.print(f"[{GRUVBOX['aqua']}]Total Cases:[/{GRUVBOX['aqua']}] {len(data_list)}")
+    
+    if stats:
+        console.print()
+        console.print(f"[{GRUVBOX['purple']}]Stats summary:[/{GRUVBOX['purple']}]")
+        for k, v in stats.items():
+            if isinstance(v, dict):
+                # Count non-zero stats
+                non_zero = {rk: rv for rk, rv in v.items() if rv > 0}
+                console.print(f"  [{GRUVBOX['aqua']}]{k}:[/{GRUVBOX['aqua']}] {non_zero}")
+            else:
+                console.print(f"  [{GRUVBOX['aqua']}]{k}:[/{GRUVBOX['aqua']}] {v}")
     console.print()
 
     # 分离轨迹和元数据

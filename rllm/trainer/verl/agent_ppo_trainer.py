@@ -673,6 +673,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             if not v_list:
                 continue
             v_list = np.array(v_list)
+            )
             metrics.update(
                 {
                     f"traj/{k}_mean": v_list.mean(),
@@ -684,15 +685,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         # Save chat completions and stats to files
         save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
         os.makedirs(save_dir, exist_ok=True)
-        batch_uuid = str(uuid.uuid4())[:8]
 
-        # Save chat completions
-        file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_{batch_uuid}.json")
-        with open(file_path, "w") as f:
-            print(f"Saving chat completions to {file_path}")
-            json.dump(chat_completions, f, ensure_ascii=False, indent=4)
-
-        # Collect and save termination reason statistics
+        # Collect termination reason statistics
         all_reasons = [
             "ENV_DONE",
             "TIMEOUT",
@@ -703,19 +697,42 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
             "INVALID_REACT_STRUCTURE",
-            "UNFINISHED_TOOL_CALL",
+            "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
             "UNKNOWN",
         ]
-        termination_stats = {r: 0 for r in all_reasons}
+        
+        success_stats = {r: 0 for r in all_reasons}
+        failure_stats = {r: 0 for r in all_reasons}
+        total_stats = {r: 0 for r in all_reasons}
+        
         for traj in trajectories:
             reason = traj.get("termination_reason") or "UNKNOWN"
-            termination_stats[reason] = termination_stats.get(reason, 0) + 1
+            reward = traj.get("trajectory_reward", 0)
+            
+            total_stats[reason] = total_stats.get(reason, 0) + 1
+            if reward >= 1.0:
+                success_stats[reason] = success_stats.get(reason, 0) + 1
+            else:
+                failure_stats[reason] = failure_stats.get(reason, 0) + 1
+
+        # Save chat completions and stats
+        file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
+        output_data = {
+            "success_stats": success_stats,
+            "failure_stats": failure_stats,
+            "total_stats": total_stats,
+            "chat_completions": chat_completions
+        }
+        with open(file_path, "w") as f:
+            print(f"Saving chat completions and stats to {file_path}")
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
         
-        stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats_{batch_uuid}.json")
+        # Also save separate stats file for backward compatibility or easy access
+        stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats.json")
         with open(stats_path, "w") as f:
             print(f"Saving trajectory stats to {stats_path}")
-            json.dump(termination_stats, f, ensure_ascii=False, indent=4)
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length
@@ -861,12 +878,53 @@ class AgentPPOTrainer(RayPPOTrainer):
         all_mc_returns = []  # Monte Carlo returns for each episode
         # the last step will have reward assigned and be used for advantage calculation
 
+        # Collect termination reason statistics
+        all_reasons = [
+            "ENV_DONE",
+            "TIMEOUT",
+            "MAX_STEPS",
+            "TRUNCATION",
+            "PROMPT_TRUNCATION",
+            "ABNORMAL_PARSE_ERROR",
+            "ABNORMAL_TOOL_BURST",
+            "ABNORMAL_REPEATED_QUERY",
+            "INVALID_REACT_STRUCTURE",
+            "INVALID_FINAL_STEP",
+            "ENV_TIMEOUT",
+            "UNKNOWN",
+        ]
+        
+        success_stats = {r: 0 for r in all_reasons}
+        failure_stats = {r: 0 for r in all_reasons}
+        total_stats = {r: 0 for r in all_reasons}
+        
+        chat_completions = []
+
         for episode in steps:
             episode_steps = episode["steps"]
             idx = episode["idx"]
             training_reward = episode["trajectory_reward"]
             mc_returns = episode["mc_returns"]
-            termination_reason = episode.get("termination_reason")
+            termination_reason = episode.get("termination_reason") or "UNKNOWN"
+
+            total_stats[termination_reason] = total_stats.get(termination_reason, 0) + 1
+            if training_reward >= 1.0:
+                success_stats[termination_reason] = success_stats.get(termination_reason, 0) + 1
+            else:
+                failure_stats[termination_reason] = failure_stats.get(termination_reason, 0) + 1
+
+            # Reconstruct a simplified version of chat completions for logging
+            traj_completions = []
+            for s in episode_steps:
+                traj_completions.append({"role": "user", "content": s["prompt"]})
+                traj_completions.append({"role": "assistant", "content": s["response"]})
+            
+            traj_completions.append({
+                "steps": len(episode_steps),
+                "reward": training_reward.item() if hasattr(training_reward, "item") else float(training_reward),
+                "termination_reason": termination_reason
+            })
+            chat_completions.append(traj_completions)
 
             # Mask out overlong trajectories
             masked_out = overlong_filter and termination_reason in overlong_reasons
@@ -967,6 +1025,26 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
 
         meta_info = {"repeat_counts": [x + 1 for x in step_numbers]}
+
+        # Save chat completions and stats
+        save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
+        output_data = {
+            "success_stats": success_stats,
+            "failure_stats": failure_stats,
+            "total_stats": total_stats,
+            "chat_completions": chat_completions
+        }
+        with open(file_path, "w") as f:
+            print(f"Saving chat completions and stats (Stepwise) to {file_path}")
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
+        
+        # Also save separate stats file for backward compatibility
+        stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats.json")
+        with open(stats_path, "w") as f:
+            print(f"Saving trajectory stats (Stepwise) to {stats_path}")
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
 
         result = DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch, meta_info=meta_info)
 

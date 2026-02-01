@@ -260,9 +260,7 @@ class AgentExecutionEngine:
 
             while retry_count < max_step_retries and not validation_success:
                 start_time = time.time()
-                model_output = await self.get_model_response(
-                    retry_prompt_messages, application_id, **kwargs
-                )
+                model_output = await self.get_model_response(retry_prompt_messages, application_id, **kwargs)
                 response = model_output.text
                 tool_calls = model_output.tool_calls
                 finish_reason = model_output.finish_reason
@@ -275,7 +273,7 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = ((len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response or finish_reason == "length")
+                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response or finish_reason == "length"
                 # is_invalid = len(tool_calls) == 0 if tool_calls else True
 
                 if not is_invalid:
@@ -291,8 +289,7 @@ class AgentExecutionEngine:
                     if retry_count > max_step_retries:
                         # Max retries exhausted, treat as abnormal parse error (5.4.1)
                         colorful_print(
-                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. "
-                            f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
+                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
                         )
                         # Handled outside loop
@@ -313,8 +310,7 @@ class AgentExecutionEngine:
                     """
 
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): "
-                        f"No tool calls and no \\boxed{{}}",
+                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}",
                         "yellow",
                     )
                     continue
@@ -336,7 +332,7 @@ class AgentExecutionEngine:
             response = final_response
             model_output = final_model_output
             tool_calls = model_output.tool_calls
-            
+
             # 5.4.1 Handle abnormal trajectories: Tool Burst (> 10 tool calls)
             if tool_calls and len(tool_calls) > 10:
                 termination_reason = "ABNORMAL_TOOL_BURST"
@@ -360,13 +356,14 @@ class AgentExecutionEngine:
                             # We assume simple string check or parsed dict
                             if isinstance(args_str, str):
                                 import json
+
                                 try:
                                     args = json.loads(args_str)
                                 except:
                                     args = {}
                             else:
                                 args = args_str
-                            
+
                             query = args.get("query")
                             if query:
                                 if query in seen_queries:
@@ -376,7 +373,7 @@ class AgentExecutionEngine:
                         except Exception:
                             # If parsing fails, ignore (or could be strict)
                             pass
-            
+
             if is_repeated:
                 termination_reason = "ABNORMAL_REPEATED_QUERY"
                 reward = 0.0
@@ -498,7 +495,7 @@ class AgentExecutionEngine:
             if step_idx == self.max_steps - 1:
                 # 5.4.3 Exceeding search step limit: stop + 0 reward
                 termination_reason = "MAX_STEPS"
-                reward = 0.0 # Force 0 reward
+                reward = 0.0  # Force 0 reward
 
         # Enforce ReAct workflow: >= 3 steps and only enable odd number of steps
         # Also filter out trajectories ending with a tool call but no boxed answer
@@ -510,8 +507,8 @@ class AgentExecutionEngine:
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
-                if "<tool_call>" in last_response or "\\boxed" not in last_response:
-                    termination_reason = "UNFINISHED_TOOL_CALL"
+                if "<tool_call>" in last_response or "</tool_call>" in last_response or "\\boxed" not in last_response:
+                    termination_reason = "INVALID_FINAL_STEP"
                     should_discard = True
                     colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
 
@@ -690,7 +687,7 @@ class AgentExecutionEngine:
     async def run_agent_trajectory_with_retry(self, idx, seed=0, mode="Text", **kwargs):
         # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
         max_attempts = max(self.retry_limit, 8) + 1
-        
+
         for attempt in range(max_attempts):
             try:
                 application_id = str(uuid.uuid4())
