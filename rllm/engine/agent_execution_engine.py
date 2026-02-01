@@ -503,13 +503,13 @@ class AgentExecutionEngine:
             step_count = len(episode_steps)
             if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
-                raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
+                # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
                 if "<tool_call>" in last_response or "</tool_call>" in last_response or "\\boxed" not in last_response:
                     termination_reason = "INVALID_FINAL_STEP"
-                    should_discard = True
+                    # should_discard = True
                     colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
 
         # 5.4.2 Search errors: discard directly
@@ -525,7 +525,7 @@ class AgentExecutionEngine:
                 masked_out = True
 
         # Calculate final reward if not stopped abnormally
-        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "MAX_STEPS"}
+        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
         if hasattr(env, "compute_final_reward") and not masked_out and termination_reason not in abnormal_reasons:
             cur_step = agent.get_current_state()
             start_time = time.time()

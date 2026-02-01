@@ -703,7 +703,17 @@ class AgentPPOTrainer(RayPPOTrainer):
         
         success_stats = {r: 0 for r in all_reasons}
         failure_stats = {r: 0 for r in all_reasons}
+        negative_reward_stats = {r: 0 for r in all_reasons}
         total_stats = {r: 0 for r in all_reasons}
+
+        abnormal_reasons = {
+            "ABNORMAL_PARSE_ERROR",
+            "ABNORMAL_TOOL_BURST",
+            "ABNORMAL_REPEATED_QUERY",
+            "INVALID_REACT_STRUCTURE",
+            "INVALID_FINAL_STEP",
+            "ENV_TIMEOUT",
+        }
         
         for traj in trajectories:
             reason = traj.get("termination_reason") or "UNKNOWN"
@@ -712,14 +722,17 @@ class AgentPPOTrainer(RayPPOTrainer):
             total_stats[reason] = total_stats.get(reason, 0) + 1
             if reward >= 1.0:
                 success_stats[reason] = success_stats.get(reason, 0) + 1
-            else:
+            elif reason in abnormal_reasons:
                 failure_stats[reason] = failure_stats.get(reason, 0) + 1
+            else:
+                negative_reward_stats[reason] = negative_reward_stats.get(reason, 0) + 1
 
         # Save chat completions and stats
         file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
         output_data = {
             "success_stats": success_stats,
             "failure_stats": failure_stats,
+            "negative_reward_stats": negative_reward_stats,
             "total_stats": total_stats,
             "chat_completions": chat_completions
         }
@@ -895,8 +908,18 @@ class AgentPPOTrainer(RayPPOTrainer):
         
         success_stats = {r: 0 for r in all_reasons}
         failure_stats = {r: 0 for r in all_reasons}
+        negative_reward_stats = {r: 0 for r in all_reasons}
         total_stats = {r: 0 for r in all_reasons}
         
+        abnormal_reasons = {
+            "ABNORMAL_PARSE_ERROR",
+            "ABNORMAL_TOOL_BURST",
+            "ABNORMAL_REPEATED_QUERY",
+            "INVALID_REACT_STRUCTURE",
+            "INVALID_FINAL_STEP",
+            "ENV_TIMEOUT",
+        }
+
         chat_completions = []
 
         for episode in steps:
@@ -909,8 +932,10 @@ class AgentPPOTrainer(RayPPOTrainer):
             total_stats[termination_reason] = total_stats.get(termination_reason, 0) + 1
             if training_reward >= 1.0:
                 success_stats[termination_reason] = success_stats.get(termination_reason, 0) + 1
-            else:
+            elif termination_reason in abnormal_reasons:
                 failure_stats[termination_reason] = failure_stats.get(termination_reason, 0) + 1
+            else:
+                negative_reward_stats[termination_reason] = negative_reward_stats.get(termination_reason, 0) + 1
 
             # Reconstruct a simplified version of chat completions for logging
             traj_completions = []
@@ -1032,6 +1057,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         output_data = {
             "success_stats": success_stats,
             "failure_stats": failure_stats,
+            "negative_reward_stats": negative_reward_stats,
             "total_stats": total_stats,
             "chat_completions": chat_completions
         }
