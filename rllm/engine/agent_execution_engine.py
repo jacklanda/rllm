@@ -507,10 +507,13 @@ class AgentExecutionEngine:
             else:
                 # Only check last response if structure is valid (implies step_count >= 5, so steps exist)
                 last_response = episode_steps[-1]["response"]
-                if "<tool_call>" in last_response or "</tool_call>" in last_response or "\\boxed" not in last_response:
-                    termination_reason = "INVALID_FINAL_STEP"
+                # if "<tool_call>" in last_response or "</tool_call>" in last_response or "\\boxed" not in last_response:
+                if "\\boxed" in last_response:
+                    # termination_reason = "INVALID_FINAL_STEP"
+                    termination_reason = "ENV_DONE"
                     # should_discard = True
-                    colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
+                    # colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)", "yellow")
+                    colorful_print(f"Trajectory {idx} completed: {termination_reason} (Last step has boxed answer)", "green")
 
         # 5.4.2 Search errors: discard directly
         if should_discard:
