@@ -40,7 +40,7 @@ class AgentExecutionEngine:
         api_retries=3,
         retry_limit=32,
         max_steps=32,
-        max_response_length=32768,
+        max_response_length=36000,
         max_prompt_length=2048,
         config=None,
         agent_class=None,

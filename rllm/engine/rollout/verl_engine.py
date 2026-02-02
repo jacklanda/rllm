@@ -31,7 +31,7 @@ class VerlEngine(RolloutEngine):
             top_k=config.actor_rollout_ref.rollout.top_k,
             top_p=config.actor_rollout_ref.rollout.top_p,
             logprobs=1,
-            max_tokens=32768
+            max_tokens=36000
         )
 
         self.val_sampling_params = dict(
@@ -39,7 +39,7 @@ class VerlEngine(RolloutEngine):
             top_k=config.actor_rollout_ref.rollout.val_kwargs.top_k,
             top_p=config.actor_rollout_ref.rollout.val_kwargs.top_p,
             logprobs=1,
-            max_tokens=32768
+            max_tokens=36000
         )
 
         print(f"train_sampling_params: {self.train_sampling_params}")

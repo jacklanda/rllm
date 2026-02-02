@@ -130,11 +130,11 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                max_tokens = 32768
+                max_tokens = 36000
             else:
                 # Original calculation
                 # max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 32768
+                max_tokens = 36000
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
@@ -211,7 +211,7 @@ def main(config):
     )
 
     env_args = {
-        "max_steps": 32,
+        "max_steps": 64,
         "tool_map": tool_map,
         "reward_fn": reward_fn,
     }
