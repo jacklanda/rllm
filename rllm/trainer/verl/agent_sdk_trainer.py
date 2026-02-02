@@ -198,7 +198,7 @@ class AgentSdkTrainer(RayPPOTrainer):
         timing_raw = {}
 
         for epoch in range(self.config.trainer.total_epochs):
-            pprint(f"epoch {epoch}, step {self.global_steps} started")
+            print(f"epoch {epoch}, step {self.global_steps} started")
             for batch_dict in self.train_dataloader:
                 do_profile = self.global_steps in self.config.trainer.profile_steps if self.config.trainer.get("profile_steps") is not None else False
                 with marked_timer("start_profile", timing_raw):

@@ -156,7 +156,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         self.global_steps += 1
 
         for epoch in range(self.config.trainer.total_epochs):
-            pprint(f"epoch {epoch}, step {self.global_steps} started")
+            print(f"epoch {epoch}, step {self.global_steps} started")
             for batch_dict in self.train_dataloader:
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))], dtype=object)
