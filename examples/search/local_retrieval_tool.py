@@ -189,6 +189,7 @@ class LocalRetrievalTool(Tool):
                         content = summary.get("summary", "").split("# Summary:", 1)[-1].strip()
                 except Exception as e:
                     logger.warning(f"Error during summarization: {e}")
+                    content = "\n\n".join(documents)
 
             if len(content.split()) >= 256:
                 summary = " ".join(content.split()[:256]) + "..."

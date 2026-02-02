@@ -585,12 +585,14 @@ class AgentExecutionEngine:
                         reward_metrics["rewards/pass@1"] = metadata["f1_score"]
                     if "exact_match" in metadata:
                         reward_metrics["rewards/exact_match"] = 1.0 if metadata["exact_match"] else 0.0
+                    """
                     if "base_reward" in metadata:
                         reward_metrics["rewards/base_reward"] = metadata["base_reward"]
                     if "tool_call_reward" in metadata:
                         reward_metrics["rewards/tool_call"] = metadata["tool_call_reward"]
                     if "repetition_penalty_reward" in metadata and metadata["repetition_penalty_reward"] is not None:
                         reward_metrics["rewards/repetition_penalty"] = metadata["repetition_penalty_reward"]
+                    """
 
                     # Check if step.reward contains intermediate rewards
                     # Sum all intermediate step rewards as a separate metric
