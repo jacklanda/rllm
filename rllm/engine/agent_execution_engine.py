@@ -497,11 +497,11 @@ class AgentExecutionEngine:
                 termination_reason = "MAX_STEPS"
                 reward = 0.0  # Force 0 reward
 
-        # Enforce ReAct workflow: >= 3 steps and only enable odd number of steps
+        # Enforce ReAct workflow: >= 5 steps and only enable odd number of steps
         # Also filter out trajectories ending with a tool call but no boxed answer
         if not should_discard:
             step_count = len(episode_steps)
-            if step_count < 3:
+            if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
                 # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
                 colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
