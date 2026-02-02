@@ -87,7 +87,7 @@ actor_rollout_ref:
     free_cache_engine: true
     tensor_model_parallel_size: 2
     max_num_batched_tokens: 65536
-    max_model_len: 40960
+    max_model_len: 32768
     max_num_seqs: 1024
     log_prob_micro_batch_size: null
     log_prob_micro_batch_size_per_gpu: null
