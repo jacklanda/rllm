@@ -92,7 +92,7 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # data = json.load(f)
     # v3.1
     # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-    # data = json.load(f)
+        # data = json.load(f)
     # ASearcher (Baseline)
     with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
         data = json.load(f)
@@ -130,11 +130,11 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                max_tokens = 36000
+                max_tokens = 34000
             else:
                 # Original calculation
                 # max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 36000
+                max_tokens = 34000
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
