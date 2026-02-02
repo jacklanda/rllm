@@ -211,7 +211,7 @@ def main(config):
     )
 
     env_args = {
-        "max_steps": 25,
+        "max_steps": 32,
         "tool_map": tool_map,
         "reward_fn": reward_fn,
     }
