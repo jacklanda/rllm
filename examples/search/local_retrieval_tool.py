@@ -171,6 +171,7 @@ class LocalRetrievalTool(Tool):
             documents = self._format_search_results(results, query)
 
             # Truncate content if too long (keep first 512 characters)
+            content = "\n\n".join(documents)
             if True:  # TODO: replace the condition to check if summarization is enabled
                 try:
                     payload = {

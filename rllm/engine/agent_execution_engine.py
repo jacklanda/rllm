@@ -709,7 +709,7 @@ class AgentExecutionEngine:
         for attempt in range(max_attempts):
             try:
                 application_id = str(uuid.uuid4())
-                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
+                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=480)
             except InvalidReactStructureError as e:
                 # Retry 32 times for this specific error
                 if attempt < 32:
