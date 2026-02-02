@@ -130,11 +130,11 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                max_tokens = 34000
+                max_tokens = 32768
             else:
                 # Original calculation
                 # max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 34000
+                max_tokens = 32768
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
