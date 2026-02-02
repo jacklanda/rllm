@@ -572,14 +572,54 @@ class AgentPPOTrainer(RayPPOTrainer):
         """
         if timing_raw is None:
             timing_raw = {}
+        
+        dropped_trajectories = []
         with marked_timer("collect_trajectory", timing_raw):
             trajectories = []
             if self.async_rollout_mode:
                 gen_seq_generator = self.generate_agent_trajectories_async(timing_raw=timing_raw, meta_info=meta_info, mode="Token")
                 for _, trajectory in enumerate(gen_seq_generator):
-                    trajectories.append(trajectory)
+                    if trajectory.get("dropped", False):
+                        dropped_trajectories.append(trajectory)
+                    else:
+                        trajectories.append(trajectory)
             else:
                 raise ValueError("Only async rollout mode is supported")
+        
+        # Dump dropped trajectories
+        if dropped_trajectories:
+            dropped_dump = []
+            for traj in dropped_trajectories:
+                idx = traj["idx"]
+                # Ensure we can access uid
+                if batch is not None and "uid" in batch.non_tensor_batch:
+                    u_id = batch.non_tensor_batch["uid"][idx]
+                else:
+                    u_id = "unknown"
+                
+                messages = traj.get("chat_completions", [])
+                
+                # Find the prompt
+                prompt = ""
+                for msg in messages:
+                    if msg["role"] == "user":
+                        prompt = msg["content"]
+                        break
+                
+                dropped_dump.append({
+                    "uuid": str(u_id),
+                    "prompt": prompt,
+                    "termination_reason": traj.get("termination_reason"),
+                    "trajectory": messages
+                })
+            
+            save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
+            os.makedirs(save_dir, exist_ok=True)
+            dropped_path = os.path.join(save_dir, f"global_steps_dropped_traj_{self.global_steps}.json")
+            with open(dropped_path, "w") as f:
+                print(f"Saving dropped trajectories to {dropped_path}")
+                json.dump(dropped_dump, f, ensure_ascii=False, indent=4)
+
         # Sort trajectories by their idx, to ensure they are in order.
         trajectories.sort(key=lambda x: x["idx"])
 
@@ -600,11 +640,50 @@ class AgentPPOTrainer(RayPPOTrainer):
             timing_raw = {}
         if uids is None:
             uids = []
+        
+        dropped_trajectories = []
         with marked_timer("collect_trajectory", timing_raw):
             steps = []
             gen_seq_generator = self.generate_agent_trajectories_async(timing_raw=timing_raw, meta_info=meta_info, mode="Step")
             for _, trajectory in enumerate(gen_seq_generator):
-                steps.append(trajectory)
+                if trajectory.get("dropped", False):
+                    dropped_trajectories.append(trajectory)
+                else:
+                    steps.append(trajectory)
+        
+        # Dump dropped trajectories (Stepwise)
+        if dropped_trajectories:
+            dropped_dump = []
+            for traj in dropped_trajectories:
+                idx = traj["idx"]
+                if uids is not None and len(uids) > idx:
+                    u_id = uids[idx]
+                else:
+                    u_id = "unknown"
+                
+                messages = traj.get("chat_completions", [])
+                
+                # Find the prompt
+                prompt = ""
+                for msg in messages:
+                    if msg["role"] == "user":
+                        prompt = msg["content"]
+                        break
+                
+                dropped_dump.append({
+                    "uuid": str(u_id),
+                    "prompt": prompt,
+                    "termination_reason": traj.get("termination_reason"),
+                    "trajectory": messages
+                })
+            
+            save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
+            os.makedirs(save_dir, exist_ok=True)
+            dropped_path = os.path.join(save_dir, f"global_steps_dropped_traj_{self.global_steps}.json")
+            with open(dropped_path, "w") as f:
+                print(f"Saving dropped trajectories (Stepwise) to {dropped_path}")
+                json.dump(dropped_dump, f, ensure_ascii=False, indent=4)
+
         # Sort trajectories by their idx, to ensure they are in order.
         steps.sort(key=lambda x: x["idx"])
 
@@ -740,11 +819,32 @@ class AgentPPOTrainer(RayPPOTrainer):
             print(f"Saving chat completions and stats to {file_path}")
             json.dump(output_data, f, ensure_ascii=False, indent=4)
         
-        # Also save separate stats file for backward compatibility or easy access
-        # stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats.json")
-        # with open(stats_path, "w") as f:
-            # print(f"Saving trajectory stats to {stats_path}")
-            # json.dump(output_data, f, ensure_ascii=False, indent=4)
+        # Dump trajectories with uuid and prompt
+        traj_dump = []
+        for traj in trajectories:
+            idx = traj["idx"]
+            u_id = batch.non_tensor_batch["uid"][idx]
+            messages = traj["chat_completions"]
+            
+            # Find the prompt. Usually the first user message.
+            prompt = ""
+            for msg in messages:
+                if msg["role"] == "user":
+                    prompt = msg["content"]
+                    break
+            
+            traj_dump.append({
+                "uuid": str(u_id),
+                "prompt": prompt,
+                "trajectory": messages,
+                "reward": traj["trajectory_reward"].item() if hasattr(traj["trajectory_reward"], "item") else float(traj["trajectory_reward"]),
+                "termination_reason": traj.get("termination_reason")
+            })
+            
+        traj_dump_path = os.path.join(save_dir, f"global_steps_traj_{self.global_steps}.json")
+        with open(traj_dump_path, "w") as f:
+            print(f"Saving trajectories with uuid to {traj_dump_path}")
+            json.dump(traj_dump, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length
@@ -1070,6 +1170,29 @@ class AgentPPOTrainer(RayPPOTrainer):
         with open(stats_path, "w") as f:
             print(f"Saving trajectory stats (Stepwise) to {stats_path}")
             json.dump(output_data, f, ensure_ascii=False, indent=4)
+
+        # Dump trajectories with uuid and prompt
+        traj_dump = []
+        for episode in steps:
+            idx = episode["idx"]
+            u_id = uids[idx]
+            episode_steps = episode["steps"]
+            
+            # In stepwise mode, episode["steps"] is a list of dicts with "prompt" and "response"
+            main_prompt = episode_steps[0]["prompt"] if episode_steps else ""
+            
+            traj_dump.append({
+                "uuid": str(u_id),
+                "prompt": main_prompt,
+                "trajectory": episode_steps,
+                "reward": episode["trajectory_reward"].item() if hasattr(episode["trajectory_reward"], "item") else float(episode["trajectory_reward"]),
+                "termination_reason": episode.get("termination_reason")
+            })
+            
+        traj_dump_path = os.path.join(save_dir, f"global_steps_traj_{self.global_steps}.json")
+        with open(traj_dump_path, "w") as f:
+            print(f"Saving trajectories with uuid (Stepwise) to {traj_dump_path}")
+            json.dump(traj_dump, f, ensure_ascii=False, indent=4)
 
         result = DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch, meta_info=meta_info)
 

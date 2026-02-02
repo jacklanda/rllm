@@ -298,7 +298,7 @@ class AgentExecutionEngine:
                     """
                     # Add error feedback (hint) to conversation for retry
                     error_msg = (
-                        "Your previous response is invalid. You must either: "
+                        "You must either: "
                         "1) Use a tool call (e.g., search) to gather information, OR "
                         "2) Provide a final answer in \\boxed{} format. "
                         "Please provide a valid response."
@@ -310,7 +310,7 @@ class AgentExecutionEngine:
                     """
 
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}",
+                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}, retrying.",
                         "yellow",
                     )
                     continue
@@ -525,7 +525,13 @@ class AgentExecutionEngine:
         # 5.4.2 Search errors: discard directly
         if should_discard:
             await loop.run_in_executor(self.executor, env.close)
-            return None
+            return {
+                "idx": env.idx,
+                "dropped": True,
+                "termination_reason": termination_reason,
+                "chat_completions": agent.chat_completions,
+                "steps": episode_steps,
+            }
 
         masked_out = False
         if self.overlong_filter:
