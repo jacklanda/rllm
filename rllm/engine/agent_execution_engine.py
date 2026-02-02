@@ -501,7 +501,7 @@ class AgentExecutionEngine:
         # Also filter out trajectories ending with a tool call but no boxed answer
         if not should_discard:
             step_count = len(episode_steps)
-            if step_count < 7:
+            if step_count < 3:
                 termination_reason = "INVALID_REACT_STRUCTURE"
                 # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
                 colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
