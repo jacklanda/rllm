@@ -741,10 +741,10 @@ class AgentPPOTrainer(RayPPOTrainer):
             json.dump(output_data, f, ensure_ascii=False, indent=4)
         
         # Also save separate stats file for backward compatibility or easy access
-        stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats.json")
-        with open(stats_path, "w") as f:
-            print(f"Saving trajectory stats to {stats_path}")
-            json.dump(output_data, f, ensure_ascii=False, indent=4)
+        # stats_path = os.path.join(save_dir, f"global_steps_{self.global_steps}_stats.json")
+        # with open(stats_path, "w") as f:
+            # print(f"Saving trajectory stats to {stats_path}")
+            # json.dump(output_data, f, ensure_ascii=False, indent=4)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length

@@ -28,7 +28,7 @@ class LocalRetrievalTool(Tool):
         description: str = DESCRIPTION,
         server_url: str = None,
         timeout: float = 3600.0,
-        max_results: int = 8,
+        max_results: int = 10,
     ):
         """
         Initialize the Local Retrieval Tool.
@@ -140,7 +140,7 @@ class LocalRetrievalTool(Tool):
             # Prepare request payload
             payload = {
                 "query": query,
-                "top_k": min(top_k, 10),
+                "top_k": max(top_k, 10),
                 "description": "",
                 "args": [],  # Add empty args
                 "kwargs": {},  # Add empty kwargs

@@ -92,7 +92,7 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # data = json.load(f)
     # v3.1
     # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-        # data = json.load(f)
+    # data = json.load(f)
     # ASearcher (Baseline)
     with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
         data = json.load(f)
@@ -130,11 +130,11 @@ def _patch_vllm_generate():
             if override_max_tokens is not None:
                 # Use the override value instead of recalculating
                 # max_tokens = override_max_tokens
-                max_tokens = 32768
+                max_tokens = 36000
             else:
                 # Original calculation
                 # max_tokens = self.config.max_model_len - len(prompt_ids)
-                max_tokens = 32768
+                max_tokens = 36000
 
             # Ensure max_tokens is at least 1
             if max_tokens < 1:
@@ -149,7 +149,7 @@ def _patch_vllm_generate():
             from verl.workers.rollout.replica import TokenOutput
 
             sampling_params["logprobs"] = 0 if sampling_params.pop("logprobs", False) else None
-            sampling_params.setdefault("repetition_penalty", self.config.get("repetition_penalty", 1.0))
+            sampling_params.setdefault("repetition_penalty", self.config.get("repetition_penalty", 1.05))
             sampling_params = SamplingParams(max_tokens=max_tokens, **sampling_params)
             prompt_ids = _qwen2_5_vl_dedup_image_tokens(prompt_ids, self.model_config.processor)
             prompt = TokensPrompt(prompt_token_ids=prompt_ids, multi_modal_data={"image": image_data} if image_data else None)
@@ -211,7 +211,7 @@ def main(config):
     )
 
     env_args = {
-        "max_steps": 32,
+        "max_steps": 64,
         "tool_map": tool_map,
         "reward_fn": reward_fn,
     }

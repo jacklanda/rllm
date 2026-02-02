@@ -38,9 +38,9 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=16,
-        max_steps=8,
-        max_response_length=32768,
+        retry_limit=32,
+        max_steps=32,
+        max_response_length=36000,
         max_prompt_length=2048,
         config=None,
         agent_class=None,
@@ -48,7 +48,7 @@ class AgentExecutionEngine:
         agent_args=None,
         rollout_engine_args=None,
         env_args=None,
-        max_workers=512,  # The number of concurrent env operations
+        max_workers=1024,  # The number of concurrent env operations
         enforce_max_prompt_length=False,  # If enabled, applies max_prompt check per step
         overlong_filter=False,  # Filter for overlong trajectories (i.e. TRUNCATION, MAX_STEPS, TIMEOUT)
         **kwargs,
@@ -86,7 +86,7 @@ class AgentExecutionEngine:
 
         self.trajectory_timeout = trajectory_timeout
         if not trajectory_timeout:
-            self.trajectory_timeout = int(1e9)
+            self.trajectory_timeout = int(1e6)
 
         if env_class is not None:
             assert env_class.is_multithread_safe(), "Environment must be multithread safe for async engine"
@@ -501,7 +501,7 @@ class AgentExecutionEngine:
         # Also filter out trajectories ending with a tool call but no boxed answer
         if not should_discard:
             step_count = len(episode_steps)
-            if step_count < 5:
+            if step_count < 7:
                 termination_reason = "INVALID_REACT_STRUCTURE"
                 # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})")
                 colorful_print(f"Trajectory {idx} discarded: {termination_reason} (Steps: {step_count})", "yellow")
@@ -703,9 +703,9 @@ class AgentExecutionEngine:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=3600)
             except InvalidReactStructureError as e:
-                # Retry 16 times for this specific error
-                if attempt < 16:
-                    colorful_print(f"Trajectory {idx} retry {attempt+1}/16 due to: {e}", "yellow")
+                # Retry 32 times for this specific error
+                if attempt < 32:
+                    colorful_print(f"Trajectory {idx} retry {attempt+1}/32 due to: {e}", "yellow")
                     continue
                 else:
                     colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after {attempt+1} retries.", "red")
