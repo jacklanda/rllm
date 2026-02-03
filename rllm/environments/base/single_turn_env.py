@@ -37,7 +37,10 @@ class SingleTurnEnvironment(MultiTurnEnvironment):
         """
         reward_output = self.reward_fn(task_info=task, action=action)
 
-        return reward_output.reward, {}
+        # Store reward metadata in the info dict for later use in GDPO
+        info = {"reward_metadata": reward_output.metadata} if hasattr(reward_output, "metadata") else {}
+
+        return reward_output.reward, info
 
     @staticmethod
     def from_dict(env_args: dict) -> "SingleTurnEnvironment":

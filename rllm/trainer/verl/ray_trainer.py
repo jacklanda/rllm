@@ -125,7 +125,7 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     return data, metrics
 
 
-def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1):
+def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1, norm_adv_by_std_in_grpo=True, config=None):
     # prepare response group
     # TODO: add other ways to estimate advantages
     if adv_estimator == "gae":
@@ -161,9 +161,15 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         data.batch["returns"] = returns
 
     elif adv_estimator == "gdpo":
-        ## only handle two reward now
-        token_level_scores_correctness = data.batch["token_level_scores_correctness"]
-        token_level_scores_format = data.batch["token_level_scores_format"]
+        ## Handle two reward components: base (correctness) and bonus (tool_call + step_bonus)
+        # Check if we have the component rewards, otherwise fall back to using token_level_rewards
+        if "token_level_rewards_base" in data.batch and "token_level_rewards_bonus" in data.batch:
+            token_level_rewards_base = data.batch["token_level_rewards_base"]
+            token_level_rewards_bonus = data.batch["token_level_rewards_bonus"]
+        else:
+            # Fallback: use the full reward as base, and zero for bonus
+            token_level_rewards_base = data.batch["token_level_rewards"]
+            token_level_rewards_bonus = torch.zeros_like(token_level_rewards_base)
 
         # shared variables
         index = data.non_tensor_batch["uid"]
@@ -172,13 +178,13 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
 
-        ## handle correctness first
-        correctness_normalized_score, _ = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_scores_correctness, eos_mask=response_mask, index=index)
+        ## handle base reward (correctness) first
+        base_normalized_score, _ = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards_base, eos_mask=response_mask, index=index)
 
-        ## handle format now
-        format_normalized_score, _ = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_scores_format, eos_mask=response_mask, index=index)
+        ## handle bonus reward (tool_call + step_bonus) now
+        bonus_normalized_score, _ = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards_bonus, eos_mask=response_mask, index=index)
 
-        new_advantage = correctness_normalized_score + format_normalized_score
+        new_advantage = base_normalized_score + bonus_normalized_score
 
         advantages = masked_whiten(new_advantage, response_mask) * response_mask
 
@@ -217,9 +223,14 @@ def compute_data_metrics(batch, use_critic=True):
     sequence_score = batch.batch["token_level_scores"].sum(-1)
     sequence_reward = batch.batch["token_level_rewards"].sum(-1)
 
-    sequence_score_format = batch.batch["token_level_scores_format"].sum(-1)
-    sequence_score_correctness = batch.batch["token_level_scores_correctness"].sum(-1)
-    sequence_score_length = batch.batch["token_level_scores_length"].sum(-1)
+    # Handle optional reward components (for backward compatibility)
+    sequence_score_format = batch.batch.get("token_level_scores_format", torch.zeros_like(sequence_score)).sum(-1) if "token_level_scores_format" in batch.batch else torch.zeros_like(sequence_score)
+    sequence_score_correctness = batch.batch.get("token_level_scores_correctness", torch.zeros_like(sequence_score)).sum(-1) if "token_level_scores_correctness" in batch.batch else torch.zeros_like(sequence_score)
+    sequence_score_length = batch.batch.get("token_level_scores_length", torch.zeros_like(sequence_score)).sum(-1) if "token_level_scores_length" in batch.batch else torch.zeros_like(sequence_score)
+
+    # Handle new reward components for agent training
+    sequence_score_base = batch.batch.get("token_level_scores_base", torch.zeros_like(sequence_score)).sum(-1) if "token_level_scores_base" in batch.batch else torch.zeros_like(sequence_score)
+    sequence_score_bonus = batch.batch.get("token_level_scores_bonus", torch.zeros_like(sequence_score)).sum(-1) if "token_level_scores_bonus" in batch.batch else torch.zeros_like(sequence_score)
 
     advantages = batch.batch["advantages"]
     returns = batch.batch["returns"]
@@ -249,18 +260,36 @@ def compute_data_metrics(batch, use_critic=True):
         "critic/score/mean": torch.mean(sequence_score).detach().item(),
         "critic/score/max": torch.max(sequence_score).detach().item(),
         "critic/score/min": torch.min(sequence_score).detach().item(),
-        # format score
-        "critic/format_score/mean": torch.mean(sequence_score_format).detach().item(),
-        "critic/format_score/max": torch.max(sequence_score_format).detach().item(),
-        "critic/format_score/min": torch.min(sequence_score_format).detach().item(),
-        # correctness score
-        "critic/correctness_score/mean": torch.mean(sequence_score_correctness).detach().item(),
-        "critic/correctness_score/max": torch.max(sequence_score_correctness).detach().item(),
-        "critic/correctness_score/min": torch.min(sequence_score_correctness).detach().item(),
-        # length score
-        "critic/length_score/mean": torch.mean(sequence_score_length).detach().item(),
-        "critic/length_score/max": torch.max(sequence_score_length).detach().item(),
-        "critic/length_score/min": torch.min(sequence_score_length).detach().item(),
+        # format score (optional, for backward compatibility)
+        **({
+            "critic/format_score/mean": torch.mean(sequence_score_format).detach().item(),
+            "critic/format_score/max": torch.max(sequence_score_format).detach().item(),
+            "critic/format_score/min": torch.min(sequence_score_format).detach().item(),
+        } if "token_level_scores_format" in batch.batch else {}),
+        # correctness score (optional, for backward compatibility)
+        **({
+            "critic/correctness_score/mean": torch.mean(sequence_score_correctness).detach().item(),
+            "critic/correctness_score/max": torch.max(sequence_score_correctness).detach().item(),
+            "critic/correctness_score/min": torch.min(sequence_score_correctness).detach().item(),
+        } if "token_level_scores_correctness" in batch.batch else {}),
+        # length score (optional, for backward compatibility)
+        **({
+            "critic/length_score/mean": torch.mean(sequence_score_length).detach().item(),
+            "critic/length_score/max": torch.max(sequence_score_length).detach().item(),
+            "critic/length_score/min": torch.min(sequence_score_length).detach().item(),
+        } if "token_level_scores_length" in batch.batch else {}),
+        # base score (for agent training with GDPO)
+        **({
+            "critic/base_score/mean": torch.mean(sequence_score_base).detach().item(),
+            "critic/base_score/max": torch.max(sequence_score_base).detach().item(),
+            "critic/base_score/min": torch.min(sequence_score_base).detach().item(),
+        } if "token_level_scores_base" in batch.batch else {}),
+        # bonus score (for agent training with GDPO)
+        **({
+            "critic/bonus_score/mean": torch.mean(sequence_score_bonus).detach().item(),
+            "critic/bonus_score/max": torch.max(sequence_score_bonus).detach().item(),
+            "critic/bonus_score/min": torch.min(sequence_score_bonus).detach().item(),
+        } if "token_level_scores_bonus" in batch.batch else {}),
         # reward
         "critic/rewards/mean": torch.mean(sequence_reward).detach().item(),
         "critic/rewards/max": torch.max(sequence_reward).detach().item(),

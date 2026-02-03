@@ -572,10 +572,12 @@ class AgentExecutionEngine:
 
             # Extract reward components from the last step's metadata
             reward_metrics = {}
+            reward_metadata = {}  # Store full metadata for GDPO
             if trajectory.steps:
                 last_step = trajectory.steps[-1]
                 if "metadata" in last_step.info:
                     metadata = last_step.info["metadata"]
+                    reward_metadata = metadata  # Store full metadata
 
                     # Extract individual reward components for separate logging
                     # These will be logged as traj/rewards/pass@1, traj/rewards/tool_call, etc.
@@ -607,6 +609,7 @@ class AgentExecutionEngine:
                 "response_tokens": response_tokens,
                 "response_masks": response_masks,
                 "trajectory_reward": trajectory.reward,
+                "reward_metadata": reward_metadata,  # Add reward metadata for GDPO
                 "idx": env.idx,
                 "termination_reason": termination_reason,
                 "chat_completions": agent.chat_completions,
@@ -633,6 +636,7 @@ class AgentExecutionEngine:
             steps_result = {
                 "steps": episode_steps,
                 "trajectory_reward": trajectory.reward,
+                "reward_metadata": reward_metadata,  # Add reward metadata for GDPO
                 "idx": env.idx,
                 "mc_returns": [step.mc_return for step in trajectory.steps][: len(episode_steps)],
                 "termination_reason": termination_reason,

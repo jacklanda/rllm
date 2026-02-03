@@ -380,6 +380,13 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                         batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
 
+                        # For GDPO, also set up the component rewards
+                        if self.config.algorithm.adv_estimator == "gdpo":
+                            if "token_level_scores_base" in batch.batch:
+                                batch.batch["token_level_rewards_base"] = batch.batch["token_level_scores_base"]
+                            if "token_level_scores_bonus" in batch.batch:
+                                batch.batch["token_level_rewards_bonus"] = batch.batch["token_level_scores_bonus"]
+
                         if self.config.rllm.stepwise_advantage.enable:
                             if self.config.rllm.stepwise_advantage.mode == "per_step":
                                 batch.batch["token_level_rewards"] = batch.batch["mc_returns"]
@@ -707,6 +714,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         all_response_tokens_list = []
         all_masks_list = []
         traj_scores = []
+        traj_base_rewards = []  # Store base rewards for GDPO
+        traj_bonus_rewards = []  # Store bonus rewards (tool_call + step_bonus) for GDPO
         chat_completions = []
         traj_metrics = []
         metrics = {}
@@ -721,6 +730,17 @@ class AgentPPOTrainer(RayPPOTrainer):
             all_response_tokens_list.append(response_tokens)
             all_masks_list.append(traj["response_masks"])
             traj_scores.append(traj["trajectory_reward"])
+
+            # Extract reward components from metadata for GDPO
+            reward_metadata = traj.get("reward_metadata", {})
+            base_reward = reward_metadata.get("base_reward", traj["trajectory_reward"])
+            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0)
+            step_bonus = reward_metadata.get("step_bonus", 0.0)
+
+            # Store base reward and bonus rewards separately
+            traj_base_rewards.append(base_reward)
+            traj_bonus_rewards.append(tool_call_reward + step_bonus)
+
             trajectories_w_metadata = traj["chat_completions"].copy()
 
             original_idx = traj["idx"]
@@ -886,11 +906,15 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Place all rewards to last response token (e.g., eos token)
         score_batch = torch.zeros_like(response_batch, dtype=torch.float32)
+        base_reward_batch = torch.zeros_like(response_batch, dtype=torch.float32)
+        bonus_reward_batch = torch.zeros_like(response_batch, dtype=torch.float32)
 
         for i, score in enumerate(traj_scores):
             resp_len = response_lengths[i]
             if resp_len > 0 and resp_len <= score_batch.shape[1]:
                 score_batch[i, resp_len - 1] = score
+                base_reward_batch[i, resp_len - 1] = traj_base_rewards[i]
+                bonus_reward_batch[i, resp_len - 1] = traj_bonus_rewards[i]
 
         tensor_batch = {
             "input_ids": trajectory_batch,
@@ -899,6 +923,8 @@ class AgentPPOTrainer(RayPPOTrainer):
             "responses": response_batch,
             "prompts": prompts_batch,
             "token_level_scores": score_batch,
+            "token_level_scores_base": base_reward_batch,  # Base reward for GDPO
+            "token_level_scores_bonus": bonus_reward_batch,  # Bonus reward for GDPO
             "response_mask": traj_mask,
         }
 
@@ -983,6 +1009,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         all_steps_step_ids = []
         all_steps_masked_out = []  # whether this step should be masked out due to overlong filter
         training_rewards = []
+        training_base_rewards = []  # Store base rewards for GDPO
+        training_bonus_rewards = []  # Store bonus rewards for GDPO
         all_mc_returns = []  # Monte Carlo returns for each episode
         # the last step will have reward assigned and be used for advantage calculation
 
@@ -991,6 +1019,15 @@ class AgentPPOTrainer(RayPPOTrainer):
             idx = episode["idx"]
             training_reward = episode["trajectory_reward"]
             mc_returns = episode["mc_returns"]
+
+            # Extract reward components from metadata for GDPO
+            reward_metadata = episode.get("reward_metadata", {})
+            base_reward = reward_metadata.get("base_reward", training_reward)
+            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0)
+            step_bonus = reward_metadata.get("step_bonus", 0.0)
+
+            training_base_rewards.append(base_reward)
+            training_bonus_rewards.append(tool_call_reward + step_bonus)
             termination_reason = episode.get("termination_reason") or "UNKNOWN"
 
             # Mask out overlong trajectories
@@ -1057,6 +1094,8 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Place all rewards to last response token of each step
         score_batch = torch.zeros_like(response_batch, dtype=torch.float32)
+        base_reward_batch = torch.zeros_like(response_batch, dtype=torch.float32)
+        bonus_reward_batch = torch.zeros_like(response_batch, dtype=torch.float32)
         mc_return_batch = torch.zeros_like(response_batch, dtype=torch.float32)
 
         step_index = 0
@@ -1066,6 +1105,8 @@ class AgentPPOTrainer(RayPPOTrainer):
                 resp_len = response_lengths[step_index]
                 if resp_len > 0 and resp_len <= score_batch.shape[1]:
                     score_batch[step_index, resp_len - 1] = traj_score
+                    base_reward_batch[step_index, resp_len - 1] = training_base_rewards[i]
+                    bonus_reward_batch[step_index, resp_len - 1] = training_bonus_rewards[i]
                     mc_return_batch[step_index, resp_len - 1] = all_mc_returns[step_index]
                 step_index += 1
         assert step_index == score_batch.shape[0], f"Number of total steps used should equal to batch size, but got {step_index} and {score_batch.shape[0]}"
@@ -1077,6 +1118,8 @@ class AgentPPOTrainer(RayPPOTrainer):
             "responses": response_batch,
             "prompts": prompts_batch,
             "token_level_scores": score_batch,
+            "token_level_scores_base": base_reward_batch,  # Base reward for GDPO
+            "token_level_scores_bonus": bonus_reward_batch,  # Bonus reward for GDPO
             "mc_returns": mc_return_batch,
             "response_mask": traj_mask,
         }
