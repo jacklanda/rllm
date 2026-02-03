@@ -701,7 +701,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         Returns:
             DataProto: A structured dataset containing input tokens, masks, and rewards.
         """
-        from verl.utils.torch_functional import pad_sequence_to_length
+        from verl.utils.torch_functional import pad_sequence_to_length, masked_whiten
 
         all_initial_tokens_list = []
         all_response_tokens_list = []
@@ -968,7 +968,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             yield item
 
     def _transform_agent_steps(self, steps: list[dict], uids: np.ndarray, dropped_dump: list[dict] = None):
-        from verl.utils.torch_functional import pad_sequence_to_length
+        from verl.utils.torch_functional import pad_sequence_to_length, masked_whiten
 
         overlong_filter = self.config.rllm.agent.get("overlong_filter", False)
         overlong_reasons = {"TRUNCATION", "MAX_STEPS", "TIMEOUT"}
