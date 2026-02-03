@@ -31,7 +31,7 @@ class RewardConfig:
     toolcall_bonus: float = 0.5
 
     # Step-based reward scaling config
-    enable_step_bonus: bool = False
+    enable_step_bonus: bool = True
     min_steps_for_bonus: int = 5  # Minimum steps to qualify for bonus
     max_steps_for_bonus: int = 15  # Steps at which bonus reaches maximum
     step_bonus_rate: float = 0.3  # Maximum bonus multiplier (e.g., 0.3 = 30% bonus)
