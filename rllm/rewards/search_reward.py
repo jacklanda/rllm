@@ -358,6 +358,28 @@ class RewardSearchFn:
         else:
             reward = self.config.incorrect_reward
 
+        # Apply step-based bonus for correct answers
+        step_bonus = 0.0
+        if self.config.enable_step_bonus and is_correct and reward > 0:
+            step_count = input.task_info.get("step_count", 0)
+            if step_count >= self.config.min_steps_for_bonus:
+                # Calculate bonus scaling factor
+                # Linear scaling from min_steps to max_steps
+                steps_above_min = step_count - self.config.min_steps_for_bonus
+                steps_range = self.config.max_steps_for_bonus - self.config.min_steps_for_bonus
+
+                if steps_range > 0:
+                    # Normalize to [0, 1] range, capped at 1.0
+                    bonus_factor = min(1.0, steps_above_min / steps_range)
+                    # Apply bonus rate
+                    step_bonus = reward * self.config.step_bonus_rate * bonus_factor
+                else:
+                    # If min and max are the same, give full bonus if qualified
+                    step_bonus = reward * self.config.step_bonus_rate
+
+                metadata["step_bonus_factor"] = bonus_factor if steps_range > 0 else 1.0
+                metadata["step_count"] = step_count
+
         """
         # Apply tool call bonus/penalty based on new strategy:
         # 1. Invalid tags -> -0.5 penalty
@@ -411,11 +433,15 @@ class RewardSearchFn:
 
         # Add tool call information and other reward components to metadata
         metadata.update({
-            "base_reward": base_reward,
+            "base_reward": reward,
             # "tool_call_reward": tool_call_adjustment,
             "tool_call_reward": 0,
             # "repetition_penalty_reward": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
             "repetition_penalty_reward": 0,
+            "step_bonus": step_bonus,
         })
+
+        # Apply step bonus to final reward
+        reward += step_bonus
 
         return RewardOutput(reward=reward, is_correct=is_correct, metadata=metadata)

@@ -38,7 +38,7 @@ class AgentExecutionEngine:
         trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
-        retry_limit=32,
+        retry_limit=2,
         max_steps=32,
         max_response_length=36000,
         max_prompt_length=2048,
@@ -583,6 +583,10 @@ class AgentExecutionEngine:
                         reward_metrics["rewards/pass@1"] = metadata["f1_score"]
                     if "exact_match" in metadata:
                         reward_metrics["rewards/exact_match"] = 1.0 if metadata["exact_match"] else 0.0
+                    if "step_bonus" in metadata:
+                        reward_metrics["rewards/step_bonus"] = metadata["step_bonus"]
+                    if "base_reward" in metadata:
+                        reward_metrics["rewards/base_reward"] = metadata["base_reward"]
                     """
                     if "base_reward" in metadata:
                         reward_metrics["rewards/base_reward"] = metadata["base_reward"]
@@ -702,7 +706,7 @@ class AgentExecutionEngine:
 
     async def run_agent_trajectory_with_retry(self, idx, seed=0, mode="Text", **kwargs):
         # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
-        max_attempts = max(self.retry_limit, 8) + 1
+        max_attempts = max(self.retry_limit, 4) + 1
 
         for attempt in range(max_attempts):
             try:

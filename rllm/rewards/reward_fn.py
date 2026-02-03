@@ -93,6 +93,10 @@ def create_search_reward_fn(
     repetition_max_n: int = 4,
     correct_reward: float = 1.0,
     incorrect_reward: float = 0.0,
+    enable_step_bonus: bool = False,
+    min_steps_for_bonus: int = 5,
+    max_steps_for_bonus: int = 15,
+    step_bonus_rate: float = 0.3,
 ):
     """
     Factory function to create a configurable search reward function.
@@ -104,12 +108,21 @@ def create_search_reward_fn(
         repetition_max_n: Maximum n-gram length for repetition detection (default: 4)
         correct_reward: Reward for correct answers (default: 1.0)
         incorrect_reward: Reward for incorrect answers (default: 0.0)
+        enable_step_bonus: Whether to enable step-based bonus (default: False)
+        min_steps_for_bonus: Minimum steps to qualify for bonus (default: 5)
+        max_steps_for_bonus: Steps at which bonus reaches maximum (default: 15)
+        step_bonus_rate: Maximum bonus multiplier (default: 0.3, i.e., 30% bonus)
 
     Returns:
         A reward function with the specified configuration
 
     Example:
-        >>> reward_fn = create_search_reward_fn(toolcall_bonus=0.7, apply_repetition_penalty=True)
+        >>> reward_fn = create_search_reward_fn(
+        ...     enable_step_bonus=True,
+        ...     min_steps_for_bonus=5,
+        ...     max_steps_for_bonus=15,
+        ...     step_bonus_rate=0.3
+        ... )
         >>> env_args = {"reward_fn": reward_fn, ...}
     """
     reward_config = RewardConfig(
@@ -119,6 +132,10 @@ def create_search_reward_fn(
         repetition_max_n=repetition_max_n,
         correct_reward=correct_reward,
         incorrect_reward=incorrect_reward,
+        enable_step_bonus=enable_step_bonus,
+        min_steps_for_bonus=min_steps_for_bonus,
+        max_steps_for_bonus=max_steps_for_bonus,
+        step_bonus_rate=step_bonus_rate,
     )
 
     def configured_reward_fn(task_info: dict, action: str) -> RewardOutput:

@@ -30,6 +30,12 @@ class RewardConfig:
     # Bonus reward for calling tools.
     toolcall_bonus: float = 0.5
 
+    # Step-based reward scaling config
+    enable_step_bonus: bool = False
+    min_steps_for_bonus: int = 5  # Minimum steps to qualify for bonus
+    max_steps_for_bonus: int = 15  # Steps at which bonus reaches maximum
+    step_bonus_rate: float = 0.3  # Maximum bonus multiplier (e.g., 0.3 = 30% bonus)
+
     # Repetition penalty config
     apply_repetition_penalty: bool = False
     repetition_penalty_weight: float = 0.5
