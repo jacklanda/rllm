@@ -828,13 +828,13 @@ class AgentPPOTrainer(RayPPOTrainer):
         # Save merged chat completions and stats
         file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
         traj_stats_data = {
-            "success": success_stats,
-            "failure": failure_stats,
-            "negative_reward": negative_reward_stats,
+            # "success": success_stats,
+            # "failure": failure_stats,
+            # "negative_reward": negative_reward_stats,
             "total": total_stats,
         }
         merged_data = {
-            "stats": traj_stats_data,
+            "traj_stats": traj_stats_data["total"],
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
@@ -1157,13 +1157,13 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
         traj_stats_data = {
-            "success": success_stats,
-            "failure": failure_stats,
-            "negative_reward": negative_reward_stats,
+            # "success": success_stats,
+            # "failure": failure_stats,
+            # "negative_reward": negative_reward_stats,
             "total": total_stats,
         }
         merged_data = {
-            "stats": traj_stats_data,
+            "traj_stats": traj_stats_data["total"],
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
