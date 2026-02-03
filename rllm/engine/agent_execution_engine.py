@@ -706,7 +706,7 @@ class AgentExecutionEngine:
 
     async def run_agent_trajectory_with_retry(self, idx, seed=0, mode="Text", **kwargs):
         # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
-        max_attempts = max(self.retry_limit, 4) + 1
+        max_attempts = max(self.retry_limit, 2) + 1
 
         for attempt in range(max_attempts):
             try:
@@ -715,7 +715,7 @@ class AgentExecutionEngine:
             except InvalidReactStructureError as e:
                 # Retry `max_attempts` times for this specific error
                 if attempt < max_attempts - 1:
-                    colorful_print(f"Trajectory {idx} retry {attempt+1}/32 due to: {e}", "yellow")
+                    colorful_print(f"Trajectory {idx} retry {attempt+1}/{max_attempts} due to: {e}", "yellow")
                     continue
                 else:
                     colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after {attempt+1} retries.", "red")
