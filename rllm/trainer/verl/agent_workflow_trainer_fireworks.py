@@ -28,11 +28,11 @@ from verl.trainer.ppo.metric_utils import (
 from verl.trainer.ppo.ray_trainer import (
     ResourcePoolManager,
     apply_kl_penalty,
-    compute_advantage,
 )
 from verl.trainer.ppo.utils import Role, WorkerType
 from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path
 from verl.utils.debug import marked_timer
+from rllm.trainer.verl.ray_trainer import compute_advantage
 from verl.utils.tracking import Tracking
 
 from rllm.trainer.verl.agent_workflow_trainer import AgentWorkflowPPOTrainer

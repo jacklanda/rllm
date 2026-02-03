@@ -20,10 +20,10 @@ from verl.trainer.ppo.metric_utils import compute_data_metrics, compute_timing_m
 from verl.trainer.ppo.ray_trainer import (
     RayPPOTrainer,
     ResourcePoolManager,
-    compute_advantage,
     compute_response_mask,
 )
 from verl.trainer.ppo.utils import Role, WorkerType
+from rllm.trainer.verl.ray_trainer import compute_advantage
 from verl.utils.debug import marked_timer
 from verl.utils.metric import reduce_metrics
 
