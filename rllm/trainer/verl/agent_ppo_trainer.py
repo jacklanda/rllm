@@ -830,8 +830,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         traj_stats_data = {
             "success": success_stats,
             "failure": failure_stats,
-            # "negative_reward": negative_reward_stats,
-            # "total": total_stats,
+            "negative_reward": negative_reward_stats,
+            "total": total_stats,
         }
         merged_data = {
             "stats": traj_stats_data,
@@ -1159,8 +1159,8 @@ class AgentPPOTrainer(RayPPOTrainer):
         traj_stats_data = {
             "success": success_stats,
             "failure": failure_stats,
-            # "negative_reward": negative_reward_stats,
-            # "total": total_stats,
+            "negative_reward": negative_reward_stats,
+            "total": total_stats,
         }
         merged_data = {
             "stats": traj_stats_data,
