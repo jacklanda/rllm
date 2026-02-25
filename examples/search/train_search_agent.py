@@ -108,21 +108,24 @@ def prepare_validation_data(train_size=None, test_size=None):
     # hotpotqa
     # hotpotqa_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/hotpotqa/data.json"
     # gaia
-    # gaia_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gaia/data.json"
+    gaia_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gaia/data.json"
     # browse_comp
     # browse_comp_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/browse_comp/data.json"
     # browsecomp_plus
     # browsecomp_plus_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/browsecomp_plus/data_decrypted.json"
 
     validation_data = []
-    for path in [_2wiki_path, bamboogle_path, gpqa_diamond_path, musique]:
+    source2count = {}
+    for path in [_2wiki_path, bamboogle_path, gpqa_diamond_path, musique, gaia_path]:
         with open(path) as f:
             data = json.load(f)
             validation_data.extend(data)
+            source = data[0].get("data_source", "unknown") if len(data) > 0 else "unknown"
+            source2count[source] = source2count.get(source, 0) + len(data)
 
-    validation_data = [example for example in validation_data if example.get("extra_info.split") == "validation" or example.get("extra_info").get("split") == "validation"]
+    validation_data = [example for example in validation_data if example.get("extra_info.split") == "validation" or example.get("extra_info", {}).get("split", "") == "validation"]
 
-    print(f"Found {len(validation_data)} validation examples")
+    print(f"Found {len(validation_data)} validation examples:", source2count)
 
     validation_data = process_split(validation_data, test_size)
 
