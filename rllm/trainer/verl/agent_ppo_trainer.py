@@ -514,6 +514,15 @@ class AgentPPOTrainer(RayPPOTrainer):
             else:
                 test_output_gen_batch, _ = self.generate_agent_trajectory(meta_info=test_batch.meta_info, batch=test_batch)
 
+            # Filter test_batch to only valid indices (some trajectories may have been dropped)
+            if "idxs" in test_output_gen_batch.non_tensor_batch:
+                valid_indices = test_output_gen_batch.non_tensor_batch["idxs"]
+                if len(valid_indices) == 0:
+                    print("No valid trajectories found in this validation batch. Skipping...")
+                    continue
+                if len(valid_indices) < len(test_batch.batch):
+                    test_batch = test_batch.select_idxs(valid_indices)
+
             test_batch = test_batch.union(test_output_gen_batch)
 
             reward_tensor = test_batch.batch["token_level_scores"]
