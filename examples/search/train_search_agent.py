@@ -102,7 +102,7 @@ def prepare_validation_data(train_size=None, test_size=None):
     # bamboogle
     bamboogle_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/bamboogle/data.json"
     # gpqa_diamond
-    gpqa_diamond_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gpqa_diamond/gpqa_diamond_processed.json"
+    gpqa_diamond_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gpqa_diamond/data.json"
     # musique
     musique = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/musique/data.json"
     # hotpotqa
