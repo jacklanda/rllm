@@ -92,7 +92,7 @@ def prepare_validation_data(train_size=None, test_size=None):
         """Process a data split with optional size limit"""
         if max_size is not None:
             split_data = split_data.select(range(min(max_size, len(split_data))))
-        processed = [{"question": example["extra_info.question"], "ground_truth": example["gt_answer"], "data_source": "gem_search"} for example in split_data]
+        processed = [{"question": example.get("extra_info.question") or example.get("extra_info", {}).get("question"), "ground_truth": example["gt_answer"], "data_source": example.get("data_source", "unknown")} for example in split_data]
         print(f"Processed {len(processed)} examples")
         return processed
 
