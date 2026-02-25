@@ -120,7 +120,7 @@ def prepare_validation_data(train_size=None, test_size=None):
             data = json.load(f)
             validation_data.extend(data)
 
-    validation_data = [example for example in validation_data if example.get("extra_info.split") == "validation"]
+    validation_data = [example for example in validation_data if example.get("extra_info.split") == "validation" or example.get("extra_info").get("split") == "validation"]
 
     print(f"Found {len(validation_data)} validation examples")
 
