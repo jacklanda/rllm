@@ -56,6 +56,81 @@ def prepare_hotpotqa_data(train_size=None, test_size=None):
     return train_dataset, test_dataset
 
 
+def prepare_training_data(train_size=None, test_size=None):
+    """
+    Prepare training data by combining multiple datasets if needed.
+    Currently just loads HotpotQA, but can be extended to include GEM search or others.
+
+    Args:
+        train_size: Maximum number of training examples to load
+        test_size: Maximum number of test examples to load
+
+    Returns:
+        tuple: (train_dataset, test_dataset)
+    """
+    # To use GEM search data instead, comment out the above line and uncomment the line below:
+    # return prepare_gem_search_data(train_size, test_size)
+
+    # For now, just load HotpotQA. Can add more datasets and combine them here.
+    return prepare_hotpotqa_data(train_size, test_size)
+
+
+def prepare_validation_data(train_size=None, test_size=None):
+    """
+    Prepare validation data by combining multiple datasets if needed.
+    Currently just loads HotpotQA, but can be extended to include GEM search or others.
+
+    Args:
+        train_size: Maximum number of training examples to load
+        test_size: Maximum number of test examples to load
+
+    Returns:
+        tuple: (train_dataset, test_dataset)
+    """
+
+    def process_split(split_data, max_size):
+        """Process a data split with optional size limit"""
+        if max_size is not None:
+            split_data = split_data.select(range(min(max_size, len(split_data))))
+        processed = [{"question": example["extra_info.question"], "ground_truth": example["gt_answer"], "data_source": "gem_search"} for example in split_data]
+        print(f"Processed {len(processed)} examples")
+        return processed
+
+    print("Loading validation dataset...")
+    # 2wiki
+    _2wiki_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/2wiki/data.json"
+    # bamboogle
+    bamboogle_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/bamboogle/data.json"
+    # gpqa_diamond
+    gpqa_diamond_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gpqa_diamond/gpqa_diamond_processed.json"
+    # musique
+    musique = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/musique/data.json"
+    # hotpotqa
+    # hotpotqa_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/hotpotqa/data.json"
+    # gaia
+    # gaia_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/gaia/data.json"
+    # browse_comp
+    # browse_comp_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/browse_comp/data.json"
+    # browsecomp_plus
+    # browsecomp_plus_path = "/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/benchmarks/browsecomp_plus/data_decrypted.json"
+
+    validation_data = []
+    for path in [_2wiki_path, bamboogle_path, gpqa_diamond_path, musique]:
+        with open(path) as f:
+            data = json.load(f)
+            validation_data.extend(data)
+
+    validation_data = [example for example in validation_data if example.get("extra_info.split") == "train"]
+
+    print(f"Found {len(validation_data)} validation examples")
+
+    validation_data = process_split(validation_data, test_size)
+
+    validation_data = DatasetRegistry.register_dataset("mix_validation", validation_data, "test")
+
+    return validation_data
+
+
 def prepare_gem_search_data(train_size=None, test_size=None):
     """
     Loading gem search dataset and registering it with the DatasetRegistry.
@@ -91,11 +166,11 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
     # data = json.load(f)
     # v3.1
-    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
-        # data = json.load(f)
-    # ASearcher (Baseline)
-    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
         data = json.load(f)
+    # ASearcher (Baseline)
+    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
+    # data = json.load(f)
 
     train_data = [example for example in data if example.get("extra_info.split") == "train"]
     # test_data = [example for example in data if example.get("extra_info.split") == "test"]
@@ -190,11 +265,8 @@ def main(config):
     # Apply monkey patch for vLLM server
     _patch_vllm_generate()
 
-    # train_dataset = DatasetRegistry.load_dataset("hotpotqa", "train")
-    # val_dataset = DatasetRegistry.load_dataset("hotpotqa", "test")
-    # train_dataset, _ = prepare_gem_search_data()
-    # _, val_dataset = prepare_hotpotqa_data()
-    train_dataset, val_dataset = prepare_hotpotqa_data()
+    train_dataset, _ = prepare_training_data()
+    val_dataset = prepare_validation_data()
 
     tool_map = {"local_search": LocalRetrievalTool}
 
