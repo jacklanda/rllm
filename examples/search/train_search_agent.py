@@ -68,11 +68,11 @@ def prepare_training_data(train_size=None, test_size=None):
     Returns:
         tuple: (train_dataset, test_dataset)
     """
-    # To use GEM search data instead, comment out the above line and uncomment the line below:
-    # return prepare_gem_search_data(train_size, test_size)
-
     # For now, just load HotpotQA. Can add more datasets and combine them here.
-    return prepare_hotpotqa_data(train_size, test_size)
+    # return prepare_hotpotqa_data(train_size, test_size)
+
+    # To use GEM search data instead, comment out the above line and uncomment the line below:
+    return prepare_gem_search_data(train_size, test_size)
 
 
 def prepare_validation_data(train_size=None, test_size=None):
@@ -169,7 +169,10 @@ def prepare_gem_search_data(train_size=None, test_size=None):
     # with open("experiments/artifacts/search_data_20260119/search_data_processed_v3.json", "r") as f:
     # data = json.load(f)
     # v3.1
-    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
+    # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260120/search_data_processed_v3.json", "r") as f:
+    # data = json.load(f)
+    # v4
+    with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/search_data_20260303/search_data_processed_v4.json", "r") as f:
         data = json.load(f)
     # ASearcher (Baseline)
     # with open("/share/nlp/liuyang/workspace/gem/rllm/experiments/artifacts/ASearcher/ASearcher.json", "r") as f:
