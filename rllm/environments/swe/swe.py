@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+import re
 import warnings
 
 import numpy as np
@@ -21,6 +23,8 @@ except ImportError:
     Action = None
 
 from rllm.environments.base.base_env import BaseEnv
+
+logger = logging.getLogger(__name__)
 
 try:
     R2EGYM_PATH = os.path.dirname(r2egym.__file__)
@@ -60,8 +64,7 @@ class SWEEnv(BaseEnv):
         idx: int | None = None,
         step_timeout: int = 90,
         reward_timeout: int = 300,
-        backend: str = "kubernetes",
-        delete_image: bool = False,
+        backend: str = "docker",
         verbose: bool = False,
         scaffold: str = "r2egym",
     ):
@@ -71,7 +74,6 @@ class SWEEnv(BaseEnv):
             dataset: Dataset containing the tasks. If None, uses default dataset.
             idx: Index of the task to use. If None, selects a random task.
             timeout: Timeout for each step in seconds.
-            delete_image: Whether to delete the Docker image after closing.
         """
         if entry is not None:
             self.entry = entry
@@ -90,7 +92,6 @@ class SWEEnv(BaseEnv):
         self.step_timeout = step_timeout
         self.reward_timeout = reward_timeout
         self.total_steps = 0
-        self.delete_image = delete_image
         self.backend = backend
         self.env = None
         self.verbose = verbose
@@ -114,6 +115,7 @@ class SWEEnv(BaseEnv):
             self.env.add_commands(R2EGYM_COMMAND_FILES)
         else:
             self.env.add_commands(SWEAGENT_COMMAND_FILES)
+        self._fix_tool_shebangs()
         self.total_steps = 0
 
         # gt_patch = self.env.runtime.commit.get_patch(
@@ -128,17 +130,38 @@ class SWEEnv(BaseEnv):
             },
         )
 
+    def _fix_tool_shebangs(self):
+        """Fix tool script shebangs in the Docker container to use portable interpreter path.
+
+        R2E-Gym tool scripts are shipped with #!/root/.venv/bin/python, which only
+        works if setup_env() successfully symlinked a Python venv there.  Replacing
+        with #!/usr/bin/env python3 makes the scripts work regardless, since python3
+        is always reachable via DOCKER_PATH.
+        """
+        if self.scaffold == "r2egym":
+            tool_names = ["file_editor", "execute_bash", "search", "finish"]
+        else:
+            tool_names = ["str_replace_editor", "execute_bash", "submit"]
+
+        sed_cmds = " && ".join(
+            f"sed -i '1s|^#!.*python.*$|#!/usr/bin/env python3|' /usr/local/bin/{name}"
+            for name in tool_names
+        )
+        output, error_code = self.env.runtime.run(sed_cmds, timeout=15)
+        if error_code and "Error" in str(error_code):
+            logger.warning("Failed to fix tool shebangs: %s", output)
+
     def compute_final_reward(self):
         return self.env.compute_reward()
 
-    def step(self, action: str | Action) -> tuple[str, float, bool, bool, dict]:
+    def step(self, action: str | Action) -> tuple[str, float, bool, dict]:
         """Take a step in the environment.
 
         Args:
             action: Action string to execute in the environment
 
         Returns:
-            Tuple of (observation, reward, done, truncated, info)
+            Tuple of (observation, reward, done, info)
         """
         if isinstance(action, str):
             action_obj: Action = Action.from_string(action)
@@ -146,7 +169,14 @@ class SWEEnv(BaseEnv):
             action_obj = action
 
         if not action_obj.function_name:
-            return "", 0, False, {}
+            return (
+                "You forgot to use a function call in your response. "
+                "YOU MUST USE A FUNCTION CALL IN EACH RESPONSE.\n"
+                "IMPORTANT: YOU SHOULD NEVER ASK FOR HUMAN HELP.",
+                0,
+                False,
+                {},
+            )
 
         # RepoEnv always returns 0 reward, must be evaluated by DockerRuntime.
         obs, reward, done, info = self.env.step(action_obj)
@@ -154,16 +184,24 @@ class SWEEnv(BaseEnv):
         #     reward = self.env.compute_reward()
 
         self.total_steps += 1
-        return str(obs), reward, done, info
+        observation = str(obs)
+
+        # Normalize redundant error code prefix from DockerRuntime.
+        # DockerRuntime.run() returns error_code as "Error: Exit code N" string;
+        # Observation.__str__() then prepends "Exit code: " producing the redundant
+        # "Exit code: Error: Exit code N".  Collapse to "Exit code: N".
+        observation = re.sub(
+            r"Exit code: Error: Exit code (\S+)",
+            r"Exit code: \1",
+            observation,
+        )
+
+        return observation, reward, done, info
 
     def close(self) -> None:
         """Close the environment and clean up resources."""
         if self.env is not None:
             self.env.close()
-
-        if self.delete_image:
-            docker_image = self.env.runtime.docker_image
-            os.system(f"docker rmi {docker_image}")
 
     @staticmethod
     def from_dict(extra_info: dict | str) -> "SWEEnv":

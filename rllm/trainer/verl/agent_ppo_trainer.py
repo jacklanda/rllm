@@ -87,11 +87,34 @@ class AgentPPOTrainer(RayPPOTrainer):
             **engine_args,
         )
 
+    def _check_docker_connectivity(self):
+        """Pre-flight check: verify Docker daemon is reachable before launching trajectories."""
+        docker_host = os.environ.get("DOCKER_HOST", "")
+        if not docker_host:
+            return  # Using local socket, skip remote check
+
+        try:
+            import docker
+            client = docker.from_env(timeout=10)
+            client.ping()
+            client.close()
+            print(f"Docker health check passed (host={docker_host})")
+        except Exception as e:
+            raise RuntimeError(
+                f"Docker daemon is unreachable at {docker_host}: {e}\n"
+                f"Please ensure the Docker daemon is running and accessible. "
+                f"You can verify with: DOCKER_API_VERSION=1.44 docker -H {docker_host} info"
+            ) from e
+
     def init_envs_and_agents(self, batch):
         """
         Initialize environment depending on env_class with the necessary extra_info, also set uid of the batch.
         """
         assert self.agent_class is not None and self.env_class is not None, "Agent and environment classes must be provided"
+
+        # Pre-flight Docker health check: fail fast before creating any envs
+        self._check_docker_connectivity()
+
         env_args = batch.non_tensor_batch["extra_info"].tolist()
 
         full_agent_args = dict(self.config.rllm.agent.get("agent_args", {})) | self.agent_args
@@ -639,6 +662,25 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Sort trajectories by their idx, to ensure they are in order.
         trajectories.sort(key=lambda x: x["idx"])
+
+        # Guard: if all trajectories failed/were skipped, return empty result
+        # so fit_agent can detect empty idxs and `continue` to the next iteration.
+        if len(trajectories) == 0:
+            print(f"All {len(dropped_trajectories)} trajectories failed. Returning empty batch.")
+            if dropped_dump:
+                save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
+                os.makedirs(save_dir, exist_ok=True)
+                file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
+                merged_data = {
+                    "traj_stats": {},
+                    "accept_traj": [],
+                    "reject_traj": dropped_dump,
+                }
+                with open(file_path, "w") as f:
+                    json.dump(merged_data, f, ensure_ascii=False, indent=4)
+            empty_output = DataProto.from_dict(tensors={}, non_tensors={"idxs": np.array([])})
+            metrics = {"traj/accept_rate": 0.0}
+            return empty_output, metrics
 
         with marked_timer("transform_trajectory", timing_raw):
             # Transform the raw trajectories into DataProto format.

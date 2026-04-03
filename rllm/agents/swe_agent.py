@@ -41,9 +41,21 @@ def parse_xml_response(response_text: str) -> tuple[str, SWEAction]:
         action = match.group(1)  # The entire <function=...></function> block
         thought = response_text[: match.start()]  # Everything before the block
     else:
-        # If no match, treat entire text as "thought"
-        thought = response_text
-        action = ""
+        # Fallback: handle truncated function calls where </function> is missing
+        # (e.g., model hit max_tokens limit mid-generation).
+        # Try to extract whatever we can from <function=...> onwards.
+        trunc_pattern = re.compile(r"(?s)(<function=[^>]+>.*)")
+        trunc_match = trunc_pattern.search(response_text)
+        if trunc_match:
+            action = trunc_match.group(1).strip()
+            # Append closing tag so Action.from_string() can parse parameters
+            if "</function>" not in action:
+                action += "\n</function>"
+            thought = response_text[: trunc_match.start()]
+        else:
+            # No function call at all
+            thought = response_text
+            action = ""
 
     # Strip leading/trailing whitespace
     thought = thought.strip()
@@ -165,8 +177,9 @@ class SWEAgent(BaseAgent):
         self.step += 1
         return Action(action=cur_step.action)
 
-    def get_current_state(self) -> Step:
-        assert self._trajectory.steps, "Trajectory should not be empty when get_current_state is called."
+    def get_current_state(self) -> Step | None:
+        if not self._trajectory.steps:
+            return None
         return self._trajectory.steps[-1]
 
     def reset(self):

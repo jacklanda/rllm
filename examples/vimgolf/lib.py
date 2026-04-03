@@ -73,9 +73,10 @@ class VimGolfSingleTurnAgent(BaseAgent):
         """Return complete interaction trajectory."""
         return self._trajectory
 
-    def get_current_state(self) -> Step:
+    def get_current_state(self) -> Step | None:
         """Returns the current step/state of the agent."""
-        assert self._trajectory.steps, "Trajectory should not be empty when get_current_state is called."
+        if not self._trajectory.steps:
+            return None
         return self._trajectory.steps[-1]
 
 

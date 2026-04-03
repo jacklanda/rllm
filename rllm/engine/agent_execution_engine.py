@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import threading
 import time
 import traceback
 import uuid
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 import torch
@@ -25,6 +27,22 @@ logger = logging.getLogger(__name__)
 
 class InvalidReactStructureError(Exception):
     pass
+
+
+class DockerConnectionError(Exception):
+    """Raised when Docker daemon is unreachable, to fast-fail all trajectories."""
+    pass
+
+
+def _is_docker_connection_error(exc: Exception) -> bool:
+    """Check if an exception indicates Docker daemon connectivity failure."""
+    msg = str(exc).lower()
+    return (
+        "error while fetching server api version" in msg
+        or ("connection refused" in msg and ("docker" in msg or "/version" in msg or "/containers" in msg))
+        or ("connection aborted" in msg and "permission denied" in msg)
+        or ("max retries exceeded" in msg and ("/version" in msg or "/containers" in msg))
+    )
 
 
 class AgentExecutionEngine:
@@ -76,6 +94,11 @@ class AgentExecutionEngine:
         self.enforce_max_prompt_length = enforce_max_prompt_length
         self.disable_thinking = self.config.get("rllm", {}).get("disable_thinking", False) if self.config is not None else False
 
+        # Trajectory filtering toggles (read from config, default to True for backward compat)
+        _tf = self.config.get("rllm", {}).get("trajectory_filtering", {}) if self.config is not None else {}
+        self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)       # Per-step \boxed{} / tool_call validation + retry
+        self.enforce_react_structure = _tf.get("enforce_react_structure", False)         # Min 5 steps + final \boxed{} check
+
         self.agent_class = agent_class
         self.agent_args = agent_args
         self.env_class = env_class
@@ -83,6 +106,8 @@ class AgentExecutionEngine:
 
         self.agents = [None for _ in range(n_parallel_agents)]
         self.envs = [None for _ in range(n_parallel_agents)]
+        self._docker_healthy = None  # Set per generation round in trajectory_generator
+        self._trajectory_logs = []  # Collect all trajectory data for dumping to trajs.json
 
         self.trajectory_timeout = trajectory_timeout
         if not trajectory_timeout:
@@ -258,7 +283,7 @@ class AgentExecutionEngine:
             final_model_output = None
             retry_prompt_messages = prompt_messages.copy()  # Work with a copy for retries
 
-            while retry_count < max_step_retries and not validation_success:
+            while retry_count <= max_step_retries and not validation_success:
                 start_time = time.time()
                 model_output = await self.get_model_response(retry_prompt_messages, application_id, **kwargs)
                 response = model_output.text
@@ -273,8 +298,10 @@ class AgentExecutionEngine:
                 # - Invalid (retry): tool_calls is empty AND "\boxed" is NOT in step
                 # - Valid: tool_calls is empty BUT "\boxed" IS in step (final step)
                 # - Valid: tool_calls is NOT empty (action step, regardless of \boxed presence), Tool calls prioritize over final answering, encourage progressive tool usage
-                is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response or finish_reason == "length"
-                # is_invalid = len(tool_calls) == 0 if tool_calls else True
+                if self.validate_boxed_per_step:
+                    is_invalid = (len(tool_calls) == 0 if tool_calls else True) and "\\boxed" not in response or finish_reason == "length"
+                else:
+                    is_invalid = False  # Skip per-step validation when disabled
 
                 if not is_invalid:
                     # Valid output
@@ -288,6 +315,15 @@ class AgentExecutionEngine:
 
                     if retry_count > max_step_retries:
                         # Max retries exhausted, treat as abnormal parse error (5.4.1)
+                        print("Trajectory:", idx, "Step:", step_idx, "Response:", response, "Tool calls:", tool_calls, "Finish reason:", finish_reason)
+                        self._trajectory_logs.append({
+                            "type": "retry_exhausted",
+                            "trajectory": idx,
+                            "step": step_idx,
+                            "response": response,
+                            "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
+                            "finish_reason": finish_reason,
+                        })
                         colorful_print(
                             f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
@@ -309,6 +345,17 @@ class AgentExecutionEngine:
                     retry_prompt_messages.append({"role": "user", "content": error_msg})
                     """
 
+                    print("Trajectory:", idx, "Step:", step_idx, "Response:", response, "Tool calls:", tool_calls, "Finish reason:", finish_reason)
+                    self._trajectory_logs.append({
+                        "type": "retry",
+                        "trajectory": idx,
+                        "step": step_idx,
+                        "retry_count": retry_count,
+                        "max_step_retries": max_step_retries,
+                        "response": response,
+                        "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
+                        "finish_reason": finish_reason,
+                    })
                     colorful_print(
                         f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}, retrying.",
                         "yellow",
@@ -355,8 +402,6 @@ class AgentExecutionEngine:
                             # Handle simple JSON parsing if needed, though arguments usually string
                             # We assume simple string check or parsed dict
                             if isinstance(args_str, str):
-                                import json
-
                                 try:
                                     args = json.loads(args_str)
                                 except:
@@ -499,7 +544,7 @@ class AgentExecutionEngine:
 
         # Enforce ReAct workflow: >= 5 steps and only enable odd number of steps
         # Also filter out trajectories ending with a tool call but no boxed answer
-        if not should_discard:
+        if not should_discard and self.enforce_react_structure:
             step_count = len(episode_steps)
             if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
@@ -523,13 +568,23 @@ class AgentExecutionEngine:
         # 5.4.2 Search errors: discard directly
         if should_discard:
             await loop.run_in_executor(self.executor, env.close)
-            return {
+            dropped_result = {
                 "idx": env.idx,
                 "dropped": True,
                 "termination_reason": termination_reason,
                 "chat_completions": agent.chat_completions,
                 "steps": episode_steps,
             }
+            self._trajectory_logs.append({
+                "type": "trajectory",
+                "idx": env.idx,
+                "dropped": True,
+                "termination_reason": termination_reason,
+                "reward": 0.0,
+                "num_steps": len(episode_steps),
+                "chat_completions": agent.chat_completions,
+            })
+            return dropped_result
 
         masked_out = False
         if self.overlong_filter:
@@ -564,6 +619,17 @@ class AgentExecutionEngine:
         # Aggregate final trajectory statistics
         compute_trajectory_reward(trajectory)
         compute_mc_return(trajectory, gamma=self.gamma)
+
+        # Log the completed trajectory
+        self._trajectory_logs.append({
+            "type": "trajectory",
+            "idx": env.idx,
+            "dropped": False,
+            "termination_reason": termination_reason,
+            "reward": trajectory.reward,
+            "num_steps": len(trajectory.steps),
+            "chat_completions": agent.chat_completions,
+        })
 
         if mode == "Text":
             return trajectory
@@ -713,6 +779,20 @@ class AgentExecutionEngine:
         max_attempts = max(self.retry_limit, 2) + 1
 
         for attempt in range(max_attempts):
+            # Fast-fail if Docker daemon has been detected as down by another trajectory
+            if self._docker_healthy is not None and not self._docker_healthy.is_set():
+                colorful_print(f"Trajectory {idx} skipped: Docker daemon is unreachable (detected by another trajectory).", "red")
+                self._trajectory_logs.append({
+                    "type": "trajectory",
+                    "idx": idx,
+                    "dropped": True,
+                    "termination_reason": "DOCKER_UNHEALTHY",
+                    "reward": 0.0,
+                    "num_steps": 0,
+                    "chat_completions": [],
+                })
+                return None
+
             try:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=960)
@@ -723,8 +803,32 @@ class AgentExecutionEngine:
                     continue
                 else:
                     colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after {attempt} retries.", "pink")
+                    self._trajectory_logs.append({
+                        "type": "trajectory",
+                        "idx": idx,
+                        "dropped": True,
+                        "termination_reason": "INVALID_REACT_STRUCTURE",
+                        "reward": 0.0,
+                        "num_steps": 0,
+                        "chat_completions": [],
+                    })
                     return None
             except Exception as _:
+                # Detect Docker connection errors and signal all trajectories to stop
+                if _is_docker_connection_error(_):
+                    if self._docker_healthy is not None:
+                        self._docker_healthy.clear()  # Signal all trajectories
+                    colorful_print(f"Trajectory {idx} failed due to Docker connection error: {_}. Signaling all trajectories to stop.", "red")
+                    self._trajectory_logs.append({
+                        "type": "trajectory",
+                        "idx": idx,
+                        "dropped": True,
+                        "termination_reason": "DOCKER_CONNECTION_ERROR",
+                        "reward": 0.0,
+                        "num_steps": 0,
+                        "chat_completions": [],
+                    })
+                    return None
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
                 if attempt < max_attempts - 1:
                     colorful_print(f"Trajectory {idx} retry {attempt}/{max_attempts-1} due to exception: {_}", "yellow")
@@ -732,8 +836,34 @@ class AgentExecutionEngine:
                 else:
                     # traceback.print_exc()
                     colorful_print(f"Trajectory {idx} cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
+                    self._trajectory_logs.append({
+                        "type": "trajectory",
+                        "idx": idx,
+                        "dropped": True,
+                        "termination_reason": f"EXCEPTION: {type(_).__name__}: {_}",
+                        "reward": 0.0,
+                        "num_steps": 0,
+                        "chat_completions": [],
+                    })
                     return None
         return None
+
+    def _dump_trajectory_logs(self):
+        """Dump all collected trajectory logs to trajs.json (append to existing entries)."""
+        if not self._trajectory_logs:
+            return
+        # Read existing entries from file if present
+        existing = []
+        try:
+            with open("experiments/logs/trajs.json", "r") as f:
+                existing = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            existing = []
+        existing.extend(self._trajectory_logs)
+        with open("experiments/logs/trajs.json", "w") as f:
+            json.dump(existing, f, indent=4, ensure_ascii=False, default=str)
+        logger.info(f"Dumped {len(self._trajectory_logs)} trajectory logs to experiments/logs/trajs.json (total: {len(existing)})")
+        self._trajectory_logs = []
 
     async def trajectory_generator(self, reset_seed=0, timing_raw=None, mode="Text", **kwargs):
         if timing_raw is None:
@@ -743,6 +873,10 @@ class AgentExecutionEngine:
         max_concurrency = self.n_parallel_agents
 
         self.executor = ThreadPoolExecutor(max_workers=max_concurrency)
+
+        # Reset Docker health flag for this generation round (threading.Event: set = healthy)
+        self._docker_healthy = threading.Event()
+        self._docker_healthy.set()  # Assume healthy until proven otherwise
 
         if self.engine_name == "verl":
             await self.rollout_engine.wake_up()  # type: ignore
@@ -775,10 +909,17 @@ class AgentExecutionEngine:
                 result = await coro
                 tasks_completed += 1
                 colorful_print(f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed", "cyan")
+                # Dump trajectory logs after each trajectory completes
+                self._dump_trajectory_logs()
                 if result is not None:
                     yield result
             except Exception as e:
+                # Dump before propagating exception to avoid losing logs
+                self._dump_trajectory_logs()
                 raise e
+
+        # Final dump to ensure all remaining logs are flushed (e.g. when all trajectories failed)
+        self._dump_trajectory_logs()
 
         if self.engine_name == "verl":
             await self.rollout_engine.sleep()  # type: ignore
@@ -841,6 +982,7 @@ class AgentExecutionEngine:
         all_trajectories = {task_id: trajectory for task_id, trajectory in results}
         ordered_trajectories = [all_trajectories[i] for i in range(len(all_trajectories))]
 
+        self._dump_trajectory_logs()
         self.executor.shutdown(wait=False, cancel_futures=True)
 
         return ordered_trajectories

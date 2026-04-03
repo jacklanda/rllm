@@ -220,3 +220,4 @@ uv.lock
 .last_training_commit
 experiments/**
 rllm/data/datasets/**
+.claude/**
