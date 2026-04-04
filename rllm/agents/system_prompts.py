@@ -384,7 +384,32 @@ Additional recommendations:
 """
 
 
-TOOL_SYSTEM_PROMPT = """You are a tool agent. You are given a task to complete. You have a set of tools at your disposal. Before you use the tools, outputting your thoughts before calling the tools. 
+CLI_SWE_SYSTEM_PROMPT = """You are a programming agent who is provided a github issue and repository bash environment and is tasked to solve certain tasks (e.g., file localization, testcase generation, code repair and editing etc) to resolve the issue.
+"""
+
+CLI_SWE_USER_PROMPT = """Consider the following github issue:
+<github_issue>
+{problem_statement}
+</github_issue>
+
+Can you help me implement the necessary changes to the repository to fix the <github_issue>?
+I've already taken care of all changes to any of the test files described in the <github_issue>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <github_issue> is satisfied.
+
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to explore the repo to familiarize yourself with its structure.
+2. Create a script ('reproduce_issue.py') to reproduce the error and execute it to confirm the error.
+3. Edit the sourcecode of the repo to resolve the issue.
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well.
+6. When viewing large files, use specific line-ranges, usually within 50 to 100 lines as required.
+7. NOTE: The repository is at '/testbed' and the current working directory is already '/testbed', so DO NOT include 'testbed/' or 'testbed.' in relative paths in bash commands or reproduction python files.
+
+VERY IMPORTANT: each response must include both reasoning and a tool call to solve the task.
+"""
+
+
+TOOL_SYSTEM_PROMPT = """You are a tool agent. You are given a task to complete. You have a set of tools at your disposal. Before you use the tools, outputting your thoughts before calling the tools.
 """
 
 SEARCH_SYSTEM_PROMPT = """You are a helpful AI assistant that can search progressively to answer the question.

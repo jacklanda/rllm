@@ -24,6 +24,7 @@ AGENT_CLASSES = {
     "frozenlakeagent": safe_import("rllm.agents.frozenlake_agent", "FrozenLakeAgent"),
     "tool_agent": safe_import("rllm.agents.tool_agent", "ToolAgent"),
     "sweagent": safe_import("rllm.agents.swe_agent", "SWEAgent"),
+    "cli_sweagent": safe_import("rllm.agents.cli_swe_agent", "CLISWEAgent"),
     "math_agent": safe_import("rllm.agents.math_agent", "MathAgent"),
     "code_agent": safe_import("rllm.agents.code_agent", "CompetitionCodingAgent"),
 }

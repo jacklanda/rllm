@@ -18,6 +18,7 @@ AGENT_IMPORTS = [
     ("rllm.agents.miniwob_agent", "MiniWobAgent"),
     ("rllm.agents.frozenlake_agent", "FrozenLakeAgent"),
     ("rllm.agents.swe_agent", "SWEAgent"),
+    ("rllm.agents.cli_swe_agent", "CLISWEAgent"),
     ("rllm.agents.code_agent", "CompetitionCodingAgent"),
     ("rllm.agents.webarena_agent", "WebArenaAgent"),
 ]
