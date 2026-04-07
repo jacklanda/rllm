@@ -229,6 +229,13 @@ class AgentExecutionEngine:
         seen_queries = set()
         should_discard = False
 
+        # Loop detection: track recent actions to detect repetitive behavior
+        recent_actions = []  # List of serialized action strings
+        loop_warning_injected = False  # Whether we've already warned the agent
+        consecutive_repeat_count = 0  # How many times the same action has repeated
+        LOOP_DETECT_THRESHOLD = 3  # Warn after this many identical consecutive actions
+        LOOP_TERMINATE_THRESHOLD = 5  # Terminate after this many identical consecutive actions
+
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
         observation, info = await loop.run_in_executor(self.executor, env.reset)
@@ -443,6 +450,40 @@ class AgentExecutionEngine:
             action: Action = agent.update_from_model(response)
             action = action.action
 
+            # --- Loop detection: check for repetitive actions ---
+            action_str = str(action).strip() if action else ""
+            if action_str:
+                recent_actions.append(action_str)
+                # Check if the last N actions are all identical
+                if len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]:
+                    consecutive_repeat_count += 1
+                else:
+                    consecutive_repeat_count = 0
+                    loop_warning_injected = False
+
+                if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD:
+                    # Hard terminate: agent is hopelessly stuck
+                    termination_reason = "ABNORMAL_ACTION_LOOP"
+                    reward = 0.0
+                    done = True
+                    cur_step = agent.get_current_state()
+                    if cur_step is not None:
+                        cur_step.reward = reward
+                        cur_step.done = done
+                    colorful_print(
+                        f"Trajectory {idx}, Step {step_idx}: Terminated due to action loop "
+                        f"({consecutive_repeat_count + 1} identical consecutive actions).",
+                        "red",
+                    )
+                    self._trajectory_logs.append({
+                        "type": "action_loop_terminated",
+                        "trajectory": idx,
+                        "step": step_idx,
+                        "repeated_action": action_str[:200],
+                        "repeat_count": consecutive_repeat_count + 1,
+                    })
+                    break
+
             # Take step in environment using the executor
             start_time = time.time()
 
@@ -464,6 +505,26 @@ class AgentExecutionEngine:
             total_time += delta_time
             info["max_steps"] = self.max_steps
             info["cur_tokens"] = response_token_len
+
+            # --- Loop detection: inject warning into observation if repeating ---
+            if consecutive_repeat_count >= LOOP_DETECT_THRESHOLD and not loop_warning_injected:
+                loop_warning = (
+                    "\n\n[LOOP DETECTED] You have repeated the same action "
+                    f"{consecutive_repeat_count + 1} times consecutively. "
+                    "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n"
+                    "- If an edit keeps failing, view the file first to check the current content\n"
+                    "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n"
+                    "- If you're stuck, step back and reconsider the root cause\n"
+                    "- Try a completely different approach to solve the problem\n"
+                    "DO NOT repeat the same action again."
+                )
+                next_observation = str(next_observation) + loop_warning
+                loop_warning_injected = True
+                colorful_print(
+                    f"Trajectory {idx}, Step {step_idx}: Loop warning injected "
+                    f"({consecutive_repeat_count + 1} identical consecutive actions).",
+                    "yellow",
+                )
 
             # Update agent internal state.
             agent.update_from_env(
@@ -594,13 +655,15 @@ class AgentExecutionEngine:
                 masked_out = True
 
         # Calculate final reward if not stopped abnormally
-        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
+        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "ABNORMAL_ACTION_LOOP", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
+        reward_debug = {}
         if hasattr(env, "compute_final_reward") and not masked_out and termination_reason not in abnormal_reasons:
             cur_step = agent.get_current_state()
             start_time = time.time()
             reward = await loop.run_in_executor(self.executor, env.compute_final_reward)
             reward_time = time.time() - start_time
             cur_step.reward = reward
+            reward_debug = getattr(env, "reward_debug", {})
         # Closing environment using the executor.
         await loop.run_in_executor(self.executor, env.close)
         if termination_reason:
@@ -676,6 +739,7 @@ class AgentExecutionEngine:
                 "response_masks": response_masks,
                 "trajectory_reward": trajectory.reward,
                 "reward_metadata": reward_metadata,  # Add reward metadata for GDPO
+                "reward_debug": reward_debug,
                 "idx": env.idx,
                 "termination_reason": termination_reason,
                 "chat_completions": agent.chat_completions,
@@ -703,6 +767,7 @@ class AgentExecutionEngine:
                 "steps": episode_steps,
                 "trajectory_reward": trajectory.reward,
                 "reward_metadata": reward_metadata,  # Add reward metadata for GDPO
+                "reward_debug": reward_debug,
                 "idx": env.idx,
                 "mc_returns": [step.mc_return for step in trajectory.steps][: len(episode_steps)],
                 "termination_reason": termination_reason,
@@ -910,16 +975,16 @@ class AgentExecutionEngine:
                 tasks_completed += 1
                 colorful_print(f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed", "cyan")
                 # Dump trajectory logs after each trajectory completes
-                self._dump_trajectory_logs()
+                # self._dump_trajectory_logs()
                 if result is not None:
                     yield result
             except Exception as e:
                 # Dump before propagating exception to avoid losing logs
-                self._dump_trajectory_logs()
+                # self._dump_trajectory_logs()
                 raise e
 
         # Final dump to ensure all remaining logs are flushed (e.g. when all trajectories failed)
-        self._dump_trajectory_logs()
+        # self._dump_trajectory_logs()
 
         if self.engine_name == "verl":
             await self.rollout_engine.sleep()  # type: ignore

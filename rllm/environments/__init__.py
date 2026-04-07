@@ -29,6 +29,7 @@ ENVIRONMENT_IMPORTS = [
     ("rllm.environments.browsergym.browsergym", "BrowserGymEnv"),
     ("rllm.environments.frozenlake.frozenlake", "FrozenLakeEnv"),
     ("rllm.environments.swe.swe", "SWEEnv"),
+    ("rllm.environments.cli.cli", "CLIEnv"),
     ("rllm.environments.code.competition_coding", "CompetitionCodingEnv"),
     ("rllm.environments.appworld.appworld_env", "AppWorldEnv"),
 ]

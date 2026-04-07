@@ -150,7 +150,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         """
         The training loop of PPO. Adapted to train the underlying model of agent.
         """
-        from verl.utils.tracking import Tracking
+        from rllm.utils.tracking import Tracking
 
         logger = Tracking(
             project_name=self.config.trainer.project_name,
@@ -649,10 +649,11 @@ class AgentPPOTrainer(RayPPOTrainer):
                     {
                         "uuid": str(u_id),
                         "prompt": prompt,
-                        "trajectory": messages,
                         "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
                         "reward": None,
                         "termination_reason": traj.get("termination_reason"),
+                        "trajectory": messages,
+                        "debug": {},
                     }
                 )
 
@@ -733,7 +734,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         prompt = msg["content"]
                         break
 
-                dropped_dump.append({"uuid": str(u_id), "prompt": prompt, "termination_reason": traj.get("termination_reason"), "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]), "reward": None, "trajectory": messages})
+                dropped_dump.append({"uuid": str(u_id), "prompt": prompt, "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]), "reward": None, "termination_reason": traj.get("termination_reason"), "trajectory": messages, "debug": {}})
 
             save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
             os.makedirs(save_dir, exist_ok=True)
@@ -848,7 +849,20 @@ class AgentPPOTrainer(RayPPOTrainer):
                     prompt = msg["content"]
                     break
 
-            traj_dump.append({"uuid": str(u_id), "prompt": prompt, "trajectory": messages, "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]), "reward": traj["trajectory_reward"].item() if hasattr(traj["trajectory_reward"], "item") else float(traj["trajectory_reward"]), "termination_reason": traj.get("termination_reason")})
+            traj_dump.append({
+                "uuid": str(u_id),
+                "prompt": prompt,
+                "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
+                "reward": traj["trajectory_reward"].item() if hasattr(traj["trajectory_reward"], "item") else float(traj["trajectory_reward"]),
+                "termination_reason": traj.get("termination_reason"),
+                "trajectory": messages,
+                "debug": {
+                    "reward_breakdown": traj.get("reward_debug", {}),
+                    "reward_metadata": traj.get("reward_metadata", {}),
+                    "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", "") if batch is not None else "",
+                    "metrics": traj.get("metrics", {}),
+                },
+            })
 
         # Collect termination reason statistics
         all_reasons = [
@@ -1201,7 +1215,19 @@ class AgentPPOTrainer(RayPPOTrainer):
             # In stepwise mode, episode["steps"] is a list of dicts with "prompt" and "response"
             main_prompt = episode_steps[0]["prompt"] if episode_steps else ""
 
-            traj_dump.append({"uuid": str(u_id), "prompt": main_prompt, "trajectory": episode_steps, "steps": len([turn for turn in episode_steps if turn["prompt"] not in ["system", "user"]]), "reward": episode["trajectory_reward"].item() if hasattr(episode["trajectory_reward"], "item") else float(episode["trajectory_reward"]), "termination_reason": episode.get("termination_reason")})
+            traj_dump.append({
+                "uuid": str(u_id),
+                "prompt": main_prompt,
+                "steps": len([turn for turn in episode_steps if turn["prompt"] not in ["system", "user"]]),
+                "reward": episode["trajectory_reward"].item() if hasattr(episode["trajectory_reward"], "item") else float(episode["trajectory_reward"]),
+                "termination_reason": episode.get("termination_reason"),
+                "trajectory": episode_steps,
+                "debug": {
+                    "reward_breakdown": episode.get("reward_debug", {}),
+                    "reward_metadata": episode.get("reward_metadata", {}),
+                    "metrics": episode.get("metrics", {}),
+                },
+            })
 
         # Collect termination reason statistics
         all_reasons = [

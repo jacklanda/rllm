@@ -10,7 +10,7 @@ except ImportError:
 from rllm.agents.agent import Action, BaseAgent, Step, Trajectory
 from rllm.agents.system_prompts import SWE_SYSTEM_PROMPT, SWE_SYSTEM_PROMPT_FN_CALL, SWE_USER_PROMPT, SWE_USER_PROMPT_FN_CALL, SWEAGENT_SYSTEM_PROMPT, SWEAGENT_USER_PROMPT
 
-TOKEN_WARNING_THRESHOLD = 28000
+TOKEN_WARNING_THRESHOLD = 30000
 
 
 def parse_oai_response(response):

@@ -26,6 +26,7 @@ rllm:
     max_steps: 32
     trajectory_timeout: null
     overlong_filter: False
+    apply_bug_patch: True
     agent_args: {}
     engine_args: {}
   env:
@@ -110,6 +111,7 @@ fireworks:
   return_token_ids: True
 
 trainer:
+  run_id: null
   log_episodes: false
   episode_log_dir: experiments/logs/${trainer.project_name}/${trainer.experiment_name}
 
@@ -126,3 +128,4 @@ reward:
   # Base reward values
   correct_reward: 1.0                    # Reward for correct answers
   incorrect_reward: 0.0                  # Reward for incorrect answers
+  partial_reward: False                   # Use partial reward (matched/expected ratio) instead of all-or-nothing for SWE tasks

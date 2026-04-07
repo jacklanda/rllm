@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import warnings
 
 import numpy as np
@@ -67,6 +68,8 @@ class SWEEnv(BaseEnv):
         backend: str = "docker",
         verbose: bool = False,
         scaffold: str = "r2egym",
+        apply_bug_patch: bool = True,
+        partial_reward: bool = False,
     ):
         """Initialize the SWE environment.
 
@@ -96,6 +99,10 @@ class SWEEnv(BaseEnv):
         self.env = None
         self.verbose = verbose
         self.scaffold = scaffold
+        self._is_gemswe = "gemswe" in self.entry.get("docker_image", "")
+        self.apply_bug_patch = apply_bug_patch
+        self.partial_reward = partial_reward
+        self._reward_debug = {}
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
 
     def reset(self) -> tuple[str, dict]:
@@ -116,6 +123,18 @@ class SWEEnv(BaseEnv):
         else:
             self.env.add_commands(SWEAGENT_COMMAND_FILES)
         self._fix_tool_shebangs()
+        self._install_tool_dependencies()
+        self._setup_run_tests_script()
+
+        # Apply bug patch to reproduce the buggy state (for gemswe images)
+        if self.apply_bug_patch:
+            self._apply_bug_patch()
+            # Validate that tests can still be collected after the patch.
+            # If test collection fails (e.g. conftest import errors), revert the
+            # patch so the agent at least gets a meaningful reward signal.
+            if self._is_gemswe:
+                self._validate_test_collection()
+
         self.total_steps = 0
 
         # gt_patch = self.env.runtime.commit.get_patch(
@@ -151,8 +170,348 @@ class SWEEnv(BaseEnv):
         if error_code and "Error" in str(error_code):
             logger.warning("Failed to fix tool shebangs: %s", output)
 
+    def _install_tool_dependencies(self):
+        """Install Python packages required by tool scripts in the Docker container.
+
+        The file_editor tool (and potentially others) imports chardet for encoding
+        detection. If the package is missing, the tool fails at runtime. We install
+        it proactively so the agent never hits a missing-module error.
+        """
+        deps = ["chardet"]
+        install_cmd = "pip install --quiet --disable-pip-version-check " + " ".join(deps) + " 2>/dev/null || true"
+        output, error_code = self.env.runtime.run(install_cmd, timeout=60)
+        if error_code and "Error" in str(error_code):
+            logger.warning("Failed to install tool dependencies: %s", output)
+
+    def _setup_run_tests_script(self):
+        """Generate and inject run_tests.sh for gemswe/ Docker images that lack it.
+
+        Standard R2E-Gym images ship with run_tests.sh baked in. gemswe/ images
+        do not, so we derive the test command from expected_output_json and create
+        the script in the container.
+        """
+        if not self._is_gemswe:
+            return
+
+        alt_path = self.env.runtime.alt_path
+        # Check if run_tests.sh already exists
+        output, _ = self.env.runtime.run(
+            f"test -f {alt_path}/run_tests.sh && echo EXISTS || echo MISSING"
+        )
+        if "EXISTS" in output:
+            return
+
+        # Derive test files from expected_output_json
+        expected_json_str = self.entry.get("expected_output_json", "{}")
+        try:
+            expected = json.loads(expected_json_str)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning("Cannot parse expected_output_json, skipping run_tests.sh setup")
+            return
+
+        test_files = sorted(set(k.split("::")[0] for k in expected.keys()))
+        if not test_files:
+            logger.warning("No test files found in expected_output_json")
+            return
+
+        test_files_str = " ".join(test_files)
+        script_content = (
+            "#!/bin/bash\n"
+            "set -uo pipefail\n"
+            "cd /testbed\n"
+            # Override addopts to clear default flags (e.g. --cov, -n auto) that may
+            # require plugins not installed in the container or add unwanted overhead.
+            f'python -m pytest {test_files_str} --no-header -rA --tb=no '
+            f'-p no:cacheprovider --override-ini="addopts=" 2>&1\n'
+        )
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+            f.write(script_content)
+            tmp_path = f.name
+
+        self.env.runtime.copy_to_container(tmp_path, f"{alt_path}/run_tests.sh")
+        self.env.runtime.run(f"chmod +x {alt_path}/run_tests.sh")
+        os.unlink(tmp_path)
+        logger.info("Created run_tests.sh for gemswe image with %d test files", len(test_files))
+
+    def _apply_bug_patch(self):
+        """Revert non-test source files to their pre-fix state to reproduce the bug.
+
+        For gemswe images, the Docker container starts at the fix commit. To prevent
+        answer leakage, we write back the old (buggy) file content stored in
+        FileDiff.old_file_content directly, bypassing any hunk-matching logic.
+
+        For files newly added by the fix (old_file_content is empty/"/dev/null"),
+        we delete them from the container. Then we amend the commit so git log/show
+        cannot reveal the fix.
+        """
+        if not self._is_gemswe:
+            return
+
+        parsed_commit_json = self.entry.get("parsed_commit_content")
+        if not parsed_commit_json:
+            logger.warning("No parsed_commit_content found, skipping bug patch application")
+            return
+
+        # Save the fix commit hash so we can revert if test collection fails.
+        fix_hash_output, _ = self.env.runtime.run("git rev-parse HEAD", timeout=15)
+        self._fix_commit_hash = fix_hash_output.strip()
+
+        try:
+            from r2egym.commit_models.diff_classes import ParsedCommit
+            commit = ParsedCommit(**json.loads(parsed_commit_json))
+
+            failed_files = []
+            non_test_files = [fd for fd in commit.file_diffs if not fd.is_test_file]
+
+            for fd in non_test_files:
+                filepath = fd.path
+                try:
+                    old_content = fd.old_file_content
+
+                    if not old_content or old_content == "/dev/null":
+                        # File was newly added by the fix — delete it to restore buggy state.
+                        self.env.runtime.run(f"rm -f {filepath}", timeout=15)
+                    else:
+                        # Write the pre-fix (buggy) content directly to the container.
+                        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
+                            f.write(old_content)
+                            tmp_path = f.name
+
+                        # Ensure parent directory exists (in case path has subdirs).
+                        parent_dir = os.path.dirname(filepath)
+                        if parent_dir:
+                            self.env.runtime.run(f"mkdir -p {parent_dir}", timeout=15)
+
+                        tmp_name = f"/tmp/_revert_{os.path.basename(filepath)}"
+                        self.env.runtime.copy_to_container(tmp_path, tmp_name)
+                        os.unlink(tmp_path)
+
+                        output, error_code = self.env.runtime.run(
+                            f"mv {tmp_name} {filepath}", timeout=15,
+                        )
+                        if error_code and "Error" in str(error_code):
+                            failed_files.append((filepath, f"write failed: {output}"))
+
+                except Exception as e:
+                    failed_files.append((filepath, str(e)))
+
+            if failed_files:
+                logger.error(
+                    "Bug patch: failed to revert %d/%d files: %s",
+                    len(failed_files), len(non_test_files),
+                    [f[0] for f in failed_files],
+                )
+
+            reverted = len(non_test_files) - len(failed_files)
+            if reverted > 0:
+                # Amend the current commit to hide the fix from git history.
+                self.env.runtime.run('git add -A', timeout=15)
+                self.env.runtime.run(
+                    'git commit --amend --no-edit --allow-empty',
+                    timeout=15,
+                )
+                logger.info("Bug patch applied: reverted %d non-test file(s) to buggy state", reverted)
+
+        except Exception as e:
+            logger.error("Error applying bug patch: %s", str(e))
+
+    def _validate_test_collection(self):
+        """Check that pytest can still collect tests after the bug patch.
+
+        If test collection fails (e.g. conftest import errors from reverting source
+        files), revert to the fix commit so the agent gets a meaningful reward
+        signal instead of guaranteed zero.
+        """
+        # Derive test files from expected_output_json (same logic as _setup_run_tests_script)
+        expected_json_str = self.entry.get("expected_output_json", "{}")
+        try:
+            expected = json.loads(expected_json_str)
+        except (json.JSONDecodeError, TypeError):
+            return
+        test_files = sorted(set(k.split("::")[0] for k in expected.keys()))
+        if not test_files:
+            return
+        test_files_str = " ".join(test_files)
+        # Run pytest --collect-only to check if tests can be collected.
+        output, error_code = self.env.runtime.run(
+            f'python -m pytest {test_files_str} --collect-only -q '
+            f'--override-ini="addopts=" 2>&1',
+            timeout=60,
+        )
+        # Check for collection failures by looking at the output content and error code.
+        # Exit code 2 = collection error, 4 = conftest/usage error.
+        output_str = str(output)
+        has_error_exit = error_code and ("Exit code 2" in str(error_code) or "Exit code 4" in str(error_code))
+        has_collection_error = "errors during collection" in output_str or "ImportError" in output_str
+        pytest_failed = has_error_exit or has_collection_error
+        logger.info(
+            "Test collection check: error_code=%s, has_error_exit=%s, has_collection_error=%s, pytest_failed=%s",
+            error_code, has_error_exit, has_collection_error, pytest_failed,
+        )
+        if pytest_failed:
+            fix_hash = getattr(self, "_fix_commit_hash", None)
+            if fix_hash:
+                logger.warning(
+                    "Test collection failed after bug patch, reverting to fix commit %s. "
+                    "Output: %s", fix_hash[:12], output[:300],
+                )
+                self.env.runtime.run(f"git reset --hard {fix_hash}", timeout=30)
+            else:
+                logger.warning(
+                    "Test collection failed after bug patch but no fix commit saved. "
+                    "Output: %s", output[:300],
+                )
+
     def compute_final_reward(self):
-        return self.env.compute_reward()
+        if not self._is_gemswe:
+            reward = self.env.compute_reward()
+            self._reward_debug = {"type": "r2egym", "reward": float(reward)}
+            return reward
+
+        # For gemswe images: run tests and compare with the expected output.
+        # Cannot use upstream _calculate_reward_r2e because:
+        #   1. parse_log_pytest strips file paths from keys (test_neq instead of
+        #      tests/test_core.py::test_neq), causing collisions when multiple
+        #      test files share the same test function name.
+        #   2. parse_log_pytest doesn't capture SKIPPED tests.
+        # Instead, parse the "short test summary info" section directly, preserving
+        # the full file::test_name format that matches expected_output_json keys.
+        from r2egym.repo_analysis.execution_log_parser import decolor_dict_keys
+
+        output, error_code = self.env.runtime.run_tests(timeout=self.reward_timeout)
+
+        parse = self._parse_pytest_summary(output)
+        parse = decolor_dict_keys(parse)
+
+        expected_json_str = self.entry.get("expected_output_json", "{}")
+        expected = json.loads(expected_json_str)
+        expected = decolor_dict_keys(expected)
+
+        # Exclude SKIPPED/XFAIL tests from comparison: their pytest summary format
+        # uses "file:line: reason" instead of "file::test_name", so keys won't match.
+        # Skipped tests are unaffected by code changes, so this is safe.
+        non_actionable = {"SKIPPED", "XFAIL"}
+        parse = {k: v for k, v in parse.items() if v not in non_actionable}
+        expected = {k: v for k, v in expected.items() if v not in non_actionable}
+
+        logger.info("gemswe reward: parsed %d tests, expected %d tests", len(parse), len(expected))
+
+        # Compute reward based on test match results.
+        if self.partial_reward:
+            # Partial reward: fraction of expected tests that match.
+            # e.g. 74% match = 0.74 reward instead of 0.0.
+            if len(expected) > 0:
+                reward = sum(1 for k, v in expected.items() if parse.get(k) == v) / len(expected)
+            else:
+                reward = 1.0
+        else:
+            # All-or-nothing: reward is 1.0 only if every expected test matches.
+            reward = 1.0
+            for k, v in expected.items():
+                if parse.get(k) != v:
+                    reward = 0.0
+                    break
+
+        # Build reward debug info for diagnostics
+        matched = sum(1 for k, v in expected.items() if parse.get(k) == v)
+        mismatched = {k: {"expected": v, "actual": parse.get(k)} for k, v in expected.items() if parse.get(k) != v}
+
+        # Identify tests that were parsed but not expected (helps diagnose wrong test file)
+        extra_tests = {k: v for k, v in parse.items() if k not in expected}
+
+        # Capture pytest output snippet for debugging parse failures
+        output_snippet = output[:1000] if output else ""
+        # Also capture the last part which often has error messages
+        output_tail = output[-500:] if len(output) > 500 else ""
+
+        self._reward_debug = {
+            "type": "gemswe",
+            "reward": reward,
+            "tests_expected": len(expected),
+            "tests_parsed": len(parse),
+            "tests_matched": matched,
+            "tests_mismatched_count": len(mismatched),
+            "mismatched_tests": dict(list(mismatched.items())[:20]),
+            "parsed_summary": dict(list(parse.items())[:50]),
+            "expected_summary": dict(list(expected.items())[:50]),
+            "extra_tests": dict(list(extra_tests.items())[:20]),  # Tests parsed but not expected
+            "pytest_error_code": error_code,
+            "pytest_output_head": output_snippet,
+            "pytest_output_tail": output_tail,
+        }
+
+        return reward
+
+    @property
+    def reward_debug(self) -> dict:
+        """Return reward debug info populated by compute_final_reward()."""
+        return self._reward_debug
+
+    @staticmethod
+    def _parse_pytest_summary(log: str) -> dict[str, str]:
+        """Parse pytest test log to extract test status map.
+
+        Parses both the main pytest output (test_name STATUS format) and the
+        short test summary section (STATUS test_name format). This dual approach
+        is more robust: if pytest crashes before generating the summary, we still
+        capture results from the main output.
+
+        Args:
+            log: Test log output from pytest
+
+        Returns:
+            Dict mapping test names to status (PASSED, FAILED, ERROR, etc.)
+        """
+        test_status_map = {}
+        if not log:
+            return test_status_map
+
+        # Extract test output between markers if present
+        TEST_OUTPUT_START = ">>>>> Test Output Start"
+        TEST_OUTPUT_END = ">>>>> Test Output End"
+        start_marker = f": '{TEST_OUTPUT_START}'"
+        end_marker = f": '{TEST_OUTPUT_END}'"
+
+        if start_marker in log and end_marker in log:
+            start_idx = log.find(start_marker) + len(start_marker)
+            end_idx = log.find(end_marker)
+            if start_idx < end_idx:
+                log = log[start_idx:end_idx]
+
+        # Parse pytest main output lines (format: "test_file.py::test_function PASSED")
+        # This captures results as tests run, before the summary section
+        for line in log.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+
+            # Match pytest output format: "path/to/test_file.py::test_function PASSED"
+            # or "path/to/test_file.py::TestClass::test_method PASSED"
+            for status in ("PASSED", "FAILED", "ERROR", "SKIPPED", "XFAIL", "XPASS"):
+                pattern = rf"^(\S+)\s+{status}"
+                match = re.match(pattern, line)
+                if match:
+                    test_name = match.group(1)
+                    test_status_map[test_name] = status
+                    break
+
+        # Also parse "short test summary info" section (format: "STATUS test_name")
+        # This is more reliable when available, so it overwrites main output results
+        if "short test summary info" in log:
+            summary = log.split("short test summary info", 1)[1]
+            for line in summary.strip().split("\n"):
+                line = line.strip()
+                for status in ("PASSED", "FAILED", "ERROR", "SKIPPED", "XFAIL", "XPASS"):
+                    if line.startswith(status + " "):
+                        # Line format: "STATUS path/to/test.py::test_name"
+                        # or "STATUS path/to/test.py::test_name - reason"
+                        rest = line[len(status) + 1:].strip()
+                        test_key = rest.split(" - ")[0].strip()
+                        test_status_map[test_key] = status
+                        break
+
+        return test_status_map
 
     def step(self, action: str | Action) -> tuple[str, float, bool, dict]:
         """Take a step in the environment.

@@ -18,12 +18,12 @@ except (ImportError, Exception):
     R2EGYM_PATH = ""
 
 from rllm.agents.agent import Action, BaseAgent, Step, Trajectory
-from rllm.agents.system_prompts import CLI_SWE_SYSTEM_PROMPT, CLI_SWE_USER_PROMPT
+from rllm.agents.system_prompts import CLI_AGENT_SYSTEM_PROMPT, CLI_AGENT_USER_PROMPT
 from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
 
-TOKEN_WARNING_THRESHOLD = 28000
+TOKEN_WARNING_THRESHOLD = 30000
 
 # Tool file paths for each scaffold
 R2EGYM_TOOL_FILES = [
@@ -192,7 +192,7 @@ def _build_tools_system_prompt(scaffold: str = "r2egym") -> str:
     tool_parser = QwenToolParser()
     schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return CLI_SWE_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    return CLI_AGENT_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
 def _tool_call_to_swe_action(tool_call_dict: dict) -> "SWEAction":
@@ -225,7 +225,7 @@ def _tool_call_to_swe_action(tool_call_dict: dict) -> "SWEAction":
     return SWEAction(function_name=function_name, parameters=str_arguments)
 
 
-class CLISWEAgent(BaseAgent):
+class CLIAgent(BaseAgent):
     """SWE Agent using Qwen-style <tool_call>/<tool_response> format.
 
     This agent uses JSON tool schemas in the system prompt and communicates
@@ -238,9 +238,14 @@ class CLISWEAgent(BaseAgent):
         self.scaffold = scaffold
         self.tool_parser = QwenToolParser()
         self.system_prompt = _build_tools_system_prompt(scaffold)
-        self.user_prompt_template = CLI_SWE_USER_PROMPT
+        self.user_prompt_template = CLI_AGENT_USER_PROMPT
 
         self._trajectory = Trajectory()
+        # Pre-submission validation state
+        self._has_run_tests = False  # Whether agent has executed any test command
+        self._has_made_edits = False  # Whether agent has made any file edits
+        self._submission_block_count = 0  # Number of times submission has been blocked
+        self._max_submission_blocks = 3  # Cap to avoid infinite blocking loops
         self.reset()
 
     def update_from_env(self, observation, reward, done, info):
@@ -253,6 +258,12 @@ class CLISWEAgent(BaseAgent):
         if self._trajectory.steps:
             # Subsequent steps: wrap observation in <tool_response> tags
             observation = str(observation)
+            # Track test execution from observation content.
+            # Only match pytest-specific markers that confirm a test suite actually ran,
+            # NOT generic words like "passed"/"failed"/"test_" which appear in normal output.
+            obs_lower = observation.lower()
+            if "test session starts" in obs_lower or re.search(r"\d+ passed", obs_lower):
+                self._has_run_tests = True
         else:
             # First step: format as the initial user message with problem statement
             observation = str(observation)
@@ -305,8 +316,41 @@ class CLISWEAgent(BaseAgent):
             # Use the first tool call (SWE environment processes one action at a time)
             tc = tool_calls[0]
             action_dict = {"name": tc.name, "arguments": tc.arguments}
-            swe_action = _tool_call_to_swe_action(action_dict)
-            action_str = swe_action.to_xml_string()
+
+            # Track edits and test execution from tool calls
+            if tc.name in ("file_editor", "str_replace_editor"):
+                cmd = tc.arguments.get("command", "")
+                if cmd in ("str_replace", "create", "insert"):
+                    self._has_made_edits = True
+            elif tc.name in ("execute_bash",):
+                cmd_str = str(tc.arguments.get("cmd", "") or tc.arguments.get("command", ""))
+                # Match actual test runner invocations, not substrings.
+                # Use word boundaries to avoid matching e.g. "test_file.py" in a cat command.
+                test_cmd_patterns = [
+                    r"\bpytest\b",
+                    r"\bpython\s+-m\s+pytest\b",
+                    r"\bpython\s+-m\s+unittest\b",
+                    r"\bruntests\b",
+                    r"\bpy\.test\b",
+                ]
+                if any(re.search(p, cmd_str) for p in test_cmd_patterns):
+                    self._has_run_tests = True
+
+            # Pre-submission validation: block premature submission until tests run.
+            # Blocks up to _max_submission_blocks times to avoid infinite loops.
+            is_submit = tc.name in ("finish", "submit")
+            if is_submit and self._has_made_edits and not self._has_run_tests and self._submission_block_count < self._max_submission_blocks:
+                self._submission_block_count += 1
+                # Redirect: don't submit, instead return a no-op that will produce
+                # a warning observation telling the agent to run tests first
+                swe_action = SWEAction(
+                    function_name="execute_bash",
+                    parameters={"cmd": "echo '[SUBMISSION BLOCKED] You have made edits but have not run any tests. Please run the relevant test suite (e.g., python -m pytest <test_file> -x) to verify your fix before submitting.'"},
+                )
+                action_str = swe_action.to_xml_string()
+            else:
+                swe_action = _tool_call_to_swe_action(action_dict)
+                action_str = swe_action.to_xml_string()
         else:
             # No tool call found - model is either finishing or malformed
             swe_action = SWEAction(function_name="", parameters={})
@@ -345,6 +389,9 @@ class CLISWEAgent(BaseAgent):
             }
         ]
         self.step = 0
+        self._has_run_tests = False
+        self._has_made_edits = False
+        self._submission_block_count = 0
 
     @property
     def trajectory(self) -> Trajectory:
