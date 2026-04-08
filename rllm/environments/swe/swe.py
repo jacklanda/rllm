@@ -99,7 +99,7 @@ class SWEEnv(BaseEnv):
         self.env = None
         self.verbose = verbose
         self.scaffold = scaffold
-        self._is_gemcli = "gemcli" in self.entry.get("docker_image", "")
+        self._is_gemcli = "gemcli" in self.entry.get("docker_image", "") or "gemswe" in self.entry.get("docker_image", "")
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
         self._reward_debug = {}
@@ -127,7 +127,7 @@ class SWEEnv(BaseEnv):
         self._install_tool_dependencies()
         self._setup_run_tests_script()
 
-        # Apply bug patch to reproduce the buggy state (for gemcli images)
+        # Apply bug patch to reproduce the buggy state (for gemcli/gemswe images)
         self._bug_patch_reverted = False
         if self.apply_bug_patch:
             self._apply_bug_patch()
@@ -186,9 +186,9 @@ class SWEEnv(BaseEnv):
             logger.warning("Failed to install tool dependencies: %s", output)
 
     def _setup_run_tests_script(self):
-        """Generate and inject run_tests.sh for gemcli/ Docker images that lack it.
+        """Generate and inject run_tests.sh for gemcli/ or gemswe/ Docker images that lack it.
 
-        Standard R2E-Gym images ship with run_tests.sh baked in. gemcli/ images
+        Standard R2E-Gym images ship with run_tests.sh baked in. gemcli/ or gemswe/ images
         do not, so we derive the test command from expected_output_json and create
         the script in the container.
         """
@@ -234,12 +234,12 @@ class SWEEnv(BaseEnv):
         self.env.runtime.copy_to_container(tmp_path, f"{alt_path}/run_tests.sh")
         self.env.runtime.run(f"chmod +x {alt_path}/run_tests.sh")
         os.unlink(tmp_path)
-        logger.info("Created run_tests.sh for gemcli image with %d test files", len(test_files))
+        logger.info("Created run_tests.sh for gemcli/gemswe image with %d test files", len(test_files))
 
     def _apply_bug_patch(self):
         """Revert non-test source files to their pre-fix state to reproduce the bug.
 
-        For gemcli images, the Docker container starts at the fix commit. To prevent
+        For gemcli/gemswe images, the Docker container starts at the fix commit. To prevent
         answer leakage, we write back the old (buggy) file content stored in
         FileDiff.old_file_content directly, bypassing any hunk-matching logic.
 
