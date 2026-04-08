@@ -354,54 +354,18 @@ class SWEEnv(BaseEnv):
             logger.error("Error applying bug patch: %s", str(e))
 
     def _validate_test_collection(self):
-        """Check that pytest can still collect tests after the bug patch.
+        """DISABLED: Test collection validation after bug patch.
 
-        If test collection fails (e.g. conftest import errors from reverting source
-        files), revert to the fix commit so the agent can still interact with the
-        environment, but mark the patch as reverted so compute_final_reward forces
-        reward=0.0 — the agent must not be rewarded for doing nothing on
-        already-fixed code.
+        This validation was causing false positives: many bugs (syntax errors, import
+        errors in source code) legitimately break test collection - that's the bug
+        the agent needs to fix! By reverting the patch when tests fail to collect,
+        we were giving the agent already-fixed code.
+
+        The bug patch application is now validated only by checking that file
+        operations succeeded (tracked in failed_files list in _apply_bug_patch).
         """
-        # Derive test files from expected_output_json (same logic as _setup_run_tests_script)
-        expected_json_str = self.entry.get("expected_output_json", "{}")
-        try:
-            expected = json.loads(expected_json_str)
-        except (json.JSONDecodeError, TypeError):
-            return
-        test_files = sorted(set(k.split("::")[0] for k in expected.keys()))
-        if not test_files:
-            return
-        test_files_str = " ".join(test_files)
-        # Run pytest --collect-only to check if tests can be collected.
-        output, error_code = self.env.runtime.run(
-            f'python -m pytest {test_files_str} --collect-only -q '
-            f'--override-ini="addopts=" 2>&1',
-            timeout=60,
-        )
-        # Check for collection failures by looking at the error code.
-        # Exit code 2 = collection error. Only use this as the definitive signal.
-        # Removed "ImportError" substring check: too many false positives from test names/output.
-        has_error_exit = error_code and "Exit code 2" in str(error_code)
-        pytest_failed = has_error_exit
-        logger.warning(
-            "Test collection check: error_code=%s, has_error_exit=%s, pytest_failed=%s, output_len=%d",
-            error_code, has_error_exit, pytest_failed, len(output),
-        )
-        if pytest_failed:
-            fix_hash = getattr(self, "_fix_commit_hash", None)
-            if fix_hash:
-                logger.warning(
-                    "Test collection failed after bug patch, reverting to fix commit %s. "
-                    "Reward will be forced to 0.0 for this episode. Output: %s",
-                    fix_hash[:12], output[:1000],
-                )
-                self.env.runtime.run(f"git reset --hard {fix_hash}", timeout=30)
-            else:
-                logger.warning(
-                    "Test collection failed after bug patch but no fix commit saved. "
-                    "Output: %s", output[:300],
-                )
-            self._bug_patch_reverted = True
+        # Validation disabled - bug patch stays applied even if tests fail to collect
+        pass
 
     def compute_final_reward(self):
         if not self._is_gemcli:
