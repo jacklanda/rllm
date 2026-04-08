@@ -99,10 +99,11 @@ class SWEEnv(BaseEnv):
         self.env = None
         self.verbose = verbose
         self.scaffold = scaffold
-        self._is_gemswe = "gemswe" in self.entry.get("docker_image", "")
+        self._is_gemcli = "gemcli" in self.entry.get("docker_image", "")
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
         self._reward_debug = {}
+        self._bug_patch_reverted = False
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
 
     def reset(self) -> tuple[str, dict]:
@@ -126,13 +127,14 @@ class SWEEnv(BaseEnv):
         self._install_tool_dependencies()
         self._setup_run_tests_script()
 
-        # Apply bug patch to reproduce the buggy state (for gemswe images)
+        # Apply bug patch to reproduce the buggy state (for gemcli images)
+        self._bug_patch_reverted = False
         if self.apply_bug_patch:
             self._apply_bug_patch()
             # Validate that tests can still be collected after the patch.
-            # If test collection fails (e.g. conftest import errors), revert the
-            # patch so the agent at least gets a meaningful reward signal.
-            if self._is_gemswe:
+            # If collection fails, the patch is reverted and _bug_patch_reverted
+            # is set so compute_final_reward can force reward=0.0.
+            if self._is_gemcli:
                 self._validate_test_collection()
 
         self.total_steps = 0
@@ -184,13 +186,13 @@ class SWEEnv(BaseEnv):
             logger.warning("Failed to install tool dependencies: %s", output)
 
     def _setup_run_tests_script(self):
-        """Generate and inject run_tests.sh for gemswe/ Docker images that lack it.
+        """Generate and inject run_tests.sh for gemcli/ Docker images that lack it.
 
-        Standard R2E-Gym images ship with run_tests.sh baked in. gemswe/ images
+        Standard R2E-Gym images ship with run_tests.sh baked in. gemcli/ images
         do not, so we derive the test command from expected_output_json and create
         the script in the container.
         """
-        if not self._is_gemswe:
+        if not self._is_gemcli:
             return
 
         alt_path = self.env.runtime.alt_path
@@ -232,12 +234,12 @@ class SWEEnv(BaseEnv):
         self.env.runtime.copy_to_container(tmp_path, f"{alt_path}/run_tests.sh")
         self.env.runtime.run(f"chmod +x {alt_path}/run_tests.sh")
         os.unlink(tmp_path)
-        logger.info("Created run_tests.sh for gemswe image with %d test files", len(test_files))
+        logger.info("Created run_tests.sh for gemcli image with %d test files", len(test_files))
 
     def _apply_bug_patch(self):
         """Revert non-test source files to their pre-fix state to reproduce the bug.
 
-        For gemswe images, the Docker container starts at the fix commit. To prevent
+        For gemcli images, the Docker container starts at the fix commit. To prevent
         answer leakage, we write back the old (buggy) file content stored in
         FileDiff.old_file_content directly, bypassing any hunk-matching logic.
 
@@ -245,7 +247,7 @@ class SWEEnv(BaseEnv):
         we delete them from the container. Then we amend the commit so git log/show
         cannot reveal the fix.
         """
-        if not self._is_gemswe:
+        if not self._is_gemcli:
             return
 
         parsed_commit_json = self.entry.get("parsed_commit_content")
@@ -320,8 +322,10 @@ class SWEEnv(BaseEnv):
         """Check that pytest can still collect tests after the bug patch.
 
         If test collection fails (e.g. conftest import errors from reverting source
-        files), revert to the fix commit so the agent gets a meaningful reward
-        signal instead of guaranteed zero.
+        files), revert to the fix commit so the agent can still interact with the
+        environment, but mark the patch as reverted so compute_final_reward forces
+        reward=0.0 — the agent must not be rewarded for doing nothing on
+        already-fixed code.
         """
         # Derive test files from expected_output_json (same logic as _setup_run_tests_script)
         expected_json_str = self.entry.get("expected_output_json", "{}")
@@ -354,7 +358,8 @@ class SWEEnv(BaseEnv):
             if fix_hash:
                 logger.warning(
                     "Test collection failed after bug patch, reverting to fix commit %s. "
-                    "Output: %s", fix_hash[:12], output[:300],
+                    "Reward will be forced to 0.0 for this episode. Output: %s",
+                    fix_hash[:12], output[:300],
                 )
                 self.env.runtime.run(f"git reset --hard {fix_hash}", timeout=30)
             else:
@@ -362,14 +367,38 @@ class SWEEnv(BaseEnv):
                     "Test collection failed after bug patch but no fix commit saved. "
                     "Output: %s", output[:300],
                 )
+            self._bug_patch_reverted = True
 
     def compute_final_reward(self):
-        if not self._is_gemswe:
+        if not self._is_gemcli:
             reward = self.env.compute_reward()
             self._reward_debug = {"type": "r2egym", "reward": float(reward)}
             return reward
 
-        # For gemswe images: run tests and compare with the expected output.
+        # If the bug patch was reverted (test collection failed after applying the
+        # buggy state), the agent is working on already-fixed code. Force reward=0.0
+        # so it gets no credit for a no-op. We still run the tests to populate
+        # diagnostics, but the reward is overridden.
+        if self._bug_patch_reverted:
+            logger.warning(
+                "Bug patch was reverted for this episode — forcing reward=0.0"
+            )
+            self._reward_debug = {
+                "type": "gemcli",
+                "reward": 0.0,
+                "bug_patch_reverted": True,
+                "tests_expected": 0,
+                "tests_parsed": 0,
+                "tests_matched": 0,
+                "tests_mismatched_count": 0,
+                "mismatched_tests": {},
+                "parsed_summary": {},
+                "expected_summary": {},
+                "extra_tests": {},
+            }
+            return 0.0
+
+        # For gemcli images: run tests and compare with the expected output.
         # Cannot use upstream _calculate_reward_r2e because:
         #   1. parse_log_pytest strips file paths from keys (test_neq instead of
         #      tests/test_core.py::test_neq), causing collisions when multiple
@@ -395,7 +424,7 @@ class SWEEnv(BaseEnv):
         parse = {k: v for k, v in parse.items() if v not in non_actionable}
         expected = {k: v for k, v in expected.items() if v not in non_actionable}
 
-        logger.info("gemswe reward: parsed %d tests, expected %d tests", len(parse), len(expected))
+        logger.info("gemcli reward: parsed %d tests, expected %d tests", len(parse), len(expected))
 
         # Compute reward based on test match results.
         if self.partial_reward:
@@ -426,7 +455,7 @@ class SWEEnv(BaseEnv):
         output_tail = output[-500:] if len(output) > 500 else ""
 
         self._reward_debug = {
-            "type": "gemswe",
+            "type": "gemcli",
             "reward": reward,
             "tests_expected": len(expected),
             "tests_parsed": len(parse),
@@ -439,6 +468,7 @@ class SWEEnv(BaseEnv):
             "pytest_error_code": error_code,
             "pytest_output_head": output_snippet,
             "pytest_output_tail": output_tail,
+            "log": output or "",
         }
 
         return reward

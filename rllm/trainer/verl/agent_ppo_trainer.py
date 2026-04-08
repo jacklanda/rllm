@@ -857,7 +857,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 "termination_reason": traj.get("termination_reason"),
                 "trajectory": messages,
                 "debug": {
-                    "reward_breakdown": traj.get("reward_debug", {}),
+                    "verification": traj.get("reward_debug", {}),
                     "reward_metadata": traj.get("reward_metadata", {}),
                     "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", "") if batch is not None else "",
                     "metrics": traj.get("metrics", {}),
@@ -1223,7 +1223,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 "termination_reason": episode.get("termination_reason"),
                 "trajectory": episode_steps,
                 "debug": {
-                    "reward_breakdown": episode.get("reward_debug", {}),
+                    "verification": episode.get("reward_debug", {}),
                     "reward_metadata": episode.get("reward_metadata", {}),
                     "metrics": episode.get("metrics", {}),
                 },
