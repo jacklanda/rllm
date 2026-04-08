@@ -124,6 +124,7 @@ class SWEEnv(BaseEnv):
         else:
             self.env.add_commands(SWEAGENT_COMMAND_FILES)
         self._fix_tool_shebangs()
+        self._suppress_git_warnings()
         self._install_tool_dependencies()
         self._setup_run_tests_script()
 
@@ -171,6 +172,18 @@ class SWEEnv(BaseEnv):
         output, error_code = self.env.runtime.run(sed_cmds, timeout=15)
         if error_code and "Error" in str(error_code):
             logger.warning("Failed to fix tool shebangs: %s", output)
+
+    def _suppress_git_warnings(self):
+        """Suppress git ambiguous refname warnings in the Docker container.
+
+        When commits have hashes that collide with ref names, git outputs
+        multi-line warnings to STDOUT. These warnings corrupt file content
+        when retrieved via git show/cat-file, and clutter the agent's
+        command output. Disabling advice.objectNameWarning prevents this.
+        """
+        self.env.runtime.run(
+            "git config advice.objectNameWarning false", timeout=15
+        )
 
     def _install_tool_dependencies(self):
         """Install Python packages required by tool scripts in the Docker container.
@@ -295,9 +308,12 @@ class SWEEnv(BaseEnv):
                             self.env.runtime.run(f"rm -f {filepath}", timeout=15)
                             continue
                         else:
-                            # File existed — fetch its old content from git
+                            # File existed — fetch its old content from git.
+                            # Use git cat-file blob instead of git show to avoid
+                            # ambiguous refname warnings being prepended to file content.
+                            # git show outputs warnings to STDOUT which corrupts source files.
                             old_content_output, error_code = self.env.runtime.run(
-                                f"git show {old_commit}:{filepath}",
+                                f"git cat-file blob {old_commit}:{filepath}",
                                 timeout=30,
                             )
                             if error_code and "Error" in str(error_code):

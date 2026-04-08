@@ -396,8 +396,8 @@ CLI_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github 
 CRITICAL RULES:
 1. NEVER repeat a failing action — view the file's current state and try a different approach.
 2. After EVERY edit, verify syntax: python -c "import py_compile; py_compile.compile('<file>', doraise=True)"
-3. Before submitting, run the project's actual test suite on relevant files — not just your reproduce script.
-4. Do NOT submit without evidence your fix works (tests pass, reproduce script shows correct behavior).
+3. Before submitting, run the project's actual test suite on relevant files.
+4. Do NOT submit without evidence your fix works (tests pass).
 5. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
 6. Most bash commands should end with a newline (\\n) to cause them to execute.
 """
@@ -410,13 +410,12 @@ CLI_AGENT_USER_PROMPT = """Consider the following github issue:
 Make minimal changes to non-test files in /testbed to fix the issue. Do NOT modify any test files — test changes are already handled.
 
 Steps:
-1. Explore the repo structure.
-2. Create 'reproduce_issue.py' to reproduce and confirm the error.
+1. Explore the repo structure and read the relevant source files to understand the codebase.
+2. Identify the root cause of the issue in the source code.
 3. Edit source code to fix the issue. After EACH edit, verify syntax with py_compile.
-4. Rerun your reproduce script to confirm the fix.
-5. Run the project's ACTUAL test suite on relevant test files (e.g., python -m pytest <test_file> -x).
-6. Consider edge cases and ensure your fix handles them.
-7. The repo is at '/testbed' (cwd) — use relative paths without 'testbed/' prefix.
+4. Run the project's test suite on relevant test files to verify your fix (e.g., python -m pytest <test_file> -x).
+5. If tests fail, read the error output carefully, adjust your fix, and rerun tests.
+6. The repo is at '/testbed' (cwd) — use relative paths without 'testbed/' prefix.
 
 CRITICAL: If an action fails, do NOT retry it — inspect the file, understand the state, and try differently. Each response must include reasoning and a tool call.
 """
