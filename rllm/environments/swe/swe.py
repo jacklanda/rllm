@@ -383,9 +383,9 @@ class SWEEnv(BaseEnv):
         # Removed "ImportError" substring check: too many false positives from test names/output.
         has_error_exit = error_code and "Exit code 2" in str(error_code)
         pytest_failed = has_error_exit
-        logger.info(
-            "Test collection check: error_code=%s, has_error_exit=%s, pytest_failed=%s",
-            error_code, has_error_exit, pytest_failed,
+        logger.warning(
+            "Test collection check: error_code=%s, has_error_exit=%s, pytest_failed=%s, output_len=%d",
+            error_code, has_error_exit, pytest_failed, len(output),
         )
         if pytest_failed:
             fix_hash = getattr(self, "_fix_commit_hash", None)
@@ -393,7 +393,7 @@ class SWEEnv(BaseEnv):
                 logger.warning(
                     "Test collection failed after bug patch, reverting to fix commit %s. "
                     "Reward will be forced to 0.0 for this episode. Output: %s",
-                    fix_hash[:12], output[:300],
+                    fix_hash[:12], output[:1000],
                 )
                 self.env.runtime.run(f"git reset --hard {fix_hash}", timeout=30)
             else:
