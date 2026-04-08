@@ -240,12 +240,14 @@ class SWEEnv(BaseEnv):
         """Revert non-test source files to their pre-fix state to reproduce the bug.
 
         For gemcli/gemswe images, the Docker container starts at the fix commit. To prevent
-        answer leakage, we write back the old (buggy) file content stored in
-        FileDiff.old_file_content directly, bypassing any hunk-matching logic.
+        answer leakage, we revert files to their parent commit (buggy) state using git.
 
-        For files newly added by the fix (old_file_content is empty/"/dev/null"),
-        we delete them from the container. Then we amend the commit so git log/show
-        cannot reveal the fix.
+        Strategy:
+        1. If old_file_content is populated, use it directly
+        2. If old_file_content is empty, use git to fetch the old content from parent commit
+        3. For newly added files (didn't exist in parent), delete them
+
+        Then amend the commit so git log/show cannot reveal the fix.
         """
         if not self._is_gemcli:
             return
@@ -263,37 +265,70 @@ class SWEEnv(BaseEnv):
             from r2egym.commit_models.diff_classes import ParsedCommit
             commit = ParsedCommit(**json.loads(parsed_commit_json))
 
+            # Get the parent commit hash (buggy state)
+            old_commit = commit.old_commit_hash
+            if not old_commit:
+                logger.warning("No old_commit_hash found, cannot apply bug patch")
+                return
+
             failed_files = []
             non_test_files = [fd for fd in commit.file_diffs if not fd.is_test_file]
 
             for fd in non_test_files:
                 filepath = fd.path
+                if not filepath:
+                    continue
+
                 try:
                     old_content = fd.old_file_content
 
-                    if not old_content or old_content == "/dev/null":
-                        # File was newly added by the fix — delete it to restore buggy state.
-                        self.env.runtime.run(f"rm -f {filepath}", timeout=15)
-                    else:
-                        # Write the pre-fix (buggy) content directly to the container.
-                        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
-                            f.write(old_content)
-                            tmp_path = f.name
-
-                        # Ensure parent directory exists (in case path has subdirs).
-                        parent_dir = os.path.dirname(filepath)
-                        if parent_dir:
-                            self.env.runtime.run(f"mkdir -p {parent_dir}", timeout=15)
-
-                        tmp_name = f"/tmp/_revert_{os.path.basename(filepath)}"
-                        self.env.runtime.copy_to_container(tmp_path, tmp_name)
-                        os.unlink(tmp_path)
-
-                        output, error_code = self.env.runtime.run(
-                            f"mv {tmp_name} {filepath}", timeout=15,
+                    # If old_file_content is not populated, fetch from git
+                    if not old_content:
+                        # Check if file existed in parent commit
+                        check_output, check_code = self.env.runtime.run(
+                            f"git cat-file -e {old_commit}:{filepath} 2>/dev/null && echo EXISTS || echo MISSING",
+                            timeout=15,
                         )
-                        if error_code and "Error" in str(error_code):
-                            failed_files.append((filepath, f"write failed: {output}"))
+
+                        if "MISSING" in check_output:
+                            # File was newly added by the fix — delete it
+                            self.env.runtime.run(f"rm -f {filepath}", timeout=15)
+                            continue
+                        else:
+                            # File existed — fetch its old content from git
+                            old_content_output, error_code = self.env.runtime.run(
+                                f"git show {old_commit}:{filepath}",
+                                timeout=30,
+                            )
+                            if error_code and "Error" in str(error_code):
+                                failed_files.append((filepath, f"git show failed: {old_content_output[:200]}"))
+                                continue
+                            old_content = old_content_output
+
+                    # Handle explicit /dev/null (file was newly added)
+                    if old_content == "/dev/null":
+                        self.env.runtime.run(f"rm -f {filepath}", timeout=15)
+                        continue
+
+                    # Write the old (buggy) content to the file
+                    with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
+                        f.write(old_content)
+                        tmp_path = f.name
+
+                    # Ensure parent directory exists
+                    parent_dir = os.path.dirname(filepath)
+                    if parent_dir:
+                        self.env.runtime.run(f"mkdir -p {parent_dir}", timeout=15)
+
+                    tmp_name = f"/tmp/_revert_{os.path.basename(filepath)}"
+                    self.env.runtime.copy_to_container(tmp_path, tmp_name)
+                    os.unlink(tmp_path)
+
+                    output, error_code = self.env.runtime.run(
+                        f"mv {tmp_name} {filepath}", timeout=15,
+                    )
+                    if error_code and "Error" in str(error_code):
+                        failed_files.append((filepath, f"write failed: {output}"))
 
                 except Exception as e:
                     failed_files.append((filepath, str(e)))
@@ -343,15 +378,14 @@ class SWEEnv(BaseEnv):
             f'--override-ini="addopts=" 2>&1',
             timeout=60,
         )
-        # Check for collection failures by looking at the output content and error code.
-        # Exit code 2 = collection error, 4 = conftest/usage error.
-        output_str = str(output)
-        has_error_exit = error_code and ("Exit code 2" in str(error_code) or "Exit code 4" in str(error_code))
-        has_collection_error = "errors during collection" in output_str or "ImportError" in output_str
-        pytest_failed = has_error_exit or has_collection_error
+        # Check for collection failures by looking at the error code.
+        # Exit code 2 = collection error. Only use this as the definitive signal.
+        # Removed "ImportError" substring check: too many false positives from test names/output.
+        has_error_exit = error_code and "Exit code 2" in str(error_code)
+        pytest_failed = has_error_exit
         logger.info(
-            "Test collection check: error_code=%s, has_error_exit=%s, has_collection_error=%s, pytest_failed=%s",
-            error_code, has_error_exit, has_collection_error, pytest_failed,
+            "Test collection check: error_code=%s, has_error_exit=%s, pytest_failed=%s",
+            error_code, has_error_exit, pytest_failed,
         )
         if pytest_failed:
             fix_hash = getattr(self, "_fix_commit_hash", None)
