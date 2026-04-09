@@ -213,6 +213,7 @@ class AgentExecutionEngine:
         # env_id = env.env_id
 
         termination_reason = None
+        exception_message = ""  # Track exception message for non-ENV_DONE terminations
         prompt_token_len = 0
         prompt_tokens = []
         response_token_len = 0
@@ -275,6 +276,7 @@ class AgentExecutionEngine:
                 prompt_len = len(self.tokenizer.encode(prompt_str, add_special_tokens=False))
                 if prompt_len > self.max_prompt_length:
                     termination_reason = "PROMPT_TRUNCATION"
+                    exception_message = f"Prompt length {prompt_len} exceeded max_prompt_length {self.max_prompt_length}"
                     break
 
             kwargs["max_tokens"] = max_tokens
@@ -373,6 +375,7 @@ class AgentExecutionEngine:
             if retry_count >= max_step_retries and not validation_success:
                 # print(f"Error parsing step after {retry_count} retries: {response}")
                 termination_reason = "ABNORMAL_PARSE_ERROR"
+                exception_message = f"Failed to parse valid output after {retry_count} retries. No tool calls and no \\boxed{{}} found."
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
@@ -390,6 +393,7 @@ class AgentExecutionEngine:
             # 5.4.1 Handle abnormal trajectories: Tool Burst (> 10 tool calls)
             if tool_calls and len(tool_calls) > 10:
                 termination_reason = "ABNORMAL_TOOL_BURST"
+                exception_message = f"Tool burst detected: {len(tool_calls)} tool calls in a single step (max 10 allowed)"
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
@@ -428,6 +432,7 @@ class AgentExecutionEngine:
 
             if is_repeated:
                 termination_reason = "ABNORMAL_REPEATED_QUERY"
+                exception_message = f"Repeated query detected: Agent generated the same query multiple times"
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
@@ -464,6 +469,7 @@ class AgentExecutionEngine:
                 if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD:
                     # Hard terminate: agent is hopelessly stuck
                     termination_reason = "ABNORMAL_ACTION_LOOP"
+                    exception_message = f"Action loop detected: {consecutive_repeat_count + 1} identical consecutive actions - {action_str[:200]}"
                     reward = 0.0
                     done = True
                     cur_step = agent.get_current_state()
@@ -492,6 +498,7 @@ class AgentExecutionEngine:
             except asyncio.TimeoutError:
                 # 5.4.2 Search errors: discard directly
                 termination_reason = "ENV_TIMEOUT"
+                exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
                 should_discard = True
                 colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
                 cur_step = agent.get_current_state()
@@ -575,6 +582,7 @@ class AgentExecutionEngine:
                     cur_step.reward = 0.0
                 cur_step.done = True
                 termination_reason = "TRUNCATION"
+                exception_message = f"Response length {response_token_len - len(env_msg_tokens)} exceeded max_response_length {self.max_response_length}"
                 # handle returning
                 break
 
@@ -585,6 +593,7 @@ class AgentExecutionEngine:
 
             if total_time >= self.trajectory_timeout:
                 termination_reason = "TIMEOUT"
+                exception_message = f"Trajectory timeout: total time {total_time:.2f}s exceeded limit {self.trajectory_timeout}s"
                 cur_step = agent.get_current_state()
                 done = True
                 cur_step.done = done
@@ -601,6 +610,7 @@ class AgentExecutionEngine:
             if step_idx == self.max_steps - 1:
                 # 5.4.3 Exceeding search step limit: stop + 0 reward
                 termination_reason = "MAX_STEPS"
+                exception_message = f"Maximum steps reached: {self.max_steps} steps completed without environment termination"
                 reward = 0.0  # Force 0 reward
 
         # Enforce ReAct workflow: >= 5 steps and only enable odd number of steps
@@ -609,6 +619,7 @@ class AgentExecutionEngine:
             step_count = len(episode_steps)
             if step_count < 5:
                 termination_reason = "INVALID_REACT_STRUCTURE"
+                exception_message = f"Invalid ReAct structure: only {step_count} steps (minimum 5 required)"
                 # raise InvalidReactStructureError(f"{termination_reason} (Steps: {step_count})")
                 should_discard = True
             else:
@@ -623,6 +634,7 @@ class AgentExecutionEngine:
                     # colorful_print(f"Trajectory {idx} completed: {termination_reason} (Last step has boxed answer)", "green")
                 else:
                     termination_reason = "INVALID_FINAL_STEP"
+                    exception_message = f"Invalid final step: last step does not contain \\boxed{{}} answer"
                     # raise InvalidReactStructureError(f"Trajectory {idx} discarded: {termination_reason} (Last step has tool call but no boxed)")
                     should_discard = True
 
@@ -742,6 +754,7 @@ class AgentExecutionEngine:
                 "reward_debug": reward_debug,
                 "idx": env.idx,
                 "termination_reason": termination_reason,
+                "exception": exception_message,  # Add exception message for non-ENV_DONE terminations
                 "chat_completions": agent.chat_completions,
                 "metrics": {
                     # Total number of steps taken in the trajectory

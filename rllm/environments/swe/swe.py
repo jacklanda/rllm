@@ -70,6 +70,7 @@ class SWEEnv(BaseEnv):
         scaffold: str = "r2egym",
         apply_bug_patch: bool = True,
         partial_reward: bool = False,
+        partial_reward_ceiling: float = 0.5,
     ):
         """Initialize the SWE environment.
 
@@ -102,6 +103,7 @@ class SWEEnv(BaseEnv):
         self._is_gemcli = "gemcli" in self.entry.get("docker_image", "") or "gemswe" in self.entry.get("docker_image", "")
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
+        self.partial_reward_ceiling = partial_reward_ceiling
         self._reward_debug = {}
         self._bug_patch_reverted = False
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
@@ -179,10 +181,15 @@ class SWEEnv(BaseEnv):
         When commits have hashes that collide with ref names, git outputs
         multi-line warnings to STDOUT. These warnings corrupt file content
         when retrieved via git show/cat-file, and clutter the agent's
-        command output. Disabling advice.objectNameWarning prevents this.
+        command output. We suppress at multiple levels:
+        1. advice.objectNameWarning disables porcelain warnings
+        2. core.warnAmbiguousRefs=false disables ambiguous ref warnings
         """
         self.env.runtime.run(
-            "git config advice.objectNameWarning false", timeout=15
+            "git config advice.objectNameWarning false 2>/dev/null; "
+            "git config advice.ambiguousFetchRefspec false 2>/dev/null; "
+            "git config core.warnAmbiguousRefs false 2>/dev/null",
+            timeout=15,
         )
 
     def _install_tool_dependencies(self):
@@ -309,11 +316,12 @@ class SWEEnv(BaseEnv):
                             continue
                         else:
                             # File existed — fetch its old content from git.
-                            # Use git cat-file blob instead of git show to avoid
-                            # ambiguous refname warnings being prepended to file content.
-                            # git show outputs warnings to STDOUT which corrupts source files.
+                            # Use git cat-file blob with stderr redirected to /dev/null
+                            # to prevent ambiguous refname warnings from being prepended
+                            # to file content (git warnings go to stderr but some runtimes
+                            # merge stdout+stderr, corrupting source files).
                             old_content_output, error_code = self.env.runtime.run(
-                                f"git cat-file blob {old_commit}:{filepath}",
+                                f"git cat-file blob {old_commit}:{filepath} 2>/dev/null",
                                 timeout=30,
                             )
                             if error_code and "Error" in str(error_code):
@@ -345,6 +353,25 @@ class SWEEnv(BaseEnv):
                     )
                     if error_code and "Error" in str(error_code):
                         failed_files.append((filepath, f"write failed: {output}"))
+                        continue
+
+                    # Validate the written file doesn't start with git warnings
+                    # (which would corrupt source code and make tests impossible to run)
+                    head_output, _ = self.env.runtime.run(
+                        f"head -c 100 {filepath}", timeout=10,
+                    )
+                    if head_output and "warning:" in head_output.lower() and "refname" in head_output.lower():
+                        logger.error(
+                            "Bug patch: file %s corrupted by git warning, attempting re-fetch with stderr suppression",
+                            filepath,
+                        )
+                        # Re-fetch with explicit stderr suppression
+                        clean_output, clean_code = self.env.runtime.run(
+                            f"git cat-file blob {old_commit}:{filepath} 2>/dev/null > {filepath}",
+                            timeout=30,
+                        )
+                        if clean_code and "Error" in str(clean_code):
+                            failed_files.append((filepath, f"re-fetch after corruption failed: {clean_output[:200]}"))
 
                 except Exception as e:
                     failed_files.append((filepath, str(e)))
@@ -443,11 +470,28 @@ class SWEEnv(BaseEnv):
         # Compute reward based on test match results.
         if self.partial_reward:
             # Partial reward: fraction of expected tests that match.
-            # e.g. 74% match = 0.74 reward instead of 0.0.
-            if len(expected) > 0:
-                reward = sum(1 for k, v in expected.items() if parse.get(k) == v) / len(expected)
-            else:
+            # Uses a two-tier approach:
+            #   - Full match (all tests pass) -> reward = 1.0
+            #   - Partial match -> reward = match_ratio * partial_ceiling
+            # The partial_ceiling (default 0.5) ensures that partial fixes
+            # are rewarded but never as much as a complete fix, maintaining
+            # a clear incentive gradient toward full resolution.
+            # When no tests are parsed at all (test collection failure),
+            # reward is 0.0 regardless.
+            if len(expected) == 0:
                 reward = 1.0
+            elif len(parse) == 0:
+                # No tests were parsed — test collection itself failed
+                reward = 0.0
+            else:
+                matched_count = sum(1 for k, v in expected.items() if parse.get(k) == v)
+                match_ratio = matched_count / len(expected)
+                if match_ratio == 1.0:
+                    reward = 1.0
+                else:
+                    # Scale partial matches to [0, partial_ceiling] range
+                    # This prevents partial rewards from dominating GRPO advantage
+                    reward = match_ratio * self.partial_reward_ceiling
         else:
             # All-or-nothing: reward is 1.0 only if every expected test matches.
             reward = 1.0

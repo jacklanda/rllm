@@ -129,3 +129,4 @@ reward:
   correct_reward: 1.0                    # Reward for correct answers
   incorrect_reward: 0.0                  # Reward for incorrect answers
   partial_reward: False                   # Use partial reward (matched/expected ratio) instead of all-or-nothing for SWE tasks
+  partial_reward_ceiling: 0.5              # Maximum reward for partial matches (full match always gets 1.0)

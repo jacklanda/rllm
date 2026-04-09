@@ -254,6 +254,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         valid_mask = torch.ones(len(uids), dtype=torch.bool)
                         solve_none = 0
                         solve_all = 0
+                        solve_no_variance = 0
                         for uid in unique_uids:
                             uid_mask = uids == uid
                             uid_rewards = reward_tensor[uid_mask].sum(-1)  # Sum rewards for each sequence
@@ -265,11 +266,15 @@ class AgentPPOTrainer(RayPPOTrainer):
                             elif (uid_rewards >= 1).all():
                                 valid_mask[uid_mask] = False
                                 solve_all += 1
+                            elif uid_rewards.std() < 1e-6:
+                                # All samples have same partial reward — GRPO advantage is 0
+                                solve_no_variance += 1
 
                         # Log to metrics
                         metrics["batch/solve_none"] = solve_none
                         metrics["batch/solve_all"] = solve_all
-                        metrics["batch/solve_partial"] = len(unique_uids) - solve_none - solve_all
+                        metrics["batch/solve_no_variance"] = solve_no_variance
+                        metrics["batch/solve_partial"] = len(unique_uids) - solve_none - solve_all - solve_no_variance
 
                         if self.config.rllm.rejection_sample.enable:
                             # log the actual complete training rewards before rejection sampling
@@ -861,6 +866,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                     "reward_metadata": traj.get("reward_metadata", {}),
                     "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", "") if batch is not None else "",
                     "metrics": traj.get("metrics", {}),
+                    "exception": traj.get("exception", ""),
                 },
             })
 
@@ -1226,6 +1232,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                     "verification": episode.get("reward_debug", {}),
                     "reward_metadata": episode.get("reward_metadata", {}),
                     "metrics": episode.get("metrics", {}),
+                    "exception": episode.get("exception", ""),
                 },
             })
 

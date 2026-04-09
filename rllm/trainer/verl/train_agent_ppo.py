@@ -207,6 +207,8 @@ class TaskRunner:
             # Pass partial_reward flag to environment
             if hasattr(config, "reward") and hasattr(config.reward, "partial_reward"):
                 env_args["partial_reward"] = config.reward.partial_reward
+            if hasattr(config, "reward") and hasattr(config.reward, "partial_reward_ceiling"):
+                env_args["partial_reward_ceiling"] = config.reward.partial_reward_ceiling
 
             trainer = AgentPPOTrainer(
                 config=config,

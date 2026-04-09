@@ -396,10 +396,13 @@ CLI_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github 
 CRITICAL RULES:
 1. NEVER repeat a failing action — view the file's current state and try a different approach.
 2. After EVERY edit, verify syntax: python -c "import py_compile; py_compile.compile('<file>', doraise=True)"
-3. Before submitting, run the project's actual test suite on relevant files.
-4. Do NOT submit without evidence your fix works (tests pass).
+3. MANDATORY: Before submitting, run the project's test suite: python -m pytest <relevant_test_file> -x --tb=short
+4. Do NOT submit without seeing test output that confirms your fix works.
 5. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
 6. Most bash commands should end with a newline (\\n) to cause them to execute.
+
+WORKFLOW:
+1. explore -> 2. understand the bug -> 3. edit source -> 4. verify syntax -> 5. run tests -> 6. if tests fail, iterate -> 7. submit only after tests pass
 """
 
 CLI_AGENT_USER_PROMPT = """Consider the following github issue:
