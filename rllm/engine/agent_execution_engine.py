@@ -986,7 +986,12 @@ class AgentExecutionEngine:
             try:
                 result = await coro
                 tasks_completed += 1
-                colorful_print(f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed", "cyan")
+                steps = result.get("metrics", {}).get("steps") if isinstance(result, dict) else None
+                steps_suffix = f" ({steps} steps)" if steps is not None else ""
+                colorful_print(
+                    f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed{steps_suffix}",
+                    "cyan",
+                )
                 # Dump trajectory logs after each trajectory completes
                 # self._dump_trajectory_logs()
                 if result is not None:
