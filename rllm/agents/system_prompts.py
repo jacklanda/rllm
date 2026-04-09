@@ -310,7 +310,7 @@ Follow these steps to resolve the issue:
 """
 
 SWEAGENT_USER_PROMPT = """I have uploaded a python code repository in the /testbed directory.
-  
+
 Now consider the following Github issue:
 
 <github_issue>
@@ -321,9 +321,9 @@ Can you help me implement the necessary changes to the repository to fix the <gi
 I have already taken care of all changes to any of the test files described in the <github_issue>. This means you DON'T have to modify the testing logic or any of the tests in any way! Your task is to make changes to non-test files in the /testbed directory to ensure the <github_issue> is resolved.
 
 Follow these steps to resolve the issue:
-1. First, explore the codebase to locate and understand the code relevant to the <github_issue>. 
-  - Use efficient search commands to identify key files and functions. 
-  - You should err on the side of caution and look at various relevant files and build your understanding of 
+1. First, explore the codebase to locate and understand the code relevant to the <github_issue>.
+  - Use efficient search commands to identify key files and functions.
+  - You should err on the side of caution and look at various relevant files and build your understanding of
     - how the code works
     - what are the expected behaviors and edge cases
     - what are the potential root causes for the given issue
@@ -332,25 +332,31 @@ Follow these steps to resolve the issue:
     - Create a script at '/testbed/reproduce_issue.py' that demonstrates the error.
     - Execute this script to confirm the error behavior.
     - You should reproduce the issue before fixing it.
-    - Your reproduction script should also assert the expected behavior for the fixed code. 
+    - Your reproduction script should also assert the expected behavior for the fixed code.
 
 3. Analyze the root cause:
     - Identify the underlying problem based on your code exploration and reproduction results.
-    - Critically analyze different potential approaches to fix the issue. 
+    - Critically analyze different potential approaches to fix the issue.
     - You NEED to explicitly reason about multiple approaches to fix the issue. Next, find the most elegant and effective solution among them considering the tradeoffs (correctness, generality, side effects, etc.).
     - You would need to reason about execution paths, edge cases, and other potential issues. You should look at the unit tests to understand the expected behavior of the relevant code.
 
 4. Implement your solution:
     - Make targeted changes to the necessary files following idiomatic code patterns once you determine the root cause.
     - You should be thorough and methodical.
+    - After EACH edit, immediately run a cheap sanity check before making more edits.
+    - Prefer the cheapest check that can catch obvious breakage in the file or module you just touched (for example py_compile, importing the edited module, or rerunning the reproduction script if it is fast).
+    - Do not continue stacking edits after a failing sanity check; first fix the breakage you introduced.
 
-5. Verify your solution:
-    - Rerun your reproduction script to confirm the error is fixed.
-    - If verification fails, iterate on your solution until successful. If you identify the reproduction script is buggy, adjust it as needed.
+5. Verify incrementally with cheap checks:
+    - After each edit or small batch of related edits, rerun a targeted sanity check to catch syntax/import/runtime errors early.
+    - As soon as you have a plausible fix, run the most targeted relevant test or reproduce command for the code path you changed.
+    - Prefer targeted verification first (single test, test node, or narrow reproduce script) instead of broad full-suite runs.
+    - If targeted verification fails, iterate immediately before moving on.
 
-6. Run unit tests:
-    - Find and run the relevant unit tests relevant to the performed fix.
-    - You should run the unit tests to ensure your solution is correct and does not cause any regressions.
+6. Run unit tests in stages:
+    - First run the smallest relevant test target(s) for the fix you made.
+    - Once targeted tests pass, run the broader relevant test coverage for nearby behavior and regressions.
+    - Only run the broadest verification near the end, once your targeted checks are already passing.
     - In cases where the unit tests are do not pass, you should consider whether the unit tests does not reflect the *new* expected behavior of the code. If so, you can test it by writing additional edge test cases.
     - Use the existing test runner to run the unit tests you identify as relevant to the changes you made. For example:
         - `python -m pytest -xvs sympy/physics/units/tests/test_dimensions_transcendental.py`
@@ -372,6 +378,8 @@ Follow these steps to resolve the issue:
     - Document any assumptions or limitations of your solution.
 
 9. Submit your solution:
+    - Before submitting, do a final broader verification pass on the relevant tests for the affected area.
+    - Do not submit right after an edit without first passing cheap sanity checks and targeted tests.
     - Once you have verified your solution, submit your solution using the `submit` tool.
 
 A successful resolution means:
@@ -383,7 +391,7 @@ A successful resolution means:
 Additional recommendations:
 - You should be thorough, methodical, and prioritize quality over speed. Be comprehensive.
 - You should think carefully before making the tool call about what should be done. However, each step should only use one tool call. YOU SHOULD NOT USE TOOLS INSIDE YOUR THOUGHT PROCESS. YOU SHOULD PRIMARILY USE THINKING FOR IDENTIFYING THE ROOT CAUSE OF THE ISSUE, MAKING THE CHANGES, AND CREATING TEST CASES (REPRODUCTION OR EDGE CASES).
-- Each action you take is somewhat expensive. Wherever possible, combine multiple actions into a single action (e.g., combine multiple bash commands, use sed/grep for bulk operations). 
+- Each action you take is somewhat expensive. Wherever possible, combine multiple actions into a single action (e.g., combine multiple bash commands, use sed/grep for bulk operations).
     - Your grep commands should identify both relevant files and line numbers so you can use the file_editor tool.
     - Use grep with `-A -B -C` flags to quickly identify the relevant code blocks during your exploration.
 - When exploring the codebase, use targeted search patterns to minimize unnecessary operations.
@@ -396,13 +404,14 @@ CLI_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github 
 CRITICAL RULES:
 1. NEVER repeat a failing action — view the file's current state and try a different approach.
 2. After EVERY edit, verify syntax: python -c "import py_compile; py_compile.compile('<file>', doraise=True)"
-3. MANDATORY: Before submitting, run the project's test suite: python -m pytest <relevant_test_file> -x --tb=short
-4. Do NOT submit without seeing test output that confirms your fix works.
-5. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
-6. Most bash commands should end with a newline (\\n) to cause them to execute.
+3. After syntax passes, run the cheapest targeted verification for the code path you changed before making more edits.
+4. MANDATORY: Before submitting, run the project's relevant tests, starting with targeted tests and only doing broader verification near the end.
+5. Do NOT submit without seeing test output that confirms your fix works.
+6. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
+7. Most bash commands should end with a newline (\\n) to cause them to execute.
 
 WORKFLOW:
-1. explore -> 2. understand the bug -> 3. edit source -> 4. verify syntax -> 5. run tests -> 6. if tests fail, iterate -> 7. submit only after tests pass
+1. explore -> 2. understand the bug -> 3. edit source -> 4. verify syntax immediately -> 5. run targeted sanity check / targeted test -> 6. iterate on failures early -> 7. run broader relevant verification near the end -> 8. submit only after tests pass
 """
 
 CLI_AGENT_USER_PROMPT = """Consider the following github issue:
@@ -415,10 +424,12 @@ Make minimal changes to non-test files in /testbed to fix the issue. Do NOT modi
 Steps:
 1. Explore the repo structure and read the relevant source files to understand the codebase.
 2. Identify the root cause of the issue in the source code.
-3. Edit source code to fix the issue. After EACH edit, verify syntax with py_compile.
-4. Run the project's test suite on relevant test files to verify your fix (e.g., python -m pytest <test_file> -x).
-5. If tests fail, read the error output carefully, adjust your fix, and rerun tests.
-6. The repo is at '/testbed' (cwd) — use relative paths without 'testbed/' prefix.
+3. Edit source code to fix the issue. After EACH edit, immediately verify syntax with py_compile.
+4. After syntax passes, run a cheap targeted sanity check for the code path you changed. Prefer the smallest useful check first.
+5. Run the most relevant targeted test(s) for the fix (e.g., a single test file or test node) before any broader suite.
+6. If targeted checks fail, read the error output carefully, adjust your fix, and rerun the targeted checks before proceeding.
+7. Only after targeted checks pass, run broader relevant verification for regressions near the end.
+8. The repo is at '/testbed' (cwd) — use relative paths without 'testbed/' prefix.
 
 CRITICAL: If an action fails, do NOT retry it — inspect the file, understand the state, and try differently. Each response must include reasoning and a tool call.
 """
