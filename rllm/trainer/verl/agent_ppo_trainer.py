@@ -255,9 +255,33 @@ class AgentPPOTrainer(RayPPOTrainer):
                         solve_none = 0
                         solve_all = 0
                         solve_no_variance = 0
+                        reward_std_values = []
+                        reward_mean_values = []
+                        reward_range_values = []
+                        verifier_missing_groups = 0
+                        high_variance_groups = 0
+                        verifier_missing_mask = None
+                        if "reward_metadata" in batch.non_tensor_batch:
+                            verifier_missing_mask = np.array([
+                                0 if isinstance(metadata, dict) and metadata else 1
+                                for metadata in batch.non_tensor_batch["reward_metadata"]
+                            ], dtype=np.int32)
                         for uid in unique_uids:
                             uid_mask = uids == uid
                             uid_rewards = reward_tensor[uid_mask].sum(-1)  # Sum rewards for each sequence
+                            uid_reward_mean = uid_rewards.mean().detach().item()
+                            uid_reward_std = uid_rewards.std(unbiased=False).detach().item()
+                            uid_reward_min = uid_rewards.min().detach().item()
+                            uid_reward_max = uid_rewards.max().detach().item()
+                            reward_mean_values.append(uid_reward_mean)
+                            reward_std_values.append(uid_reward_std)
+                            reward_range_values.append(uid_reward_max - uid_reward_min)
+
+                            group_missing_verifier = False
+                            if verifier_missing_mask is not None:
+                                group_missing_verifier = bool(verifier_missing_mask[uid_mask].any())
+                                if group_missing_verifier:
+                                    verifier_missing_groups += 1
 
                             # Check if all rewards are <= 0 or all are 1 >= for this uid
                             if (uid_rewards <= 0).all():
@@ -266,15 +290,35 @@ class AgentPPOTrainer(RayPPOTrainer):
                             elif (uid_rewards >= 1).all():
                                 valid_mask[uid_mask] = False
                                 solve_all += 1
-                            elif uid_rewards.std() < 1e-6:
+                            elif uid_reward_std < 1e-6:
                                 # All samples have same partial reward — GRPO advantage is 0
                                 solve_no_variance += 1
+
+                            if self.config.rllm.rejection_sample.get("filter_verifier_missing", False) and group_missing_verifier:
+                                valid_mask[uid_mask] = False
+
+                            max_uid_reward_std = self.config.rllm.rejection_sample.get("max_uid_reward_std", None)
+                            if self.config.rllm.rejection_sample.get("filter_high_variance", False) and max_uid_reward_std is not None and uid_reward_std > max_uid_reward_std:
+                                valid_mask[uid_mask] = False
+                                high_variance_groups += 1
 
                         # Log to metrics
                         metrics["batch/solve_none"] = solve_none
                         metrics["batch/solve_all"] = solve_all
                         metrics["batch/solve_no_variance"] = solve_no_variance
                         metrics["batch/solve_partial"] = len(unique_uids) - solve_none - solve_all - solve_no_variance
+                        if reward_mean_values:
+                            metrics["batch/uid_reward_mean_mean"] = float(np.mean(reward_mean_values))
+                            metrics["batch/uid_reward_mean_min"] = float(np.min(reward_mean_values))
+                            metrics["batch/uid_reward_mean_max"] = float(np.max(reward_mean_values))
+                        if reward_std_values:
+                            metrics["batch/uid_reward_std_mean"] = float(np.mean(reward_std_values))
+                            metrics["batch/uid_reward_std_max"] = float(np.max(reward_std_values))
+                        if reward_range_values:
+                            metrics["batch/uid_reward_range_mean"] = float(np.mean(reward_range_values))
+                            metrics["batch/uid_reward_range_max"] = float(np.max(reward_range_values))
+                        metrics["batch/verifier_missing_groups"] = verifier_missing_groups
+                        metrics["batch/high_variance_groups"] = high_variance_groups
 
                         if self.config.rllm.rejection_sample.enable:
                             # log the actual complete training rewards before rejection sampling
@@ -775,6 +819,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         traj_bonus_rewards = []  # Store bonus rewards (tool_call + step_bonus) for GDPO
         chat_completions = []
         traj_metrics = []
+        reward_metadata_list = []
         metrics = {}
         valid_indices = []
 
@@ -797,6 +842,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             # Store base reward and bonus rewards separately
             traj_base_rewards.append(base_reward)
             traj_bonus_rewards.append(tool_call_reward + step_bonus)
+            reward_metadata_list.append(reward_metadata)
 
             trajectories_w_metadata = traj["chat_completions"].copy()
 
@@ -835,6 +881,30 @@ class AgentPPOTrainer(RayPPOTrainer):
                     f"traj/{k}_max": v_list.max(),
                 }
             )
+
+        verifier_pass_rates = [m.get("pass_rate") for m in reward_metadata_list if isinstance(m, dict) and m.get("pass_rate") is not None]
+        verifier_resolved = [1.0 if m.get("resolved") else 0.0 for m in reward_metadata_list if isinstance(m, dict) and "resolved" in m]
+        verifier_errors = [1.0 if m.get("verifier_error") else 0.0 for m in reward_metadata_list if isinstance(m, dict)]
+        verifier_missing = [1.0 if not (isinstance(m, dict) and m) else 0.0 for m in reward_metadata_list]
+        tests_passed = [m.get("tests_passed") for m in reward_metadata_list if isinstance(m, dict) and m.get("tests_passed") is not None]
+        tests_failed = [m.get("tests_failed") for m in reward_metadata_list if isinstance(m, dict) and m.get("tests_failed") is not None]
+        tests_total = [m.get("tests_total") for m in reward_metadata_list if isinstance(m, dict) and m.get("tests_total") is not None]
+
+        if verifier_pass_rates:
+            metrics["traj/verifier_pass_rate_mean"] = float(np.mean(verifier_pass_rates))
+            metrics["traj/verifier_pass_rate_max"] = float(np.max(verifier_pass_rates))
+        if verifier_resolved:
+            metrics["traj/verifier_resolved_rate"] = float(np.mean(verifier_resolved))
+        if verifier_errors:
+            metrics["traj/verifier_error_rate"] = float(np.mean(verifier_errors))
+        if verifier_missing:
+            metrics["traj/verifier_missing_rate"] = float(np.mean(verifier_missing))
+        if tests_passed:
+            metrics["traj/tests_passed_mean"] = float(np.mean(tests_passed))
+        if tests_failed:
+            metrics["traj/tests_failed_mean"] = float(np.mean(tests_failed))
+        if tests_total:
+            metrics["traj/tests_total_mean"] = float(np.mean(tests_total))
 
         # Save chat completions and stats to files
         save_dir = os.path.join(self.config.trainer.default_local_dir, "chat_completions")
@@ -1001,6 +1071,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         non_tensor_batch = {
             "idxs": np.array(valid_indices),
+            "reward_metadata": np.array(reward_metadata_list, dtype=object),
         }
 
         self.visualize_trajectory(DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch))

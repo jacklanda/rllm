@@ -71,6 +71,9 @@ class SWEEnv(BaseEnv):
         apply_bug_patch: bool = True,
         partial_reward: bool = False,
         partial_reward_ceiling: float = 0.5,
+        reward_mode: str | None = None,
+        partial_reward_coeff: float = 1.0,
+        require_trusted_verifier_for_partial: bool = True,
     ):
         """Initialize the SWE environment.
 
@@ -104,6 +107,9 @@ class SWEEnv(BaseEnv):
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
         self.partial_reward_ceiling = partial_reward_ceiling
+        self.reward_mode = reward_mode or ("binary_plus_partial" if partial_reward else "binary")
+        self.partial_reward_coeff = partial_reward_coeff
+        self.require_trusted_verifier_for_partial = require_trusted_verifier_for_partial
         self._reward_debug = {}
         self._bug_patch_reverted = False
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
@@ -410,126 +416,126 @@ class SWEEnv(BaseEnv):
         # Validation disabled - bug patch stays applied even if tests fail to collect
         pass
 
-    def compute_final_reward(self):
-        if not self._is_gemcli:
-            reward = self.env.compute_reward()
-            self._reward_debug = {"type": "r2egym", "reward": float(reward)}
-            return reward
-
-        # If the bug patch was reverted (test collection failed after applying the
-        # buggy state), the agent is working on already-fixed code. Force reward=0.0
-        # so it gets no credit for a no-op. We still run the tests to populate
-        # diagnostics, but the reward is overridden.
-        if self._bug_patch_reverted:
-            logger.warning(
-                "Bug patch was reverted for this episode — forcing reward=0.0"
-            )
-            self._reward_debug = {
-                "type": "gemcli",
-                "reward": 0.0,
-                "bug_patch_reverted": True,
-                "tests_expected": 0,
-                "tests_parsed": 0,
-                "tests_matched": 0,
-                "tests_mismatched_count": 0,
-                "mismatched_tests": {},
-                "parsed_summary": {},
-                "expected_summary": {},
-                "extra_tests": {},
-            }
-            return 0.0
-
-        # For gemcli images: run tests and compare with the expected output.
-        # Cannot use upstream _calculate_reward_r2e because:
-        #   1. parse_log_pytest strips file paths from keys (test_neq instead of
-        #      tests/test_core.py::test_neq), causing collisions when multiple
-        #      test files share the same test function name.
-        #   2. parse_log_pytest doesn't capture SKIPPED tests.
-        # Instead, parse the "short test summary info" section directly, preserving
-        # the full file::test_name format that matches expected_output_json keys.
-        from r2egym.repo_analysis.execution_log_parser import decolor_dict_keys
-
-        output, error_code = self.env.runtime.run_tests(timeout=self.reward_timeout)
-
-        parse = self._parse_pytest_summary(output)
-        parse = decolor_dict_keys(parse)
-
-        expected_json_str = self.entry.get("expected_output_json", "{}")
-        expected = json.loads(expected_json_str)
-        expected = decolor_dict_keys(expected)
-
-        # Exclude SKIPPED/XFAIL tests from comparison: their pytest summary format
-        # uses "file:line: reason" instead of "file::test_name", so keys won't match.
-        # Skipped tests are unaffected by code changes, so this is safe.
-        non_actionable = {"SKIPPED", "XFAIL"}
-        parse = {k: v for k, v in parse.items() if v not in non_actionable}
-        expected = {k: v for k, v in expected.items() if v not in non_actionable}
-
-        logger.info("gemcli reward: parsed %d tests, expected %d tests", len(parse), len(expected))
-
-        # Compute reward based on test match results.
-        if self.partial_reward:
-            # Partial reward: fraction of expected tests that match.
-            # Uses a two-tier approach:
-            #   - Full match (all tests pass) -> reward = 1.0
-            #   - Partial match -> reward = match_ratio * partial_ceiling
-            # The partial_ceiling (default 0.5) ensures that partial fixes
-            # are rewarded but never as much as a complete fix, maintaining
-            # a clear incentive gradient toward full resolution.
-            # When no tests are parsed at all (test collection failure),
-            # reward is 0.0 regardless.
-            if len(expected) == 0:
-                reward = 1.0
-            elif len(parse) == 0:
-                # No tests were parsed — test collection itself failed
-                reward = 0.0
-            else:
-                matched_count = sum(1 for k, v in expected.items() if parse.get(k) == v)
-                match_ratio = matched_count / len(expected)
-                if match_ratio == 1.0:
-                    reward = 1.0
-                else:
-                    # Scale partial matches to [0, partial_ceiling] range
-                    # This prevents partial rewards from dominating GRPO advantage
-                    reward = match_ratio * self.partial_reward_ceiling
-        else:
-            # All-or-nothing: reward is 1.0 only if every expected test matches.
-            reward = 1.0
-            for k, v in expected.items():
-                if parse.get(k) != v:
-                    reward = 0.0
-                    break
-
-        # Build reward debug info for diagnostics
+    def _build_reward_debug(self, *, reward: float, reward_source: str, parse: dict | None = None, expected: dict | None = None, output: str = "", error_code=None, verifier_error: str = "", bug_patch_reverted: bool = False) -> dict:
+        parse = parse or {}
+        expected = expected or {}
         matched = sum(1 for k, v in expected.items() if parse.get(k) == v)
         mismatched = {k: {"expected": v, "actual": parse.get(k)} for k, v in expected.items() if parse.get(k) != v}
-
-        # Identify tests that were parsed but not expected (helps diagnose wrong test file)
         extra_tests = {k: v for k, v in parse.items() if k not in expected}
-
-        # Capture pytest output snippet for debugging parse failures
+        tests_total = len(expected)
+        tests_passed = matched
+        tests_failed = max(tests_total - tests_passed, 0)
+        pass_rate = (tests_passed / tests_total) if tests_total > 0 else (1.0 if reward >= 1.0 else 0.0)
         output_snippet = output[:1000] if output else ""
-        # Also capture the last part which often has error messages
-        output_tail = output[-500:] if len(output) > 500 else ""
+        output_tail = output[-500:] if len(output) > 500 else output
+        resolved = reward >= 1.0
 
-        self._reward_debug = {
+        return {
             "type": "gemcli",
-            "reward": reward,
-            "tests_expected": len(expected),
+            "reward": float(reward),
+            "resolved": resolved,
+            "reward_mode": self.reward_mode,
+            "reward_source": reward_source,
+            "partial_reward_enabled": self.reward_mode == "binary_plus_partial",
+            "partial_reward_coeff": float(self.partial_reward_coeff),
+            "partial_reward_ceiling": float(self.partial_reward_ceiling),
+            "bug_patch_reverted": bug_patch_reverted,
+            "tests_expected": tests_total,
+            "tests_total": tests_total,
             "tests_parsed": len(parse),
-            "tests_matched": matched,
+            "tests_matched": tests_passed,
+            "tests_passed": tests_passed,
+            "tests_failed": tests_failed,
             "tests_mismatched_count": len(mismatched),
+            "pass_rate": pass_rate,
+            "verifier_error": verifier_error,
             "mismatched_tests": dict(list(mismatched.items())[:20]),
             "parsed_summary": dict(list(parse.items())[:50]),
             "expected_summary": dict(list(expected.items())[:50]),
-            "extra_tests": dict(list(extra_tests.items())[:20]),  # Tests parsed but not expected
+            "extra_tests": dict(list(extra_tests.items())[:20]),
             "pytest_error_code": error_code,
             "pytest_output_head": output_snippet,
             "pytest_output_tail": output_tail,
             "log": output or "",
         }
 
-        return reward
+    def compute_final_reward_metadata(self) -> dict:
+        if not self._is_gemcli:
+            reward = float(self.env.compute_reward())
+            self._reward_debug = {
+                "type": "r2egym",
+                "reward": reward,
+                "resolved": reward >= 1.0,
+                "reward_mode": "binary",
+                "reward_source": "trusted_verifier",
+                "verifier_error": "",
+            }
+            return self._reward_debug
+
+        if self._bug_patch_reverted:
+            logger.warning("Bug patch was reverted for this episode — forcing reward=0.0")
+            self._reward_debug = self._build_reward_debug(
+                reward=0.0,
+                reward_source="trusted_verifier",
+                bug_patch_reverted=True,
+                verifier_error="bug_patch_reverted",
+            )
+            return self._reward_debug
+
+        from r2egym.repo_analysis.execution_log_parser import decolor_dict_keys
+
+        output, error_code = self.env.runtime.run_tests(timeout=self.reward_timeout)
+
+        parse = decolor_dict_keys(self._parse_pytest_summary(output))
+
+        expected_json_str = self.entry.get("expected_output_json", "{}")
+        expected = decolor_dict_keys(json.loads(expected_json_str))
+
+        non_actionable = {"SKIPPED", "XFAIL"}
+        parse = {k: v for k, v in parse.items() if v not in non_actionable}
+        expected = {k: v for k, v in expected.items() if v not in non_actionable}
+
+        logger.info("gemcli reward: parsed %d tests, expected %d tests", len(parse), len(expected))
+
+        matched_count = sum(1 for k, v in expected.items() if parse.get(k) == v)
+        match_ratio = (matched_count / len(expected)) if expected else 1.0
+        use_partial_reward = self.reward_mode == "binary_plus_partial" and (not self.require_trusted_verifier_for_partial or bool(expected))
+
+        if use_partial_reward:
+            if len(expected) == 0:
+                reward = 1.0
+            elif len(parse) == 0:
+                reward = 0.0
+            elif match_ratio == 1.0:
+                reward = 1.0
+            else:
+                partial_reward = min(match_ratio * self.partial_reward_coeff, self.partial_reward_ceiling)
+                reward = partial_reward
+        else:
+            reward = 1.0
+            for k, v in expected.items():
+                if parse.get(k) != v:
+                    reward = 0.0
+                    break
+
+        verifier_error = ""
+        if error_code and error_code != 0 and len(parse) == 0:
+            verifier_error = f"pytest_exit_{error_code}"
+
+        self._reward_debug = self._build_reward_debug(
+            reward=reward,
+            reward_source="trusted_verifier",
+            parse=parse,
+            expected=expected,
+            output=output or "",
+            error_code=error_code,
+            verifier_error=verifier_error,
+        )
+        return self._reward_debug
+
+    def compute_final_reward(self):
+        reward_debug = self.compute_final_reward_metadata()
+        return reward_debug["reward"]
 
     @property
     def reward_debug(self) -> dict:

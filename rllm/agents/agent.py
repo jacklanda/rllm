@@ -188,7 +188,7 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method if using AgentExecutionEngine")
 
-    def update_from_model(self, response: str, **kwargs) -> Action:
+    def update_from_model(self, response: str, **kwargs) -> "Action | list[Action]":
         """
         Updates the agent's internal state after the model generates a response.
 
@@ -196,9 +196,25 @@ class BaseAgent(ABC):
             response (str): The response from the model.
 
         Returns:
-            None
+            Action or list[Action]: A single action or a list of actions to execute.
         """
         raise NotImplementedError("Subclasses must implement this method if using AgentExecutionEngine")
+
+    def update_from_env_intermediate(self, observation: Any, reward: float, done: bool, info: dict, **kwargs):
+        """
+        Append an intermediate tool response to the agent's message list.
+
+        Called between tool calls within a single model turn when the model
+        generates multiple tool calls. Unlike update_from_env(), this does NOT
+        create a new Step or update trajectory metadata.
+
+        Args:
+            observation: The observation from the environment.
+            reward: The reward received.
+            done: Whether the episode has ended.
+            info: Additional metadata from the environment.
+        """
+        raise NotImplementedError("Subclasses must implement this method to support multi-tool-call execution")
 
     @abstractmethod
     def reset(self):

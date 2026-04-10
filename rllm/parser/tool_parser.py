@@ -1,4 +1,5 @@
 import json
+import re
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -242,17 +243,75 @@ class QwenToolParser(ToolParser):
                 # Convert to common format matching parse_tool_calls output
                 tool_calls.append({"name": call_data["name"], "arguments": call_data["arguments"]})
             except json.JSONDecodeError:
-                # print(f"Error parsing tool call: {json_content}")
-                text = text[end + len(self.tool_call_end) :]
-                # Dump invalid tool call request
-                # with open("experiments/logs/invalid_tool_calls.log", "a+") as f:
-                    # f.write("-" * 100 + f"\n{json_content}\n" + "-" * 100 + "\n")
-                continue
+                # Strict JSON failed — attempt lenient recovery.
+                # LLMs commonly produce unescaped quotes inside string values
+                # (e.g. "old_str": "code with "quotes" here") which breaks json.loads
+                # but the structural keys are still extractable via regex.
+                repaired = self._repair_malformed_tool_json(json_content)
+                if repaired:
+                    tool_calls.append(repaired)
 
             # Move to next potential tool call
             text = text[end + len(self.tool_call_end) :]
 
         return tool_calls
+
+    @staticmethod
+    def _repair_malformed_tool_json(s: str) -> dict[str, Any] | None:
+        """Best-effort recovery of a tool call dict from malformed JSON.
+
+        Handles the dominant failure mode: unescaped double-quotes inside
+        string values (e.g. old_str / new_str containing Python code).
+        Returns {"name": ..., "arguments": {...}} or None.
+        """
+        name_match = re.search(r'"name"\s*:\s*"(\w+)"', s)
+        if not name_match:
+            return None
+        name = name_match.group(1)
+
+        args_start = s.find('"arguments"')
+        if args_start < 0:
+            return None
+        args_brace = s.find('{', args_start)
+        if args_brace < 0:
+            return None
+
+        args_content = s[args_brace:]
+        known_keys = ['command', 'path', 'old_str', 'new_str', 'insert_line', 'cmd', 'view_range']
+
+        args: dict[str, Any] = {}
+        for key in known_keys:
+            # Try string value: "key": "..."
+            key_pat = f'"{key}"\\s*:\\s*"'
+            key_match = re.search(key_pat, args_content)
+            if not key_match:
+                # Try integer value: "key": 123
+                int_pat = f'"{key}"\\s*:\\s*(\\d+)'
+                int_match = re.search(int_pat, args_content)
+                if int_match:
+                    args[key] = int_match.group(1)
+                continue
+
+            val_start = key_match.end()
+            remaining = args_content[val_start:]
+
+            # Find the end of this value: the earliest next-key boundary or closing braces
+            best_end = len(remaining)
+            for next_key in known_keys:
+                if next_key == key:
+                    continue
+                nk_match = re.search(f'",\\s*"{next_key}"', remaining)
+                if nk_match and nk_match.start() < best_end:
+                    best_end = nk_match.start()
+            close_match = re.search(r'"\s*\}\s*\}', remaining)
+            if close_match and close_match.start() < best_end:
+                best_end = close_match.start()
+
+            args[key] = remaining[:best_end]
+
+        if not args:
+            return None
+        return {"name": name, "arguments": args}
 
     def get_tool_prompt(self, tools_schema: str) -> str:
         return f"""

@@ -99,6 +99,8 @@ class AgentExecutionEngine:
         self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)       # Per-step \boxed{} / tool_call validation + retry
         self.enforce_react_structure = _tf.get("enforce_react_structure", False)         # Min 5 steps + final \boxed{} check
 
+        self.incremental_tokenization = self.config.get("rllm", {}).get("incremental_tokenization", False) if self.config is not None else False
+
         self.agent_class = agent_class
         self.agent_args = agent_args
         self.env_class = env_class
@@ -259,6 +261,14 @@ class AgentExecutionEngine:
             agent.reset()
             raise Exception(f"Trajectory {idx}: initial prompt length {prompt_token_len} already exceeded max_prompt_length {self.max_prompt_length}, retrying")
 
+        # Incremental tokenization: avoid BPE retokenization mismatch by building
+        # prompt_ids from the previous step's accumulated IDs + new observation tokens
+        accumulated_prompt_ids = None  # Will be set after step 0's model call
+        if self.incremental_tokenization:
+            eos_token_id = self.tokenizer.eos_token_id
+            newline_token_ids = self.tokenizer.encode("\n", add_special_tokens=False)  # [198] for Qwen
+            generation_prompt_ids = self.tokenizer.encode(self.chat_parser.generation_prompt, add_special_tokens=False)
+
         for step_idx in range(self.max_steps):
             # Get action from agent
             prompt_messages = agent.chat_completions.copy()
@@ -280,6 +290,25 @@ class AgentExecutionEngine:
                     break
 
             kwargs["max_tokens"] = max_tokens
+
+            # Build precomputed prompt IDs incrementally to avoid BPE retokenization mismatch
+            if self.incremental_tokenization and accumulated_prompt_ids is not None:
+                # Tokenize only the new user/tool message appended after the last step
+                new_msg = agent.chat_completions[-1]
+                new_text = self.chat_parser.parse([new_msg], is_first_msg=False, add_generation_prompt=False)
+                new_msg_ids = self.tokenizer.encode(new_text, add_special_tokens=False)
+
+                # Build suffix: \n (after <|im_end|>) + new message tokens + generation prompt
+                if accumulated_prompt_ids[-1] == eos_token_id:
+                    # Normal completion ended with <|im_end|>, just need \n separator
+                    suffix_ids = newline_token_ids + new_msg_ids + generation_prompt_ids
+                else:
+                    # Truncated completion (finish_reason == "length"), need to close the turn
+                    suffix_ids = [eos_token_id] + newline_token_ids + new_msg_ids + generation_prompt_ids
+
+                kwargs["precomputed_prompt_ids"] = accumulated_prompt_ids + suffix_ids
+            else:
+                kwargs.pop("precomputed_prompt_ids", None)
 
             # DAPO-styled dynamic sampling: Retry mechanism for handling invalid outputs
             # Small models sometimes struggle with formatting (e.g., JSON compliance in tool calling)
@@ -451,15 +480,21 @@ class AgentExecutionEngine:
             }
             episode_steps.append(prompt_response_pair)
 
-            # Update agent with model response
-            action: Action = agent.update_from_model(response)
-            action = action.action
+            # Update accumulated prompt IDs for incremental tokenization
+            if self.incremental_tokenization:
+                accumulated_prompt_ids = list(model_output.prompt_ids) + list(model_output.completion_ids)
+
+            # Update agent with model response — may return multiple actions
+            actions_result = agent.update_from_model(response)
+            # Backward compatibility: wrap single Action in a list
+            if isinstance(actions_result, Action):
+                actions_result = [actions_result]
 
             # --- Loop detection: check for repetitive actions ---
-            action_str = str(action).strip() if action else ""
+            # Serialize all actions into one string for multi-action comparison
+            action_str = "|".join(str(a.action).strip() for a in actions_result if a.action)
             if action_str:
                 recent_actions.append(action_str)
-                # Check if the last N actions are all identical
                 if len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]:
                     consecutive_repeat_count += 1
                 else:
@@ -467,7 +502,6 @@ class AgentExecutionEngine:
                     loop_warning_injected = False
 
                 if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD:
-                    # Hard terminate: agent is hopelessly stuck
                     termination_reason = "ABNORMAL_ACTION_LOOP"
                     exception_message = f"Action loop detected: {consecutive_repeat_count + 1} identical consecutive actions - {action_str[:200]}"
                     reward = 0.0
@@ -490,26 +524,67 @@ class AgentExecutionEngine:
                     })
                     break
 
-            # Take step in environment using the executor
-            start_time = time.time()
+            # --- Execute all tool calls from this model turn ---
+            num_intermediate = 0  # Count of intermediate observations appended
+            next_observation = None
+            step_terminated = False
 
-            try:
-                next_observation, reward, done, info = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
-            except asyncio.TimeoutError:
-                # 5.4.2 Search errors: discard directly
-                termination_reason = "ENV_TIMEOUT"
-                exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
-                should_discard = True
-                colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
-                cur_step = agent.get_current_state()
-                done = True
-                if cur_step is not None:
-                    cur_step.done = done
+            for action_idx, act in enumerate(actions_result):
+                action = act.action
+                is_last_action = (action_idx == len(actions_result) - 1)
+
+                start_time = time.time()
+                try:
+                    obs, rew, d, inf = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
+                except asyncio.TimeoutError:
+                    termination_reason = "ENV_TIMEOUT"
+                    exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
+                    should_discard = True
+                    colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
+                    cur_step = agent.get_current_state()
+                    done = True
+                    if cur_step is not None:
+                        cur_step.done = done
+                    step_terminated = True
+                    break
+
+                delta_time = time.time() - start_time
+                env_time += delta_time
+                total_time += delta_time
+
+                if is_last_action or d:
+                    # Last action or env signaled done: this becomes the final observation
+                    next_observation = obs
+                    reward = rew
+                    done = d
+                    info = inf
+                    break
+                else:
+                    # Intermediate action: append tool_response to agent messages
+                    agent.update_from_env_intermediate(
+                        observation=obs, reward=rew, done=d, info=inf,
+                    )
+                    num_intermediate += 1
+
+                    # Check timeout between intermediate actions
+                    if total_time >= self.trajectory_timeout:
+                        next_observation = obs
+                        reward = rew
+                        done = False
+                        info = inf
+                        break
+
+            # If the multi-action loop ended due to timeout, break outer loop
+            if step_terminated:
                 break
 
-            delta_time = time.time() - start_time
-            env_time += delta_time
-            total_time += delta_time
+            # If no observation was produced (shouldn't happen, but guard)
+            if next_observation is None:
+                next_observation = ""
+                reward = 0.0
+                done = False
+                info = {}
+
             info["max_steps"] = self.max_steps
             info["cur_tokens"] = response_token_len
 
@@ -533,7 +608,7 @@ class AgentExecutionEngine:
                     "yellow",
                 )
 
-            # Update agent internal state.
+            # Update agent internal state (final observation for this model turn).
             agent.update_from_env(
                 observation=next_observation,
                 reward=reward,
@@ -545,6 +620,25 @@ class AgentExecutionEngine:
             cur_step.reward = reward
             cur_step.done = done
             cur_step.info.update(info)
+
+            # --- Incremental tokenization: include intermediate tool responses ---
+            # When multiple tool calls were executed, intermediate <tool_response>
+            # messages were appended by update_from_env_intermediate(). We must
+            # include them in accumulated_prompt_ids so the next iteration's
+            # incremental build (which only tokenizes chat_completions[-1]) works.
+            if self.incremental_tokenization and num_intermediate > 0 and accumulated_prompt_ids is not None:
+                # Tokenize all intermediate messages that were inserted between
+                # the assistant message and the final update_from_env user message.
+                # They are at positions: -(num_intermediate + 1) to -2 in chat_completions
+                # (the last message is from update_from_env, the ones before it are intermediates)
+                intermediate_messages = agent.chat_completions[-(num_intermediate + 1):-1]
+                for msg in intermediate_messages:
+                    msg_text = self.chat_parser.parse([msg], is_first_msg=False, add_generation_prompt=False)
+                    msg_ids = self.tokenizer.encode(msg_text, add_special_tokens=False)
+                    if accumulated_prompt_ids and accumulated_prompt_ids[-1] == eos_token_id:
+                        accumulated_prompt_ids = accumulated_prompt_ids + newline_token_ids + msg_ids
+                    else:
+                        accumulated_prompt_ids = accumulated_prompt_ids + [eos_token_id] + newline_token_ids + msg_ids
 
             chat_completions_messages = agent.chat_completions
             assistant_message, env_messages = get_recent_assistant_user_messages(chat_completions_messages)
@@ -559,21 +653,17 @@ class AgentExecutionEngine:
             if env_messages:
                 env_msg_tokens, env_msg_masks = convert_messages_to_tokens_and_masks(env_messages, tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=True)
 
-            # Update repsonse token length
+            # Update response token length
             response_token_len += len(assistant_msg_tokens) + len(env_msg_tokens)
             # Reached maximum number of tokens for the trajectory
             if not self.enforce_max_prompt_length and response_token_len >= self.max_response_length:
-                # Truncation length
                 truncation_length = self.max_response_length - response_token_len
-                # Truncate the response and masks
                 if truncation_length < 0:
                     truncated_response_tokens = (assistant_msg_tokens + env_msg_tokens)[:truncation_length]
                     truncated_response_masks = (assistant_msg_masks + env_msg_masks)[:truncation_length]
                 else:
-                    # Edge case where the response is exactly the max response length.
                     truncated_response_tokens = assistant_msg_tokens + env_msg_tokens
                     truncated_response_masks = assistant_msg_masks + env_msg_masks
-                # Update token collections
                 response_tokens.extend(truncated_response_tokens)
                 response_masks.extend(truncated_response_masks)
 
@@ -583,7 +673,6 @@ class AgentExecutionEngine:
                 cur_step.done = True
                 termination_reason = "TRUNCATION"
                 exception_message = f"Response length {response_token_len - len(env_msg_tokens)} exceeded max_response_length {self.max_response_length}"
-                # handle returning
                 break
 
             # Update the token version of trajectory
@@ -669,13 +758,18 @@ class AgentExecutionEngine:
         # Calculate final reward if not stopped abnormally
         abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "ABNORMAL_ACTION_LOOP", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
         reward_debug = {}
+        reward_metadata = {}
+        reward_time = 0.0
+        final_reward_computed = False
         if hasattr(env, "compute_final_reward") and not masked_out and termination_reason not in abnormal_reasons:
             cur_step = agent.get_current_state()
             start_time = time.time()
             reward = await loop.run_in_executor(self.executor, env.compute_final_reward)
             reward_time = time.time() - start_time
+            final_reward_computed = True
             cur_step.reward = reward
             reward_debug = getattr(env, "reward_debug", {})
+            reward_metadata = reward_debug if isinstance(reward_debug, dict) else {}
         # Closing environment using the executor.
         await loop.run_in_executor(self.executor, env.close)
         if termination_reason:
@@ -711,14 +805,13 @@ class AgentExecutionEngine:
         elif mode == "Token":
             prompt_tokens, response_tokens, response_masks, is_valid_trajectory = self.assemble_steps(episode_steps)
 
-            # Extract reward components from the last step's metadata
             reward_metrics = {}
-            reward_metadata = {}  # Store full metadata for GDPO
             if trajectory.steps:
                 last_step = trajectory.steps[-1]
                 if "metadata" in last_step.info:
                     metadata = last_step.info["metadata"]
-                    reward_metadata = metadata  # Store full metadata
+                    if not reward_metadata:
+                        reward_metadata = metadata  # Store full metadata
 
                     # Extract individual reward components for separate logging
                     # These will be logged as traj/rewards/pass@1, traj/rewards/tool_call, etc.
@@ -745,6 +838,31 @@ class AgentExecutionEngine:
                     if intermediate_rewards != 0:
                         reward_metrics["rewards/intermediate_steps"] = intermediate_rewards
 
+            if reward_metadata:
+                if "tests_passed" in reward_metadata:
+                    reward_metrics["rewards/tests_passed"] = reward_metadata["tests_passed"]
+                if "tests_failed" in reward_metadata:
+                    reward_metrics["rewards/tests_failed"] = reward_metadata["tests_failed"]
+                if "tests_total" in reward_metadata:
+                    reward_metrics["rewards/tests_total"] = reward_metadata["tests_total"]
+                if "pass_rate" in reward_metadata:
+                    reward_metrics["rewards/pass_rate"] = reward_metadata["pass_rate"]
+                if "resolved" in reward_metadata:
+                    reward_metrics["rewards/resolved"] = 1.0 if reward_metadata["resolved"] else 0.0
+                if "pytest_error_code" in reward_metadata and reward_metadata["pytest_error_code"] is not None:
+                    raw_error_code = reward_metadata["pytest_error_code"]
+                    try:
+                        reward_metrics["rewards/pytest_error_code"] = float(raw_error_code)
+                    except (ValueError, TypeError):
+                        # error_code can be a string like "Error: Exit code 2" from Docker runtime
+                        import re
+                        match = re.search(r'(\d+)\s*$', str(raw_error_code))
+                        reward_metrics["rewards/pytest_error_code"] = float(match.group(1)) if match else -1.0
+                reward_metrics["rewards/verifier_missing"] = 0.0
+                reward_metrics["rewards/verifier_error"] = 1.0 if reward_metadata.get("verifier_error") else 0.0
+            else:
+                reward_metrics["rewards/verifier_missing"] = 1.0
+
             token_result = {
                 "prompt_tokens": prompt_tokens,
                 "response_tokens": response_tokens,
@@ -768,6 +886,7 @@ class AgentExecutionEngine:
                     # Total time spent in the trajectory
                     "total_time": total_time,
                     "token_mismatch": 0.0 if is_valid_trajectory else 1.0,
+                    "reward_computed": 1.0 if final_reward_computed else 0.0,
                     # Add individual reward components
                     **reward_metrics,
                 },

@@ -49,6 +49,7 @@ rllm:
   accumulate_reasoning: False
   mask_truncated_samples: True
   filter_token_mismatch: True
+  incremental_tokenization: False
   stepwise_advantage:
     enable: False
     mode: broadcast # [broadcast, per_step]
@@ -84,6 +85,9 @@ rllm:
   rejection_sample:
     enable: True
     multiplier: 1
+    filter_high_variance: False
+    max_uid_reward_std: null
+    filter_verifier_missing: False
   distill:
     enable: False
     shared_tokenizer: False
@@ -128,5 +132,8 @@ reward:
   # Base reward values
   correct_reward: 1.0                    # Reward for correct answers
   incorrect_reward: 0.0                  # Reward for incorrect answers
-  partial_reward: False                   # Use partial reward (matched/expected ratio) instead of all-or-nothing for SWE tasks
-  partial_reward_ceiling: 0.5              # Maximum reward for partial matches (full match always gets 1.0)
+  reward_mode: binary                    # [binary, binary_plus_partial] for SWE verifier reward
+  partial_reward: False                  # Backward-compatible flag; binary_plus_partial is enabled when reward_mode requests it
+  partial_reward_coeff: 1.0              # Scale factor applied to trusted partial verifier pass rate
+  partial_reward_ceiling: 0.5            # Maximum unresolved partial reward; resolved trajectories still receive 1.0
+  require_trusted_verifier_for_partial: True  # Disable partial reward if trusted verifier metadata is unavailable

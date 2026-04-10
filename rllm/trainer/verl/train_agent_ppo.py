@@ -204,11 +204,17 @@ class TaskRunner:
             # Pass apply_bug_patch flag to environment
             if config.rllm.agent.get("apply_bug_patch") is not None:
                 env_args["apply_bug_patch"] = config.rllm.agent.apply_bug_patch
-            # Pass partial_reward flag to environment
+            # Pass reward configuration to environment
             if hasattr(config, "reward") and hasattr(config.reward, "partial_reward"):
                 env_args["partial_reward"] = config.reward.partial_reward
             if hasattr(config, "reward") and hasattr(config.reward, "partial_reward_ceiling"):
                 env_args["partial_reward_ceiling"] = config.reward.partial_reward_ceiling
+            if hasattr(config, "reward") and hasattr(config.reward, "reward_mode"):
+                env_args["reward_mode"] = config.reward.reward_mode
+            if hasattr(config, "reward") and hasattr(config.reward, "partial_reward_coeff"):
+                env_args["partial_reward_coeff"] = config.reward.partial_reward_coeff
+            if hasattr(config, "reward") and hasattr(config.reward, "require_trusted_verifier_for_partial"):
+                env_args["require_trusted_verifier_for_partial"] = config.reward.require_trusted_verifier_for_partial
 
             trainer = AgentPPOTrainer(
                 config=config,

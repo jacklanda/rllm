@@ -23,7 +23,7 @@ from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
 
-TOKEN_WARNING_THRESHOLD = 30000
+TOKEN_WARNING_THRESHOLD = 65536
 
 # Tool file paths for each scaffold
 R2EGYM_TOOL_FILES = [
@@ -246,6 +246,9 @@ class CLIAgent(BaseAgent):
         self._has_made_edits = False  # Whether agent has made any file edits
         self._submission_block_count = 0  # Number of times submission has been blocked
         self._max_submission_blocks = 3  # Cap to avoid infinite blocking loops
+        # Repeated edit detection state
+        self._last_failed_edit_key = None  # Serialized (path, old_str) of last failed str_replace
+        self._failed_edit_repeat_count = 0
         self.reset()
 
     def update_from_env(self, observation, reward, done, info):
@@ -264,6 +267,20 @@ class CLIAgent(BaseAgent):
             obs_lower = observation.lower()
             if "test session starts" in obs_lower or re.search(r"\d+ passed", obs_lower):
                 self._has_run_tests = True
+
+            # Track repeated str_replace failures to break edit loops early.
+            # If the observation indicates a str_replace failure, record the key;
+            # if the agent retries the exact same edit, we'll intercept in update_from_model.
+            if any(marker in observation for marker in (
+                "No occurrences of", "Multiple occurrences of",
+                "No replacement was performed", "did not appear verbatim",
+            )):
+                # This was a failed edit — _last_failed_edit_key was set in update_from_model
+                pass
+            else:
+                # Edit succeeded or this wasn't an edit — reset tracking
+                self._last_failed_edit_key = None
+                self._failed_edit_repeat_count = 0
         else:
             # First step: format as the initial user message with problem statement
             observation = str(observation)
@@ -301,60 +318,81 @@ class CLIAgent(BaseAgent):
         self.messages.append({"role": "user", "content": user_content})
         self.cur_step = Step(observation=observation)
 
-    def update_from_model(self, response: str, **kwargs) -> Action:
+    def update_from_model(self, response: str, **kwargs) -> "list[Action]":
         """Update agent state from model response.
 
-        Parses the response for <tool_call> tags, converts to r2egym Action,
-        and updates the trajectory.
+        Parses the response for <tool_call> tags, converts each to an r2egym
+        Action, and returns all of them for the engine to execute sequentially.
         """
         self._trajectory.steps.append(self.cur_step)
 
         # Parse tool calls from response
         tool_calls = self.tool_parser.parse(response)
 
+        actions = []
         if tool_calls:
-            # Use the first tool call (SWE environment processes one action at a time)
-            tc = tool_calls[0]
-            action_dict = {"name": tc.name, "arguments": tc.arguments}
+            for tc in tool_calls:
+                action_dict = {"name": tc.name, "arguments": tc.arguments}
 
-            # Track edits and test execution from tool calls
-            if tc.name in ("file_editor", "str_replace_editor"):
-                cmd = tc.arguments.get("command", "")
-                if cmd in ("str_replace", "create", "insert"):
-                    self._has_made_edits = True
-            elif tc.name in ("execute_bash",):
-                cmd_str = str(tc.arguments.get("cmd", "") or tc.arguments.get("command", ""))
-                # Match actual test runner invocations, not substrings.
-                # Use word boundaries to avoid matching e.g. "test_file.py" in a cat command.
-                test_cmd_patterns = [
-                    r"\bpytest\b",
-                    r"\bpython\s+-m\s+pytest\b",
-                    r"\bpython\s+-m\s+unittest\b",
-                    r"\bruntests\b",
-                    r"\bpy\.test\b",
-                ]
-                if any(re.search(p, cmd_str) for p in test_cmd_patterns):
-                    self._has_run_tests = True
+                # Track edits and test execution from tool calls
+                if tc.name in ("file_editor", "str_replace_editor"):
+                    cmd = tc.arguments.get("command", "")
+                    if cmd in ("str_replace", "create", "insert"):
+                        self._has_made_edits = True
+                elif tc.name in ("execute_bash",):
+                    cmd_str = str(tc.arguments.get("cmd", "") or tc.arguments.get("command", ""))
+                    test_cmd_patterns = [
+                        r"\bpytest\b",
+                        r"\bpython\s+-m\s+pytest\b",
+                        r"\bpython\s+-m\s+unittest\b",
+                        r"\bruntests\b",
+                        r"\bpy\.test\b",
+                    ]
+                    if any(re.search(p, cmd_str) for p in test_cmd_patterns):
+                        self._has_run_tests = True
 
-            # Pre-submission validation: block premature submission until tests run.
-            # Blocks up to _max_submission_blocks times to avoid infinite loops.
-            is_submit = tc.name in ("finish", "submit")
-            if is_submit and self._has_made_edits and not self._has_run_tests and self._submission_block_count < self._max_submission_blocks:
-                self._submission_block_count += 1
-                # Redirect: don't submit, instead return a no-op that will produce
-                # a warning observation telling the agent to run tests first
-                swe_action = SWEAction(
-                    function_name="execute_bash",
-                    parameters={"cmd": "echo '[SUBMISSION BLOCKED] You have made edits but have not run any tests. Please run the relevant test suite (e.g., python -m pytest <test_file> -x) to verify your fix before submitting.'"},
+                # Detect repeated failing str_replace and redirect to view the file.
+                is_str_replace = (
+                    tc.name in ("file_editor", "str_replace_editor")
+                    and tc.arguments.get("command") == "str_replace"
                 )
-                action_str = swe_action.to_xml_string()
-            else:
-                swe_action = _tool_call_to_swe_action(action_dict)
-                action_str = swe_action.to_xml_string()
-        else:
+                if is_str_replace:
+                    edit_key = (tc.arguments.get("path", ""), tc.arguments.get("old_str", ""))
+                    if edit_key == self._last_failed_edit_key:
+                        self._failed_edit_repeat_count += 1
+                        if self._failed_edit_repeat_count >= 2:
+                            path = tc.arguments.get("path", "")
+                            swe_action = SWEAction(
+                                function_name="execute_bash",
+                                parameters={"cmd": (
+                                    f"echo '[REPEATED EDIT BLOCKED] You have retried the same failing str_replace "
+                                    f"{self._failed_edit_repeat_count + 1} times. Viewing the file instead:' && "
+                                    f"cat -n {path}"
+                                )},
+                            )
+                            actions.append(Action(action=swe_action.to_xml_string()))
+                            continue  # Skip remaining processing for this tool call
+                    else:
+                        self._last_failed_edit_key = edit_key
+                        self._failed_edit_repeat_count = 0
+
+                # Pre-submission validation: block premature submission until tests run.
+                is_submit = tc.name in ("finish", "submit")
+                if is_submit and self._has_made_edits and not self._has_run_tests and self._submission_block_count < self._max_submission_blocks:
+                    self._submission_block_count += 1
+                    swe_action = SWEAction(
+                        function_name="execute_bash",
+                        parameters={"cmd": "echo '[SUBMISSION BLOCKED] You have made edits but have not run any tests. Please run the relevant test suite (e.g., python -m pytest <test_file> -x) to verify your fix before submitting.'"},
+                    )
+                    actions.append(Action(action=swe_action.to_xml_string()))
+                    continue  # Skip remaining tool calls after blocked submission
+                else:
+                    swe_action = _tool_call_to_swe_action(action_dict)
+                    actions.append(Action(action=swe_action.to_xml_string()))
+
+        if not actions:
             # No tool call found - model is either finishing or malformed
-            swe_action = SWEAction(function_name="", parameters={})
-            action_str = ""
+            actions.append(Action(action=""))
 
         # Extract thought (everything before the first <tool_call>)
         tc_idx = response.find(self.tool_parser.tool_call_begin)
@@ -363,17 +401,45 @@ class CLIAgent(BaseAgent):
         else:
             thought = response.strip()
 
-        # Update trajectory step
+        # Update trajectory step (first action stored for trajectory logging)
         cur_step = self._trajectory.steps[-1]
         cur_step.thought = thought
-        cur_step.action = action_str
+        cur_step.action = actions[0].action
         cur_step.model_response = response
 
         # Append assistant message (raw response preserves <tool_call> tags)
         self.messages.append({"role": "assistant", "content": response})
 
         self.step += 1
-        return Action(action=cur_step.action)
+        return actions
+
+    def update_from_env_intermediate(self, observation, reward, done, info):
+        """Append an intermediate tool response without creating a new Step.
+
+        Called between tool calls within a single model turn. Wraps the
+        observation in <tool_response> tags and appends to messages, but
+        does NOT create a new trajectory Step or add budget warnings.
+        """
+        observation = str(observation)
+
+        # Track test execution from observation content
+        obs_lower = observation.lower()
+        if "test session starts" in obs_lower or re.search(r"\d+ passed", obs_lower):
+            self._has_run_tests = True
+
+        # Track repeated str_replace failures
+        if any(marker in observation for marker in (
+            "No occurrences of", "Multiple occurrences of",
+            "No replacement was performed", "did not appear verbatim",
+        )):
+            pass  # _last_failed_edit_key was set in update_from_model
+        else:
+            self._last_failed_edit_key = None
+            self._failed_edit_repeat_count = 0
+
+        # Wrap in <tool_response> tags and append as user message
+        user_content = f"{self.tool_parser.tool_output_begin}\n{observation}\n{self.tool_parser.tool_output_end}"
+        self.messages.append({"role": "user", "content": user_content})
 
     def get_current_state(self) -> Step | None:
         if not self._trajectory.steps:
@@ -392,6 +458,8 @@ class CLIAgent(BaseAgent):
         self._has_run_tests = False
         self._has_made_edits = False
         self._submission_block_count = 0
+        self._last_failed_edit_key = None
+        self._failed_edit_repeat_count = 0
 
     @property
     def trajectory(self) -> Trajectory:

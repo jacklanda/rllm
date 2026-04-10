@@ -589,7 +589,10 @@ class AgentSdkTrainer(RayPPOTrainer):
                 episode_metrics = test_batch.non_tensor_batch["metrics"][i]
                 if episode_metrics is not None:
                     for key, value in episode_metrics.items():
-                        workflow_metrics_by_source[data_source][key].append(float(value))
+                        try:
+                            workflow_metrics_by_source[data_source][key].append(float(value))
+                        except (ValueError, TypeError):
+                            pass  # Skip non-numeric metrics (e.g., error strings)
 
         metrics = {}
         is_correct_array = np.array(is_correct_lst)

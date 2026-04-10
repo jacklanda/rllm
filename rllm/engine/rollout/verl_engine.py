@@ -51,6 +51,7 @@ class VerlEngine(RolloutEngine):
         application_id = kwargs.pop("application_id", str(uuid.uuid4()))
         validate = self.validate or kwargs.pop("validate", False)
         enforce_max_prompt_length = kwargs.pop("enforce_max_prompt_length", True)
+        precomputed_prompt_ids = kwargs.pop("precomputed_prompt_ids", None)
 
         # these go to the parser
         tools = kwargs.pop("tools", [])
@@ -61,19 +62,26 @@ class VerlEngine(RolloutEngine):
 
         max_tokens = sampling_params.pop("max_tokens", sampling_params.pop("max_new_tokens", self.max_response_length))
 
-        prompt = self.chat_parser.parse(messages, add_generation_prompt=True, is_first_msg=True, tools=tools, accumulate_reasoning=accumulate_reasoning)
-        request_prompt_ids = self.tokenizer.encode(prompt, add_special_tokens=False)  # list[int]
-
-        if any(msg.get("images", None) is not None and msg["role"] == "user" for msg in messages) and self.processor is not None:
-            image_data = self.chat_parser.process_image_data(messages)  # list[PIL.Image.Image]
-            model_inputs = self.processor(text=[prompt], images=image_data)
-            prompt_ids = model_inputs.pop("input_ids")[0]  # list[int]
-            model_inputs.pop("attention_mask")
-            multi_modal_inputs = dict(model_inputs)
-        else:
+        if precomputed_prompt_ids is not None:
+            # Use precomputed prompt IDs to avoid BPE retokenization mismatch
+            request_prompt_ids = precomputed_prompt_ids
+            prompt_ids = precomputed_prompt_ids
             image_data = None
             multi_modal_inputs = None
-            prompt_ids = request_prompt_ids
+        else:
+            prompt = self.chat_parser.parse(messages, add_generation_prompt=True, is_first_msg=True, tools=tools, accumulate_reasoning=accumulate_reasoning)
+            request_prompt_ids = self.tokenizer.encode(prompt, add_special_tokens=False)  # list[int]
+
+            if any(msg.get("images", None) is not None and msg["role"] == "user" for msg in messages) and self.processor is not None:
+                image_data = self.chat_parser.process_image_data(messages)  # list[PIL.Image.Image]
+                model_inputs = self.processor(text=[prompt], images=image_data)
+                prompt_ids = model_inputs.pop("input_ids")[0]  # list[int]
+                model_inputs.pop("attention_mask")
+                multi_modal_inputs = dict(model_inputs)
+            else:
+                image_data = None
+                multi_modal_inputs = None
+                prompt_ids = request_prompt_ids
 
         prompt_length = len(prompt_ids)
         if enforce_max_prompt_length and prompt_length > self.max_prompt_length:
