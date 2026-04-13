@@ -103,7 +103,7 @@ class SWEEnv(BaseEnv):
         self.env = None
         self.verbose = verbose
         self.scaffold = scaffold
-        self._is_gemcli = "gemcli" in self.entry.get("docker_image", "") or "gemswe" in self.entry.get("docker_image", "")
+        self._is_gemcli = "gemcli" in (self.entry.get("docker_image") or "") or "gemswe" in (self.entry.get("docker_image") or "")
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
         self.partial_reward_ceiling = partial_reward_ceiling

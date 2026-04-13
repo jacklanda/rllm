@@ -410,7 +410,8 @@ class RayPPOTrainer(object):
             return_raw_chat=self.config.data.get("return_raw_chat", False),
             truncation="left",
         )
-        self.train_dataloader = DataLoader(dataset=self.train_dataset, batch_size=self.config.data.train_batch_size, shuffle=True, drop_last=True, collate_fn=collate_fn)
+        shuffle_data = self.config.data.get("shuffle_data", True)
+        self.train_dataloader = DataLoader(dataset=self.train_dataset, batch_size=self.config.data.train_batch_size, shuffle=shuffle_data, drop_last=True, collate_fn=collate_fn)
 
         self.val_dataset = RLHFDataset(
             parquet_files=self.config.data.val_files,

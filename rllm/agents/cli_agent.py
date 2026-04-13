@@ -233,10 +233,15 @@ class CLIAgent(BaseAgent):
     following the CLI agent loop definition.
     """
 
+    # Valid tool names for the CLI/SWE scaffold
+    _VALID_TOOLS_R2EGYM = {"file_editor", "search", "execute_bash", "finish"}
+    _VALID_TOOLS_SWEAGENT = {"str_replace_editor", "execute_bash", "submit"}
+
     def __init__(self, scaffold: str = "r2egym"):
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
         self.scaffold = scaffold
-        self.tool_parser = QwenToolParser()
+        valid_tools = self._VALID_TOOLS_R2EGYM if scaffold == "r2egym" else self._VALID_TOOLS_SWEAGENT
+        self.tool_parser = QwenToolParser(valid_tools=valid_tools)
         self.system_prompt = _build_tools_system_prompt(scaffold)
         self.user_prompt_template = CLI_AGENT_USER_PROMPT
 
@@ -332,7 +337,17 @@ class CLIAgent(BaseAgent):
         actions = []
         if tool_calls:
             for tc in tool_calls:
-                action_dict = {"name": tc.name, "arguments": tc.arguments}
+                # Ensure arguments is a dict (models sometimes emit a string)
+                args = tc.arguments
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except (json.JSONDecodeError, ValueError):
+                        args = {}
+                if not isinstance(args, dict):
+                    args = {}
+                tc.arguments = args
+                action_dict = {"name": tc.name, "arguments": args}
 
                 # Track edits and test execution from tool calls
                 if tc.name in ("file_editor", "str_replace_editor"):

@@ -441,10 +441,10 @@ TOOL_SYSTEM_PROMPT = """You are a tool agent. You are given a task to complete. 
 SEARCH_SYSTEM_PROMPT = """You are a helpful AI assistant that can search progressively to answer the question.
 
 When answering the question:
-1. Use the search tool to find relevant information and synthesize them from multiple sources when needed
+1. Use the web_search tool to find relevant information and synthesize them from multiple sources when needed
 2. Provide accurate answer based on your search results, and put your final answer in \\boxed{} format
-3. You are asked to perform search only once to find the answer in each turn. Each time you search, think about what you need to find next turn based on what you have already found.
-4. Please as much as possible to use search tool instead of relying on your own knowledge, make sure that you must perform >=3 turns of search tool calls before concluding the \\boxed{} answer.
+3. You are asked to perform web_search only once to find the answer in each turn. Each time you search, think about what you need to find next turn based on what you have already found.
+4. Please as much as possible to use web_search tool instead of relying on your own knowledge, make sure that you must perform >=3 turns of web_search tool calls before concluding the \\boxed{} answer.
 5. Your middle turns of the conversation must contain valid tool call and your final turn of the conversation must contain the final answer in \\boxed{} format.
 
 For example:
@@ -453,3 +453,46 @@ For example:
 - If the answer is a year like "1985", write: \\boxed{1985}
 
 Remember to search thoroughly and progressively to provide your final answer clearly within the \\boxed{} format."""
+
+
+FUSED_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github issue in a Linux bash environment. You have access to code editing tools that operate inside the repository AND a web search tool for looking up documentation, APIs, error messages, or any other information you need.
+
+CRITICAL RULES:
+1. NEVER repeat a failing action — view the file's current state and try a different approach.
+2. After EVERY edit, verify syntax: python -c "import py_compile; py_compile.compile('<file>', doraise=True)"
+3. After syntax passes, run the cheapest targeted verification for the code path you changed before making more edits.
+4. MANDATORY: Before submitting, run the project's relevant tests, starting with targeted tests and only doing broader verification near the end.
+5. Do NOT submit without seeing test output that confirms your fix works.
+6. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
+7. Use web_search to look up documentation, error messages, or API references when needed.
+
+WORKFLOW:
+1. explore -> 2. understand the bug (use web_search if needed for docs/context) -> 3. edit source -> 4. verify syntax immediately -> 5. run targeted sanity check / targeted test -> 6. iterate on failures early -> 7. run broader relevant verification near the end -> 8. submit only after tests pass
+"""
+
+FUSED_SEARCH_SYSTEM_PROMPT = """You are a research assistant that answers questions by searching for relevant information. You have access to a web_search tool for looking up facts, and a finish tool to submit your final answer.
+
+RULES:
+1. Use web_search to find relevant information. You may search multiple times with different queries.
+2. Synthesize the search results to form an accurate, concise answer.
+3. When you have found the answer, use the finish tool to submit your response.
+4. Your final answer should be clearly stated in \\boxed{} format.
+5. If your first search doesn't find the answer, try rephrasing your query or breaking it into smaller parts.
+"""
+
+FUSED_AGENT_USER_PROMPT = CLI_AGENT_USER_PROMPT
+
+FUSED_SEARCH_USER_PROMPT = """Answer the following question by searching for relevant information.
+
+<question>
+{problem_statement}
+</question>
+
+Instructions:
+1. Use the web_search tool to find relevant information. You may search multiple times to gather comprehensive information.
+2. Synthesize the search results to form an accurate answer.
+3. When you have found the answer, use the finish tool to submit your response with your answer in the result parameter.
+4. Your final answer should also be clearly stated in \\boxed{{}} format.
+
+IMPORTANT: Do NOT use file editing tools (file_editor, execute_bash, search) for this task — only use web_search and finish.
+"""

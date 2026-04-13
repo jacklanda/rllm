@@ -98,6 +98,7 @@ class AgentExecutionEngine:
         _tf = self.config.get("rllm", {}).get("trajectory_filtering", {}) if self.config is not None else {}
         self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)       # Per-step \boxed{} / tool_call validation + retry
         self.enforce_react_structure = _tf.get("enforce_react_structure", False)         # Min 5 steps + final \boxed{} check
+        self.max_tool_calls_per_turn = _tf.get("max_tool_calls_per_turn", 10)           # Max tool calls per single model turn
 
         self.incremental_tokenization = self.config.get("rllm", {}).get("incremental_tokenization", False) if self.config is not None else False
 
@@ -208,11 +209,24 @@ class AgentExecutionEngine:
             env.idx = idx
         self.agents = agents
 
+    @staticmethod
+    def _get_task_label(env) -> str:
+        """Derive a short task label from the environment for logging."""
+        entry = getattr(env, "entry", None)
+        if entry and isinstance(entry, dict):
+            if not entry.get("docker_image"):
+                return "search"
+            docker_image = entry.get("docker_image", "")
+            if "gemcli" in docker_image or "gemswe" in docker_image:
+                return "gemcli"
+        return "other"
+
     async def run_agent_trajectory_async(self, idx, application_id, seed=0, mode="Text", **kwargs):
         """Run a single agent's trajectory asynchronously"""
         agent = self.agents[idx]
         env = self.envs[idx]
         # env_id = env.env_id
+        task_label = self._get_task_label(env)
 
         termination_reason = None
         exception_message = ""  # Track exception message for non-ENV_DONE terminations
@@ -259,7 +273,7 @@ class AgentExecutionEngine:
         # Note, this should never happen!
         if prompt_token_len > self.max_prompt_length:
             agent.reset()
-            raise Exception(f"Trajectory {idx}: initial prompt length {prompt_token_len} already exceeded max_prompt_length {self.max_prompt_length}, retrying")
+            raise Exception(f"Trajectory {idx} ({task_label}): initial prompt length {prompt_token_len} already exceeded max_prompt_length {self.max_prompt_length}, retrying")
 
         # Incremental tokenization: avoid BPE retokenization mismatch by building
         # prompt_ids from the previous step's accumulated IDs + new observation tokens
@@ -363,7 +377,7 @@ class AgentExecutionEngine:
                             "finish_reason": finish_reason,
                         })
                         colorful_print(
-                            f"Trajectory {idx}, Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
+                            f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
                         )
                         # Handled outside loop
@@ -395,7 +409,7 @@ class AgentExecutionEngine:
                         "finish_reason": finish_reason,
                     })
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}, retrying.",
+                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}, retrying.",
                         "yellow",
                     )
                     continue
@@ -419,10 +433,10 @@ class AgentExecutionEngine:
             model_output = final_model_output
             tool_calls = model_output.tool_calls
 
-            # 5.4.1 Handle abnormal trajectories: Tool Burst (> 10 tool calls)
-            if tool_calls and len(tool_calls) > 10:
+            # 5.4.1 Handle abnormal trajectories: Tool Burst (exceeds max_tool_calls_per_turn)
+            if tool_calls and len(tool_calls) > self.max_tool_calls_per_turn:
                 termination_reason = "ABNORMAL_TOOL_BURST"
-                exception_message = f"Tool burst detected: {len(tool_calls)} tool calls in a single step (max 10 allowed)"
+                exception_message = f"Tool burst detected: {len(tool_calls)} tool calls in a single step (max {self.max_tool_calls_per_turn} allowed)"
                 reward = 0.0
                 done = True
                 cur_step = agent.get_current_state()
@@ -435,7 +449,7 @@ class AgentExecutionEngine:
             is_repeated = False
             if tool_calls:
                 for tool_call in tool_calls:
-                    if hasattr(tool_call, "function") and tool_call.function.name == "search":
+                    if hasattr(tool_call, "function") and tool_call.function.name == "web_search":
                         try:
                             # Attempt to parse arguments to find query
                             args_str = tool_call.function.arguments
@@ -490,6 +504,15 @@ class AgentExecutionEngine:
             if isinstance(actions_result, Action):
                 actions_result = [actions_result]
 
+            # Enforce max_tool_calls_per_turn: truncate parsed actions to the limit
+            if len(actions_result) > self.max_tool_calls_per_turn:
+                colorful_print(
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Truncating {len(actions_result)} "
+                    f"parsed tool calls to max_tool_calls_per_turn={self.max_tool_calls_per_turn}.",
+                    "yellow",
+                )
+                actions_result = actions_result[:self.max_tool_calls_per_turn]
+
             # --- Loop detection: check for repetitive actions ---
             # Serialize all actions into one string for multi-action comparison
             action_str = "|".join(str(a.action).strip() for a in actions_result if a.action)
@@ -511,7 +534,7 @@ class AgentExecutionEngine:
                         cur_step.reward = reward
                         cur_step.done = done
                     colorful_print(
-                        f"Trajectory {idx}, Step {step_idx}: Terminated due to action loop "
+                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop "
                         f"({consecutive_repeat_count + 1} identical consecutive actions).",
                         "red",
                     )
@@ -540,7 +563,7 @@ class AgentExecutionEngine:
                     termination_reason = "ENV_TIMEOUT"
                     exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
                     should_discard = True
-                    colorful_print(f"Warning: Trajectory {idx} completed due to: {termination_reason}. Discarding trajectory.\n", "red")
+                    colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
                     cur_step = agent.get_current_state()
                     done = True
                     if cur_step is not None:
@@ -603,7 +626,7 @@ class AgentExecutionEngine:
                 next_observation = str(next_observation) + loop_warning
                 loop_warning_injected = True
                 colorful_print(
-                    f"Trajectory {idx}, Step {step_idx}: Loop warning injected "
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected "
                     f"({consecutive_repeat_count + 1} identical consecutive actions).",
                     "yellow",
                 )
@@ -740,6 +763,7 @@ class AgentExecutionEngine:
             self._trajectory_logs.append({
                 "type": "trajectory",
                 "idx": env.idx,
+                "task_label": task_label,
                 "dropped": True,
                 "termination_reason": termination_reason,
                 "reward": 0.0,
@@ -777,12 +801,13 @@ class AgentExecutionEngine:
                 color = "green"
             else:
                 color = "yellow"
+            n_steps = len(agent.trajectory.steps) if hasattr(agent, 'trajectory') else step_idx + 1
             colorful_print(
-                f"Trajectory {idx} completed due to: {termination_reason}. Reward is {reward}. \n",
+                f"Trajectory {idx} ({task_label}: {n_steps} steps) completed due to: {termination_reason}. Reward is {reward}.",
                 color,
             )
             if masked_out:
-                colorful_print(f"Trajectory {idx} is masked out due to overlong filter.", "red")
+                colorful_print(f"Trajectory {idx} ({task_label}) is masked out due to overlong filter.", "red")
 
         trajectory: Trajectory = agent.trajectory
         # Aggregate final trajectory statistics
@@ -793,6 +818,7 @@ class AgentExecutionEngine:
         self._trajectory_logs.append({
             "type": "trajectory",
             "idx": env.idx,
+            "task_label": task_label,
             "dropped": False,
             "termination_reason": termination_reason,
             "reward": trajectory.reward,
@@ -875,6 +901,8 @@ class AgentExecutionEngine:
                 "exception": exception_message,  # Add exception message for non-ENV_DONE terminations
                 "chat_completions": agent.chat_completions,
                 "metrics": {
+                    # Task type label for logging
+                    "task_label": task_label,
                     # Total number of steps taken in the trajectory
                     "steps": len(trajectory.steps),
                     # Time to calculate reward
@@ -974,11 +1002,12 @@ class AgentExecutionEngine:
     async def run_agent_trajectory_with_retry(self, idx, seed=0, mode="Text", **kwargs):
         # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
         max_attempts = max(self.retry_limit, 2) + 1
+        task_label = self._get_task_label(self.envs[idx])
 
         for attempt in range(max_attempts):
             # Fast-fail if Docker daemon has been detected as down by another trajectory
             if self._docker_healthy is not None and not self._docker_healthy.is_set():
-                colorful_print(f"Trajectory {idx} skipped: Docker daemon is unreachable (detected by another trajectory).", "red")
+                colorful_print(f"Trajectory {idx} ({task_label}) skipped: Docker daemon is unreachable (detected by another trajectory).", "red")
                 self._trajectory_logs.append({
                     "type": "trajectory",
                     "idx": idx,
@@ -992,14 +1021,14 @@ class AgentExecutionEngine:
 
             try:
                 application_id = str(uuid.uuid4())
-                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=960)
+                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=self.trajectory_timeout)
             except InvalidReactStructureError as e:
                 # Retry `max_attempts` times for this specific error
                 if attempt < max_attempts - 1:
-                    colorful_print(f"Trajectory {idx} retry {attempt}/{max_attempts-1} due to: {e}", "yellow")
+                    colorful_print(f"Trajectory {idx} ({task_label}) retry {attempt}/{max_attempts-1} due to: {e}", "yellow")
                     continue
                 else:
-                    colorful_print(f"Trajectory {idx} failed due to INVALID_REACT_STRUCTURE after {attempt} retries.", "pink")
+                    colorful_print(f"Trajectory {idx} ({task_label}) failed due to INVALID_REACT_STRUCTURE after {attempt} retries.", "pink")
                     self._trajectory_logs.append({
                         "type": "trajectory",
                         "idx": idx,
@@ -1015,7 +1044,7 @@ class AgentExecutionEngine:
                 if _is_docker_connection_error(_):
                     if self._docker_healthy is not None:
                         self._docker_healthy.clear()  # Signal all trajectories
-                    colorful_print(f"Trajectory {idx} failed due to Docker connection error: {_}. Signaling all trajectories to stop.", "red")
+                    colorful_print(f"Trajectory {idx} ({task_label}) failed due to Docker connection error: {_}. Signaling all trajectories to stop.", "red")
                     self._trajectory_logs.append({
                         "type": "trajectory",
                         "idx": idx,
@@ -1028,11 +1057,11 @@ class AgentExecutionEngine:
                     return None
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
                 if attempt < max_attempts - 1:
-                    colorful_print(f"Trajectory {idx} retry {attempt}/{max_attempts-1} due to exception: {_}", "yellow")
+                    colorful_print(f"Trajectory {idx} ({task_label}) retry {attempt}/{max_attempts-1} due to exception: {_}", "yellow")
                     continue
                 else:
                     # traceback.print_exc()
-                    colorful_print(f"Trajectory {idx} cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
+                    colorful_print(f"Trajectory {idx} ({task_label}) cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
                     self._trajectory_logs.append({
                         "type": "trajectory",
                         "idx": idx,
@@ -1106,9 +1135,15 @@ class AgentExecutionEngine:
                 result = await coro
                 tasks_completed += 1
                 steps = result.get("metrics", {}).get("steps") if isinstance(result, dict) else None
-                steps_suffix = f" ({steps} steps)" if steps is not None else ""
+                label = result.get("metrics", {}).get("task_label") if isinstance(result, dict) else None
+                info_parts = []
+                if label:
+                    info_parts.append(label)
+                if steps is not None:
+                    info_parts.append(f"{steps} steps")
+                info_suffix = f" ({': '.join(info_parts)})" if info_parts else ""
                 colorful_print(
-                    f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed{steps_suffix}",
+                    f"Number of Trajectories {tasks_completed}/{len(self.envs)} completed{info_suffix}\n",
                     "cyan",
                 )
                 # Dump trajectory logs after each trajectory completes

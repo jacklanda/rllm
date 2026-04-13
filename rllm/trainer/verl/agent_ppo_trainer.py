@@ -870,7 +870,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Aggregate metrics (mean, min, max)
         for k, v_list in traj_metrics.items():
-            v_list = [v for v in v_list if v is not None and v >= 0]
+            v_list = [v for v in v_list if isinstance(v, (int, float)) and v >= 0]
             if not v_list:
                 continue
             v_list = np.array(v_list)
