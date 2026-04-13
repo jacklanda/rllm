@@ -106,6 +106,25 @@ class AgentPPOTrainer(RayPPOTrainer):
                 f"You can verify with: DOCKER_API_VERSION=1.44 docker -H {docker_host} info"
             ) from e
 
+    def _check_retrieval_connectivity(self):
+        """Pre-flight check: verify retrieval server is reachable before launching trajectories."""
+        retrieval_url = os.environ.get("RETRIEVAL_SERVER_URL", "")
+        if not retrieval_url:
+            return  # No retrieval server configured, skip check
+
+        try:
+            import httpx
+            with httpx.Client(timeout=10) as client:
+                response = client.get(f"{retrieval_url.rstrip('/')}/health")
+                response.raise_for_status()
+            print(f"Retrieval health check passed (host={retrieval_url})")
+        except Exception as e:
+            raise RuntimeError(
+                f"Retrieval server is unreachable at {retrieval_url}: {e}\n"
+                f"Please ensure the retrieval server is running and accessible. "
+                f"You can verify with: curl {retrieval_url.rstrip('/')}/health"
+            ) from e
+
     def init_envs_and_agents(self, batch):
         """
         Initialize environment depending on env_class with the necessary extra_info, also set uid of the batch.
@@ -114,6 +133,9 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Pre-flight Docker health check: fail fast before creating any envs
         self._check_docker_connectivity()
+
+        # Pre-flight retrieval server health check: fail fast before creating any envs
+        self._check_retrieval_connectivity()
 
         env_args = batch.non_tensor_batch["extra_info"].tolist()
 
