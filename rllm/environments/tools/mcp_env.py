@@ -290,10 +290,10 @@ class MCPEnvironment(BaseEnv):
     @staticmethod
     def _ensure_server_script(assets_dir: Path) -> Path:
         server_script = assets_dir / "mcp_server.py"
-        if server_script.exists():
-            return server_script
         server_script.write_text(
             "import sys\n"
+            "import logging\n"
+            "logging.getLogger('mcp.server').setLevel(logging.WARNING)\n"
             "from pathlib import Path\n"
             "sys.path.insert(0, str(Path(__file__).parent))\n"
             "import tools\n"

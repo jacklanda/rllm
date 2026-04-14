@@ -215,8 +215,17 @@ class FusedEnv(CLIEnv):
 
         action_objs = self._unwrap_actions(action)
         if not action_objs:
-            self.total_steps += 1
-            return "Error: could not parse any actions from model output.", 0.0, False, {}
+            # Last-resort: try QwenToolParser directly on the raw string
+            raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
+            if raw:
+                from rllm.parser.tool_parser import QwenToolParser as _QTP
+                tcs = _QTP().parse_qwen_tool_calls(raw)
+                if tcs and tcs[0].get("name") in ("finish", "submit"):
+                    result = tcs[0].get("arguments", {}).get("result", "")
+                    action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
+            if not action_objs:
+                self.total_steps += 1
+                return "Error: could not parse any actions from model output.", 0.0, False, {}
 
         observations: list[str] = []
         for action_obj in action_objs:

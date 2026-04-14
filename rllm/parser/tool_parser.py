@@ -480,6 +480,19 @@ class QwenToolParser(ToolParser):
             parsed = cls._try_parse_json(obj_str)
             if parsed is not None:
                 tool_calls.append(parsed)
+
+        # Secondary fallback: bare result JSON without a "name" key
+        # (model outputs {"result": [...]} or a list directly instead of a finish call)
+        if not tool_calls:
+            obj_str = cls._extract_first_json_object(search_text)
+            if obj_str:
+                try:
+                    obj = json.loads(obj_str)
+                    if isinstance(obj, (list, dict)) and (not isinstance(obj, dict) or "name" not in obj):
+                        tool_calls.append({"name": "finish", "arguments": {"command": "submit", "result": json.dumps(obj, ensure_ascii=False)}})
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
         return tool_calls
 
     # ------------------------------------------------------------------
