@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import queue
 import sys
 import threading
@@ -8,6 +9,8 @@ import warnings
 from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Any
+
+logging.getLogger("mcp").setLevel(logging.WARNING)
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -188,7 +191,7 @@ class MCPConnectionManager:
 
             response = await self.session.list_tools()
             tools = response.tools
-            print(f"\nConnected to MCP server with tools: {[tool.name for tool in tools]}")
+            # print(f"\nConnected to MCP server with tools: {[tool.name for tool in tools]}")
 
             self.tool_map = {}
             for tool in tools:
