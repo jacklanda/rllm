@@ -106,9 +106,15 @@ class ToolAgent(BaseAgent):
         """
         tool_calls_dict = []
         assistant_content = response
+        tool_calls = kwargs.pop("tool_calls", None)
         # Attempt to parse tool calls from string response
-        try:
-            tool_calls = self.tool_parser.parse(response)
+        if tool_calls is None:
+            try:
+                tool_calls = self.tool_parser.parse(response)
+            except Exception as e:
+                logger.error(f"Failed to parse tool calls from string response: {e}")
+                tool_calls = []  # Indicate no valid tool calls parsed
+        if tool_calls:
             tool_calls_dict = [
                 {
                     "id": str(uuid.uuid4()),
@@ -118,17 +124,24 @@ class ToolAgent(BaseAgent):
                 for tool_call in tool_calls
             ]
 
-        except Exception as e:
-            logger.error(f"Failed to parse tool calls from string response: {e}")
-            tool_calls_dict = []  # Indicate no valid tool calls parsed
-
         # Append assistant message to chat history
         assistant_message = {"role": "assistant", "content": assistant_content}
         if len(tool_calls_dict) > 0:
+            def _json_safe(value: Any) -> Any:
+                if isinstance(value, dict):
+                    return {str(k): _json_safe(v) for k, v in value.items()}
+                if isinstance(value, (list, tuple)):
+                    return [_json_safe(v) for v in value]
+                if isinstance(value, set):
+                    return [_json_safe(v) for v in value]
+                if isinstance(value, (str, int, float, bool)) or value is None:
+                    return value
+                return str(value)
+
             # Ensure arguments within tool_calls_dict are strings if needed by downstream processing
             for call in tool_calls_dict:
                 if isinstance(call.get("function", {}).get("arguments"), dict):
-                    call["function"]["arguments"] = json.dumps(call["function"]["arguments"])
+                    call["function"]["arguments"] = json.dumps(_json_safe(call["function"]["arguments"]))
         else:
             tool_calls_dict = [
                 {
@@ -167,16 +180,69 @@ class ToolAgent(BaseAgent):
 
 
 class MCPToolAgent(ToolAgent):
-    def __init__(self, system_prompt=TOOL_SYSTEM_PROMPT, parser_name="qwen", tool_map=list[MCPTool]):
+    def __init__(
+        self,
+        system_prompt=TOOL_SYSTEM_PROMPT,
+        parser_name="qwen",
+        tool_map: dict[str, MCPTool] | None = None,
+        tools_json: list[dict[str, Any]] | None = None,
+    ):
         self.system_prompt = system_prompt
-        self.tool_map = tool_map
+        self.tool_map = tool_map or {}
 
         parser_class: type[ToolParser] = get_tool_parser(parser_name=parser_name)
-        self.tool_parser = parser_class()
 
-        tools_json = [tool.json for tool in self.tool_map.values()]
-        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(tools_json, indent=4, ensure_ascii=False))
+        if tools_json is None and self.tool_map:
+            tools_json = [tool.json for tool in self.tool_map.values()]
+
+        self.tools_json = tools_json or []
+
+        # Build valid_tools set from MCP tool schemas + finish/submit
+        valid_tools: set[str] = {"finish", "submit"}
+        for schema in self.tools_json:
+            func_info = schema.get("function", schema)
+            name = func_info.get("name", "")
+            if name:
+                valid_tools.add(name)
+                valid_tools.add(name.replace("-", "_"))
+        self.tool_parser = parser_class(valid_tools=valid_tools)
+
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools_json, indent=2)) if self.tools_json else ""
+        self._tools_initialized = bool(self.tools_json)
 
         self._trajectory = Trajectory()
         self.messages: list[dict[str, Any]] = []
         self.reset()
+
+    def _maybe_update_tools(self, observation: Any) -> None:
+        if not isinstance(observation, dict):
+            return
+        tools_json = observation.get("tools_json")
+        if not tools_json:
+            return
+        if self._tools_initialized and tools_json == self.tools_json:
+            return
+
+        self.tools_json = tools_json
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools_json, indent=2))
+        self._tools_initialized = True
+
+        # Update valid_tools on the parser for name normalization
+        valid_tools: set[str] = {"finish", "submit"}
+        for schema in self.tools_json:
+            func_info = schema.get("function", schema)
+            name = func_info.get("name", "")
+            if name:
+                valid_tools.add(name)
+                valid_tools.add(name.replace("-", "_"))
+        self.tool_parser.valid_tools = valid_tools
+
+        system_message = {"role": "system", "content": self.system_prompt + self.tools_prompt}
+        if self.messages and self.messages[0].get("role") == "system":
+            self.messages[0] = system_message
+        else:
+            self.messages.insert(0, system_message)
+
+    def update_from_env(self, observation: Any, reward: float, done: bool, info: dict, **kwargs):
+        self._maybe_update_tools(observation)
+        return super().update_from_env(observation=observation, reward=reward, done=done, info=info, **kwargs)

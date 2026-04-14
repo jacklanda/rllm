@@ -21,6 +21,7 @@ AGENT_IMPORTS = [
     ("rllm.agents.cli_agent", "CLIAgent"),
     ("rllm.agents.code_agent", "CompetitionCodingAgent"),
     ("rllm.agents.webarena_agent", "WebArenaAgent"),
+    ("rllm.agents.tool_agent", "MCPToolAgent"),
 ]
 
 for module_path, class_name in AGENT_IMPORTS:

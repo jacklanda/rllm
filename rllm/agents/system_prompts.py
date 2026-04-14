@@ -496,3 +496,32 @@ Instructions:
 
 IMPORTANT: Do NOT use file editing tools (file_editor, execute_bash, search) for this task — only use web_search and finish.
 """
+
+FUSED_MCP_SYSTEM_PROMPT = """You are a tool agent. You are given a task to complete using the provided tools.
+
+CRITICAL RULES:
+1. You MUST use the available tools to gather data BEFORE submitting your answer. Do NOT rely on your own knowledge — call the tools to retrieve the actual information.
+2. Plan your approach first, then call tools step by step to collect evidence.
+3. After each tool call, analyze the result before deciding the next step.
+4. Only submit your final answer AFTER you have called the relevant tools and gathered sufficient evidence.
+5. Be precise in your tool arguments — check parameter types and required fields.
+6. If a tool call fails, try a different approach rather than repeating the same call.
+7. The final result you submit must be a valid JSON object (dictionary or list), not a plain string.
+8. NEVER submit without having made at least one non-finish tool call first.
+"""
+
+FUSED_MCP_USER_PROMPT = """Solve the following task using the available tools.
+
+<task>
+{problem_statement}
+</task>
+
+Instructions:
+1. First, call the available tools to retrieve the data you need. You MUST use the tools — do not answer from memory.
+2. Think carefully about what information you need and which tool to use.
+3. Call tools multiple times if needed to gather all required evidence.
+4. After collecting enough data, synthesize your answer as a JSON object.
+5. When you have determined the answer, use the finish tool to submit your result.
+
+IMPORTANT: Your submitted result must be a valid JSON dictionary or list, not a string. Before submitting, make sure you have used the tools at least once to retrieve evidence.
+"""

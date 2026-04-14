@@ -32,6 +32,7 @@ ENVIRONMENT_IMPORTS = [
     ("rllm.environments.cli.cli", "CLIEnv"),
     ("rllm.environments.code.competition_coding", "CompetitionCodingEnv"),
     ("rllm.environments.appworld.appworld_env", "AppWorldEnv"),
+    ("rllm.environments.tools.mcp_env", "MCPEnvironment"),
 ]
 
 for module_path, class_name in ENVIRONMENT_IMPORTS:

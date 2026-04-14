@@ -8,7 +8,7 @@ from rllm.agents.cli_agent import (
     generate_tool_schemas,
     parse_r2egym_tool_docstring,
 )
-from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT
+from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_SYSTEM_PROMPT, FUSED_MCP_USER_PROMPT
 from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,32 @@ def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
     return FUSED_SEARCH_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
+def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2egym") -> str:
+    """Build MCP-mode system prompt with dynamically discovered tool schemas.
+
+    Includes the MCP tools from the environment plus the standard finish tool.
+
+    Args:
+        tools_json: List of OpenAI-style function schemas from MCP tool discovery.
+        scaffold: Which scaffold's finish tool to include.
+    """
+    # Always include the finish tool schema
+    finish_tool_files = [f for f in R2EGYM_TOOL_FILES if "finish" in os.path.basename(f)]
+    schemas = list(tools_json)  # Start with MCP tool schemas
+    for f in finish_tool_files:
+        try:
+            schemas.append(parse_r2egym_tool_docstring(f))
+        except Exception:
+            pass
+
+    tool_parser = QwenToolParser()
+    schemas_str = "\n".join(
+        json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
+    )
+    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
+    return FUSED_MCP_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+
+
 class FusedAgent(CLIAgent):
     """Fused Agent combining CLI/SWE tools with web search capability.
 
@@ -116,4 +142,30 @@ class FusedAgent(CLIAgent):
                 }
                 # Restrict parser to search-only tools for name normalization
                 self.tool_parser.valid_tools = self._VALID_TOOLS_FUSED_SEARCH
+            elif task_type == "mcp":
+                self.user_prompt_template = FUSED_MCP_USER_PROMPT
+                # Build dynamic system prompt from MCP tool schemas
+                tools_json = info.get("tools_json", [])
+                mcp_system_prompt = _build_fused_mcp_system_prompt(tools_json)
+                self.messages[0] = {
+                    "role": "system",
+                    "content": mcp_system_prompt,
+                }
+                # Set valid tools dynamically from MCP schemas + finish
+                mcp_tool_names = set()
+                for schema in tools_json:
+                    func_info = schema.get("function", schema)
+                    name = func_info.get("name", "")
+                    if name:
+                        mcp_tool_names.add(name)
+                        # Also add underscore variant (MCP tools often use hyphens)
+                        mcp_tool_names.add(name.replace("-", "_"))
+                mcp_tool_names.add("finish")
+                mcp_tool_names.add("submit")
+                self.tool_parser.valid_tools = mcp_tool_names
+                # Append difficulty-based submit hint if available
+                difficulty = info.get("difficulty", "")
+                if difficulty:
+                    submit_fn = f"submit_result_difficulty_{difficulty}"
+                    mcp_tool_names.add(submit_fn)
         super().update_from_env(observation, reward, done, info)

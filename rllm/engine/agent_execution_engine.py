@@ -212,13 +212,21 @@ class AgentExecutionEngine:
     @staticmethod
     def _get_task_label(env) -> str:
         """Derive a short task label from the environment for logging."""
+        # Prefer the authoritative _task_mode from FusedEnv when available
+        task_mode = getattr(env, "_task_mode", None)
+        if task_mode:
+            return task_mode  # "swe", "mcp", or "search"
+
         entry = getattr(env, "entry", None)
         if entry and isinstance(entry, dict):
-            if not entry.get("docker_image"):
-                return "search"
-            docker_image = entry.get("docker_image", "")
-            if "gemcli" in docker_image or "gemswe" in docker_image:
-                return "gemcli"
+            if entry.get("docker_image"):
+                docker_image = entry["docker_image"]
+                if "gemcli" in docker_image or "gemswe" in docker_image:
+                    return "gemcli"
+                return "swe"
+            if entry.get("tools_py"):
+                return "mcp"
+            return "search"
         return "other"
 
     async def run_agent_trajectory_async(self, idx, application_id, seed=0, mode="Text", **kwargs):

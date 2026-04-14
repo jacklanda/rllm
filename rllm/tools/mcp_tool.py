@@ -25,8 +25,16 @@ class MCPTool(Tool):
             if hasattr(result, "content"):
                 if hasattr(result.content, "text"):
                     content_str = result.content.text
-                elif isinstance(result.content, list) and hasattr(result.content[0], "text"):
-                    content_str = result.content[0].text
+                elif isinstance(result.content, list):
+                    # MCP may return multiple content blocks (e.g., one per chunk / item).
+                    # Join all text parts to preserve structured outputs like large JSON arrays.
+                    parts: list[str] = []
+                    for item in result.content:
+                        if hasattr(item, "text"):
+                            parts.append(getattr(item, "text"))
+                        else:
+                            parts.append(str(item))
+                    content_str = "".join(parts)
                 else:
                     content_str = str(result.content)
             else:

@@ -2,6 +2,8 @@ import inspect
 import json
 import logging
 import os
+import sys
+import uuid
 
 from rllm.environments.cli.cli import CLIEnv
 
@@ -20,20 +22,30 @@ except ImportError:
     except ImportError:
         LocalRetrievalTool = None
 
+try:
+    from rllm.environments.tools.mcp_env import MCPConnectionManager, MCPEnvironment
+except ImportError:
+    MCPConnectionManager = None
+    MCPEnvironment = None
+
 
 class FusedEnv(CLIEnv):
-    """Fused environment combining CLI/SWE Docker tools with external web search.
+    """Fused environment combining CLI/SWE Docker tools with external web search and MCP tools.
 
-    Operates in two modes based on data type:
+    Operates in three modes based on data type:
 
     **SWE mode** (entry has ``docker_image``):
         Extends CLIEnv (which extends SWEEnv). Intercepts ``web_search`` tool
         calls and routes them to a ``LocalRetrievalTool`` running outside the Docker
         container, while all other tool calls are delegated to Docker via the parent.
 
-    **Search mode** (entry has ``data_source`` but no ``docker_image``):
+    **Search mode** (entry has ``data_source`` but no ``docker_image`` or ``tools_py``):
         No Docker container is created. Only ``web_search`` and ``finish``/``submit``
         tools are available. Reward is computed via F1-score against ``ground_truth``.
+
+    **MCP mode** (entry has ``tools_py``):
+        No Docker container is created. Connects to an MCP server that serves the
+        tools defined in ``tools_py``. Reward is computed via verifier code.
     """
 
     def __init__(
@@ -49,12 +61,24 @@ class FusedEnv(CLIEnv):
         self.retrieval_max_results = retrieval_max_results
         self._retrieval_tool = None  # Lazy-initialized
 
-        # Detect data type: search mode if no docker_image present
-        self._is_search_task = not bool(self.entry.get("docker_image"))
+        # Detect task mode: SWE, MCP, or Search
+        if self.entry.get("docker_image"):
+            self._task_mode = "swe"
+        elif self.entry.get("tools_py"):
+            self._task_mode = "mcp"
+        else:
+            self._task_mode = "search"
 
         # Search mode state
         self._search_answer = ""  # Agent's submitted answer for reward computation
         self._search_reward_debug = {}
+
+        # MCP mode state
+        self._mcp_connection_manager: "MCPConnectionManager | None" = None
+        self._mcp_tool_schemas: list[dict] = []
+        self._mcp_answer = ""
+        self._mcp_reward_debug: dict = {}
+        self._mcp_has_used_tools = False
 
     def _get_retrieval_tool(self):
         """Lazy-initialize the retrieval tool on first web_search call."""
@@ -75,7 +99,9 @@ class FusedEnv(CLIEnv):
     # ------------------------------------------------------------------
 
     def reset(self) -> tuple[str, dict]:
-        if self._is_search_task:
+        if self._task_mode == "mcp":
+            return self._reset_mcp()
+        if self._task_mode == "search":
             return self._reset_search()
         return self._reset_swe()
 
@@ -94,12 +120,72 @@ class FusedEnv(CLIEnv):
         info["task_type"] = "swe"
         return obs, info
 
+    def _reset_mcp(self) -> tuple[str, dict]:
+        """Reset for MCP-mode tasks (tool-based tasks via MCP server)."""
+        self.total_steps = 0
+        self._mcp_answer = ""
+        self._mcp_reward_debug = {}
+        self._mcp_has_used_tools = False
+
+        # Resolve tools_py path
+        tools_py = self.entry.get("tools_py", "")
+        data_root = self.entry.get("data_root", "")
+        if data_root and tools_py and not os.path.isabs(tools_py):
+            tools_py_abs = os.path.join(data_root, os.path.basename(tools_py))
+        else:
+            tools_py_abs = tools_py
+
+        # If tools_py_abs doesn't exist, try the original path directly
+        if not os.path.exists(tools_py_abs):
+            tools_py_abs = tools_py
+
+        # Start MCP server and discover tools
+        if MCPConnectionManager is not None and MCPEnvironment is not None:
+            try:
+                from pathlib import Path
+                tools_path = Path(tools_py_abs)
+                if tools_path.exists() and tools_path.is_file():
+                    server_script = MCPEnvironment._ensure_server_script(tools_path.parent)
+                    mcp_server_command = sys.executable
+                    mcp_server_args = [str(server_script)]
+                    self._mcp_connection_manager = MCPConnectionManager(
+                        mcp_server_command, mcp_server_args
+                    )
+                    self._mcp_connection_manager.start()
+                    # Extract tool schemas from discovered tools (deduplicate by name)
+                    seen = set()
+                    self._mcp_tool_schemas = []
+                    for tool in self._mcp_connection_manager.tool_map.values():
+                        name = getattr(tool, "name", None)
+                        if not name or name in seen:
+                            continue
+                        seen.add(name)
+                        self._mcp_tool_schemas.append(tool.json)
+                else:
+                    logger.error("tools_py not found: %s", tools_py_abs)
+                    self._mcp_tool_schemas = []
+            except Exception as e:
+                logger.error("Failed to start MCP server for %s: %s", tools_py_abs, e)
+                self._mcp_tool_schemas = []
+        else:
+            logger.warning("MCP dependencies not available — MCP task will have no tools")
+            self._mcp_tool_schemas = []
+
+        question = self.entry.get("question", self.entry.get("problem_statement", ""))
+        return question, {
+            "task_type": "mcp",
+            "tools_json": self._mcp_tool_schemas,
+            "difficulty": self.entry.get("difficulty", ""),
+        }
+
     # ------------------------------------------------------------------
     # step
     # ------------------------------------------------------------------
 
     def step(self, action):
-        if self._is_search_task:
+        if self._task_mode == "mcp":
+            return self._step_mcp(action)
+        if self._task_mode == "search":
             return self._step_search(action)
         return self._step_swe(action)
 
@@ -108,14 +194,16 @@ class FusedEnv(CLIEnv):
         if SWEAction is None:
             return super().step(action)
 
-        if isinstance(action, str):
-            action_obj = SWEAction.from_string(action)
-        else:
-            action_obj = action
+        # Unwrap list[Action] → list[SWEAction] and process each
+        action_objs = self._unwrap_actions(action)
 
-        if action_obj.function_name == "web_search":
-            return self._handle_web_search(action_obj)
+        # Check if the first action is web_search; rest go to Docker
+        if action_objs and action_objs[0].function_name == "web_search":
+            return self._handle_web_search(action_objs[0])
 
+        # For SWE tools, pass the first action as its XML string to the parent
+        if action_objs:
+            return super().step(action_objs[0].to_xml_string())
         return super().step(action)
 
     def _step_search(self, action):
@@ -125,28 +213,145 @@ class FusedEnv(CLIEnv):
             self.total_steps += 1
             return "Error: r2egym not available for action parsing.", 0.0, False, {}
 
-        if isinstance(action, str):
-            action_obj = SWEAction.from_string(action)
+        action_objs = self._unwrap_actions(action)
+        if not action_objs:
+            self.total_steps += 1
+            return "Error: could not parse any actions from model output.", 0.0, False, {}
+
+        observations: list[str] = []
+        for action_obj in action_objs:
+            fn = action_obj.function_name
+
+            if fn == "web_search":
+                obs, reward, done, info = self._handle_web_search(action_obj)
+                if done:
+                    return obs, reward, done, info
+                observations.append(obs)
+                continue
+
+            if fn in ("finish", "submit"):
+                return self._handle_search_finish(action_obj)
+
+            # Docker-only tools are not available in search mode
+            self.total_steps += 1
+            observations.append(
+                f"Error: The tool '{fn}' is not available for search tasks. "
+                "Use web_search to find information and finish to submit your answer."
+            )
+
+        combined = "\n".join(observations) if observations else "No tool calls executed."
+        return combined, 0.0, False, {}
+
+    # ------------------------------------------------------------------
+    # Action unwrap helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _unwrap_actions(action) -> "list[SWEAction]":
+        """Convert any action format from the workflow into a list of SWEAction objects.
+
+        Handles:
+        - ``str`` (XML-encoded SWEAction)
+        - ``SWEAction`` instance
+        - ``Action`` dataclass (``action.action`` is the XML string)
+        - ``list[Action | str]`` from CLIAgent.update_from_model()
+        """
+        from rllm.agents.agent import Action as AgentAction
+
+        raw_items: list = []
+        if isinstance(action, list):
+            raw_items = action
         else:
-            action_obj = action
+            raw_items = [action]
 
-        fn = action_obj.function_name
+        swe_actions: list[SWEAction] = []
+        for item in raw_items:
+            if isinstance(item, AgentAction):
+                item = item.action  # unwrap the dataclass
+            if isinstance(item, str):
+                try:
+                    swe_actions.append(SWEAction.from_string(item))
+                except Exception:
+                    logger.warning("Failed to parse action string: %s", item[:120])
+            elif SWEAction is not None and isinstance(item, SWEAction):
+                swe_actions.append(item)
+            else:
+                logger.warning("Unknown action type in _unwrap_actions: %s", type(item))
+        return swe_actions
 
-        if fn == "web_search":
-            return self._handle_web_search(action_obj)
+    # ------------------------------------------------------------------
+    # MCP step
+    # ------------------------------------------------------------------
 
-        if fn in ("finish", "submit"):
-            return self._handle_search_finish(action_obj)
+    def _step_mcp(self, action):
+        """MCP-mode step: route tool calls to MCP server, handle finish locally.
 
-        # Docker-only tools are not available in search mode
-        self.total_steps += 1
-        return (
-            f"Error: The tool '{fn}' is not available for search tasks. "
-            "Use web_search to find information and finish to submit your answer.",
-            0.0,
-            False,
-            {},
-        )
+        Supports receiving a ``list[Action]`` from CLIAgent (multiple parsed
+        tool calls per model turn).  Non-finish tool calls are executed
+        sequentially and their results concatenated; a finish call terminates.
+        """
+        if SWEAction is None:
+            self.total_steps += 1
+            return "Error: r2egym not available for action parsing.", 0.0, False, {}
+
+        action_objs = self._unwrap_actions(action)
+        if not action_objs:
+            self.total_steps += 1
+            return "Error: could not parse any actions from model output.", 0.0, False, {}
+
+        observations: list[str] = []
+        for action_obj in action_objs:
+            fn = action_obj.function_name
+
+            # Handle finish/submit — terminates immediately
+            if fn in ("finish", "submit"):
+                return self._handle_mcp_finish(action_obj)
+
+            # Handle submit_result_difficulty_xxx
+            if fn.startswith("submit_result_difficulty_"):
+                return self._handle_mcp_submit_result(action_obj)
+
+            # Regular MCP tool call
+            self._mcp_has_used_tools = True
+            self.total_steps += 1
+
+            params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
+            # Restore original types lost during SWEAction string round-trip.
+            # SWEAction stringifies all parameter values (int→"0", bool→"false",
+            # list→'["a","b"]').  json.loads recovers the original types so the
+            # MCP server receives correctly-typed arguments.
+            restored_params = {}
+            for k, v in params.items():
+                if isinstance(v, str):
+                    try:
+                        restored_params[k] = json.loads(v)
+                    except (json.JSONDecodeError, ValueError):
+                        restored_params[k] = v
+                else:
+                    restored_params[k] = v
+            tool_call_id = str(uuid.uuid4())
+            tool_calls = [{
+                "id": tool_call_id,
+                "function": {
+                    "name": fn,
+                    "arguments": json.dumps(restored_params, ensure_ascii=False),
+                }
+            }]
+
+            if self._mcp_connection_manager is None:
+                observations.append(f"Execution output of [{fn}]:\nError: MCP server not available.")
+                continue
+
+            try:
+                tool_outputs = self._mcp_connection_manager.execute_tool_calls(tool_calls)
+                output_str = tool_outputs.get(tool_call_id, "No output")
+                observations.append(f"Execution output of [{fn}]:\n{output_str}")
+            except Exception as e:
+                logger.error("MCP tool execution failed for %s: %s", fn, e)
+                observations.append(f"Execution output of [{fn}]:\nError: {str(e)}")
+
+        combined = "\n".join(observations) if observations else "No tool calls executed."
+        return combined, 0.0, False, {}
 
     def _handle_web_search(self, action_obj) -> tuple[str, float, bool, dict]:
         """Execute a web_search tool call via LocalRetrievalTool."""
@@ -182,17 +387,97 @@ class FusedEnv(CLIEnv):
         self._search_answer = result
         return "Your answer has been submitted.", 0.0, True, {}
 
+    def _handle_mcp_finish(self, action_obj) -> tuple[str, float, bool, dict]:
+        """Handle finish/submit tool call in MCP mode.
+
+        Tries to preserve the submitted result as a proper Python object so
+        that the verifier receives a dict/list instead of a stringified blob.
+        """
+        self.total_steps += 1
+        params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
+        result = params.get("result", params.get("response", ""))
+
+        # Try to get a structured object out of the result
+        parsed = result
+        if isinstance(result, str) and result.strip():
+            try:
+                parsed = json.loads(result)
+            except (json.JSONDecodeError, ValueError):
+                parsed = result
+
+        if isinstance(parsed, (dict, list)):
+            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
+        elif isinstance(parsed, str) and parsed.strip():
+            self._mcp_answer = parsed
+        else:
+            self._mcp_answer = str(result) if result else ""
+        return "Your answer has been submitted.", 0.0, True, {}
+
+    def _handle_mcp_submit_result(self, action_obj) -> tuple[str, float, bool, dict]:
+        """Handle submit_result_difficulty_xxx tool call in MCP mode."""
+        self.total_steps += 1
+        params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
+        result = params.get("result", "")
+
+        # Try to get a structured object out of the result
+        parsed = result
+        if isinstance(result, str) and result.strip():
+            try:
+                parsed = json.loads(result)
+            except (json.JSONDecodeError, ValueError):
+                parsed = result
+
+        if isinstance(parsed, (dict, list)):
+            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
+        elif isinstance(parsed, str) and parsed.strip():
+            self._mcp_answer = parsed
+        else:
+            self._mcp_answer = str(result) if result else ""
+
+        # Also execute on the MCP server if available (for side effects)
+        if self._mcp_connection_manager is not None:
+            fn = action_obj.function_name
+            # Restore types for MCP server execution (same as _step_mcp)
+            restored_params = {}
+            for k, v in params.items():
+                if isinstance(v, str):
+                    try:
+                        restored_params[k] = json.loads(v)
+                    except (json.JSONDecodeError, ValueError):
+                        restored_params[k] = v
+                else:
+                    restored_params[k] = v
+            tool_call_id = str(uuid.uuid4())
+            tool_calls = [{
+                "id": tool_call_id,
+                "function": {
+                    "name": fn,
+                    "arguments": json.dumps(restored_params, ensure_ascii=False),
+                }
+            }]
+            try:
+                self._mcp_connection_manager.execute_tool_calls(tool_calls)
+            except Exception:
+                pass
+
+        return "Your answer has been submitted.", 0.0, True, {}
+
     # ------------------------------------------------------------------
     # reward
     # ------------------------------------------------------------------
 
     def compute_final_reward(self):
-        if self._is_search_task:
+        if self._task_mode == "mcp":
+            return self._compute_mcp_reward()
+        if self._task_mode == "search":
             return self._compute_search_reward()
         return super().compute_final_reward()
 
     def compute_final_reward_metadata(self) -> dict:
-        if self._is_search_task:
+        if self._task_mode == "mcp":
+            self._compute_mcp_reward()
+            return self._mcp_reward_debug
+        if self._task_mode == "search":
             self._compute_search_reward()
             return self._search_reward_debug
         return super().compute_final_reward_metadata()
@@ -230,9 +515,45 @@ class FusedEnv(CLIEnv):
         self._reward_debug = self._search_reward_debug
         return float(reward_output.reward)
 
+    def _compute_mcp_reward(self) -> float:
+        """Compute verifier-based reward for MCP tasks."""
+        from rllm.rewards.reward_types import RewardOutput
+        from rllm.rewards.verifier_reward import verifier_reward_fn
+
+        task_info = {
+            **self.entry,
+            "tool_call_stats": {
+                "submit_called": bool(self._mcp_answer),
+                "non_submit_tool_calls": self.total_steps - (1 if self._mcp_answer else 0),
+                "step_count": self.total_steps,
+            },
+        }
+        answer = self._mcp_answer
+
+        try:
+            reward_output = verifier_reward_fn(task_info=task_info, action=answer)
+        except Exception as e:
+            logger.error("MCP reward computation failed: %s", e)
+            reward_output = RewardOutput(reward=0.0, metadata={"verifier_error": str(e)})
+
+        self._mcp_reward_debug = {
+            "type": "mcp",
+            "reward": float(reward_output.reward),
+            "resolved": reward_output.reward >= 1.0,
+            "reward_mode": "verifier",
+            "reward_source": "verifier_reward_fn",
+            "is_correct": reward_output.is_correct,
+            "verifier_error": reward_output.metadata.get("error", ""),
+            **reward_output.metadata,
+        }
+        self._reward_debug = self._mcp_reward_debug
+        return float(reward_output.reward)
+
     @property
     def reward_debug(self) -> dict:
-        if self._is_search_task:
+        if self._task_mode == "mcp":
+            return self._mcp_reward_debug
+        if self._task_mode == "search":
             return self._search_reward_debug
         return self._reward_debug
 
@@ -242,13 +563,22 @@ class FusedEnv(CLIEnv):
 
     def close(self):
         """Clean up resources."""
+        # Stop MCP connection manager if running
+        if self._mcp_connection_manager is not None:
+            try:
+                self._mcp_connection_manager.stop()
+            except Exception:
+                pass
+            self._mcp_connection_manager = None
+        # Clean up retrieval tool
         if self._retrieval_tool is not None:
             try:
                 self._retrieval_tool.client.close()
             except Exception:
                 pass
             self._retrieval_tool = None
-        if not self._is_search_task:
+        # Clean up Docker (SWE mode only)
+        if self._task_mode == "swe":
             super().close()
 
     # ------------------------------------------------------------------

@@ -215,7 +215,9 @@ def _tool_call_to_swe_action(tool_call_dict: dict) -> "SWEAction":
     str_arguments = {}
     for k, v in arguments.items():
         if isinstance(v, list):
-            str_arguments[k] = json.dumps(v)
+            str_arguments[k] = json.dumps(v, ensure_ascii=False)
+        elif isinstance(v, dict):
+            str_arguments[k] = json.dumps(v, ensure_ascii=False)
         elif isinstance(v, bool):
             str_arguments[k] = str(v).lower()
         elif v is None:
