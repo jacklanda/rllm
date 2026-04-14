@@ -17,7 +17,6 @@ from verl.trainer.ppo.core_algos import (
     agg_loss,
 )
 from verl.trainer.ppo.metric_utils import (
-    compute_data_metrics,
     compute_throughout_metrics,
     compute_timing_metrics,
     reduce_metrics,
@@ -29,7 +28,7 @@ from verl.trainer.ppo.ray_trainer import (
 )
 from verl.trainer.ppo.utils import Role, WorkerType
 from verl.utils.debug import marked_timer
-from rllm.trainer.verl.ray_trainer import compute_advantage
+from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
 
 from rllm.engine.agent_workflow_engine import AgentWorkflowEngine
 from rllm.engine.rollout.verl_engine import VerlEngine
@@ -574,7 +573,8 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 pass_rates[uid].append(is_correct)
 
             metrics[f"val/{data_source}/pass@1"] = np.mean(is_correct_data_source)
-            metrics[f"val/{data_source}/pass@{n_val_samples}"] = np.mean([1 if any(pass_rate) else 0 for pass_rate in pass_rates.values()])
+            if n_val_samples > 1:
+                metrics[f"val/{data_source}/pass@{n_val_samples}"] = np.mean([1 if any(pass_rate) else 0 for pass_rate in pass_rates.values()])
 
             # Add workflow metrics for this data source
             if data_source in workflow_metrics_by_source:

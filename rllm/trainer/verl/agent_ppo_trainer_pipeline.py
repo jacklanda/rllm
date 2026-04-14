@@ -8,9 +8,9 @@ import numpy as np
 import torch
 from verl import DataProto
 from verl.single_controller.ray import RayClassWithInitArgs, RayWorkerGroup
-from verl.trainer.ppo.metric_utils import compute_data_metrics, compute_timing_metrics
+from verl.trainer.ppo.metric_utils import compute_timing_metrics
 from verl.trainer.ppo.utils import Role
-from rllm.trainer.verl.ray_trainer import compute_advantage
+from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
 from verl.utils.debug import marked_timer
 from verl.utils.metric import reduce_metrics
 
@@ -285,6 +285,7 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
         rewards_lst = []
         env_rewards_lst = []
         data_source_lst = []
+        uid_lst = []
 
         # Get max_val_num from config (-1 means use all batches)
         max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
@@ -295,7 +296,7 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
                 break
 
             test_batch = DataProto.from_single_dict(test_data)
-
+            test_batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(test_batch.batch))], dtype=object)
             n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
             test_batch = test_batch.repeat(repeat_times=n_val_samples, interleave=True)
             test_batch.pop(["input_ids", "attention_mask", "position_ids"])  # these are not needed for environment based interaction
@@ -330,13 +331,17 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
             rewards_lst.append(reward_tensor.sum(-1).cpu())
             env_rewards_lst.append(env_reward_tensor.sum(-1).cpu())
             data_source_lst.append(test_batch.non_tensor_batch.get("data_source", ["unknown"] * reward_tensor.shape[0]))
+            uid_lst.append(test_batch.non_tensor_batch["uid"])
 
         reward_tensor = torch.cat(rewards_lst, dim=0)  # (batch_size,)
         env_reward_tensor = torch.cat(env_rewards_lst, dim=0)  # (batch_size,)
         data_sources = np.concatenate(data_source_lst, axis=0)
+        uid_tensor = np.concatenate(uid_lst, axis=0)
         # evaluate test_score based on data source
         data_source_reward = {}
         data_source_env_reward = {}
+        data_source_uid_pass_rates = {}  # data source to {uid: pass or not}
+
         for i in range(reward_tensor.shape[0]):
             data_source = data_sources[i]
 
@@ -348,11 +353,33 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
                 data_source_env_reward[data_source] = []
             data_source_env_reward[data_source].append(env_reward_tensor[i].item())
 
+            # pass@k
+            if data_source not in data_source_uid_pass_rates:
+                data_source_uid_pass_rates[data_source] = {}
+
+            uid = uid_tensor[i]
+            if uid not in data_source_uid_pass_rates[data_source]:
+                data_source_uid_pass_rates[data_source][uid] = 0  # default to not pass
+            # take highest score
+            data_source_uid_pass_rates[data_source][uid] = max(data_source_uid_pass_rates[data_source][uid], reward_tensor[i].item())
+
+        n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
+
         metric_dict = {}
         for data_source, rewards in data_source_reward.items():
-            metric_dict[f"val/test_score/{data_source}"] = np.mean(rewards)
+            # clip rewards to be between 0 and 1
+            rewards_array = np.array(rewards)
+            rewards_array = np.clip(rewards_array, 0, 1)
+            metric_dict[f"val/{data_source}/pass@1"] = np.mean(rewards_array)
 
         for data_source, env_rewards in data_source_env_reward.items():
-            metric_dict[f"val/env_score/{data_source}"] = np.mean(env_rewards)
+            metric_dict[f"val/{data_source}/env_score"] = np.mean(env_rewards)
+
+        if n_val_samples > 1:
+            for data_source, pass_rates in data_source_uid_pass_rates.items():
+                pass_k_lst = []
+                for uid, pass_score in pass_rates.items():
+                    pass_k_lst.append(pass_score >= 1)  # assuming 1 means passed
+                metric_dict[f"val/{data_source}/pass@{n_val_samples}"] = np.mean(pass_k_lst)
 
         return metric_dict

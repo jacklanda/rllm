@@ -16,14 +16,14 @@ from verl import DataProto
 from verl.protocol import pad_dataproto_to_divisor
 from verl.single_controller.ray import RayWorkerGroup
 from verl.trainer.ppo.core_algos import agg_loss
-from verl.trainer.ppo.metric_utils import compute_data_metrics, compute_timing_metrics
+from verl.trainer.ppo.metric_utils import compute_timing_metrics
 from verl.trainer.ppo.ray_trainer import (
     RayPPOTrainer,
     ResourcePoolManager,
     compute_response_mask,
 )
 from verl.trainer.ppo.utils import Role, WorkerType
-from rllm.trainer.verl.ray_trainer import compute_advantage
+from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
 from verl.utils.debug import marked_timer
 from verl.utils.metric import reduce_metrics
 
@@ -651,18 +651,21 @@ class AgentPPOTrainer(RayPPOTrainer):
             # take highest score
             data_source_uid_pass_rates[data_source][uid] = max(data_source_uid_pass_rates[data_source][uid], reward_tensor[i].item())
 
+        n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
+
         metric_dict = {}
         for data_source, rewards in data_source_reward.items():
             # clip rewards to be between 0 and 1
             rewards_array = np.array(rewards)
             rewards_array = np.clip(rewards_array, 0, 1)
-            metric_dict[f"val/test_score/{data_source}"] = np.mean(rewards_array)
+            metric_dict[f"val/{data_source}/pass@1"] = np.mean(rewards_array)
 
-        for data_source, pass_rates in data_source_uid_pass_rates.items():
-            pass_k_lst = []
-            for uid, pass_score in pass_rates.items():
-                pass_k_lst.append(pass_score >= 1)  # assuming 1 means passed
-            metric_dict[f"val/test_score/pass@k/{data_source}"] = np.mean(pass_k_lst)
+        if n_val_samples > 1:
+            for data_source, pass_rates in data_source_uid_pass_rates.items():
+                pass_k_lst = []
+                for uid, pass_score in pass_rates.items():
+                    pass_k_lst.append(pass_score >= 1)  # assuming 1 means passed
+                metric_dict[f"val/{data_source}/pass@{n_val_samples}"] = np.mean(pass_k_lst)
 
         return metric_dict
 

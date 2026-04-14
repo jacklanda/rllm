@@ -326,6 +326,23 @@ def compute_data_metrics(batch, use_critic=True):
         "prompt_length/min": torch.min(prompt_length).detach().item(),
         "prompt_length/clip_ratio": torch.mean(torch.eq(prompt_length, max_prompt_length).float()).detach().item(),
     }
+
+    # Channel-based reward tracking (for different data sources: cli, mcp, web_search)
+    if hasattr(batch, 'non_tensor_batch') and 'data_source' in batch.non_tensor_batch:
+        data_sources = batch.non_tensor_batch['data_source']
+        channel_rewards = {}
+
+        for i, data_source in enumerate(data_sources):
+            if data_source not in channel_rewards:
+                channel_rewards[data_source] = []
+            channel_rewards[data_source].append(sequence_reward[i].detach().item())
+
+        # Add per-channel reward metrics
+        for channel, rewards in channel_rewards.items():
+            if len(rewards) > 0:
+                rewards_tensor = torch.tensor(rewards)
+                metrics[f"critic/rewards/{channel}"] = torch.mean(rewards_tensor).item()
+
     return metrics
 
 

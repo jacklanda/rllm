@@ -20,7 +20,6 @@ from verl import DataProto
 from verl.single_controller.ray import RayClassWithInitArgs, RayWorkerGroup
 from verl.trainer.ppo.core_algos import agg_loss
 from verl.trainer.ppo.metric_utils import (
-    compute_data_metrics,
     compute_throughout_metrics,
     compute_timing_metrics,
     reduce_metrics,
@@ -32,7 +31,7 @@ from verl.trainer.ppo.ray_trainer import (
 from verl.trainer.ppo.utils import Role, WorkerType
 from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path
 from verl.utils.debug import marked_timer
-from rllm.trainer.verl.ray_trainer import compute_advantage
+from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
 from verl.utils.tracking import Tracking
 
 from rllm.trainer.verl.agent_workflow_trainer import AgentWorkflowPPOTrainer
