@@ -216,19 +216,30 @@ class FusedEnv(CLIEnv):
             self.total_steps += 1
             return "Error: r2egym not available for action parsing.", 0.0, False, {}
 
-        action_objs = self._unwrap_actions(action)
+        # Primary: use QwenToolParser on the raw string to handle all fallback formats
+        # (\boxed{}, bare JSON, missing tags, etc.) before SWEAction.from_string
+        raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
+        action_objs = []
+        if raw:
+            from rllm.parser.tool_parser import QwenToolParser as _QTP
+            tcs = _QTP(valid_tools={"web_search", "finish", "submit"}).parse_qwen_tool_calls(raw)
+            for tc in tcs:
+                name = tc.get("name", "")
+                args = tc.get("arguments", {})
+                if name in ("finish", "submit"):
+                    action_objs.append(SWEAction(function_name="finish", parameters=args))
+                elif name == "web_search":
+                    action_objs.append(SWEAction(function_name="web_search", parameters=args))
+
+        # Fallback: SWEAction XML parsing (for SWE-format strings)
         if not action_objs:
-            # Last-resort: try QwenToolParser directly on the raw string
-            raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
-            if raw:
-                from rllm.parser.tool_parser import QwenToolParser as _QTP
-                tcs = _QTP().parse_qwen_tool_calls(raw)
-                if tcs and tcs[0].get("name") in ("finish", "submit"):
-                    result = tcs[0].get("arguments", {}).get("result", "")
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
-            if not action_objs:
-                self.total_steps += 1
-                return "Error: could not parse any actions from model output.", 0.0, False, {}
+            action_objs = self._unwrap_actions(action)
+            # Filter out empty-name actions produced by failed SWEAction.from_string
+            action_objs = [a for a in action_objs if a.function_name]
+
+        if not action_objs:
+            self.total_steps += 1
+            return "Error: could not parse any actions from model output.", 0.0, False, {}
 
         observations: list[str] = []
         for action_obj in action_objs:
@@ -306,7 +317,20 @@ class FusedEnv(CLIEnv):
             self.total_steps += 1
             return "Error: r2egym not available for action parsing.", 0.0, False, {}
 
-        action_objs = self._unwrap_actions(action)
+        # Primary: QwenToolParser on raw string (handles \boxed, bare JSON, missing tags)
+        raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
+        action_objs = []
+        if raw:
+            from rllm.parser.tool_parser import QwenToolParser as _QTP
+            tcs = _QTP(valid_tools=self.tool_parser.valid_tools if hasattr(self, "tool_parser") else None).parse_qwen_tool_calls(raw)
+            for tc in tcs:
+                name = tc.get("name", "")
+                if name:
+                    action_objs.append(SWEAction(function_name=name, parameters=tc.get("arguments", {})))
+
+        if not action_objs:
+            action_objs = [a for a in self._unwrap_actions(action) if a.function_name]
+
         if not action_objs:
             self.total_steps += 1
             return "Error: could not parse any actions from model output.", 0.0, False, {}
