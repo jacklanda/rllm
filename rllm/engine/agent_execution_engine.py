@@ -235,6 +235,7 @@ class AgentExecutionEngine:
         env = self.envs[idx]
         # env_id = env.env_id
         task_label = self._get_task_label(env)
+        is_eval = kwargs.get("meta_info", {}).get("validate", False)
 
         termination_reason = None
         exception_message = ""  # Track exception message for non-ENV_DONE terminations
@@ -781,7 +782,7 @@ class AgentExecutionEngine:
             return dropped_result
 
         masked_out = False
-        if self.overlong_filter:
+        if self.overlong_filter and not is_eval:
             if termination_reason == "TRUNCATION" or termination_reason == "MAX_STEPS" or termination_reason == "TIMEOUT":
                 # Mask out the entire response for overlong trajectories if the reward is 0.
                 response_masks = [0] * len(response_masks)

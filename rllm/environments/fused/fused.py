@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 import os
+import re
 import sys
 import uuid
 
@@ -111,7 +112,9 @@ class FusedEnv(CLIEnv):
         self._search_answer = ""
         self._search_reward_debug = {}
 
-        question = self.entry.get("question", self.entry.get("problem_statement", ""))
+        question = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
+        # Strip stale answer-format instructions that conflict with FUSED_SEARCH_USER_PROMPT
+        question = re.sub(r"\s*When ready, output the final answer enclosed in <answer> and </answer> tags\. Do not generate any content after the </answer> tag\.?", "", question).strip()
         return question, {"task_type": "search"}
 
     def _reset_swe(self) -> tuple[str, dict]:
@@ -496,7 +499,7 @@ class FusedEnv(CLIEnv):
         from rllm.rewards.reward_types import RewardConfig, RewardInput
         from rllm.rewards.search_reward import RewardSearchFn
 
-        ground_truth = self.entry.get("ground_truth", "")
+        ground_truth = self.entry.get("ground_truth") or self.entry.get("answer") or self.entry.get("gt_answer") or self.entry.get("ground_truth_answer", "")
         answer = self._search_answer
 
         config = RewardConfig(

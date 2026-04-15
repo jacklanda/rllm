@@ -205,6 +205,12 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
             base_reward = 0.0
         if "passed" in verifier_result:
             is_correct = bool(verifier_result.get("passed"))
+    elif isinstance(verifier_result, bool):
+        is_correct = verifier_result
+        base_reward = 1.0 if verifier_result else 0.0
+    elif isinstance(verifier_result, (int, float)):
+        base_reward = float(verifier_result)
+        is_correct = base_reward > 0.0
     else:
         logger.warning("[REWARD] Verifier result is not a dict: %s", type(verifier_result))
 
