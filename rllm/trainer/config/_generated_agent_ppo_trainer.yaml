@@ -30,6 +30,7 @@ actor_rollout_ref:
       - model
       - optimizer
       - extra
+      - hf_model
       load_contents: ${.save_contents}
     optim:
       lr: 1.0e-06
