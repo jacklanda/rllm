@@ -8,7 +8,7 @@ from rllm.agents.cli_agent import (
     generate_tool_schemas,
     parse_r2egym_tool_docstring,
 )
-from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_SYSTEM_PROMPT, FUSED_MCP_USER_PROMPT
+from rllm.agents.system_prompts import FUSED_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_USER_PROMPT
 from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def _build_fused_tools_system_prompt(scaffold: str = "r2egym") -> str:
         json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
     )
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_AGENT_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    return FUSED_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
 def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
@@ -61,7 +61,7 @@ def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
         json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
     )
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_SEARCH_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    return FUSED_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
 def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2egym") -> str:
@@ -87,7 +87,7 @@ def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2eg
         json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
     )
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_MCP_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    return FUSED_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
 class FusedAgent(CLIAgent):
