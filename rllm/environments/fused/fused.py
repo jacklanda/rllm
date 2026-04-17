@@ -211,24 +211,10 @@ class FusedEnv(CLIEnv):
 
     def _step_search(self, action):
         """Search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
-        if SWEAction is None:
-            # Cannot parse actions without r2egym
-            self.total_steps += 1
-            return "Error: r2egym not available for action parsing.", 0.0, False, {}
-
         action_objs = self._unwrap_actions(action)
         if not action_objs:
-            # Last-resort: try QwenToolParser directly on the raw string
-            raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
-            if raw:
-                from rllm.parser.tool_parser import QwenToolParser as _QTP
-                tcs = _QTP().parse_qwen_tool_calls(raw)
-                if tcs and tcs[0].get("name") in ("finish", "submit"):
-                    result = tcs[0].get("arguments", {}).get("result", "")
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
-            if not action_objs:
-                self.total_steps += 1
-                return "Error: could not parse any actions from model output.", 0.0, False, {}
+            self.total_steps += 1
+            return "Error: could not parse any actions from model output.", 0.0, False, {}
 
         observations: list[str] = []
         for action_obj in action_objs:
@@ -281,10 +267,26 @@ class FusedEnv(CLIEnv):
             if isinstance(item, AgentAction):
                 item = item.action  # unwrap the dataclass
             if isinstance(item, str):
-                try:
-                    swe_actions.append(SWEAction.from_string(item))
-                except Exception:
-                    logger.warning("Failed to parse action string: %s", item[:120])
+                if SWEAction is None:
+                    # r2egym not available — try parsing as JSON {"name": ..., "arguments": ...}
+                    try:
+                        d = json.loads(item)
+                        if isinstance(d, dict) and "name" in d:
+                            import types
+                            obj = types.SimpleNamespace(
+                                function_name=d["name"],
+                                parameters=d.get("arguments", {}),
+                            )
+                            swe_actions.append(obj)
+                            continue
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                    logger.warning("Failed to parse action string (no r2egym): %s", item[:120])
+                else:
+                    try:
+                        swe_actions.append(SWEAction.from_string(item))
+                    except Exception:
+                        logger.warning("Failed to parse action string: %s", item[:120])
             elif SWEAction is not None and isinstance(item, SWEAction):
                 swe_actions.append(item)
             else:
@@ -302,10 +304,6 @@ class FusedEnv(CLIEnv):
         tool calls per model turn).  Non-finish tool calls are executed
         sequentially and their results concatenated; a finish call terminates.
         """
-        if SWEAction is None:
-            self.total_steps += 1
-            return "Error: r2egym not available for action parsing.", 0.0, False, {}
-
         action_objs = self._unwrap_actions(action)
         if not action_objs:
             self.total_steps += 1

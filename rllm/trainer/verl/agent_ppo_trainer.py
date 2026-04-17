@@ -101,7 +101,9 @@ class AgentPPOTrainer(RayPPOTrainer):
         env_args=None,
         agent_args=None,
     ):
-        super().__init__(config=config, tokenizer=tokenizer, role_worker_mapping=role_worker_mapping, resource_pool_manager=resource_pool_manager, ray_worker_group_cls=ray_worker_group_cls, reward_fn=reward_fn, val_reward_fn=val_reward_fn)
+        super().__init__(config=config, tokenizer=tokenizer, role_worker_mapping=role_worker_mapping, resource_pool_manager=resource_pool_manager, ray_worker_group_cls=ray_worker_group_cls)
+        self.reward_fn = reward_fn
+        self.val_reward_fn = val_reward_fn
         self.env_class = env_class
         self.agent_class = agent_class
         self.env_args = env_args or {}
@@ -269,7 +271,9 @@ class AgentPPOTrainer(RayPPOTrainer):
                 metrics = {}
                 timing_raw = {}
 
-                batch.pop(batch_keys=["input_ids", "attention_mask", "position_ids"])
+                keys_to_pop = [k for k in ["input_ids", "attention_mask", "position_ids"] if k in batch.batch.keys()]
+                if keys_to_pop:
+                    batch.pop(batch_keys=keys_to_pop)
 
                 with marked_timer("step", timing_raw):
                     self.init_envs_and_agents(batch)
@@ -645,7 +649,9 @@ class AgentPPOTrainer(RayPPOTrainer):
             test_batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(test_batch.batch))], dtype=object)
             n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
             test_batch = test_batch.repeat(repeat_times=n_val_samples, interleave=True)
-            test_batch.pop(["input_ids", "attention_mask", "position_ids"])  # these are not needed for environment based interaction
+            keys_to_pop = [k for k in ["input_ids", "attention_mask", "position_ids"] if k in test_batch.batch.keys()]
+            if keys_to_pop:
+                test_batch.pop(keys_to_pop)  # these are not needed for environment based interaction
             test_batch.meta_info = {
                 "eos_token_id": self.tokenizer.eos_token_id,
                 "pad_token_id": self.tokenizer.pad_token_id,

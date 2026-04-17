@@ -2,7 +2,7 @@ import asyncio
 import uuid
 
 from verl.experimental.agent_loop.agent_loop import AgentLoopManager, AsyncLLMServerManager
-from verl.workers.rollout.replica import TokenOutput
+from verl.workers.rollout.replica import RolloutMode, TokenOutput
 
 from rllm.engine.rollout.rollout_engine import ModelOutput, RolloutEngine
 from rllm.parser import ChatTemplateParser
@@ -17,7 +17,8 @@ class VerlEngine(RolloutEngine):
             raise ValueError(f"VerlEngine only supports vllm or sglang rollout, but got {config.actor_rollout_ref.rollout.name}")
 
         self.rollout_manager: AgentLoopManager = rollout_manager
-        self.server_manager = AsyncLLMServerManager(config, server_handles=rollout_manager.server_handles)
+        servers = list(zip(rollout_manager.server_addresses, rollout_manager.server_handles, strict=True))
+        self.server_manager = AsyncLLMServerManager(config, servers, load_balancer_handle=rollout_manager.global_load_balancer)
         self.tokenizer = tokenizer
         self.processor = processor
         self.chat_parser = ChatTemplateParser.get_parser(tokenizer, processor=processor, disable_thinking=config.get("rllm", {}).get("disable_thinking", False))
@@ -127,7 +128,10 @@ class VerlEngine(RolloutEngine):
 
     async def wake_up(self):
         """Wake up all rollout replica instances asynchronously."""
-        await asyncio.gather(*[replica.wake_up() for replica in self.rollout_manager.rollout_replicas])
+        # In HYBRID mode, wake_up is handled by update_weights — skip it.
+        replicas = [r for r in self.rollout_manager.rollout_replicas if r.rollout_mode != RolloutMode.HYBRID]
+        if replicas:
+            await asyncio.gather(*[replica.wake_up() for replica in replicas])
 
     async def sleep(self):
         """Sleep all rollout replica instances asynchronously."""

@@ -1031,6 +1031,18 @@ class AgentExecutionEngine:
             try:
                 application_id = str(uuid.uuid4())
                 return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=self.trajectory_timeout)
+            except (TimeoutError, asyncio.TimeoutError) as e:
+                colorful_print(f"Trajectory {idx} ({task_label}) timed out after {self.trajectory_timeout}s. Dropping trajectory.", "red")
+                self._trajectory_logs.append({
+                    "type": "trajectory",
+                    "idx": idx,
+                    "dropped": True,
+                    "termination_reason": "TRAJECTORY_TIMEOUT",
+                    "reward": 0.0,
+                    "num_steps": 0,
+                    "chat_completions": [],
+                })
+                return None
             except InvalidReactStructureError as e:
                 # Retry `max_attempts` times for this specific error
                 if attempt < max_attempts - 1:
@@ -1066,10 +1078,11 @@ class AgentExecutionEngine:
                     return None
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
                 if attempt < max_attempts - 1:
+                    traceback.print_exc()
                     colorful_print(f"Trajectory {idx} ({task_label}) retry {attempt}/{max_attempts-1} due to exception: {_}", "yellow")
                     continue
                 else:
-                    # traceback.print_exc()
+                    traceback.print_exc()
                     colorful_print(f"Trajectory {idx} ({task_label}) cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
                     self._trajectory_logs.append({
                         "type": "trajectory",

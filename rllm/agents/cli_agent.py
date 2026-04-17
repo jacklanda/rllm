@@ -337,6 +337,19 @@ class CLIAgent(BaseAgent):
         tool_calls = self.tool_parser.parse(response)
 
         actions = []
+        if tool_calls and SWEAction is None:
+            # r2egym not available — serialize tool calls as JSON for FusedEnv to parse
+            for tc in tool_calls:
+                args = tc.arguments
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except (json.JSONDecodeError, ValueError):
+                        args = {}
+                if not isinstance(args, dict):
+                    args = {}
+                actions.append(Action(action=json.dumps({"name": tc.name, "arguments": args})))
+            tool_calls = []
         if tool_calls:
             for tc in tool_calls:
                 # Ensure arguments is a dict (models sometimes emit a string)
