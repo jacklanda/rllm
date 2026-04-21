@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+import threading
 import uuid
 
 from rllm.environments.cli.cli import CLIEnv
@@ -49,6 +50,10 @@ class FusedEnv(CLIEnv):
         tools defined in ``tools_py``. Reward is computed via verifier code.
     """
 
+    # Shared retrieval tool singleton — avoids creating one httpx.Client per env instance
+    _shared_retrieval_tool = None
+    _retrieval_lock = threading.Lock()
+
     def __init__(
         self,
         retrieval_server_url: str | None = None,
@@ -60,7 +65,6 @@ class FusedEnv(CLIEnv):
             "RETRIEVAL_SERVER_URL", "http://127.0.0.1:65432"
         )
         self.retrieval_max_results = retrieval_max_results
-        self._retrieval_tool = None  # Lazy-initialized
 
         # Detect task mode: SWE, MCP, or Search
         if self.entry.get("docker_image"):
@@ -82,18 +86,20 @@ class FusedEnv(CLIEnv):
         self._mcp_has_used_tools = False
 
     def _get_retrieval_tool(self):
-        """Lazy-initialize the retrieval tool on first web_search call."""
-        if self._retrieval_tool is None:
-            if LocalRetrievalTool is None:
-                logger.warning(
-                    "LocalRetrievalTool not available — web_search will return errors"
-                )
-                return None
-            self._retrieval_tool = LocalRetrievalTool(
-                server_url=self.retrieval_server_url,
-                max_results=self.retrieval_max_results,
-            )
-        return self._retrieval_tool
+        """Return the class-level shared retrieval tool (lazy-initialized, thread-safe)."""
+        if FusedEnv._shared_retrieval_tool is None:
+            with FusedEnv._retrieval_lock:
+                if FusedEnv._shared_retrieval_tool is None:
+                    if LocalRetrievalTool is None:
+                        logger.warning(
+                            "LocalRetrievalTool not available — web_search will return errors"
+                        )
+                        return None
+                    FusedEnv._shared_retrieval_tool = LocalRetrievalTool(
+                        server_url=self.retrieval_server_url,
+                        max_results=self.retrieval_max_results,
+                    )
+        return FusedEnv._shared_retrieval_tool
 
     # ------------------------------------------------------------------
     # reset
@@ -582,13 +588,7 @@ class FusedEnv(CLIEnv):
             except Exception:
                 pass
             self._mcp_connection_manager = None
-        # Clean up retrieval tool
-        if self._retrieval_tool is not None:
-            try:
-                self._retrieval_tool.client.close()
-            except Exception:
-                pass
-            self._retrieval_tool = None
+        # Do NOT close _shared_retrieval_tool — it is shared across all FusedEnv instances
         # Clean up Docker (SWE mode only)
         if self._task_mode == "swe":
             super().close()

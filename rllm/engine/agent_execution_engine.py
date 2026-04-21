@@ -25,6 +25,16 @@ from rllm.utils import colorful_print
 logger = logging.getLogger(__name__)
 
 
+def _log_fd_count(label: str):
+    """Log the current process's open file descriptor count for leak diagnostics."""
+    try:
+        import os
+        fd_count = len(os.listdir(f'/proc/{os.getpid()}/fd'))
+        logger.info(f"[FD Monitor] {label}: {fd_count} open file descriptors")
+    except Exception:
+        pass
+
+
 class InvalidReactStructureError(Exception):
     pass
 
@@ -1107,7 +1117,15 @@ class AgentExecutionEngine:
         assert all(env.is_multithread_safe() for env in self.envs), "All environments must be multithread safe for async engine"  # type: ignore
         max_concurrency = self.n_parallel_agents
 
+        # Shut down previous executor before creating a new one to avoid FD leaks
+        if hasattr(self, 'executor') and self.executor is not None:
+            try:
+                self.executor.shutdown(wait=False, cancel_futures=True)
+            except Exception:
+                pass
         self.executor = ThreadPoolExecutor(max_workers=max_concurrency)
+
+        _log_fd_count("trajectory_generator START")
 
         # Reset Docker health flag for this generation round (threading.Event: set = healthy)
         self._docker_healthy = threading.Event()
@@ -1171,6 +1189,7 @@ class AgentExecutionEngine:
             await self.rollout_engine.sleep()  # type: ignore
 
         self.executor.shutdown(wait=False, cancel_futures=True)
+        _log_fd_count("trajectory_generator END")
 
     async def execute_tasks(self, tasks: list[dict]):
         """
