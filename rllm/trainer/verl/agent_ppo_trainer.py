@@ -3,6 +3,16 @@ import json
 import math
 import os
 import uuid
+
+
+class _SafeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, type):
+            return str(o)
+        try:
+            return super().default(o)
+        except TypeError:
+            return str(o)
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from pprint import pprint
@@ -51,6 +61,20 @@ def _patch_rlhf_dataset_answer_norm():
             if "prompt" in df.features and isinstance(df.features["prompt"], datasets.Value) and df.features["prompt"].dtype == "null":
                 if "input" in df.features:
                     df = df.map(lambda x: {"prompt": [{"role": "user", "content": x["input"]}]})
+            # Promote top-level data_source into extra_info before schema alignment
+            # so it survives the common-column intersection across datasets
+            if "data_source" in df.column_names and "extra_info" in df.column_names:
+                import json as _json
+                def _inject_data_source(x):
+                    ei = x["extra_info"]
+                    if isinstance(ei, str):
+                        ei = _json.loads(ei) if ei else {}
+                    if not isinstance(ei, dict):
+                        ei = {}
+                    if "data_source" not in ei and x.get("data_source"):
+                        ei["data_source"] = x["data_source"]
+                    return {"extra_info": ei}
+                df = df.map(_inject_data_source)
             # Serialize extra_info struct to JSON string so schemas are compatible across datasets
             if "extra_info" in df.column_names:
                 import json as _json
@@ -261,6 +285,14 @@ class AgentPPOTrainer(RayPPOTrainer):
             for batch_dict in self.train_dataloader:
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))], dtype=object)
+                # Extract data_source from extra_info if not already a top-level field
+                if "data_source" not in batch.non_tensor_batch and "extra_info" in batch.non_tensor_batch:
+                    extra_infos = batch.non_tensor_batch["extra_info"]
+                    data_sources = np.array(
+                        [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                        dtype=object,
+                    )
+                    batch.non_tensor_batch["data_source"] = data_sources
                 batch = batch.repeat(
                     repeat_times=self.config.actor_rollout_ref.rollout.n,
                     interleave=True,
@@ -397,6 +429,20 @@ class AgentPPOTrainer(RayPPOTrainer):
                             metrics["batch/uid_reward_range_max"] = float(np.max(reward_range_values))
                         metrics["batch/verifier_missing_groups"] = verifier_missing_groups
                         metrics["batch/high_variance_groups"] = high_variance_groups
+
+                        # Per-data-source reward metrics
+                        batch_data_sources = batch.non_tensor_batch.get("data_source")
+                        if batch_data_sources is not None:
+                            from collections import defaultdict
+                            source_rewards = defaultdict(list)
+                            for uid in unique_uids:
+                                uid_mask = uids == uid
+                                uid_indices = np.where(uid_mask)[0]
+                                src = batch_data_sources[uid_indices[0]]
+                                uid_reward = reward_tensor[uid_mask].sum(-1).mean().detach().item()
+                                source_rewards[src].append(uid_reward)
+                            for src, rewards in source_rewards.items():
+                                metrics[f"critic/rewards/{src}"] = float(np.mean(rewards))
 
                         if self.config.rllm.rejection_sample.enable:
                             # log the actual complete training rewards before rejection sampling
@@ -643,6 +689,14 @@ class AgentPPOTrainer(RayPPOTrainer):
 
             test_batch = DataProto.from_single_dict(test_data)
             test_batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(test_batch.batch))], dtype=object)
+            # Extract data_source from extra_info if not already a top-level field
+            if "data_source" not in test_batch.non_tensor_batch and "extra_info" in test_batch.non_tensor_batch:
+                extra_infos = test_batch.non_tensor_batch["extra_info"]
+                data_sources = np.array(
+                    [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                    dtype=object,
+                )
+                test_batch.non_tensor_batch["data_source"] = data_sources
             n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
             test_batch = test_batch.repeat(repeat_times=n_val_samples, interleave=True)
             test_batch.pop(["input_ids", "attention_mask", "position_ids"])  # these are not needed for environment based interaction
@@ -811,7 +865,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                     "reject_traj": dropped_dump,
                 }
                 with open(file_path, "w") as f:
-                    json.dump(merged_data, f, ensure_ascii=False, indent=4)
+                    json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
             empty_output = DataProto.from_dict(tensors={}, non_tensors={"idxs": np.array([])})
             metrics = {"traj/accept_rate": 0.0}
             return empty_output, metrics
@@ -1087,7 +1141,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
         with open(file_path, "w") as f:
             print(f"Saving merged trajectories and stats to {file_path}")
-            json.dump(merged_data, f, ensure_ascii=False, indent=4)
+            json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length
@@ -1454,7 +1508,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
         with open(file_path, "w") as f:
             print(f"Saving merged chat completions and stats (Stepwise) to {file_path}")
-            json.dump(merged_data, f, ensure_ascii=False, indent=4)
+            json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
         result = DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch, meta_info=meta_info)
 

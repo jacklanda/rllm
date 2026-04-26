@@ -513,6 +513,22 @@ class AgentSdkTrainer(RayPPOTrainer):
 
                 metrics["batch/num_tasks"] = num_tasks
 
+                # Per-data-source reward metrics
+                if new_batch is not None:
+                    batch_data_sources = new_batch.non_tensor_batch.get("data_source")
+                    if batch_data_sources is not None:
+                        from collections import defaultdict as _defaultdict
+                        traj_rewards = new_batch.batch["traj_rewards"].sum(-1).cpu()
+                        episode_ids = new_batch.non_tensor_batch["episode_ids"]
+                        source_rewards = _defaultdict(list)
+                        seen_episodes = set()
+                        for i, eid in enumerate(episode_ids):
+                            if eid not in seen_episodes:
+                                seen_episodes.add(eid)
+                                source_rewards[batch_data_sources[i]].append(traj_rewards[i].item())
+                        for src, rewards in source_rewards.items():
+                            metrics[f"critic/rewards/{src}"] = float(np.mean(rewards))
+
                 # TODO: make a canonical logger that supports various backend
                 logger.log(data=metrics, step=self.global_steps)
 

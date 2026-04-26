@@ -1077,9 +1077,10 @@ class AgentExecutionEngine:
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
                 if attempt < max_attempts - 1:
                     colorful_print(f"Trajectory {idx} ({task_label}) retry {attempt}/{max_attempts-1} due to exception: {_}", "yellow")
+                    traceback.print_exc()
                     continue
                 else:
-                    # traceback.print_exc()
+                    traceback.print_exc()
                     colorful_print(f"Trajectory {idx} ({task_label}) cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
                     self._trajectory_logs.append({
                         "type": "trajectory",

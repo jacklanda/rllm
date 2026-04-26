@@ -216,7 +216,14 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
 
     # Tool-call reward (step penalties etc.)
     tool_call_reward, tool_call_stats = _get_tool_call_reward(task_info)
+
+    # Clip total reward: if base_reward is 0 (verifier says "wrong but not broken"),
+    # don't let step penalties push the total below -0.1.
+    # This prevents noisy negative gradients from opaque verifier tasks where the model
+    # produced structurally valid output but missed specific criteria.
     total_reward = base_reward + tool_call_reward
+    if base_reward >= 0.0 and total_reward < -0.1:
+        total_reward = -0.1
 
     step_penalty = float(tool_call_stats.get("step_penalty", 0.0))
     tool_call_bonus = float(tool_call_stats.get("tool_call_bonus", 0.0))
@@ -229,5 +236,6 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
         "reward/tool_call_bonus": tool_call_bonus,
         "tool_call_reward": tool_call_reward,
         "tool_call_stats": tool_call_stats,
+        "reward/total_clipped": total_reward != (base_reward + tool_call_reward),
     }
     return RewardOutput(reward=total_reward, metadata=metadata, is_correct=is_correct)

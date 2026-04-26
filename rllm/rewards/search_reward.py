@@ -159,6 +159,49 @@ class RewardSearchFn:
         """Calculate exact match score"""
         return self.normalize_answer(prediction) == self.normalize_answer(ground_truth)
 
+    def _unwrap_json_fragment(self, text: str) -> str:
+        """Unwrap JSON tool-call fragments that wrap the actual answer.
+
+        Handles cases like:
+          {"command": "submit", "result": "No"} -> "No"
+          {"name": "finish", "arguments": {"result": "Paris"}} -> "Paris"
+        """
+        text = text.strip()
+        if not (text.startswith("{") and text.endswith("}")):
+            return text
+        try:
+            import json
+            obj = json.loads(text)
+            if isinstance(obj, dict):
+                # {"command": "submit", "result": <answer>}
+                if "result" in obj:
+                    val = obj["result"]
+                    return str(val) if not isinstance(val, str) else val
+                # {"name": "finish", "arguments": {"result": <answer>}}
+                args = obj.get("arguments", {})
+                if isinstance(args, dict) and "result" in args:
+                    val = args["result"]
+                    return str(val) if not isinstance(val, str) else val
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+        return text
+
+    def _map_value_to_option_letter(self, extracted: str, ground_truths: list[str]) -> str:
+        """For multiple-choice questions where ground truth is A/B/C/D,
+        if the model output a raw value instead of a letter, try to map it back.
+
+        This is a no-op if ground truths are not single option letters.
+        """
+        option_letters = {"A", "B", "C", "D", "E"}
+        # Only apply if ALL ground truths are single option letters
+        if not ground_truths or not all(gt.strip().upper() in option_letters for gt in ground_truths):
+            return extracted
+        # If extracted is already a valid option letter, keep it
+        if extracted.strip().upper() in option_letters:
+            return extracted.strip().upper()
+        # Cannot map without seeing the original options — return as-is
+        return extracted
+
     def extract_answer_from_response(self, response: str) -> str:
         response = response.strip()
 
@@ -166,6 +209,11 @@ class RewardSearchFn:
         response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
         response = re.sub(r"\s+", " ", response).strip()
 
+        if not response:
+            return ""
+
+        # 0. Unwrap JSON tool-call fragments before any other extraction
+        response = self._unwrap_json_fragment(response)
         if not response:
             return ""
 
@@ -293,6 +341,9 @@ class RewardSearchFn:
             ground_truths = [ground_truth]
         else:
             ground_truths = ground_truth
+
+        # For multiple-choice (GPQA-style): try mapping raw values to option letters
+        extracted_answer = self._map_value_to_option_letter(extracted_answer, ground_truths)
 
         max_f1 = 0.0
         max_em = False

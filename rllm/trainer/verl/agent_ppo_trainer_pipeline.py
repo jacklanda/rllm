@@ -107,6 +107,14 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
 
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))], dtype=object)
+                # Extract data_source from extra_info if not already a top-level field
+                if "data_source" not in batch.non_tensor_batch and "extra_info" in batch.non_tensor_batch:
+                    extra_infos = batch.non_tensor_batch["extra_info"]
+                    data_sources = np.array(
+                        [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                        dtype=object,
+                    )
+                    batch.non_tensor_batch["data_source"] = data_sources
                 batch = batch.repeat(
                     repeat_times=self.config.actor_rollout_ref.rollout.n,
                     interleave=True,
@@ -297,6 +305,14 @@ class PipelineAgentPPOTrainer(AgentPPOTrainer):
 
             test_batch = DataProto.from_single_dict(test_data)
             test_batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(test_batch.batch))], dtype=object)
+            # Extract data_source from extra_info if not already a top-level field
+            if "data_source" not in test_batch.non_tensor_batch and "extra_info" in test_batch.non_tensor_batch:
+                extra_infos = test_batch.non_tensor_batch["extra_info"]
+                data_sources = np.array(
+                    [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                    dtype=object,
+                )
+                test_batch.non_tensor_batch["data_source"] = data_sources
             n_val_samples = self.config.actor_rollout_ref.rollout.val_kwargs.n
             test_batch = test_batch.repeat(repeat_times=n_val_samples, interleave=True)
             test_batch.pop(["input_ids", "attention_mask", "position_ids"])  # these are not needed for environment based interaction
