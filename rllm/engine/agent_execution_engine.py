@@ -64,6 +64,7 @@ class AgentExecutionEngine:
         chat_parser=None,
         n_parallel_agents=1024,  # The number of active agents
         trajectory_timeout=None,
+        eval_trajectory_timeout=None,
         gamma=0.2,
         api_retries=3,
         retry_limit=2,
@@ -125,6 +126,7 @@ class AgentExecutionEngine:
         self.trajectory_timeout = trajectory_timeout
         if not trajectory_timeout:
             self.trajectory_timeout = int(1e6)
+        self.eval_trajectory_timeout = eval_trajectory_timeout or self.trajectory_timeout
 
         if env_class is not None:
             assert env_class.is_multithread_safe(), "Environment must be multithread safe for async engine"
@@ -246,6 +248,7 @@ class AgentExecutionEngine:
         # env_id = env.env_id
         task_label = self._get_task_label(env)
         is_eval = kwargs.get("meta_info", {}).get("validate", False)
+        effective_timeout = self.eval_trajectory_timeout if is_eval else self.trajectory_timeout
 
         termination_reason = None
         exception_message = ""  # Track exception message for non-ENV_DONE terminations
@@ -578,7 +581,7 @@ class AgentExecutionEngine:
 
             if use_parallel_step:
                 # Fire all env.step calls concurrently for independent tool calls
-                remaining_timeout = max(self.trajectory_timeout - total_time, 1)
+                remaining_timeout = max(effective_timeout - total_time, 1)
                 step_coros = [
                     asyncio.wait_for(
                         loop.run_in_executor(self.executor, env.step, act.action),
@@ -631,10 +634,10 @@ class AgentExecutionEngine:
 
                     start_time = time.time()
                     try:
-                        obs, rew, d, inf = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
+                        obs, rew, d, inf = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(effective_timeout - total_time))
                     except asyncio.TimeoutError:
                         termination_reason = "ENV_TIMEOUT"
-                        exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
+                        exception_message = f"Environment step timed out after {effective_timeout - total_time:.2f}s"
                         should_discard = True
                         colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
                         cur_step = agent.get_current_state()
@@ -663,7 +666,7 @@ class AgentExecutionEngine:
                         num_intermediate += 1
 
                         # Check timeout between intermediate actions
-                        if total_time >= self.trajectory_timeout:
+                        if total_time >= effective_timeout:
                             next_observation = obs
                             reward = rew
                             done = False
@@ -776,9 +779,11 @@ class AgentExecutionEngine:
             response_masks.extend(assistant_msg_masks)
             observation = next_observation
 
-            if total_time >= self.trajectory_timeout:
+            if total_time >= effective_timeout:
                 termination_reason = "TIMEOUT"
-                exception_message = f"Trajectory timeout: total time {total_time:.2f}s exceeded limit {self.trajectory_timeout}s"
+                exception_message = f"Trajectory timeout: total time {total_time:.2f}s exceeded limit {effective_timeout}s"
+                should_discard = True
+                colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
                 cur_step = agent.get_current_state()
                 done = True
                 cur_step.done = done
@@ -1076,6 +1081,8 @@ class AgentExecutionEngine:
         # Allow up to 8 retries for InvalidReactStructureError, but respect self.retry_limit for others
         max_attempts = max(self.retry_limit, 2) + 1
         task_label = self._get_task_label(self.envs[idx])
+        is_eval = kwargs.get("meta_info", {}).get("validate", False)
+        effective_timeout = self.eval_trajectory_timeout if is_eval else self.trajectory_timeout
 
         for attempt in range(max_attempts):
             # Fast-fail if Docker daemon has been detected as down by another trajectory
@@ -1094,7 +1101,7 @@ class AgentExecutionEngine:
 
             try:
                 application_id = str(uuid.uuid4())
-                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=self.trajectory_timeout)
+                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=effective_timeout)
             except InvalidReactStructureError as e:
                 # Retry `max_attempts` times for this specific error
                 if attempt < max_attempts - 1:
