@@ -74,6 +74,17 @@ class BaseEnv(ABC):
         # BaseEnv is abstract, subclasses must implement this factory method.
         raise NotImplementedError("Subclasses must implement the 'from_dict' static method.")
 
+    @property
+    def supports_parallel_step(self) -> bool:
+        """Whether concurrent env.step() calls within a single trajectory are safe.
+
+        When True, the execution engine may fire multiple tool-call steps in
+        parallel (via asyncio.gather) for a single model turn that produces
+        multiple tool calls.  Override in subclasses whose step() is stateless
+        or whose tool calls are independent (e.g., web search, MCP).
+        """
+        return False
+
     @staticmethod
     def is_multithread_safe() -> bool:
         return True

@@ -230,18 +230,16 @@ class AgentPPOTrainer(RayPPOTrainer):
         def _create_agent(i):
             return i, self.agent_class(**full_agent_args)
 
-        # Create environments in parallel while preserving order
-        envs = [None] * len(env_args)
-        with ThreadPoolExecutor(max_workers=128) as executor:
-            env_futures = [executor.submit(_create_env, i) for i in range(len(env_args))]
+        # Create environments and agents concurrently in a single executor pass
+        n_items = len(env_args)
+        envs = [None] * n_items
+        agents = [None] * n_items
+        with ThreadPoolExecutor(max_workers=min(n_items * 2, 256)) as executor:
+            env_futures = [executor.submit(_create_env, i) for i in range(n_items)]
+            agent_futures = [executor.submit(_create_agent, i) for i in range(n_items)]
             for future in as_completed(env_futures):
                 idx, env = future.result()
                 envs[idx] = env
-
-        # Create agents in parallel while preserving order
-        agents = [None] * len(envs)
-        with ThreadPoolExecutor(max_workers=128) as executor:
-            agent_futures = [executor.submit(_create_agent, i) for i in range(len(envs))]
             for future in as_completed(agent_futures):
                 idx, agent = future.result()
                 agents[idx] = agent

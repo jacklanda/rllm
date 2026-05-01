@@ -101,6 +101,10 @@ class FusedEnv(CLIEnv):
                     )
         return FusedEnv._shared_retrieval_tool
 
+    @property
+    def supports_parallel_step(self) -> bool:
+        return self._task_mode in ("search", "mcp")
+
     # ------------------------------------------------------------------
     # reset
     # ------------------------------------------------------------------

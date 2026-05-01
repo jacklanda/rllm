@@ -571,50 +571,104 @@ class AgentExecutionEngine:
             next_observation = None
             step_terminated = False
 
-            for action_idx, act in enumerate(actions_result):
-                action = act.action
-                is_last_action = (action_idx == len(actions_result) - 1)
+            use_parallel_step = (
+                getattr(env, 'supports_parallel_step', False)
+                and len(actions_result) > 1
+            )
 
+            if use_parallel_step:
+                # Fire all env.step calls concurrently for independent tool calls
+                remaining_timeout = max(self.trajectory_timeout - total_time, 1)
+                step_coros = [
+                    asyncio.wait_for(
+                        loop.run_in_executor(self.executor, env.step, act.action),
+                        timeout=remaining_timeout,
+                    )
+                    for act in actions_result
+                ]
                 start_time = time.time()
-                try:
-                    obs, rew, d, inf = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
-                except asyncio.TimeoutError:
-                    termination_reason = "ENV_TIMEOUT"
-                    exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
-                    should_discard = True
-                    colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
-                    cur_step = agent.get_current_state()
-                    done = True
-                    if cur_step is not None:
-                        cur_step.done = done
-                    step_terminated = True
-                    break
-
+                step_results = await asyncio.gather(*step_coros, return_exceptions=True)
                 delta_time = time.time() - start_time
                 env_time += delta_time
                 total_time += delta_time
 
-                if is_last_action or d:
-                    # Last action or env signaled done: this becomes the final observation
-                    next_observation = obs
-                    reward = rew
-                    done = d
-                    info = inf
-                    break
-                else:
-                    # Intermediate action: append tool_response to agent messages
-                    agent.update_from_env_intermediate(
-                        observation=obs, reward=rew, done=d, info=inf,
-                    )
-                    num_intermediate += 1
+                for action_idx, result in enumerate(step_results):
+                    is_last_action = (action_idx == len(actions_result) - 1)
 
-                    # Check timeout between intermediate actions
-                    if total_time >= self.trajectory_timeout:
+                    if isinstance(result, asyncio.TimeoutError):
+                        termination_reason = "ENV_TIMEOUT"
+                        exception_message = f"Environment step timed out after {remaining_timeout:.2f}s"
+                        should_discard = True
+                        colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
+                        cur_step = agent.get_current_state()
+                        done = True
+                        if cur_step is not None:
+                            cur_step.done = done
+                        step_terminated = True
+                        break
+                    elif isinstance(result, Exception):
+                        raise result
+
+                    obs, rew, d, inf = result
+
+                    if is_last_action or d:
                         next_observation = obs
                         reward = rew
-                        done = False
+                        done = d
                         info = inf
                         break
+                    else:
+                        agent.update_from_env_intermediate(
+                            observation=obs, reward=rew, done=d, info=inf,
+                        )
+                        num_intermediate += 1
+
+            else:
+                # Sequential execution (default for SWE/Docker or single-action turns)
+                for action_idx, act in enumerate(actions_result):
+                    action = act.action
+                    is_last_action = (action_idx == len(actions_result) - 1)
+
+                    start_time = time.time()
+                    try:
+                        obs, rew, d, inf = await asyncio.wait_for(loop.run_in_executor(self.executor, env.step, action), timeout=(self.trajectory_timeout - total_time))
+                    except asyncio.TimeoutError:
+                        termination_reason = "ENV_TIMEOUT"
+                        exception_message = f"Environment step timed out after {self.trajectory_timeout - total_time:.2f}s"
+                        should_discard = True
+                        colorful_print(f"Warning: Trajectory {idx} ({task_label}) completed due to: {termination_reason}. Discarding trajectory.\n", "red")
+                        cur_step = agent.get_current_state()
+                        done = True
+                        if cur_step is not None:
+                            cur_step.done = done
+                        step_terminated = True
+                        break
+
+                    delta_time = time.time() - start_time
+                    env_time += delta_time
+                    total_time += delta_time
+
+                    if is_last_action or d:
+                        # Last action or env signaled done: this becomes the final observation
+                        next_observation = obs
+                        reward = rew
+                        done = d
+                        info = inf
+                        break
+                    else:
+                        # Intermediate action: append tool_response to agent messages
+                        agent.update_from_env_intermediate(
+                            observation=obs, reward=rew, done=d, info=inf,
+                        )
+                        num_intermediate += 1
+
+                        # Check timeout between intermediate actions
+                        if total_time >= self.trajectory_timeout:
+                            next_observation = obs
+                            reward = rew
+                            done = False
+                            info = inf
+                            break
 
             # If the multi-action loop ended due to timeout, break outer loop
             if step_terminated:
