@@ -27,7 +27,6 @@ rllm:
     max_steps: 32
     trajectory_timeout: null
     overlong_filter: False
-    apply_bug_patch: True
     agent_args: {}
     engine_args: {}
   env:
@@ -133,8 +132,3 @@ reward:
   # Base reward values
   correct_reward: 1.0                    # Reward for correct answers
   incorrect_reward: 0.0                  # Reward for incorrect answers
-  reward_mode: binary                    # [binary, binary_plus_partial] for SWE verifier reward
-  partial_reward: False                  # Backward-compatible flag; binary_plus_partial is enabled when reward_mode requests it
-  partial_reward_coeff: 1.0              # Scale factor applied to trusted partial verifier pass rate
-  partial_reward_ceiling: 0.5            # Maximum unresolved partial reward; resolved trajectories still receive 1.0
-  require_trusted_verifier_for_partial: True  # Disable partial reward if trusted verifier metadata is unavailable
