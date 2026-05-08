@@ -97,7 +97,7 @@ class FusedAgent(CLIAgent):
     All other behavior (multi-tool-call, pre-submission validation,
     loop detection, etc.) is inherited from CLIAgent.
 
-    Automatically detects search vs SWE tasks via the ``task_type`` key
+    Automatically detects web search vs CLI tasks via the ``task_type`` key
     in the info dict returned by FusedEnv.reset() and uses the appropriate
     user prompt template.
     """
@@ -132,8 +132,8 @@ class FusedAgent(CLIAgent):
         """
         if not self._trajectory.steps:
             # First step: pick user prompt template based on task type
-            task_type = info.get("task_type", "swe")
-            if task_type == "search":
+            task_type = info.get("task_type", "cli")
+            if task_type == "web search":
                 self.user_prompt_template = FUSED_SEARCH_USER_PROMPT
                 # Swap system prompt to search-only (web_search + finish only)
                 self.messages[0] = {

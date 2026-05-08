@@ -335,6 +335,9 @@ class AgentPPOTrainer(RayPPOTrainer):
                                 batch = batch.select_idxs(valid_indices)
 
                         batch = batch.union(final_gen_batch_output)
+                        # Drop the internal per-trajectory raw metric lists before merging
+                        # into the global training metrics (they're consumed by eval only).
+                        generate_metrics.pop("_raw_traj_metrics", None)
                         metrics.update(generate_metrics)
 
                     # compute values
@@ -677,6 +680,9 @@ class AgentPPOTrainer(RayPPOTrainer):
         rewards_lst = []
         data_source_lst = []
         uid_lst = []
+        # Accumulate per-trajectory metric lists across all validation batches so we
+        # can surface aggregates like val/steps/{mcp,search,cli}_{mean,min,max}.
+        eval_traj_metrics: dict[str, list] = {}
 
         # Get max_val_num from config (-1 means use all batches)
         max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
@@ -715,7 +721,14 @@ class AgentPPOTrainer(RayPPOTrainer):
                 last_step_indices = np.where(is_last_step == True)[0]
                 test_output_gen_batch = test_output_gen_batch.select_idxs(last_step_indices)  # This batch only has last steps
             else:
-                test_output_gen_batch, _ = self.generate_agent_trajectory(meta_info=test_batch.meta_info, batch=test_batch, is_eval=True)
+                test_output_gen_batch, gen_metrics = self.generate_agent_trajectory(meta_info=test_batch.meta_info, batch=test_batch, is_eval=True)
+                # Collect raw per-trajectory metric lists (e.g. steps/mcp, steps/search,
+                # steps/cli) so we can aggregate across all validation batches below.
+                if isinstance(gen_metrics, dict):
+                    raw = gen_metrics.get("_raw_traj_metrics")
+                    if isinstance(raw, dict):
+                        for k, vs in raw.items():
+                            eval_traj_metrics.setdefault(k, []).extend(vs)
 
             # Filter test_batch to only valid indices (some trajectories may have been dropped)
             if "idxs" in test_output_gen_batch.non_tensor_batch:
@@ -775,6 +788,17 @@ class AgentPPOTrainer(RayPPOTrainer):
                 for uid, pass_score in pass_rates.items():
                     pass_k_lst.append(pass_score >= 1)  # assuming 1 means passed
                 metric_dict[f"val/{data_source}/pass@{n_val_samples}"] = np.mean(pass_k_lst)
+
+        # Per-task-type step aggregates across all eval batches
+        # (val/steps/{mcp,search,cli}_{mean,min,max} and overall val/steps_*).
+        for k in ("steps", "steps/mcp", "steps/search", "steps/cli"):
+            vs = eval_traj_metrics.get(k)
+            if not vs:
+                continue
+            arr = np.array(vs, dtype=float)
+            metric_dict[f"val/{k}_mean"] = float(arr.mean())
+            metric_dict[f"val/{k}_min"] = float(arr.min())
+            metric_dict[f"val/{k}_max"] = float(arr.max())
 
         return metric_dict
 
@@ -1018,6 +1042,13 @@ class AgentPPOTrainer(RayPPOTrainer):
                     f"traj/{k}_max": v_list.max(),
                 }
             )
+
+        # Surface the raw per-trajectory metric lists so callers (e.g. _validate_agent)
+        # can aggregate them across multiple batches and emit val/ metrics.
+        metrics["_raw_traj_metrics"] = {
+            k: [v for v in vs if isinstance(v, (int, float)) and v >= 0]
+            for k, vs in traj_metrics.items()
+        }
 
         verifier_pass_rates = [m.get("pass_rate") for m in reward_metadata_list if isinstance(m, dict) and m.get("pass_rate") is not None]
         verifier_resolved = [1.0 if m.get("resolved") else 0.0 for m in reward_metadata_list if isinstance(m, dict) and "resolved" in m]

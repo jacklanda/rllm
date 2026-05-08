@@ -36,12 +36,12 @@ class FusedEnv(CLIEnv):
 
     Operates in three modes based on data type:
 
-    **SWE mode** (entry has ``docker_image``):
+    **CLI mode** (entry has ``docker_image``):
         Extends CLIEnv (which extends SWEEnv). Intercepts ``web_search`` tool
         calls and routes them to a ``LocalRetrievalTool`` running outside the Docker
         container, while all other tool calls are delegated to Docker via the parent.
 
-    **Search mode** (entry has ``data_source`` but no ``docker_image`` or ``tools_py``):
+    **Web search mode** (entry has ``data_source`` but no ``docker_image`` or ``tools_py``):
         No Docker container is created. Only ``web_search`` and ``finish``/``submit``
         tools are available. Reward is computed via F1-score against ``ground_truth``.
 
@@ -66,15 +66,15 @@ class FusedEnv(CLIEnv):
         )
         self.retrieval_max_results = retrieval_max_results
 
-        # Detect task mode: SWE, MCP, or Search
+        # Detect task mode: CLI, MCP, or Web Search
         if self.entry.get("docker_image"):
-            self._task_mode = "swe"
+            self._task_mode = "cli"
         elif self.entry.get("tools_py"):
             self._task_mode = "mcp"
         else:
-            self._task_mode = "search"
+            self._task_mode = "web search"
 
-        # Search mode state
+        # Web search mode state
         self._search_answer = ""  # Agent's submitted answer for reward computation
         self._search_reward_debug = {}
 
@@ -103,7 +103,7 @@ class FusedEnv(CLIEnv):
 
     @property
     def supports_parallel_step(self) -> bool:
-        return self._task_mode in ("search", "mcp")
+        return self._task_mode in ("web search", "mcp")
 
     # ------------------------------------------------------------------
     # reset
@@ -112,12 +112,12 @@ class FusedEnv(CLIEnv):
     def reset(self) -> tuple[str, dict]:
         if self._task_mode == "mcp":
             return self._reset_mcp()
-        if self._task_mode == "search":
+        if self._task_mode == "web search":
             return self._reset_search()
         return self._reset_swe()
 
     def _reset_search(self) -> tuple[str, dict]:
-        """Reset for search-mode tasks (no Docker)."""
+        """Reset for web-search-mode tasks (no Docker)."""
         self.total_steps = 0
         self._search_answer = ""
         self._search_reward_debug = {}
@@ -125,12 +125,12 @@ class FusedEnv(CLIEnv):
         question = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
         # Strip stale answer-format instructions that conflict with FUSED_SEARCH_USER_PROMPT
         question = re.sub(r"\s*When ready, output the final answer enclosed in <answer> and </answer> tags\. Do not generate any content after the </answer> tag\.?", "", question).strip()
-        return question, {"task_type": "search"}
+        return question, {"task_type": "web search"}
 
     def _reset_swe(self) -> tuple[str, dict]:
-        """Reset for SWE-mode tasks (Docker container)."""
+        """Reset for CLI-mode tasks (Docker container)."""
         obs, info = super().reset()
-        info["task_type"] = "swe"
+        info["task_type"] = "cli"
         return obs, info
 
     def _reset_mcp(self) -> tuple[str, dict]:
@@ -198,12 +198,12 @@ class FusedEnv(CLIEnv):
     def step(self, action):
         if self._task_mode == "mcp":
             return self._step_mcp(action)
-        if self._task_mode == "search":
+        if self._task_mode == "web search":
             return self._step_search(action)
         return self._step_swe(action)
 
     def _step_swe(self, action):
-        """SWE-mode step: web_search goes to retrieval tool, everything else to Docker."""
+        """CLI-mode step: web_search goes to retrieval tool, everything else to Docker."""
         if SWEAction is None:
             return super().step(action)
 
@@ -220,7 +220,7 @@ class FusedEnv(CLIEnv):
         return super().step(action)
 
     def _step_search(self, action):
-        """Search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
+        """Web-search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
         if SWEAction is None:
             # Cannot parse actions without r2egym
             self.total_steps += 1
@@ -254,10 +254,10 @@ class FusedEnv(CLIEnv):
             if fn in ("finish", "submit"):
                 return self._handle_search_finish(action_obj)
 
-            # Docker-only tools are not available in search mode
+            # Docker-only tools are not available in web search mode
             self.total_steps += 1
             observations.append(
-                f"Error: The tool '{fn}' is not available for search tasks. "
+                f"Error: The tool '{fn}' is not available for web search tasks. "
                 "Use web_search to find information and finish to submit your answer."
             )
 
@@ -402,7 +402,7 @@ class FusedEnv(CLIEnv):
         return observation, 0.0, False, {}
 
     def _handle_search_finish(self, action_obj) -> tuple[str, float, bool, dict]:
-        """Handle finish/submit tool call in search mode."""
+        """Handle finish/submit tool call in web search mode."""
         self.total_steps += 1
         params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
         result = params.get("result", "")
@@ -491,7 +491,7 @@ class FusedEnv(CLIEnv):
     def compute_final_reward(self):
         if self._task_mode == "mcp":
             return self._compute_mcp_reward()
-        if self._task_mode == "search":
+        if self._task_mode == "web search":
             return self._compute_search_reward()
         return super().compute_final_reward()
 
@@ -499,13 +499,13 @@ class FusedEnv(CLIEnv):
         if self._task_mode == "mcp":
             self._compute_mcp_reward()
             return self._mcp_reward_debug
-        if self._task_mode == "search":
+        if self._task_mode == "web search":
             self._compute_search_reward()
             return self._search_reward_debug
         return super().compute_final_reward_metadata()
 
     def _compute_search_reward(self) -> float:
-        """Compute F1-based reward for search tasks."""
+        """Compute F1-based reward for web search tasks."""
         from rllm.rewards.reward_types import RewardConfig, RewardInput
         from rllm.rewards.search_reward import RewardSearchFn
 
@@ -525,7 +525,7 @@ class FusedEnv(CLIEnv):
         reward_output = reward_fn(reward_input)
 
         self._search_reward_debug = {
-            "type": "search",
+            "type": "web search",
             "reward": float(reward_output.reward),
             "resolved": reward_output.reward >= 1.0,
             "reward_mode": "f1",
@@ -575,7 +575,7 @@ class FusedEnv(CLIEnv):
     def reward_debug(self) -> dict:
         if self._task_mode == "mcp":
             return self._mcp_reward_debug
-        if self._task_mode == "search":
+        if self._task_mode == "web search":
             return self._search_reward_debug
         return self._reward_debug
 
@@ -593,8 +593,8 @@ class FusedEnv(CLIEnv):
                 pass
             self._mcp_connection_manager = None
         # Do NOT close _shared_retrieval_tool — it is shared across all FusedEnv instances
-        # Clean up Docker (SWE mode only)
-        if self._task_mode == "swe":
+        # Clean up Docker (CLI mode only)
+        if self._task_mode == "cli":
             super().close()
 
     # ------------------------------------------------------------------
@@ -606,12 +606,20 @@ class FusedEnv(CLIEnv):
         if isinstance(extra_info, str):
             extra_info = json.loads(extra_info)
 
-        sig = inspect.signature(FusedEnv.__init__)
-        init_params = {}
-        for param_name, param in sig.parameters.items():
-            if param_name == "self":
+        # Walk the MRO to collect all accepted __init__ params, since
+        # FusedEnv.__init__ forwards **kwargs to parent classes.
+        accepted = set()
+        for cls in FusedEnv.__mro__:
+            if cls is object:
                 continue
-            if param_name in extra_info:
-                init_params[param_name] = extra_info[param_name]
+            sig = inspect.signature(cls.__init__)
+            for name, param in sig.parameters.items():
+                if name == "self":
+                    continue
+                if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+                    continue
+                accepted.add(name)
+
+        init_params = {k: v for k, v in extra_info.items() if k in accepted}
         init_params["entry"] = extra_info
         return FusedEnv(**init_params)

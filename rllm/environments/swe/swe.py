@@ -107,11 +107,17 @@ class SWEEnv(BaseEnv):
         self.apply_bug_patch = apply_bug_patch
         self.partial_reward = partial_reward
         self.partial_reward_ceiling = partial_reward_ceiling
-        self.reward_mode = reward_mode or ("binary_plus_partial" if partial_reward else "binary")
+        if partial_reward:
+            self.reward_mode = "binary_plus_partial"
+        elif reward_mode is not None:
+            self.reward_mode = reward_mode
+        else:
+            self.reward_mode = "binary"
         self.partial_reward_coeff = partial_reward_coeff
         self.require_trusted_verifier_for_partial = require_trusted_verifier_for_partial
         self._reward_debug = {}
         self._bug_patch_reverted = False
+        self._deferred_eval_script: str | None = None
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
 
     def reset(self) -> tuple[str, dict]:
@@ -136,14 +142,15 @@ class SWEEnv(BaseEnv):
         self._install_tool_dependencies()
         self._setup_run_tests_script()
 
-        # Apply bug patch to reproduce the buggy state (for gemcli/gemswe images)
+        # Apply bug patch to reproduce the buggy state (for gemcli/gemswe images).
+        # New-format tasks (eval_script, no parsed_commit_content) start at base_commit
+        # already — no reversal needed and test_patch is injected by eval_script at reward time.
         self._bug_patch_reverted = False
-        if self.apply_bug_patch:
+        has_old_format = bool(self.entry.get("parsed_commit_content"))
+        if self.apply_bug_patch and has_old_format:
             self._apply_bug_patch()
-            # Validate that tests can still be collected after the patch.
-            # If collection fails, the patch is reverted and _bug_patch_reverted
-            # is set so compute_final_reward can force reward=0.0.
             if self._is_gemcli:
+                self._apply_test_patch()
                 self._validate_test_collection()
 
         self.total_steps = 0
@@ -159,6 +166,17 @@ class SWEEnv(BaseEnv):
                 # 'gt_patch': gt_patch,
             },
         )
+
+    def _copy_content_to_container(self, content: str, container_path: str, *, suffix: str = ".sh", chmod: bool = False) -> None:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False) as f:
+            f.write(content)
+            tmp_path = f.name
+        try:
+            self.env.runtime.copy_to_container(tmp_path, container_path)
+            if chmod:
+                self.env.runtime.run(f"chmod +x {container_path}")
+        finally:
+            os.unlink(tmp_path)
 
     def _fix_tool_shebangs(self):
         """Fix tool script shebangs in the Docker container to use portable interpreter path.
@@ -205,7 +223,7 @@ class SWEEnv(BaseEnv):
         detection. If the package is missing, the tool fails at runtime. We install
         it proactively so the agent never hits a missing-module error.
         """
-        deps = ["chardet"]
+        deps = ["chardet", "coverage"]
         install_cmd = "pip install --quiet --disable-pip-version-check " + " ".join(deps) + " 2>/dev/null || true"
         output, error_code = self.env.runtime.run(install_cmd, timeout=60)
         if error_code and "Error" in str(error_code):
@@ -227,6 +245,14 @@ class SWEEnv(BaseEnv):
             f"test -f {alt_path}/run_tests.sh && echo EXISTS || echo MISSING"
         )
         if "EXISTS" in output:
+            return
+
+        # If an eval_script is provided (new f2p_samples format), defer injection
+        # to reward time so the agent cannot read the test script during execution.
+        eval_script = self.entry.get("eval_script")
+        if eval_script:
+            self._deferred_eval_script = eval_script
+            logger.info("Deferred eval_script injection to reward time for gemcli image")
             return
 
         # Derive test files from expected_output_json
@@ -253,14 +279,20 @@ class SWEEnv(BaseEnv):
             f'-p no:cacheprovider --override-ini="addopts=" 2>&1\n'
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
-            f.write(script_content)
-            tmp_path = f.name
-
-        self.env.runtime.copy_to_container(tmp_path, f"{alt_path}/run_tests.sh")
-        self.env.runtime.run(f"chmod +x {alt_path}/run_tests.sh")
-        os.unlink(tmp_path)
+        self._copy_content_to_container(script_content, f"{alt_path}/run_tests.sh", chmod=True)
         logger.info("Created run_tests.sh for gemcli/gemswe image with %d test files", len(test_files))
+
+    def _inject_eval_script(self):
+        """Inject the deferred eval_script into the container as run_tests.sh.
+
+        Called at reward time (not during reset) so the agent cannot read the
+        test script or the embedded test patch during its execution.
+        """
+        if not self._deferred_eval_script:
+            return
+        alt_path = self.env.runtime.alt_path
+        self._copy_content_to_container(self._deferred_eval_script, f"{alt_path}/run_tests.sh", chmod=True)
+        logger.info("Injected deferred eval_script as run_tests.sh for reward evaluation")
 
     def _apply_bug_patch(self):
         """Revert non-test source files to their pre-fix state to reproduce the bug.
@@ -416,6 +448,26 @@ class SWEEnv(BaseEnv):
         # Validation disabled - bug patch stays applied even if tests fail to collect
         pass
 
+    def _apply_test_patch(self):
+        """Apply test_patch to inject fail-to-pass verification tests into the container."""
+        if not self._is_gemcli:
+            return
+        test_patch = self.entry.get("test_patch")
+        if not test_patch:
+            return
+
+        tmp_container = "/tmp/_test_patch.diff"
+        self._copy_content_to_container(test_patch, tmp_container, suffix=".patch")
+
+        output, error_code = self.env.runtime.run(
+            f"git apply {tmp_container} 2>&1 || git apply --check {tmp_container} 2>&1 || true",
+            timeout=30,
+        )
+        if error_code and "Error" in str(error_code):
+            logger.warning("Failed to apply test_patch: %s", output[:500] if output else "")
+        else:
+            logger.info("Applied test_patch to container")
+
     def _build_reward_debug(self, *, reward: float, reward_source: str, parse: dict | None = None, expected: dict | None = None, output: str = "", error_code=None, verifier_error: str = "", bug_patch_reverted: bool = False) -> dict:
         parse = parse or {}
         expected = expected or {}
@@ -484,7 +536,43 @@ class SWEEnv(BaseEnv):
 
         from r2egym.repo_analysis.execution_log_parser import decolor_dict_keys
 
+        # Inject deferred eval_script now (after agent is done, before running tests)
+        self._inject_eval_script()
+
         output, error_code = self.env.runtime.run_tests(timeout=self.reward_timeout)
+
+        # eval_script-based reward: parse OMNIGRIL_EXIT_CODE for binary pass/fail
+        if self.entry.get("eval_script") and not self.entry.get("expected_output_json"):
+            omnigril_code = self._parse_omnigril_exit_code(output or "")
+            reward = 1.0 if omnigril_code == 0 else 0.0
+            verifier_error = ""
+            if omnigril_code is None:
+                verifier_error = "omnigril_exit_code_missing"
+                reward = 0.0
+            elif omnigril_code != 0:
+                verifier_error = f"omnigril_exit_{omnigril_code}"
+
+            # Parse individual test results for partial reward (test-by-test, not aggregate counts).
+            # Aggregate counts from the pytest summary line include pre-existing passing tests,
+            # which inflates pass_rate for tasks where the test suite has many unrelated tests.
+            parse = decolor_dict_keys(self._parse_pytest_summary(output or ""))
+            expected = {k: "PASSED" for k in parse} if parse else {}
+
+            if reward == 0.0 and self.reward_mode == "binary_plus_partial" and expected:
+                matched = sum(1 for k, v in expected.items() if parse.get(k) == v)
+                match_ratio = matched / len(expected)
+                reward = min(match_ratio * self.partial_reward_coeff, self.partial_reward_ceiling)
+
+            self._reward_debug = self._build_reward_debug(
+                reward=reward,
+                reward_source="eval_script",
+                parse=parse,
+                expected=expected,
+                output=output or "",
+                error_code=error_code,
+                verifier_error=verifier_error,
+            )
+            return self._reward_debug
 
         parse = decolor_dict_keys(self._parse_pytest_summary(output))
 
@@ -606,6 +694,17 @@ class SWEEnv(BaseEnv):
                         break
 
         return test_status_map
+
+    @staticmethod
+    def _parse_omnigril_exit_code(log: str) -> int | None:
+        """Extract OMNIGRIL_EXIT_CODE from eval_script output.
+
+        Returns the integer exit code, or None if not found.
+        """
+        match = re.search(r"OMNIGRIL_EXIT_CODE=(\d+)", log)
+        if match:
+            return int(match.group(1))
+        return None
 
     def step(self, action: str | Action) -> tuple[str, float, bool, dict]:
         """Take a step in the environment.

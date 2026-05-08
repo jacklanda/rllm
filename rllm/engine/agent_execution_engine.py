@@ -227,18 +227,18 @@ class AgentExecutionEngine:
         # Prefer the authoritative _task_mode from FusedEnv when available
         task_mode = getattr(env, "_task_mode", None)
         if task_mode:
-            return task_mode  # "swe", "mcp", or "search"
+            return task_mode  # "cli", "mcp", or "web search"
 
         entry = getattr(env, "entry", None)
         if entry and isinstance(entry, dict):
             if entry.get("docker_image"):
                 docker_image = entry["docker_image"]
                 if "gemcli" in docker_image or "gemswe" in docker_image:
-                    return "gemcli"
-                return "swe"
+                    return "cli"
+                return "cli"
             if entry.get("tools_py"):
                 return "mcp"
-            return "search"
+            return "web search"
         return "other"
 
     async def run_agent_trajectory_async(self, idx, application_id, seed=0, mode="Text", **kwargs):
@@ -863,7 +863,10 @@ class AgentExecutionEngine:
         reward_metadata = {}
         reward_time = 0.0
         final_reward_computed = False
-        if hasattr(env, "compute_final_reward") and not masked_out and termination_reason not in abnormal_reasons:
+        # Envs with a verifier always compute reward — the agent may have submitted a fix before termination.
+        has_verifier = hasattr(env, "compute_final_reward_metadata")
+        skip_reward = not has_verifier and (masked_out or termination_reason in abnormal_reasons)
+        if hasattr(env, "compute_final_reward") and not skip_reward:
             cur_step = agent.get_current_state()
             start_time = time.time()
             reward = await loop.run_in_executor(self.executor, env.compute_final_reward)
@@ -967,6 +970,16 @@ class AgentExecutionEngine:
             else:
                 reward_metrics["rewards/verifier_missing"] = 1.0
 
+            # Per-task-type step counts: only one key is populated per trajectory so the
+            # trainer's aggregator produces `traj/steps/{mcp,search,cli}_mean|min|max`
+            # averaged over only the trajectories that actually had that task type.
+            _label_to_steps_key = {"cli": "steps/cli", "mcp": "steps/mcp", "web search": "steps/search"}
+            per_type_step_metrics = (
+                {_label_to_steps_key[task_label]: len(trajectory.steps)}
+                if task_label in _label_to_steps_key
+                else {}
+            )
+
             token_result = {
                 "prompt_tokens": prompt_tokens,
                 "response_tokens": response_tokens,
@@ -983,6 +996,8 @@ class AgentExecutionEngine:
                     "task_label": task_label,
                     # Total number of steps taken in the trajectory
                     "steps": len(trajectory.steps),
+                    # Per-task-type step counts (mutually exclusive across trajectories)
+                    **per_type_step_metrics,
                     # Time to calculate reward
                     "reward_time": reward_time,
                     # Total time spent in environment execution (env.step)
