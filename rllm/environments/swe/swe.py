@@ -142,6 +142,8 @@ class SWEEnv(BaseEnv):
         # gemcli/gemswe samples, so no pre-trajectory patching is required.
 
         self.total_steps = 0
+        # Dump a container-env fingerprint on every reset so tool-env regressions are grep-able.
+        self._log_container_fingerprint()
         return self.env.get_task_instruction(), {}
 
     def _copy_content_to_container(self, content: str, container_path: str, *, suffix: str = ".sh", chmod: bool = False) -> None:
@@ -154,6 +156,15 @@ class SWEEnv(BaseEnv):
                 self.env.runtime.run(f"chmod +x {container_path}")
         finally:
             os.unlink(tmp_path)
+
+    def _log_container_fingerprint(self):
+        """Log python3 path, chardet version, and file_editor availability for regression detection."""
+        cmd = (
+            "python3 -c 'import sys,chardet; print(\"python3:\",sys.executable,\"chardet:\",chardet.__version__)' 2>&1; "
+            "ls -la /usr/local/bin/file_editor 2>&1 | head -1"
+        )
+        out, _ = self.env.runtime.run(cmd, timeout=15)
+        logger.info("container_fingerprint: %s", (out or "").strip())
 
     def _fix_tool_shebangs(self):
         """Fix tool script shebangs in the Docker container to use portable interpreter path.
@@ -196,15 +207,46 @@ class SWEEnv(BaseEnv):
     def _install_tool_dependencies(self):
         """Install Python packages required by tool scripts in the Docker container.
 
-        The file_editor tool (and potentially others) imports chardet for encoding
-        detection. If the package is missing, the tool fails at runtime. We install
-        it proactively so the agent never hits a missing-module error.
+        The file_editor tool imports ``chardet``; ``coverage`` is used by some
+        eval_scripts. Tool shebangs are rewritten to ``#!/usr/bin/env python3``
+        by ``_fix_tool_shebangs``, so deps must live in the interpreter that
+        ``python3`` resolves to. Many base images ship ``/usr/bin/python3``
+        without the ``pip`` module, so we cascade through several install
+        strategies and only warn once the smoke test still fails.
         """
         deps = ["chardet", "coverage"]
-        install_cmd = "pip install --quiet --disable-pip-version-check " + " ".join(deps) + " 2>/dev/null || true"
-        output, error_code = self.env.runtime.run(install_cmd, timeout=60)
-        if error_code and "Error" in str(error_code):
-            logger.warning("Failed to install tool dependencies: %s", output)
+        deps_arg = " ".join(deps)
+        smoke_cmd = "python3 -c 'import chardet, coverage; print(\"tool_deps_ok\")' 2>&1"
+
+        smoke_out, _ = self.env.runtime.run(smoke_cmd, timeout=15)
+        if "tool_deps_ok" in (smoke_out or ""):
+            return
+
+        attempts = [
+            ("python3 -m pip", f"python3 -m pip install --quiet --disable-pip-version-check {deps_arg}"),
+            ("ensurepip+pip",
+             "python3 -m ensurepip --default-pip >/dev/null 2>&1; "
+             f"python3 -m pip install --quiet --disable-pip-version-check {deps_arg}"),
+            ("pip3", f"pip3 install --quiet --disable-pip-version-check {deps_arg}"),
+            ("apt-get",
+             "apt-get update -qq >/dev/null 2>&1 && "
+             "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "
+             "python3-chardet python3-coverage >/dev/null 2>&1"),
+        ]
+        install_log = []
+        for label, cmd in attempts:
+            output, error_code = self.env.runtime.run(cmd, timeout=120)
+            install_log.append(f"[{label}] ec={error_code} out={(output or '')[:200]}")
+            smoke_out, _ = self.env.runtime.run(smoke_cmd, timeout=15)
+            if "tool_deps_ok" in (smoke_out or ""):
+                return
+
+        logger.warning(
+            "Tool-dependency smoke test FAILED after all install strategies; "
+            "file_editor will crash with ModuleNotFoundError. attempts=%s last_smoke=%s",
+            " | ".join(install_log),
+            (smoke_out or "").strip(),
+        )
 
     def _inject_eval_script(self):
         """Inject the sample's ``eval_script`` into the container as run_tests.sh.

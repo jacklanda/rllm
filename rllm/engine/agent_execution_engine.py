@@ -100,6 +100,8 @@ class AgentExecutionEngine:
         self.gamma = gamma
         self.retry_limit = retry_limit
         self.max_steps = max_steps
+        _agent_cfg = self.config.get("rllm", {}).get("agent", {}) if self.config is not None else {}
+        self.cli_max_steps = _agent_cfg.get("cli_max_steps", None)  # None = use max_steps for all task types
         self.max_response_length = max_response_length
         self.max_prompt_length = max_prompt_length
         self.enforce_max_prompt_length = enforce_max_prompt_length
@@ -249,6 +251,8 @@ class AgentExecutionEngine:
         task_label = self._get_task_label(env)
         is_eval = kwargs.get("meta_info", {}).get("validate", False)
         effective_timeout = self.eval_trajectory_timeout if is_eval else self.trajectory_timeout
+        # Per-task-type step budget: CLI tasks get a larger budget when cli_max_steps is set
+        effective_max_steps = (self.cli_max_steps if (self.cli_max_steps and task_label == "cli") else self.max_steps)
 
         termination_reason = None
         exception_message = ""  # Track exception message for non-ENV_DONE terminations
@@ -267,6 +271,11 @@ class AgentExecutionEngine:
         episode_steps = []
         seen_queries = set()
         should_discard = False
+        # Tool-error observability: count calls and errors per tool for traj/tool_error_rate metrics
+        tool_call_counts: dict[str, int] = {}
+        tool_error_counts: dict[str, int] = {}
+        # Dedup repeated identical tool outputs: (action_str -> (first_output, repeat_count))
+        _last_tool_output: dict[str, tuple[str, int]] = {}
 
         # Loop detection: track recent actions to detect repetitive behavior
         recent_actions = []  # List of serialized action strings
@@ -274,11 +283,12 @@ class AgentExecutionEngine:
         consecutive_repeat_count = 0  # How many times the same action has repeated
         LOOP_DETECT_THRESHOLD = 3  # Warn after this many identical consecutive actions
         LOOP_TERMINATE_THRESHOLD = 5  # Terminate after this many identical consecutive actions
+        _last_loop_action_is_tool_error = False  # True when the repeated action is an env-setup failure
 
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
         observation, info = await loop.run_in_executor(self.executor, env.reset)
-        info["max_steps"] = self.max_steps
+        info["max_steps"] = effective_max_steps
 
         # Reset agent
         agent.reset()
@@ -305,14 +315,17 @@ class AgentExecutionEngine:
             newline_token_ids = self.tokenizer.encode("\n", add_special_tokens=False)  # [198] for Qwen
             generation_prompt_ids = self.tokenizer.encode(self.chat_parser.generation_prompt, add_special_tokens=False)
 
-        for step_idx in range(self.max_steps):
+        for step_idx in range(effective_max_steps):
             # Get action from agent
             prompt_messages = agent.chat_completions.copy()
             # Max remaining tokens left for the response
             # For enforced max prompt at each step, no need to deduct here
             if not self.enforce_max_prompt_length:
-                # max_tokens = max(self.max_response_length - response_token_len, 2048)
-                max_tokens = self.max_response_length - response_token_len
+                # Soft budget: reserve floor for at least 2 more exchanges so the agent can submit.
+                # floor = 4 * max_tool_output_length tokens (default 2048 each → 8192 floor)
+                _max_tool_output = self.config.get("rllm", {}).get("max_tool_output_length", 2048) if self.config else 2048
+                _floor = 4 * _max_tool_output
+                max_tokens = max(self.max_response_length - response_token_len, _floor)
             else:
                 # max_tokens = max(self.max_response_length, 2048)
                 max_tokens = self.max_response_length
@@ -542,9 +555,16 @@ class AgentExecutionEngine:
                 recent_actions.append(action_str)
                 if len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]:
                     consecutive_repeat_count += 1
+                    # Detect whether the repeated action is a tool-crash (env-setup failure).
+                    # We check the last observation for known env-error signatures.
+                    _obs_str = str(observation)
+                    _last_loop_action_is_tool_error = any(
+                        sig in _obs_str for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Exit code: 1", "Exit code: 2")
+                    )
                 else:
                     consecutive_repeat_count = 0
                     loop_warning_injected = False
+                    _last_loop_action_is_tool_error = False
 
                 if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD:
                     termination_reason = "ABNORMAL_ACTION_LOOP"
@@ -553,11 +573,17 @@ class AgentExecutionEngine:
                     done = True
                     cur_step = agent.get_current_state()
                     if cur_step is not None:
-                        cur_step.reward = reward
+                        # Mask from loss when the loop is driven by an env-setup failure —
+                        # the model had no way out and should not be penalised.
+                        if _last_loop_action_is_tool_error:
+                            cur_step.reward = None  # signal to trainer: exclude from loss
+                        else:
+                            cur_step.reward = reward
                         cur_step.done = done
                     colorful_print(
                         f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop "
-                        f"({consecutive_repeat_count + 1} identical consecutive actions).",
+                        f"({consecutive_repeat_count + 1} identical consecutive actions"
+                        f"{', env-error-driven — masking from loss' if _last_loop_action_is_tool_error else ''}).",
                         "red",
                     )
                     self._trajectory_logs.append({
@@ -566,6 +592,7 @@ class AgentExecutionEngine:
                         "step": step_idx,
                         "repeated_action": action_str[:200],
                         "repeat_count": consecutive_repeat_count + 1,
+                        "env_error_driven": _last_loop_action_is_tool_error,
                     })
                     break
 
@@ -684,26 +711,59 @@ class AgentExecutionEngine:
                 done = False
                 info = {}
 
-            info["max_steps"] = self.max_steps
+            info["max_steps"] = effective_max_steps
             info["cur_tokens"] = response_token_len
+
+            # --- Tool-output dedup: collapse repeated identical outputs to "[same error ×N]" ---
+            _obs_str = str(next_observation)
+            if action_str:
+                _prev_out, _prev_cnt = _last_tool_output.get(action_str, (None, 0))
+                if _prev_out is not None and _obs_str == _prev_out:
+                    _prev_cnt += 1
+                    _last_tool_output[action_str] = (_prev_out, _prev_cnt)
+                    next_observation = f"[same output ×{_prev_cnt + 1}]"
+                else:
+                    _last_tool_output[action_str] = (_obs_str, 0)
+
+            # --- Tool-error tracking ---
+            for _act in actions_result:
+                _tname = getattr(getattr(_act, "action", None), "function_name", None) or "unknown"
+                tool_call_counts[_tname] = tool_call_counts.get(_tname, 0) + 1
+                _obs_check = str(next_observation)
+                if any(sig in _obs_check for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Traceback", "Exit code: 1", "Exit code: 2")):
+                    tool_error_counts[_tname] = tool_error_counts.get(_tname, 0) + 1
 
             # --- Loop detection: inject warning into observation if repeating ---
             if consecutive_repeat_count >= LOOP_DETECT_THRESHOLD and not loop_warning_injected:
-                loop_warning = (
-                    "\n\n[LOOP DETECTED] You have repeated the same action "
-                    f"{consecutive_repeat_count + 1} times consecutively. "
-                    "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n"
-                    "- If an edit keeps failing, view the file first to check the current content\n"
-                    "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n"
-                    "- If you're stuck, step back and reconsider the root cause\n"
-                    "- Try a completely different approach to solve the problem\n"
-                    "DO NOT repeat the same action again."
-                )
+                _obs_for_hint = str(next_observation)
+                _is_tool_crash = any(sig in _obs_for_hint for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Exit code: 1", "Exit code: 2"))
+                if _is_tool_crash:
+                    loop_warning = (
+                        "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — "
+                        "this is an environment setup failure, NOT a logic error in your code. "
+                        "The tool binary is broken. Switch strategy immediately:\n"
+                        "- Use execute_bash with `sed -i` or `python3 -c` to edit files directly\n"
+                        "- Use `python3 -c 'open(\"path\").read()'` to view file contents\n"
+                        "- Do NOT call the broken tool again.\n"
+                        "DO NOT repeat the same action again."
+                    )
+                else:
+                    loop_warning = (
+                        "\n\n[LOOP DETECTED] You have repeated the same action "
+                        f"{consecutive_repeat_count + 1} times consecutively. "
+                        "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n"
+                        "- If an edit keeps failing, view the file first to check the current content\n"
+                        "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n"
+                        "- If you're stuck, step back and reconsider the root cause\n"
+                        "- Try a completely different approach to solve the problem\n"
+                        "DO NOT repeat the same action again."
+                    )
                 next_observation = str(next_observation) + loop_warning
                 loop_warning_injected = True
                 colorful_print(
                     f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected "
-                    f"({consecutive_repeat_count + 1} identical consecutive actions).",
+                    f"({consecutive_repeat_count + 1} identical consecutive actions"
+                    f"{', tool-crash hint' if _is_tool_crash else ''}).",
                     "yellow",
                 )
 
@@ -797,10 +857,10 @@ class AgentExecutionEngine:
             response_tokens.extend(env_msg_tokens)
             response_masks.extend(env_msg_masks)
 
-            if step_idx == self.max_steps - 1:
+            if step_idx == effective_max_steps - 1:
                 # 5.4.3 Exceeding search step limit: stop + 0 reward
                 termination_reason = "MAX_STEPS"
-                exception_message = f"Maximum steps reached: {self.max_steps} steps completed without environment termination"
+                exception_message = f"Maximum steps reached: {effective_max_steps} steps completed without environment termination"
                 reward = 0.0  # Force 0 reward
 
         # Enforce ReAct workflow: >= 5 steps and only enable odd number of steps
@@ -1008,6 +1068,10 @@ class AgentExecutionEngine:
                     "total_time": total_time,
                     "token_mismatch": 0.0 if is_valid_trajectory else 1.0,
                     "reward_computed": 1.0 if final_reward_computed else 0.0,
+                    # Per-tool error rates: tool_errors/{name} and tool_calls/{name}
+                    **{f"tool_calls/{t}": float(c) for t, c in tool_call_counts.items()},
+                    **{f"tool_errors/{t}": float(tool_error_counts.get(t, 0)) for t in tool_call_counts},
+                    **{f"tool_error_rate/{t}": float(tool_error_counts.get(t, 0)) / float(c) for t, c in tool_call_counts.items() if c > 0},
                     # Add individual reward components
                     **reward_metrics,
                 },

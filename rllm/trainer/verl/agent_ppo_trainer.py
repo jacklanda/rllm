@@ -187,6 +187,28 @@ class AgentPPOTrainer(RayPPOTrainer):
                 f"You can verify with: DOCKER_API_VERSION=1.44 docker -H {docker_host} info"
             ) from e
 
+        # Pre-seed R2E-Gym's shared Docker client with a large HTTP connection
+        # pool. With hundreds of parallel agents, the default pool size of 10
+        # saturates and urllib3 logs "Connection pool is full, discarding
+        # connection" — dropped connections are opened again, wasting time.
+        try:
+            from r2egym.agenthub.runtime.docker import DockerRuntime
+            n_parallel = int(self.config.rllm.agent.get("engine_args", {}).get("n_parallel_agents", 64) or 64)
+            pool_size = max(64, n_parallel + 32)
+            if DockerRuntime._shared_docker_client is None:
+                with DockerRuntime._client_lock:
+                    if DockerRuntime._shared_docker_client is None:
+                        DockerRuntime._shared_docker_client = docker.DockerClient(
+                            base_url=docker_host,
+                            timeout=120,
+                            version=os.environ.get("DOCKER_API_VERSION", "auto"),
+                            max_pool_size=pool_size,
+                            num_pools=max(25, pool_size // 4),
+                        )
+                        print(f"Seeded R2E-Gym shared Docker client with max_pool_size={pool_size}")
+        except Exception as e:
+            print(f"WARN: could not pre-seed R2E-Gym Docker client with large pool: {e}")
+
     def _check_retrieval_connectivity(self):
         """Pre-flight check: verify retrieval server is reachable before launching trajectories."""
         retrieval_url = os.environ.get("RETRIEVAL_SERVER_URL", "")
@@ -405,6 +427,8 @@ class AgentPPOTrainer(RayPPOTrainer):
                             elif uid_reward_std < 1e-6:
                                 # All samples have same partial reward — GRPO advantage is 0
                                 solve_no_variance += 1
+                                if self.config.rllm.rejection_sample.get("filter_zero_variance", False):
+                                    valid_mask[uid_mask] = False
 
                             if self.config.rllm.rejection_sample.get("filter_verifier_missing", False) and group_missing_verifier:
                                 valid_mask[uid_mask] = False
@@ -992,7 +1016,13 @@ class AgentPPOTrainer(RayPPOTrainer):
             all_initial_tokens_list.append(prompt_tokens)
             all_response_tokens_list.append(response_tokens)
             all_masks_list.append(traj["response_masks"])
-            traj_scores.append(traj["trajectory_reward"])
+            traj_score = traj["trajectory_reward"]
+            # Env-error-driven action loops set reward=None to signal "mask from loss".
+            # Zero out the response mask so this trajectory contributes no gradient.
+            if traj_score is None:
+                all_masks_list[-1] = torch.zeros_like(traj["response_masks"])
+                traj_score = 0.0
+            traj_scores.append(traj_score)
 
             # Extract reward components from metadata for GDPO
             reward_metadata = traj.get("reward_metadata", {})
@@ -1142,11 +1172,18 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         all_dumps = traj_dump + (dropped_dump or [])
 
+        # Per-source termination reason and verifier_error counters
+        from collections import defaultdict as _dd
+        source_termination: dict = _dd(lambda: _dd(int))
+        source_verifier_error: dict = _dd(list)
+        source_env_loop: dict = _dd(int)
+
         for traj in all_dumps:
             reason = traj.get("termination_reason") or "UNKNOWN"
             reward = traj.get("reward")
             if reward is None:
                 reward = 0
+            src = traj.get("data_source", "unknown")
 
             total_stats[reason] = total_stats.get(reason, 0) + 1
             if reward >= 1.0:
@@ -1155,6 +1192,14 @@ class AgentPPOTrainer(RayPPOTrainer):
                 failure_stats[reason] = failure_stats.get(reason, 0) + 1
             else:
                 negative_reward_stats[reason] = negative_reward_stats.get(reason, 0) + 1
+
+            source_termination[src][reason] += 1
+            dbg = traj.get("debug", {})
+            verif = dbg.get("verification", {}) if isinstance(dbg, dict) else {}
+            if isinstance(verif, dict) and verif:
+                source_verifier_error[src].append(1.0 if verif.get("verifier_error") else 0.0)
+            if reason == "ABNORMAL_ACTION_LOOP":
+                source_env_loop[src] += 1
 
         # Save merged chat completions and stats
         file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
@@ -1245,6 +1290,15 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
 
         self.visualize_trajectory(DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch))
+
+        # Per-source termination and verifier_error metrics
+        for src, reason_counts in source_termination.items():
+            for reason, cnt in reason_counts.items():
+                metrics[f"traj/{src}/termination/{reason}"] = cnt
+        for src, errs in source_verifier_error.items():
+            metrics[f"traj/{src}/verifier_error_rate"] = float(np.mean(errs)) if errs else 0.0
+        for src, cnt in source_env_loop.items():
+            metrics[f"traj/{src}/env_loop_terminations"] = cnt
 
         return DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch), metrics
 
@@ -1510,11 +1564,18 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         all_dumps = traj_dump + (dropped_dump or [])
 
+        # Per-source termination reason and verifier_error counters
+        from collections import defaultdict as _dd
+        source_termination: dict = _dd(lambda: _dd(int))
+        source_verifier_error: dict = _dd(list)
+        source_env_loop: dict = _dd(int)
+
         for traj in all_dumps:
             reason = traj.get("termination_reason") or "UNKNOWN"
             reward = traj.get("reward")
             if reward is None:
                 reward = 0
+            src = traj.get("data_source", "unknown")
 
             total_stats[reason] = total_stats.get(reason, 0) + 1
             if reward >= 1.0:
@@ -1523,6 +1584,14 @@ class AgentPPOTrainer(RayPPOTrainer):
                 failure_stats[reason] = failure_stats.get(reason, 0) + 1
             else:
                 negative_reward_stats[reason] = negative_reward_stats.get(reason, 0) + 1
+
+            source_termination[src][reason] += 1
+            dbg = traj.get("debug", {})
+            verif = dbg.get("verification", {}) if isinstance(dbg, dict) else {}
+            if isinstance(verif, dict) and verif:
+                source_verifier_error[src].append(1.0 if verif.get("verifier_error") else 0.0)
+            if reason == "ABNORMAL_ACTION_LOOP":
+                source_env_loop[src] += 1
 
         file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
         traj_stats_data = {
@@ -1541,6 +1610,15 @@ class AgentPPOTrainer(RayPPOTrainer):
             json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
         result = DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch, meta_info=meta_info)
+
+        # Per-source termination and verifier_error metrics (stepwise path)
+        for src, reason_counts in source_termination.items():
+            for reason, cnt in reason_counts.items():
+                metrics[f"traj/{src}/termination/{reason}"] = cnt
+        for src, errs in source_verifier_error.items():
+            metrics[f"traj/{src}/verifier_error_rate"] = float(np.mean(errs)) if errs else 0.0
+        for src, cnt in source_env_loop.items():
+            metrics[f"traj/{src}/env_loop_terminations"] = cnt
 
         # Find indices of last steps for visualization
         last_step_indices = [i for i, is_last in enumerate(non_tensor_batch["is_last_step"]) if is_last]

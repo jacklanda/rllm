@@ -25,6 +25,7 @@ rllm:
   agent:
     name: math_agent
     max_steps: 32
+    cli_max_steps: 80        # CLI tasks get a larger step budget; null = use max_steps for all
     trajectory_timeout: null
     overlong_filter: False
     agent_args: {}
@@ -88,6 +89,7 @@ rllm:
     filter_high_variance: False
     max_uid_reward_std: null
     filter_verifier_missing: False
+    filter_zero_variance: False   # Drop groups where all rewards are identical (zero GRPO gradient)
   distill:
     enable: False
     shared_tokenizer: False
