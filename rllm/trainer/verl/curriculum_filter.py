@@ -37,6 +37,23 @@ _INFRA_ERROR_SIGS = (
     "docker: Error",
     "No such image",
     "Cannot connect to the Docker daemon",
+    # Container-integrity failures that are not the agent's fault.
+    "Segmentation fault",
+    "SIGSEGV",
+    "core dumped",
+    "Fatal Python error",
+    "double free or corruption",
+    "Bus error",
+    "symbol lookup error",
+    "undefined symbol",
+    "ImportError while loading conftest",
+    "error while loading shared libraries",
+    # test_patch vs source drift — eval_script itself can't apply.
+    "error: patch failed",
+    "error: cannot apply",
+    "patch does not apply",
+    "malformed patch",
+    "fatal: corrupt patch",
 )
 
 
@@ -76,11 +93,18 @@ class CurriculumFilter:
         consecutive_steps: int = 3,
         apply_to_sources: Optional[list[str]] = None,
         blocklist_path: Optional[str] = None,
+        infra_min_rollouts: int = 2,
     ) -> None:
         self.enable = bool(enable)
         self.consecutive_steps = int(max(1, consecutive_steps))
         self.apply_to_sources = set(apply_to_sources or ["cli"])
         self.blocklist_path = blocklist_path
+        # Minimum number of rollouts that must exhibit an infra-class signature
+        # (segfault, patch-failed, missing image, ...) for same-step quarantine
+        # to fire. Two is enough: a single flake shouldn't kill a task, but if
+        # two independent rollouts hit the same structural failure, the task
+        # is almost certainly unsolvable in the shipped container.
+        self.infra_min_rollouts = int(max(1, infra_min_rollouts))
         self._lock = threading.Lock()
         # task_key -> #consecutive steps with identical nonzero exit_code
         self._streak: dict[str, int] = defaultdict(int)
@@ -129,12 +153,25 @@ class CurriculumFilter:
 
         Returns a small metrics dict for logging.
         """
-        metrics = {"curriculum_filter/newly_blocked": 0, "curriculum_filter/total_blocked": 0}
+        metrics = {
+            "curriculum_filter/newly_blocked": 0,
+            "curriculum_filter/total_blocked": 0,
+            "curriculum_filter/newly_blocked_infra": 0,
+            "curriculum_filter/newly_blocked_unapplicable": 0,
+        }
         if not self.enable:
             return metrics
 
-        # Group by task_key and collect (reward, exit_code, source, idx).
-        groups: dict[str, list[tuple[Optional[int], str, int]]] = defaultdict(list)
+        # Group by task_key. Each entry collects the fields we need for both
+        # the legacy "identical-exit-code streak" trigger and the new
+        # "same-step infra signature" fast path.
+        #   code    : int omnigril_exit_code or None
+        #   src     : data_source
+        #   idx     : row index
+        #   reward  : float or None (None when trainer-masked upstream)
+        #   verr    : verifier_error string (e.g. "unapplicable_patch")
+        #   log     : log_tail used for infra-signature matching
+        groups: dict[str, list[dict]] = defaultdict(list)
         try:
             extras = batch.non_tensor_batch.get("extra_info") if batch is not None else None
         except Exception:
@@ -143,7 +180,6 @@ class CurriculumFilter:
             return metrics
 
         for row in traj_dump:
-            # ``prompt`` is recoverable but task-keying needs extra_info.
             idx = row.get("_idx")
             if idx is None:
                 continue  # filled in by caller; see trainer hook
@@ -165,19 +201,71 @@ class CurriculumFilter:
                 code = int(raw_code) if raw_code not in (None, "", "None") else None
             except Exception:
                 code = None
-            groups[key].append((code, src, idx))
+            groups[key].append({
+                "code": code,
+                "src": src,
+                "idx": idx,
+                "reward": row.get("reward"),
+                "verr": str(verf.get("verifier_error") or ""),
+                "log": str(verf.get("log_tail") or verf.get("log") or ""),
+            })
 
         # Decide which tasks to quarantine this step.
         newly_blocked = 0
+        newly_blocked_infra = 0
+        newly_blocked_unapplicable = 0
         with self._lock:
             for key, entries in groups.items():
                 if key in self._blocked:
                     continue
-                codes = [c for c, _, _ in entries if c is not None]
+
+                # --- Fast path: same-step structural failure. ---------------
+                # If every rollout of this task earned reward=0 (or None/mask),
+                # and a threshold of them exhibit an infra-class log signature
+                # or an "unapplicable_patch" verifier error, we don't need to
+                # wait consecutive_steps — the task is structurally broken.
+                rewards = [e.get("reward") for e in entries]
+                all_zero_reward = len(entries) >= self.infra_min_rollouts and all(
+                    (r is None) or (isinstance(r, (int, float)) and r <= 0.0)
+                    for r in rewards
+                )
+                if all_zero_reward:
+                    infra_hits = sum(1 for e in entries if is_infra_failure(e.get("log", "")))
+                    unapp_hits = sum(
+                        1 for e in entries
+                        if e.get("verr") == "unapplicable_patch"
+                        or "unapplicable_patch" in e.get("verr", "")
+                    )
+                    if infra_hits >= self.infra_min_rollouts:
+                        self._blocked[key] = {
+                            "reason": "infra_signature",
+                            "infra_hits": int(infra_hits),
+                            "num_rollouts": len(entries),
+                        }
+                        newly_blocked += 1
+                        newly_blocked_infra += 1
+                        self._streak.pop(key, None)
+                        self._last_code.pop(key, None)
+                        continue
+                    if unapp_hits >= self.infra_min_rollouts and unapp_hits == len(entries):
+                        # Every rollout produced an unapplicable patch — the
+                        # test_patch references a symbol that no longer exists
+                        # or the source is pre-broken. Quarantine same-step.
+                        self._blocked[key] = {
+                            "reason": "unapplicable_patch_all_rollouts",
+                            "num_rollouts": len(entries),
+                        }
+                        newly_blocked += 1
+                        newly_blocked_unapplicable += 1
+                        self._streak.pop(key, None)
+                        self._last_code.pop(key, None)
+                        continue
+
+                # --- Legacy path: N consecutive identical non-zero exits. ---
+                codes = [e["code"] for e in entries if e["code"] is not None]
                 if not codes:
                     self._streak[key] = 0
                     continue
-                # Every rollout must share the same non-zero exit code.
                 c = Counter(codes)
                 top_code, top_count = c.most_common(1)[0]
                 all_identical_nonzero = (
@@ -201,6 +289,8 @@ class CurriculumFilter:
                 self._persist()
 
             metrics["curriculum_filter/newly_blocked"] = newly_blocked
+            metrics["curriculum_filter/newly_blocked_infra"] = newly_blocked_infra
+            metrics["curriculum_filter/newly_blocked_unapplicable"] = newly_blocked_unapplicable
             metrics["curriculum_filter/total_blocked"] = len(self._blocked)
         return metrics
 

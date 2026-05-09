@@ -154,6 +154,9 @@ class AgentExecutionEngine:
         self.max_steps = max_steps
         _agent_cfg = self.config.get("rllm", {}).get("agent", {}) if self.config is not None else {}
         self.cli_max_steps = _agent_cfg.get("cli_max_steps", None)  # None = use max_steps for all task types
+        # Sanity-check mode: bypass the agent entirely for CLI tasks and apply the
+        # dataset's gold_patch, to validate the verification / container flow.
+        self.apply_gold_patch = bool(_agent_cfg.get("apply_gold_patch", False))
         self.max_response_length = max_response_length
         self.max_prompt_length = max_prompt_length
         self.enforce_max_prompt_length = enforce_max_prompt_length
@@ -341,6 +344,67 @@ class AgentExecutionEngine:
         loop = asyncio.get_event_loop()
         observation, info = await loop.run_in_executor(self.executor, env.reset)
         info["max_steps"] = effective_max_steps
+
+        # Sanity-check short-circuit: apply dataset gold_patch instead of running
+        # the agent. Validates the eval_script / verifier / container flow end-
+        # to-end on CLI tasks. Non-CLI trajectories fall through to the normal
+        # rollout (gold_patch is not defined for mcp / web search).
+        if self.apply_gold_patch and task_label == "cli" and hasattr(env, "sanity_check_gold_patch"):
+            start_time = time.time()
+            try:
+                reward_debug = await loop.run_in_executor(self.executor, env.sanity_check_gold_patch)
+            except Exception as exc:
+                reward_debug = {
+                    "type": "gold_patch_sanity",
+                    "reward": 0.0,
+                    "resolved": False,
+                    "reward_mode": "binary",
+                    "reward_source": "gold_patch_sanity",
+                    "verifier_error": f"sanity_check_exception:{type(exc).__name__}:{str(exc)[:200]}",
+                    "sanity_check": True,
+                    "gold_patch_applied": False,
+                }
+            reward_time = time.time() - start_time
+            reward = float(reward_debug.get("reward", 0.0)) if isinstance(reward_debug, dict) else 0.0
+            await loop.run_in_executor(self.executor, env.close)
+            color = "green" if reward > 0 else "yellow"
+            verr = (reward_debug or {}).get("verifier_error", "")
+            colorful_print(
+                f"Trajectory {idx} ({task_label}) [gold_patch_sanity]: "
+                f"reward={reward} applied={reward_debug.get('gold_patch_applied') if isinstance(reward_debug, dict) else None} "
+                f"verifier_error={verr!r} reward_time={reward_time:.2f}s",
+                color,
+            )
+            self._trajectory_logs.append({
+                "type": "trajectory",
+                "idx": env.idx,
+                "task_label": task_label,
+                "dropped": True,
+                "termination_reason": "GOLD_PATCH_SANITY",
+                "reward": reward,
+                "num_steps": 0,
+                "reward_debug": reward_debug,
+                "chat_completions": [],
+            })
+            # Dropped result: masked from loss by the trainer. Reward + debug
+            # are still visible in trajectory dumps / wandb.
+            return {
+                "idx": env.idx,
+                "dropped": True,
+                "termination_reason": "GOLD_PATCH_SANITY",
+                "chat_completions": [],
+                "steps": [],
+                "reward_debug": reward_debug,
+                "trajectory_reward": reward,
+                "metrics": {
+                    "task_label": task_label,
+                    "steps": 0,
+                    "reward_time": reward_time,
+                    "gold_patch_sanity": 1.0,
+                    "gold_patch_applied": 1.0 if (isinstance(reward_debug, dict) and reward_debug.get("gold_patch_applied")) else 0.0,
+                    "gold_patch_resolved": 1.0 if reward >= 1.0 else 0.0,
+                },
+            }
 
         # Reset agent
         agent.reset()

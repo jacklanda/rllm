@@ -26,6 +26,7 @@ rllm:
     name: math_agent
     max_steps: 32
     cli_max_steps: 80        # CLI tasks get a larger step budget; null = use max_steps for all
+    apply_gold_patch: False  # Sanity check: for CLI tasks, bypass the agent and apply `entry.gold_patch` via git, then run eval_script. Ablates verifier/container correctness.
     trajectory_timeout: null
     overlong_filter: False
     agent_args: {}

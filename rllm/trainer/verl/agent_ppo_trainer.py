@@ -1074,9 +1074,15 @@ class AgentPPOTrainer(RayPPOTrainer):
             for _traj in trajectories:
                 _idx = _traj["idx"]
                 src = ds_arr[_idx] if ds_arr is not None else "unknown"
+                _tr = _traj.get("trajectory_reward")
+                try:
+                    _tr = _tr.item() if hasattr(_tr, "item") else (float(_tr) if _tr is not None else None)
+                except Exception:
+                    _tr = None
                 proxy_dump.append({
                     "_idx": int(_idx),
                     "data_source": src,
+                    "reward": _tr,
                     "debug": {"verification": _traj.get("reward_debug", {}) or {}},
                 })
             cf_metrics = cf.update_from_dump(proxy_dump, batch)

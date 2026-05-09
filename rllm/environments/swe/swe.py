@@ -55,6 +55,86 @@ R2E_ENV_IDS = [
 DEFAULT_R2E_ENV_ID = "R2E-Gym/R2E-Gym-Lite"
 
 
+_PYTEST_SUMMARY_RE = re.compile(
+    r"=+\s*"
+    r"(?:(?P<failed>\d+)\s+failed[,\s]*)?"
+    r"(?:(?P<passed>\d+)\s+passed[,\s]*)?"
+    r"(?:(?P<skipped>\d+)\s+skipped[,\s]*)?"
+    r"(?:(?P<xfailed>\d+)\s+xfailed[,\s]*)?"
+    r"(?:(?P<xpassed>\d+)\s+xpassed[,\s]*)?"
+    r"(?:(?P<errors>\d+)\s+errors?[,\s]*)?"
+    r"(?:(?P<warnings>\d+)\s+warnings?[,\s]*)?"
+    r"(?:(?P<deselected>\d+)\s+deselected[,\s]*)?"
+    r"in\s+[0-9.]+s"
+)
+
+# Signatures that mean the patched source won't even parse/apply, so no
+# meaningful test signal can come out of this rollout — the verifier will
+# return rc!=0 even though the agent may have been one line away from correct.
+_UNAPPLICABLE_PATCH_SIGS = (
+    "SyntaxError",
+    "IndentationError",
+    "ERRORS during collection",
+    "error: patch failed",
+    "error: cannot apply",
+    "patch does not apply",
+    "malformed patch",
+    "fatal: corrupt patch",
+)
+
+
+def _parse_pytest_summary(log: str) -> dict | None:
+    """Return {passed,failed,errors,skipped,xfailed,xpassed,total,pass_rate}
+    extracted from the last pytest summary line in *log*, or None if no
+    summary line is present. Robust to pytest's optional segments and handles
+    the common r2egym tail ``=== 1 failed, 1066 passed, 4 skipped, 1 xfailed in 0.85s ===``.
+    """
+    if not log:
+        return None
+    last = None
+    for m in _PYTEST_SUMMARY_RE.finditer(log):
+        last = m
+    if last is None:
+        return None
+
+    def _i(k: str) -> int:
+        v = last.group(k)
+        try:
+            return int(v) if v is not None else 0
+        except ValueError:
+            return 0
+
+    passed = _i("passed")
+    failed = _i("failed")
+    errors = _i("errors")
+    skipped = _i("skipped")
+    xfailed = _i("xfailed")
+    xpassed = _i("xpassed")
+    graded_total = passed + failed + errors
+    if graded_total <= 0:
+        pass_rate = 0.0
+    else:
+        pass_rate = passed / graded_total
+    return {
+        "tests_passed": passed,
+        "tests_failed": failed,
+        "tests_errors": errors,
+        "tests_skipped": skipped,
+        "tests_xfailed": xfailed,
+        "tests_xpassed": xpassed,
+        "tests_total": graded_total,
+        "pass_rate": float(pass_rate),
+    }
+
+
+def _is_unapplicable_patch(log: str) -> bool:
+    """True when the log shows the patch wasn't applied or the source won't
+    even parse. Used to distinguish "close but wrong" from "invalid edit"."""
+    if not log:
+        return False
+    return any(sig in log for sig in _UNAPPLICABLE_PATCH_SIGS)
+
+
 def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> str:
     """Make file_editor failure messages actionable instead of dead-ends.
 
@@ -382,14 +462,17 @@ class SWEEnv(BaseEnv):
         error_code=None,
         verifier_error: str = "",
         omnigril_exit_code: int | None = None,
+        pytest_stats: dict | None = None,
+        patch_applicable: bool | None = None,
+        reward_mode: str = "binary",
     ) -> dict:
         output_head = output[:1000] if output else ""
         output_tail = output[-500:] if len(output) > 500 else output
-        return {
+        debug = {
             "type": "gemcli",
             "reward": float(reward),
             "resolved": reward >= 1.0,
-            "reward_mode": "binary",
+            "reward_mode": reward_mode,
             "reward_source": reward_source,
             "verifier_error": verifier_error,
             "omnigril_exit_code": omnigril_exit_code,
@@ -398,6 +481,13 @@ class SWEEnv(BaseEnv):
             "log_tail": output_tail,
             "log": output or "",
         }
+        if pytest_stats:
+            # Flattened into reward_debug so agent_ppo_trainer's existing
+            # metrics path (tests_passed/failed/total/pass_rate) auto-populates.
+            debug.update(pytest_stats)
+        if patch_applicable is not None:
+            debug["patch_applicable"] = bool(patch_applicable)
+        return debug
 
     def compute_final_reward_metadata(self) -> dict:
         """Compute the episode's final reward and populate ``reward_debug``.
@@ -434,6 +524,15 @@ class SWEEnv(BaseEnv):
         output = output or ""
 
         omnigril_code = self._parse_omnigril_exit_code(output)
+        pytest_stats = _parse_pytest_summary(output)
+        patch_unapplicable = _is_unapplicable_patch(output)
+        # Patch is considered applicable if pytest ran at all (we parsed a
+        # summary line) AND no syntax/apply-failure signatures are present.
+        patch_applicable = bool(pytest_stats) and not patch_unapplicable
+
+        shaped = os.environ.get("RLLM_SWE_SHAPED_REWARD", "0") == "1"
+        reward_mode = "shaped" if shaped else "binary"
+
         if omnigril_code is None:
             reward = 0.0
             verifier_error = "omnigril_exit_code_missing"
@@ -441,8 +540,20 @@ class SWEEnv(BaseEnv):
             reward = 1.0
             verifier_error = ""
         else:
-            reward = 0.0
-            verifier_error = f"omnigril_exit_{omnigril_code}"
+            # rc != 0. Split the "unapplicable patch" class from "tests ran
+            # and some failed" so downstream logging / filtering can tell
+            # "agent broke the source" apart from "agent was close".
+            if patch_unapplicable or not pytest_stats:
+                reward = 0.0
+                verifier_error = "unapplicable_patch" if patch_unapplicable else f"omnigril_exit_{omnigril_code}"
+            elif shaped:
+                # Partial credit capped under 0.5 so a true pass (binary 1.0)
+                # remains strictly more valuable than any partial rollout.
+                reward = float(min(pytest_stats["pass_rate"] * 0.5, 0.49))
+                verifier_error = ""
+            else:
+                reward = 0.0
+                verifier_error = f"omnigril_exit_{omnigril_code}"
 
         self._reward_debug = self._build_reward_debug(
             reward=reward,
@@ -451,12 +562,115 @@ class SWEEnv(BaseEnv):
             error_code=error_code,
             verifier_error=verifier_error,
             omnigril_exit_code=omnigril_code,
+            pytest_stats=pytest_stats,
+            patch_applicable=(patch_applicable if omnigril_code is not None else None),
+            reward_mode=reward_mode,
         )
         return self._reward_debug
 
     def compute_final_reward(self):
         reward_debug = self.compute_final_reward_metadata()
         return reward_debug["reward"]
+
+    # ------------------------------------------------------------------
+    # Gold-patch sanity check
+    # ------------------------------------------------------------------
+
+    def apply_gold_patch_in_container(self) -> tuple[bool, str]:
+        """Apply ``self.entry['gold_patch']`` inside the already-running container.
+
+        Tries ``git apply -p1 -v`` first and falls back to
+        ``patch --batch --fuzz=5 -p1``, matching
+        ``experiments/artifacts/cli_data_20260429/run_eval_in_container.py``.
+        Returns ``(applied, combined_output)``.
+        """
+        gold_patch = self.entry.get("gold_patch") or ""
+        if not gold_patch.strip():
+            return False, "gold_patch field is empty or missing in entry"
+        if self.env is None or getattr(self.env, "runtime", None) is None:
+            return False, "container runtime not available (call reset() first)"
+
+        patch_path = "/tmp/rllm_gold_patch.diff"
+        try:
+            self._copy_content_to_container(gold_patch, patch_path, suffix=".diff", chmod=False)
+        except Exception as exc:
+            return False, f"copy_to_container failed: {exc}"
+
+        # DockerRuntime.run wraps the command in `timeout N <cmd>` and runs via
+        # `/bin/sh -c`. Using `cd /testbed && ...` breaks because `timeout` cannot
+        # exec the shell builtin `cd` (exit 127), short-circuiting the real
+        # command. Pass the cwd via `workdir=` instead, matching
+        # experiments/artifacts/cli_data_20260429/run_eval_in_container.py which
+        # uses container.exec_run(workdir="/testbed").
+        def _ok(rc) -> bool:
+            return str(rc).strip() == "0"
+
+        primary = f"git apply -p1 -v {patch_path} 2>&1"
+        out1, rc1 = self.env.runtime.run(primary, timeout=60, workdir="/testbed")
+        out1 = out1 or ""
+        if _ok(rc1):
+            return True, out1
+
+        fallback = f"patch --batch --fuzz=5 -p1 -i {patch_path} 2>&1"
+        out2, rc2 = self.env.runtime.run(fallback, timeout=60, workdir="/testbed")
+        combined = f"[git apply rc={rc1}]\n{out1}\n--- patch fallback ---\n[patch rc={rc2}]\n{out2 or ''}"
+        if _ok(rc2):
+            return True, combined
+        return False, combined
+
+    def sanity_check_gold_patch(self) -> dict:
+        """Bypass the agent and evaluate the task as if the gold patch were submitted.
+
+        Steps (assumes ``reset()`` has already been called so the container is
+        live at ``base_commit``):
+          1. Apply ``entry['gold_patch']`` inside the container.
+          2. Run the standard reward pipeline (``compute_final_reward_metadata``),
+             which injects ``eval_script`` as run_tests.sh, executes it, and
+             parses ``OMNIGRIL_EXIT_CODE``.
+
+        A healthy training pipeline should return ``reward == 1.0`` for every
+        CLI sample with a valid gold_patch + eval_script. Anything less flags a
+        verifier / container-workflow bug independent of the agent policy.
+        """
+        if not self._is_gemcli:
+            self._reward_debug = {
+                "type": "gold_patch_sanity",
+                "reward": 0.0,
+                "resolved": False,
+                "reward_mode": "binary",
+                "reward_source": "gold_patch_sanity",
+                "verifier_error": "not_a_gemcli_sample",
+                "sanity_check": True,
+                "gold_patch_applied": False,
+            }
+            return self._reward_debug
+
+        patch_applied, patch_output = self.apply_gold_patch_in_container()
+        patch_tail = (patch_output or "")[-500:]
+
+        if not patch_applied:
+            self._reward_debug = {
+                "type": "gold_patch_sanity",
+                "reward": 0.0,
+                "resolved": False,
+                "reward_mode": "binary",
+                "reward_source": "gold_patch_sanity",
+                "verifier_error": "gold_patch_apply_failed",
+                "sanity_check": True,
+                "gold_patch_applied": False,
+                "gold_patch_apply_output_tail": patch_tail,
+            }
+            return self._reward_debug
+
+        reward_debug = self.compute_final_reward_metadata()
+        reward_debug = dict(reward_debug) if isinstance(reward_debug, dict) else {"reward": 0.0}
+        reward_debug["type"] = "gold_patch_sanity"
+        reward_debug["reward_source"] = "gold_patch_sanity"
+        reward_debug["sanity_check"] = True
+        reward_debug["gold_patch_applied"] = True
+        reward_debug["gold_patch_apply_output_tail"] = patch_tail
+        self._reward_debug = reward_debug
+        return reward_debug
 
     @property
     def reward_debug(self) -> dict:
