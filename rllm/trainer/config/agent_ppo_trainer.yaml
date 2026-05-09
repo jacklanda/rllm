@@ -90,6 +90,30 @@ rllm:
     max_uid_reward_std: null
     filter_verifier_missing: False
     filter_zero_variance: False   # Drop groups where all rewards are identical (zero GRPO gradient)
+  curriculum_filter:
+    # Quarantine CLI/SWE tasks that look unsolvable or infra-broken. When a task's
+    # group of ``rollout.n`` returns the same non-zero ``omnigril_exit_code`` for
+    # ``consecutive_steps`` in a row, its task_id is added to an on-disk blocklist
+    # and all future rollouts of that task are dropped from training (advantage = 0,
+    # masked from loss). This implements the cheaper "all-rollouts-identical"
+    # proxy described in the RL env stability guideline; the full offline
+    # dry-run (run eval_script with zero edits) is implemented by
+    # ``experiments/artifacts/cli_data_20260429/convert_to_parquet.py`` when it
+    # is invoked with ``--curriculum-filter``.
+    enable: False
+    consecutive_steps: 3          # Quarantine after N consecutive all-identical-exit steps
+    apply_to_sources: ["cli"]     # Which data_source values to watch
+    blocklist_path: null          # null → <checkpoint_dir>/curriculum_blocklist.json
+  cli_diversity:
+    # P2 — CLI task diversity per batch.
+    # When enabled, after the standard ``batch.repeat(n=rollout.n, interleave=True)``
+    # step, the CLI slice of each batch is re-balanced: each CLI task keeps at most
+    # ``max_rollouts_per_task`` rollouts. If other CLI tasks are available in the
+    # dataloader's current step, empty slots are filled by duplicating their
+    # rollouts instead (same rollout.n, wider task support). A no-op when the
+    # batch already has enough diversity.
+    enable: False
+    max_rollouts_per_task: 8
   distill:
     enable: False
     shared_tokenizer: False

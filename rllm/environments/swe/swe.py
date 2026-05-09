@@ -55,6 +55,115 @@ R2E_ENV_IDS = [
 DEFAULT_R2E_ENV_ID = "R2E-Gym/R2E-Gym-Lite"
 
 
+def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> str:
+    """Make file_editor failure messages actionable instead of dead-ends.
+
+    Cases handled (no change to the in-container tool binary):
+      1. ``Multiple occurrences of old_str`` → append the first 5 match line numbers
+         so the agent can disambiguate with a wider anchor.
+      2. ``No match found for old_str`` → append a 3-line fuzzy candidate pulled via
+         difflib so the agent can see the drift (whitespace / indent / case).
+      3. Successful ``str_replace`` / ``insert`` / ``create`` → run ``py_compile`` on
+         the edited path for ``*.py`` files; if it fails, revert the edit via the
+         runtime and surface the compile error so the agent is warned *before*
+         the eval_script blows up with IndentationError at collection time.
+
+    Runs only when ``action_obj.function_name == 'file_editor'``; any failure inside
+    this helper is caught and the original observation is returned unchanged so it
+    never degrades the base code path.
+    """
+    try:
+        if not action_obj or getattr(action_obj, "function_name", "") != "file_editor":
+            return observation
+        params = {}
+        try:
+            params = action_obj.to_dict().get("parameters", {}) or {}
+        except Exception:
+            params = {}
+        cmd = str(params.get("command", ""))
+        path = str(params.get("path", "")) if params.get("path") else ""
+        obs = str(observation)
+
+        # --- (1) Multiple occurrences → attach first-5 match line numbers. -----
+        if "Multiple occurrences of old_str" in obs and path and runtime is not None:
+            old_str = params.get("old_str", "")
+            if old_str and isinstance(old_str, str):
+                import shlex
+                key = old_str.splitlines()[0] if old_str else ""
+                if key and len(key) >= 3:
+                    q = shlex.quote(key)
+                    try:
+                        out, _rc = runtime.run(f"grep -n -F -- {q} {shlex.quote(path)} | head -5", timeout=10)
+                        lines = [ln for ln in str(out).splitlines() if ln.strip()]
+                        if lines:
+                            obs += (
+                                "\n\n[editor-hint] First match line(s) in {p}: {ls}.\n"
+                                "Pick a unique anchor by extending old_str with the surrounding line(s)."
+                            ).format(p=path, ls=", ".join(ln.split(":", 1)[0] for ln in lines))
+                    except Exception:
+                        pass
+            return obs
+
+        # --- (2) No match found → attach fuzzy candidate. ----------------------
+        if "No match found for old_str" in obs and path and runtime is not None:
+            old_str = params.get("old_str", "")
+            if isinstance(old_str, str) and old_str.strip():
+                try:
+                    import difflib
+                    out, _rc = runtime.run(
+                        f"sed -n '1,4000p' {__import__('shlex').quote(path)}",
+                        timeout=10,
+                    )
+                    haystack = str(out).splitlines()
+                    needle = old_str.splitlines()
+                    cand = difflib.get_close_matches(
+                        needle[0] if needle else "", haystack, n=1, cutoff=0.6
+                    ) if needle else []
+                    if cand:
+                        obs += (
+                            "\n\n[editor-hint] Closest line in {p}: {c!r}.\n"
+                            "Fix whitespace / capitalization drift, then retry with the exact text."
+                        ).format(p=path, c=cand[0][:200])
+                except Exception:
+                    pass
+            return obs
+
+        # --- (3) Post-edit py_compile gate. ------------------------------------
+        if (
+            cmd in {"str_replace", "insert", "create"}
+            and path.endswith(".py")
+            and runtime is not None
+            and "Error" not in obs.split("\n", 1)[0]  # tool itself reported success
+        ):
+            import shlex
+            q = shlex.quote(path)
+            try:
+                out, _rc = runtime.run(
+                    f"python3 -c \"import py_compile,sys; py_compile.compile({q!r}, doraise=True)\" 2>&1 || true",
+                    timeout=20,
+                )
+                out_s = str(out)
+                if ("IndentationError" in out_s) or ("SyntaxError" in out_s):
+                    # Revert the change: r2egym file_editor writes an "_original"
+                    # backup for str_replace / insert. If the backup is absent
+                    # (e.g. `create`), fall back to `git checkout --`.
+                    runtime.run(
+                        f"(test -f {q}.__rllm_bak__ && mv -f {q}.__rllm_bak__ {q}) "
+                        f"|| (cd /testbed && git checkout -- {q} 2>/dev/null) || true",
+                        timeout=10,
+                    )
+                    obs += (
+                        "\n\n[editor-hint] Post-edit py_compile FAILED and the edit has been reverted.\n"
+                        f"Compiler said:\n{out_s.strip()[-400:]}\n"
+                        "View the file, then retry with a correct edit."
+                    )
+            except Exception:
+                pass
+    except Exception:
+        return observation
+    return obs
+
+
 class SWEEnv(BaseEnv):
     """Software Engineering Environment for code-related tasks.
 
@@ -404,6 +513,15 @@ class SWEEnv(BaseEnv):
             r"Exit code: \1",
             observation,
         )
+
+        # File-editor ergonomics: enrich failure observations + compile-gate edits.
+        # Gated by env var so a regression can be rolled back without a redeploy.
+        if os.environ.get("RLLM_FILE_EDITOR_ERGONOMICS", "1") != "0":
+            try:
+                runtime = getattr(self.env, "runtime", None) if self.env is not None else None
+                observation = _enrich_file_editor_observation(action_obj, observation, runtime)
+            except Exception:
+                pass
 
         return observation, reward, done, info
 

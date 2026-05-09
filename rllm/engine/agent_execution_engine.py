@@ -1,11 +1,63 @@
 import asyncio
 import logging
+import re
 import threading
 import time
 import traceback
 import uuid
 import json
 from concurrent.futures import ThreadPoolExecutor
+
+# Tool-UX / env-crash signatures: when a repeated action's observation matches any of
+# these, the action loop is treated as driven by an env-setup / tool-UX failure rather
+# than by a policy logic error, and the final step's reward is masked from loss
+# (see agent_execution_engine.py ABNORMAL_ACTION_LOOP handler).
+# Grouped so it's obvious what each regex catches:
+#   - Python runtime env failures (tool shebang / deps broken)
+#   - Shell-tool non-zero exit propagated to observation
+#   - file_editor UX failures (stale old_str, duplicate anchors, wrong CWD)
+#   - execute_bash selector miss (pytest can't find the test file)
+_ENV_TOOL_ERROR_SIGS = (
+    "ModuleNotFoundError",
+    "ImportError",
+    "No module named",
+    "Traceback",
+    "Exit code: 1",
+    "Exit code: 2",
+    "Multiple occurrences of old_str",
+    "No match found for old_str",
+    "The path '",
+    "does not exist",
+    "ERROR: file or directory not found",
+)
+
+
+def _extract_tool_name(act) -> str:
+    """Return a human-readable tool name for per-tool metric bucketing.
+
+    R2E-Gym Action objects expose ``function_name`` once parsed, but that attribute
+    is sometimes empty (e.g. when we fall through on a malformed call) and every
+    call ends up in the ``"unknown"`` bucket, destroying per-tool observability.
+    Fall back to parsing the raw action string (``<function=NAME>`` for r2egym,
+    ``"name": "NAME"`` for sweagent/JSON tool-call format).
+    """
+    name = getattr(getattr(act, "action", None), "function_name", None)
+    if name:
+        return str(name)
+    raw = ""
+    try:
+        raw = str(getattr(act, "action", "")) or str(act)
+    except Exception:
+        raw = ""
+    if not raw:
+        return "unknown"
+    m = re.search(r"<function\s*=\s*([A-Za-z_][A-Za-z0-9_]*)", raw)
+    if m:
+        return m.group(1)
+    m = re.search(r'"name"\s*:\s*"([A-Za-z_][A-Za-z0-9_]*)"', raw)
+    if m:
+        return m.group(1)
+    return "unknown"
 
 import torch
 
@@ -555,12 +607,12 @@ class AgentExecutionEngine:
                 recent_actions.append(action_str)
                 if len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]:
                     consecutive_repeat_count += 1
-                    # Detect whether the repeated action is a tool-crash (env-setup failure).
-                    # We check the last observation for known env-error signatures.
+                    # Detect whether the repeated action is a tool-crash (env-setup failure)
+                    # or a file_editor/tool-UX failure the model can't recover from. Both
+                    # classes are masked from loss so the policy isn't punished for an
+                    # unsolvable tool-UX situation.
                     _obs_str = str(observation)
-                    _last_loop_action_is_tool_error = any(
-                        sig in _obs_str for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Exit code: 1", "Exit code: 2")
-                    )
+                    _last_loop_action_is_tool_error = any(sig in _obs_str for sig in _ENV_TOOL_ERROR_SIGS)
                 else:
                     consecutive_repeat_count = 0
                     loop_warning_injected = False
@@ -727,16 +779,16 @@ class AgentExecutionEngine:
 
             # --- Tool-error tracking ---
             for _act in actions_result:
-                _tname = getattr(getattr(_act, "action", None), "function_name", None) or "unknown"
+                _tname = _extract_tool_name(_act)
                 tool_call_counts[_tname] = tool_call_counts.get(_tname, 0) + 1
                 _obs_check = str(next_observation)
-                if any(sig in _obs_check for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Traceback", "Exit code: 1", "Exit code: 2")):
+                if any(sig in _obs_check for sig in _ENV_TOOL_ERROR_SIGS):
                     tool_error_counts[_tname] = tool_error_counts.get(_tname, 0) + 1
 
             # --- Loop detection: inject warning into observation if repeating ---
             if consecutive_repeat_count >= LOOP_DETECT_THRESHOLD and not loop_warning_injected:
                 _obs_for_hint = str(next_observation)
-                _is_tool_crash = any(sig in _obs_for_hint for sig in ("ModuleNotFoundError", "ImportError", "No module named", "Exit code: 1", "Exit code: 2"))
+                _is_tool_crash = any(sig in _obs_for_hint for sig in _ENV_TOOL_ERROR_SIGS)
                 if _is_tool_crash:
                     loop_warning = (
                         "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — "

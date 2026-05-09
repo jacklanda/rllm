@@ -139,6 +139,31 @@ class AgentPPOTrainer(RayPPOTrainer):
         else:
             print("Using trajectory-level advantage, max_prompt_length and max_response_length will be applied episode-wise")
 
+        # Curriculum filter (P0): quarantine tasks whose rollouts give identical
+        # non-zero exit codes for N consecutive training steps. Safe no-op when
+        # disabled or when config subtree is missing (older configs).
+        try:
+            from rllm.trainer.verl.curriculum_filter import CurriculumFilter
+            cf_cfg = self.config.rllm.get("curriculum_filter", None) if hasattr(self.config.rllm, "get") else None
+            if cf_cfg is None:
+                cf_cfg = OmegaConf.create({"enable": False})
+            cf_enable = bool(getattr(cf_cfg, "enable", False))
+            cf_path = getattr(cf_cfg, "blocklist_path", None)
+            if cf_enable and not cf_path:
+                cf_path = os.path.join(self.config.trainer.default_local_dir, "curriculum_blocklist.json")
+            apply_sources = list(getattr(cf_cfg, "apply_to_sources", ["cli"]) or ["cli"])
+            self.curriculum_filter = CurriculumFilter(
+                enable=cf_enable,
+                consecutive_steps=int(getattr(cf_cfg, "consecutive_steps", 3)),
+                apply_to_sources=apply_sources,
+                blocklist_path=cf_path,
+            )
+            if cf_enable:
+                print(f"[curriculum_filter] enabled; consecutive_steps={self.curriculum_filter.consecutive_steps} sources={apply_sources} blocklist={cf_path}")
+        except Exception as _cf_exc:  # noqa: BLE001
+            print(f"[curriculum_filter] disabled (init failed: {_cf_exc})")
+            self.curriculum_filter = None
+
     def init_workers(self):
         super().init_workers()
 
@@ -318,6 +343,42 @@ class AgentPPOTrainer(RayPPOTrainer):
                     repeat_times=self.config.actor_rollout_ref.rollout.n,
                     interleave=True,
                 )
+
+                # --- P2 CLI diversity probe: emit a warning metric if this
+                #     batch contains too few unique CLI tasks for GRPO to get
+                #     a meaningful advantage signal. Only logs; never mutates
+                #     the batch.
+                try:
+                    _cli_cfg = getattr(self.config.rllm, "cli_diversity", None)
+                    _cli_enable = bool(getattr(_cli_cfg, "enable", False)) if _cli_cfg is not None else False
+                    if _cli_enable:
+                        _max_per_task = int(getattr(_cli_cfg, "max_rollouts_per_task", 8) or 8)
+                        _ds = batch.non_tensor_batch.get("data_source")
+                        _ei = batch.non_tensor_batch.get("extra_info")
+                        if _ds is not None and _ei is not None:
+                            from collections import Counter as _Counter
+                            _cli_keys = []
+                            for _j, _src in enumerate(_ds):
+                                if _src == "cli":
+                                    _e = _ei[_j]
+                                    if hasattr(_e, "item"):
+                                        _e = _e.item()
+                                    if isinstance(_e, dict):
+                                        _k = f"{_e.get('docker_image','?')}@{_e.get('commit_hash','?')}"
+                                        _cli_keys.append(_k)
+                            if _cli_keys:
+                                _cnts = _Counter(_cli_keys)
+                                _uniq = len(_cnts)
+                                _max_obs = max(_cnts.values())
+                                if _max_obs > _max_per_task:
+                                    print(
+                                        f"[cli_diversity] step={self.global_steps} "
+                                        f"unique_cli_tasks={_uniq} max_rollouts_per_task={_max_obs} "
+                                        f"(> threshold {_max_per_task}); lower rollout.n or raise "
+                                        f"train_batch_size to improve GRPO advantage variance."
+                                    )
+                except Exception:
+                    pass
 
                 metrics = {}
                 timing_raw = {}
@@ -996,6 +1057,52 @@ class AgentPPOTrainer(RayPPOTrainer):
         """
         from verl.utils.torch_functional import pad_sequence_to_length, masked_whiten
 
+        # --- Curriculum filter (P0) runs BEFORE token packing so masked tasks
+        #     have ``trajectory_reward=None`` when the loop below zeroes their
+        #     response mask. See ``trainer/verl/curriculum_filter.py``.
+        _cf_metrics: dict = {}
+        cf = getattr(self, "curriculum_filter", None)
+        if (cf is not None) and cf.enable and (not is_eval) and batch is not None:
+            try:
+                extras = batch.non_tensor_batch.get("extra_info")
+            except Exception:
+                extras = None
+            from rllm.trainer.verl.curriculum_filter import _task_key
+            # Build the minimal proxy dump the filter needs.
+            ds_arr = batch.non_tensor_batch.get("data_source") if batch is not None else None
+            proxy_dump = []
+            for _traj in trajectories:
+                _idx = _traj["idx"]
+                src = ds_arr[_idx] if ds_arr is not None else "unknown"
+                proxy_dump.append({
+                    "_idx": int(_idx),
+                    "data_source": src,
+                    "debug": {"verification": _traj.get("reward_debug", {}) or {}},
+                })
+            cf_metrics = cf.update_from_dump(proxy_dump, batch)
+            # Apply blocklist: set trajectory_reward=None for any blocked task.
+            n_masked = 0
+            if extras is not None and cf._blocked:
+                for _traj in trajectories:
+                    _idx = _traj["idx"]
+                    try:
+                        _ei = extras[_idx]
+                        if hasattr(_ei, "item"):
+                            _ei = _ei.item()
+                    except Exception:
+                        continue
+                    _key = _task_key(_ei)
+                    if _key and _key in cf._blocked:
+                        src = ds_arr[_idx] if ds_arr is not None else "unknown"
+                        if src in cf.apply_to_sources:
+                            _traj["trajectory_reward"] = None
+                            _traj["_curriculum_blocked"] = True
+                            n_masked += 1
+            cf_metrics["curriculum_filter/masked_this_step"] = int(n_masked)
+            _cf_metrics = cf_metrics
+            if n_masked or cf_metrics.get("curriculum_filter/newly_blocked"):
+                print(f"[curriculum_filter] {cf_metrics}  masked_trajectories={n_masked}")
+
         all_initial_tokens_list = []
         all_response_tokens_list = []
         all_masks_list = []
@@ -1005,7 +1112,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         chat_completions = []
         traj_metrics = []
         reward_metadata_list = []
-        metrics = {}
+        metrics = dict(_cf_metrics)
         valid_indices = []
 
         for idx, traj in enumerate(trajectories):
@@ -1138,7 +1245,13 @@ class AgentPPOTrainer(RayPPOTrainer):
                     "metrics": traj.get("metrics", {}),
                     "exception": traj.get("exception", ""),
                 },
+                "_idx": int(idx),
             })
+
+        # Drop internal helper keys before JSON dump / downstream stats.
+        # (Curriculum-filter hook runs earlier, before token packing.)
+        for _row in traj_dump:
+            _row.pop("_idx", None)
 
         # Collect termination reason statistics
         all_reasons = [
