@@ -1,9 +1,12 @@
+import logging
 import re
 import string
 from collections import Counter
 from typing import Any, List
 
 from rllm.rewards.reward_types import RewardConfig, RewardInput, RewardOutput
+
+logger = logging.getLogger(__name__)
 
 
 def repetition_penalty_reward(
@@ -202,6 +205,101 @@ class RewardSearchFn:
         # Cannot map without seeing the original options — return as-is
         return extracted
 
+    def _map_letter_to_option_value(self, extracted: str, question: str) -> str:
+        """Reverse of _map_value_to_option_letter.
+
+        Used when the GT is prose but the model emitted a bare MCQ letter
+        ("C"). Scans the question for a line matching ``^C[.)] (.+)`` and
+        returns the prose. 175/300 medqa eval rollouts in the training
+        dump fell into this gap — the reasoning was correct but the
+        surface form was a letter while the verifier compared against a
+        noun phrase.
+        """
+        if not extracted or not question:
+            return extracted
+        cand = extracted.strip().upper()
+        if not (len(cand) == 1 and cand in "ABCDE"):
+            return extracted
+        # Find the option line in the question body.
+        pattern = rf"(?mi)^\s*{re.escape(cand)}\s*[.)\:\-]\s*(.+?)\s*$"
+        m = re.search(pattern, question)
+        if m:
+            return m.group(1).strip()
+        return extracted
+
+    _LATEX_TEXT_WRAPPERS = (
+        r"\text",
+        r"\textbf",
+        r"\textit",
+        r"\texttt",
+        r"\textrm",
+        r"\textsf",
+        r"\mathrm",
+        r"\mathbf",
+        r"\mathit",
+        r"\mathtt",
+        r"\mathsf",
+        r"\operatorname",
+        r"\emph",
+        r"\underline",
+    )
+
+    @classmethod
+    def _strip_latex_wrappers(cls, s: str) -> str:
+        """Peel LaTeX text-shape wrappers off an already-unboxed answer.
+
+        Evidence from `evals_trajectory/global_steps_10.json`: 24 zero-reward
+        cases had `\\boxed{\\text{no}}`, `\\boxed{\\textbf{Paris}}`, or
+        `\\boxed{\\$42\\$}` as the model's final answer. Unboxing alone
+        leaves the text-command wrapper intact, so F1 against a bare
+        ground-truth token (``"no"``, ``"Paris"``) scores 0. We repeatedly
+        strip the longest recognized wrapper (e.g. ``\\textbf`` before
+        ``\\text``) and then clean up dangling ``$``/``\\$`` currency markers
+        and outer whitespace. Only text-shape commands are peeled; math
+        operators (``\\frac``, ``\\sqrt``) are left intact.
+        """
+        if not s:
+            return s
+        out = s.strip()
+        # Loop in case wrappers are nested, e.g. \textbf{\text{no}}.
+        # Longest-first keeps \textbf from being mis-matched as \text.
+        wrappers = sorted(cls._LATEX_TEXT_WRAPPERS, key=len, reverse=True)
+        for _ in range(8):  # depth cap
+            changed = False
+            for w in wrappers:
+                if not out.startswith(w):
+                    continue
+                tail = out[len(w):].lstrip()
+                if not tail.startswith("{"):
+                    continue
+                depth = 1
+                j = 1
+                while depth and j < len(tail):
+                    if tail[j] == "{":
+                        depth += 1
+                    elif tail[j] == "}":
+                        depth -= 1
+                    j += 1
+                if depth:
+                    continue  # unbalanced — leave alone
+                inner = tail[1 : j - 1]
+                trailing = tail[j:].strip()
+                # Only peel if the wrapper spans the whole answer; otherwise
+                # we risk corrupting a multi-token payload.
+                if trailing:
+                    continue
+                out = inner.strip()
+                changed = True
+                break
+            if not changed:
+                break
+        # Strip dangling $...$ math mode and escaped currency.
+        if out.startswith("$") and out.endswith("$") and len(out) >= 2:
+            out = out[1:-1].strip()
+        out = out.replace("\\$", "$").replace("\\%", "%")
+        out = out.replace("\\,", " ").replace("\\;", " ").replace("\\:", " ")
+        return out.strip()
+
     def extract_answer_from_response(self, response: str) -> str:
         response = response.strip()
 
@@ -219,27 +317,49 @@ class RewardSearchFn:
 
         # 1. HIGHEST PRIORITY: Look for \boxed{} or \boxed[] content
         def unbox(s: str) -> str | None:
-            """Extract content from \boxed{} with proper nesting support"""
-            try:
-                i = s.find("boxed{")
-                if i == -1:
-                    return None
-                i += 6  # 6 == len("boxed{")
-                depth = 1
-                j = i
-                while depth and j < len(s):
-                    depth += (s[j] == "{") - (s[j] == "}")
-                    j += 1
-                if depth:
-                    return None  # unbalanced braces
-                return s[i : j - 1]
-            except (IndexError, ValueError):
+            """Extract content from \\boxed{...} with proper nesting support.
+
+            Handles three leak modes observed in the eval trajectories:
+              * ``\\boxed{C}`` — intended form (the ``\\b`` is a backslash+b,
+                not the Python \\x08 backspace, because the source string is
+                what the model literally typed).
+              * ``boxed{C}``  — the model emitted ``boxed`` without any
+                leading backslash.
+              * ``oxed{C}``   — an upstream string-literal bug stripped the
+                leading ``\\b`` (Python parser treats ``\\boxed`` inside a
+                double-quoted string as ``\\x08oxed``; the fragment appeared
+                in 4 eval rollouts across gpqa/musique/medqa and silently
+                truncated the extracted answer).
+            """
+            if not s:
                 return None
+            # Scan for any of the three anchors; take the earliest.
+            anchors = []
+            for tok in ("\\boxed{", "boxed{", "oxed{", "\x08oxed{"):
+                i = s.find(tok)
+                if i >= 0:
+                    anchors.append((i, len(tok)))
+            if not anchors:
+                return None
+            anchors.sort()
+            start, tok_len = anchors[0]
+            i = start + tok_len
+            depth = 1
+            j = i
+            while depth and j < len(s):
+                if s[j] == "{":
+                    depth += 1
+                elif s[j] == "}":
+                    depth -= 1
+                j += 1
+            if depth:
+                return None  # unbalanced braces
+            return s[i : j - 1]
 
         boxed_content = unbox(response)
 
         if boxed_content is not None:
-            return boxed_content.strip()
+            return self._strip_latex_wrappers(boxed_content.strip())
 
         bold_patterns = [
             r"\*\*([^*]+)\*\*",
@@ -334,7 +454,13 @@ class RewardSearchFn:
         # 9. Last resort: return cleaned response up to first 100 chars
         return response[:100].strip()
 
-    def evaluate_answer(self, model_answer: str, ground_truth: str | list[str]) -> tuple[bool, float, dict[str, Any]]:
+    def evaluate_answer(
+        self,
+        model_answer: str,
+        ground_truth: str | list[str],
+        question: str | None = None,
+        data_source: str | None = None,
+    ) -> tuple[bool, float, dict[str, Any]]:
         extracted_answer = self.extract_answer_from_response(model_answer)
 
         if isinstance(ground_truth, str):
@@ -344,6 +470,15 @@ class RewardSearchFn:
 
         # For multiple-choice (GPQA-style): try mapping raw values to option letters
         extracted_answer = self._map_value_to_option_letter(extracted_answer, ground_truths)
+
+        # Reverse mapping for MCQ-shaped datasets whose GT is prose (medqa).
+        # Fix #1: 175/300 medqa rollouts output a bare letter while GT is a
+        # noun phrase; pure f1 scoring of "C" vs "Colorectal cancer" is 0.
+        mcq_prose_datasets = {"medqa"}
+        if data_source in mcq_prose_datasets and question:
+            mapped = self._map_letter_to_option_value(extracted_answer, question)
+            if mapped != extracted_answer:
+                extracted_answer = mapped
 
         max_f1 = 0.0
         max_em = False
@@ -396,7 +531,12 @@ class RewardSearchFn:
         # Parse tool calls from the response
         # tool_call_count, tool_call_contents, is_valid_parsing = self.parse_tool_calls(model_response)
 
-        is_correct, score, metadata = self.evaluate_answer(model_response, ground_truth)
+        is_correct, score, metadata = self.evaluate_answer(
+            model_response,
+            ground_truth,
+            question=input.task_info.get("question"),
+            data_source=input.task_info.get("data_source"),
+        )
 
         if is_correct:
             # For exact matches, give full reward
@@ -407,7 +547,16 @@ class RewardSearchFn:
                 # Scale reward by F1 score for partial matches
                 reward = self.config.correct_reward * score
         else:
-            reward = self.config.incorrect_reward
+            # Fix #10: keep a continuous near-miss credit below the
+            # f1_threshold instead of the binary cliff. The eval dump at
+            # step-10 had 20+ zero-reward cases with f1 ∈ (0, 0.3) whose
+            # gradient signal was being discarded entirely. We award half
+            # the scaled reward in that band, still dominated by any
+            # threshold-passing rollout, so ranking order is preserved.
+            if score > 0.0:
+                reward = self.config.correct_reward * score * 0.5
+            else:
+                reward = self.config.incorrect_reward
 
         # Apply step-based bonus for correct answers
         step_bonus = 0.0
@@ -469,26 +618,33 @@ class RewardSearchFn:
             reward += tool_call_adjustment
         """
 
-        """
-        # Apply repetition penalty if enabled
+        # Fix #8: activate repetition penalty on the web-search path.
+        # The eval dump at step-10 contained one musique rollout with a
+        # 488k-char assistant turn (``"Jennifer" × thousands``) that
+        # terminated normally with reward 0 — no penalty fired because this
+        # block was commented out, leaving `repetition_penalty_reward`
+        # identically 0 for all 1250 rollouts. Opt-in via
+        # RewardConfig.apply_repetition_penalty so MCP paths are unaffected.
         repetition_penalty = 0.0
         if self.config.apply_repetition_penalty:
-            repetition_penalty = repetition_penalty_reward(
-                model_response,
-                max_n=self.config.repetition_max_n
-            )
-            # Scale by weight and add to total reward
+            try:
+                repetition_penalty = repetition_penalty_reward(
+                    model_response,
+                    max_n=self.config.repetition_max_n,
+                )
+            except Exception as _e:
+                logger.debug("repetition_penalty_reward failed: %s", _e)
+                repetition_penalty = 0.0
             repetition_penalty_weighted = repetition_penalty * self.config.repetition_penalty_weight
             reward += repetition_penalty_weighted
-        """
+        else:
+            repetition_penalty_weighted = 0.0
 
         # Add tool call information and other reward components to metadata
         metadata.update({
             "base_reward": reward,
-            # "tool_call_reward": tool_call_adjustment,
             "tool_call_reward": 0,
-            # "repetition_penalty_reward": repetition_penalty * self.config.repetition_penalty_weight if self.config.apply_repetition_penalty else None,
-            "repetition_penalty_reward": 0,
+            "repetition_penalty_reward": repetition_penalty_weighted,
             "step_bonus": step_bonus,
         })
 

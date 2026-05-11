@@ -967,7 +967,19 @@ class AgentExecutionEngine:
 
             # Check if episode is done
             if done:
-                termination_reason = "ENV_DONE"
+                # Honor env-emitted termination reason if present. Without this
+                # the engine collapsed every env outcome (including explicit
+                # ABNORMAL_PARSE_ERROR / INVALID_REACT_STRUCTURE raised by
+                # fused.py) into a single ENV_DONE bucket — the trajectory
+                # dumps at step-12/step-10 showed 1024/1024 and 1250/1250
+                # ENV_DONE, making the termination taxonomy unusable.
+                _env_reason = info.get("termination_reason") if isinstance(info, dict) else None
+                if _env_reason:
+                    termination_reason = str(_env_reason)
+                    if termination_reason != "ENV_DONE" and not exception_message:
+                        exception_message = str(info.get("termination_message", "") or f"Env signalled {termination_reason}")
+                else:
+                    termination_reason = "ENV_DONE"
                 break
 
             response_tokens.extend(env_msg_tokens)
@@ -1184,9 +1196,8 @@ class AgentExecutionEngine:
                     "total_time": total_time,
                     "token_mismatch": 0.0 if is_valid_trajectory else 1.0,
                     "reward_computed": 1.0 if final_reward_computed else 0.0,
-                    # Per-tool error rates: tool_errors/{name} and tool_calls/{name}
+                    # Per-tool call counts and error rates (tool_errors/{name} counts removed)
                     **{f"tool_calls/{t}": float(c) for t, c in tool_call_counts.items()},
-                    **{f"tool_errors/{t}": float(tool_error_counts.get(t, 0)) for t in tool_call_counts},
                     **{f"tool_error_rate/{t}": float(tool_error_counts.get(t, 0)) / float(c) for t, c in tool_call_counts.items() if c > 0},
                     # Add individual reward components
                     **reward_metrics,

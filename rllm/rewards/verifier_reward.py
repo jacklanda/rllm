@@ -24,22 +24,77 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Failure-taxonomy helpers (fix #9)
+# ---------------------------------------------------------------------------
+
+_STRUCTURAL_MSG_FRAGMENTS = (
+    "not a list",
+    "must be a list",
+    "is not a dict",
+    "must be a dict",
+    "missing required top-level",
+    "missing required key",
+    "missing required section",
+    "payload",
+    "schema",
+    "json",
+    "invalid format",
+)
+
+_CONTENT_MSG_FRAGMENTS = (
+    "could not verify",
+    "insufficient verification",
+    "entries matched",
+    "does not match",
+    "does not contain",
+    "mismatch",
+)
+
+
+def _looks_like_structural_msg(msg: str) -> bool:
+    low = (msg or "").lower()
+    return any(frag in low for frag in _STRUCTURAL_MSG_FRAGMENTS)
+
+
+def _looks_like_content_msg(msg: str) -> bool:
+    low = (msg or "").lower()
+    return any(frag in low for frag in _CONTENT_MSG_FRAGMENTS)
+
+
+def _coerce_payload_shape(payload: Any) -> Any:
+    """Adapt a dict payload to a list when the verifier demands a list.
+
+    The three ``submit_result_difficulty_{1,2,3}`` tools declare mutually
+    incompatible outer shapes (array vs. object).  When the model picks
+    the object shape but the verifier expects an array, the inner list
+    is usually present under a single wrapper key.  Recover it.
+    """
+    if isinstance(payload, dict):
+        if len(payload) == 1:
+            only_val = next(iter(payload.values()))
+            if isinstance(only_val, list):
+                return only_val
+        for key in ("result", "results", "items", "data", "answer", "pairings"):
+            v = payload.get(key)
+            if isinstance(v, list):
+                return v
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Tool-call reward helpers
 # ---------------------------------------------------------------------------
 
 def _get_tool_call_reward(task_info: dict[str, Any]) -> tuple[float, dict[str, Any]]:
     """Compute step-penalty and tool-call bonus/penalty.
 
-    Returns (total_tool_call_reward, stats_dict).
+    Returns (raw_tool_call_reward, stats_dict).
 
-    The penalty is meant to encourage multi-step tool usage *without*
-    completely overwhelming a positive base_reward.  Current scale:
-
-    * No non-submit tool calls → -0.5 (was -1.0)
-    * step_count ≤ 2           → -0.5 (was -2.0)
-    * 3 ≤ step_count < 4       → mild ramp
-    * 4..8                     → 0 (sweet spot)
-    * >8                       → small penalty for over-stepping
+    The raw value is NOT added unconditionally: the caller applies the
+    step penalty only when ``base_reward > 0`` and clamps so a correct
+    rollout cannot become negative.  Trajectory-file evidence: 95 MCP
+    rollouts passed the verifier but the unconditional penalty pushed
+    their final reward below the base, 6 % of them past zero.
     """
     stats = task_info.get("tool_call_stats", {}) if isinstance(task_info, dict) else {}
     submit_called = bool(stats.get("submit_called"))
@@ -58,13 +113,22 @@ def _get_tool_call_reward(task_info: dict[str, Any]) -> tuple[float, dict[str, A
         elif step_count > max_good_steps:
             step_penalty -= 0.2 * (step_count - max_good_steps)
 
-    tool_call_bonus = 0.0
-    if submit_called and non_submit_calls == 0:
-        tool_call_bonus -= 0.5
+    # Fix #3: activate tool_call_bonus for genuine exploration. The eval
+    # dump showed agents that explored 6+ tools had a 67.6 % correct rate
+    # versus 52.1 % for agents that gave up under 6 calls — yet the bonus
+    # channel fired 0/1024 times, so exploration was punished (via step
+    # penalty) without ever being rewarded. We credit each *distinct
+    # successful* non-submit tool name once, capped at +0.15. The caller
+    # further gates this by requiring base_reward > 0, so the bonus can
+    # only amplify correct rollouts and cannot be farmed by failure.
+    distinct_successful = int(stats.get("distinct_successful_tools", 0)) if isinstance(stats, dict) else 0
+    tool_call_bonus = min(0.15, 0.03 * distinct_successful)
+    no_tool_use = bool(submit_called and non_submit_calls == 0)
 
     stats = dict(stats) if isinstance(stats, dict) else {}
     stats["step_penalty"] = float(step_penalty)
     stats["tool_call_bonus"] = float(tool_call_bonus)
+    stats["no_tool_use"] = no_tool_use
     stats["total_tool_call_reward"] = float(step_penalty + tool_call_bonus)
 
     return step_penalty + tool_call_bonus, stats
@@ -193,6 +257,27 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
         logger.error("[REWARD] verify_fn raised exception: %s", exc)
         return RewardOutput(reward=0.0, metadata={"error": f"verify_failed: {exc}", **empty_reward_metadata})
 
+    # --- Submit-contract coercion retry (fix #6) --------------------------
+    # 131/156 MCP negatives trace to the submit tool declaring
+    # ``result: object`` while the verifier demands a list (or vice versa).
+    # When the first pass reports a list/shape mismatch and the payload is
+    # a single-list-valued dict, retry with the inner list.
+    coercion_retry = False
+    if (
+        isinstance(verifier_result, dict)
+        and verifier_result.get("passed") is False
+        and _looks_like_structural_msg(verifier_result.get("message", ""))
+    ):
+        coerced = _coerce_payload_shape(parsed_action)
+        if coerced is not None and coerced is not parsed_action:
+            try:
+                retry_result = verify_fn(tools_context, coerced)
+                if isinstance(retry_result, dict) and retry_result.get("passed") is True:
+                    verifier_result = retry_result
+                    coercion_retry = True
+            except Exception:
+                pass
+
     # Parse reward from verifier result
     base_reward = 0.0
     is_correct: bool | None = None
@@ -215,27 +300,49 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
         logger.warning("[REWARD] Verifier result is not a dict: %s", type(verifier_result))
 
     # Tool-call reward (step penalties etc.)
-    tool_call_reward, tool_call_stats = _get_tool_call_reward(task_info)
-
-    # Clip total reward: if base_reward is 0 (verifier says "wrong but not broken"),
-    # don't let step penalties push the total below -0.1.
-    # This prevents noisy negative gradients from opaque verifier tasks where the model
-    # produced structurally valid output but missed specific criteria.
-    total_reward = base_reward + tool_call_reward
-    if base_reward >= 0.0 and total_reward < -0.1:
-        total_reward = -0.1
-
+    tool_call_reward_raw, tool_call_stats = _get_tool_call_reward(task_info)
     step_penalty = float(tool_call_stats.get("step_penalty", 0.0))
     tool_call_bonus = float(tool_call_stats.get("tool_call_bonus", 0.0))
+
+    # Fix #10: step penalty applies ONLY when the verifier gave a positive
+    # base_reward, and the total is clamped to [0.0, 1.0] so a correct
+    # rollout can never become negative and the tool_call_bonus cannot push
+    # a perfect rollout above the verifier's ceiling.  In the training dump
+    # 95 passed-but-devalued trajectories (9 % of accept_traj) had base=1.0
+    # and final<1.0; 6 of those went below zero and trained against the truth.
+    if base_reward > 0.0:
+        applied_penalty = step_penalty
+        applied_bonus = tool_call_bonus
+        total_reward = min(1.0, max(0.0, base_reward + applied_penalty + applied_bonus))
+    else:
+        applied_penalty = 0.0
+        applied_bonus = 0.0
+        total_reward = base_reward  # verifier-negative: leave untouched
+
+    # Structural vs content failure classification (fix #9).
+    structural_fail = 0
+    content_fail = 0
+    if is_correct is False and isinstance(verifier_result, dict):
+        msg = verifier_result.get("message", "")
+        if _looks_like_structural_msg(msg):
+            structural_fail = 1
+        elif _looks_like_content_msg(msg):
+            content_fail = 1
+        else:
+            content_fail = 1  # default: unclassified failures count as content
 
     metadata: dict[str, Any] = {
         "verifier_output": verifier_result,
         "reward/base_reward": base_reward,
-        "reward/tool_call_total": tool_call_reward,
-        "reward/step_penalty": step_penalty,
-        "reward/tool_call_bonus": tool_call_bonus,
-        "tool_call_reward": tool_call_reward,
+        "reward/tool_call_total": applied_penalty + applied_bonus,
+        "reward/step_penalty": applied_penalty,
+        "reward/tool_call_bonus": applied_bonus,
+        "reward/raw_step_penalty": step_penalty,
+        "tool_call_reward": applied_penalty + applied_bonus,
         "tool_call_stats": tool_call_stats,
-        "reward/total_clipped": total_reward != (base_reward + tool_call_reward),
+        "reward/total_clipped": base_reward > 0.0 and total_reward == 0.0 and (base_reward + step_penalty + tool_call_bonus) < 0.0,
+        "verifier/structural_fail": structural_fail,
+        "verifier/content_fail": content_fail,
+        "verifier/coercion_retry": int(coercion_retry),
     }
     return RewardOutput(reward=total_reward, metadata=metadata, is_correct=is_correct)

@@ -170,18 +170,23 @@ class LocalRetrievalTool(Tool):
             # Format results
             documents = self._format_search_results(results, query)
 
-            # Truncate content if too long (keep first 512 characters)
+            # Evidence-mode vs summary-mode (fix #4).
+            #
+            # The abstractive ``/summarize`` endpoint collapses 3 docs into a
+            # 256-token paraphrase that routinely strips dates, proper nouns,
+            # and numeric identifiers — which is exactly what short-factoid
+            # multi-hop QA (musique 9.9 %, medqa 18.1 %, gaia 11.3 % in the
+            # eval dump) needs. Datasets whose summary preserves named
+            # entities (bamboogle 44.7 %, gpqa 43.4 %) do not have this gap.
+            #
+            # Default behaviour is now raw top-k passages. Set
+            # ``RLLM_RETRIEVAL_SUMMARIZE=1`` to restore legacy summaries.
+            use_summary = os.environ.get("RLLM_RETRIEVAL_SUMMARIZE", "0") == "1"
             content = "\n\n".join(documents)
-            if True:  # TODO: replace the condition to check if summarization is enabled
+            if use_summary:
                 try:
                     payload = {
-                        "documents": [
-                            {
-                                "content": document,
-                            }
-                            for document in documents
-                        ],
-                        # "query": query or "Summarize the above document.",
+                        "documents": [{"content": d} for d in documents],
                         "max_length": 256,
                     }
                     response = self.client.post(f"{self.server_url}/summarize", json=payload)
@@ -192,10 +197,14 @@ class LocalRetrievalTool(Tool):
                     logger.warning(f"Error during summarization: {e}")
                     content = "\n\n".join(documents)
 
-            if len(content.split()) >= 256:
-                summary = " ".join(content.split()[:256]) + "..."
-            else:
-                summary = content
+            # Cap total content regardless of mode so the rollout prompt
+            # doesn't blow up; evidence mode gets a larger budget (2048
+            # words) than the old 256-word summary budget.
+            word_budget = 2048 if not use_summary else 256
+            words = content.split()
+            if len(words) >= word_budget:
+                content = " ".join(words[:word_budget]) + "..."
+            summary = content
 
             # Create metadata for potential downstream use
             metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url, "summary": summary}

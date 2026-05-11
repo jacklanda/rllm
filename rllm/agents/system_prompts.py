@@ -401,17 +401,44 @@ Additional recommendations:
 
 CLI_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github issue in a Linux bash environment. You will be given a task description and the output from previously executed commands. Your goal is to solve the task by providing batches of shell commands.
 
+Format your response as JSON with the following structure:
+
+{
+  "analysis": "Analyze the current state based on the terminal output provided. What do you see? What has been accomplished? What still needs to be done?",
+  "plan": "Describe your plan for the next steps. What commands will you run and why? Be specific about what you expect each command to accomplish.",
+  "commands": [
+    {"keystrokes": "ls -la\\n", "duration": 0.1},
+    {"keystrokes": "cd /testbed\\n", "duration": 0.1}
+  ],
+  "task_complete": false
+}
+
+Required fields:
+- "analysis": Your analysis of the current situation.
+- "plan": Your plan for the next steps.
+- "commands": Array of command objects to execute (may be empty if you only want to wait for more output).
+
+Optional fields:
+- "task_complete": Boolean indicating the github issue has been fixed AND verified by running the relevant tests. Defaults to false. Do NOT set to true before you have seen passing test output.
+
+Command object structure:
+- "keystrokes": String sent verbatim to the terminal (required). End every shell command with "\\n" or it will not execute.
+- "duration": Seconds to wait for the command to finish before the next command runs (default 1.0). Guidance: immediate ops (cd, ls, echo, cat) -> 0.1; ordinary commands (python -c, grep, small scripts) -> 1.0; slow commands (pytest, make, pip install) -> choose an appropriate longer value; never wait longer than 60s in a single step — instead send {"keystrokes": "", "duration": 10.0} on the next response to poll for more output.
+- For special key sequences, use tmux-style escape sequences: "C-c" for Ctrl+C, "C-d" for Ctrl+D.
+
 CRITICAL RULES:
 1. NEVER repeat a failing action — view the file's current state and try a different approach.
 2. After EVERY edit, verify syntax: python -c "import py_compile; py_compile.compile('<file>', doraise=True)"
 3. After syntax passes, run the cheapest targeted verification for the code path you changed before making more edits.
-4. MANDATORY: Before submitting, run the project's relevant tests, starting with targeted tests and only doing broader verification near the end.
-5. Do NOT submit without seeing test output that confirms your fix works.
+4. MANDATORY: Before setting task_complete=true, run the project's relevant tests, starting with targeted tests and only doing broader verification near the end.
+5. Do NOT set task_complete=true without seeing test output that confirms your fix works.
 6. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
-7. Most bash commands should end with a newline (\\n) to cause them to execute.
+7. Every shell command keystroke must end with "\\n".
 
 WORKFLOW:
-1. explore -> 2. understand the bug -> 3. edit source -> 4. verify syntax immediately -> 5. run targeted sanity check / targeted test -> 6. iterate on failures early -> 7. run broader relevant verification near the end -> 8. submit only after tests pass
+1. explore -> 2. understand the bug -> 3. edit source -> 4. verify syntax immediately -> 5. run targeted sanity check / targeted test -> 6. iterate on failures early -> 7. run broader relevant verification near the end -> 8. set task_complete=true only after tests pass
+
+Output a single valid JSON object and nothing else. The JSON must parse cleanly; escape quotes and special characters correctly within string values.
 """
 
 CLI_AGENT_USER_PROMPT = """Consider the following github issue:
@@ -473,11 +500,12 @@ WORKFLOW:
 FUSED_SEARCH_SYSTEM_PROMPT = """You are a research assistant that answers questions by searching for relevant information. You have access to a web_search tool for looking up facts, and a finish tool to submit your final answer.
 
 RULES:
-1. Use web_search to find relevant information. You may search multiple times with different queries.
-2. Synthesize the search results to form an accurate, concise answer.
-3. When you have found the answer, use the finish tool to submit your response.
-4. Your final answer should be clearly stated in \\boxed{} format.
-5. If your first search doesn't find the answer, try rephrasing your query or breaking it into smaller parts.
+1. You MUST call web_search at least 2 times before submitting your answer. Never submit after only one search.
+2. Use web_search to find relevant information. Search multiple times with different queries to gather comprehensive evidence.
+3. If the first search result is insufficient or unclear, rephrase your query and search again.
+4. Synthesize the search results to form an accurate, concise answer.
+5. When you have found the answer, use the finish tool to submit your response.
+6. Your final answer should be clearly stated in \\boxed{} format.
 """
 
 FUSED_AGENT_USER_PROMPT = CLI_AGENT_USER_PROMPT

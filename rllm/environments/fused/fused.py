@@ -84,6 +84,9 @@ class FusedEnv(CLIEnv):
         self._mcp_answer = ""
         self._mcp_reward_debug: dict = {}
         self._mcp_has_used_tools = False
+        self._mcp_consecutive_unknown = 0
+        self._mcp_unknown_total = 0
+        self._mcp_distinct_tools: set[str] = set()
 
     def _get_retrieval_tool(self):
         """Return the class-level shared retrieval tool (lazy-initialized, thread-safe)."""
@@ -121,6 +124,10 @@ class FusedEnv(CLIEnv):
         self.total_steps = 0
         self._search_answer = ""
         self._search_reward_debug = {}
+        # Fix #2/#5: per-rollout parser-health + bypass counters.
+        self._search_web_search_calls = 0
+        self._search_consecutive_unknown = 0
+        self._search_unknown_total = 0
 
         question = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
         # Strip stale answer-format instructions that conflict with FUSED_SEARCH_USER_PROMPT
@@ -139,6 +146,9 @@ class FusedEnv(CLIEnv):
         self._mcp_answer = ""
         self._mcp_reward_debug = {}
         self._mcp_has_used_tools = False
+        self._mcp_consecutive_unknown = 0
+        self._mcp_unknown_total = 0
+        self._mcp_distinct_tools: set[str] = set()
 
         # Resolve tools_py path
         tools_py = self.entry.get("tools_py", "")
@@ -173,7 +183,7 @@ class FusedEnv(CLIEnv):
                         if not name or name in seen:
                             continue
                         seen.add(name)
-                        self._mcp_tool_schemas.append(tool.json)
+                        self._mcp_tool_schemas.append(self._slim_tool_schema(tool.json))
                 else:
                     logger.error("tools_py not found: %s", tools_py_abs)
                     self._mcp_tool_schemas = []
@@ -195,7 +205,137 @@ class FusedEnv(CLIEnv):
     # step
     # ------------------------------------------------------------------
 
+    _MAX_DESC_CHARS = 240
+    _MAX_PARAM_DESC_CHARS = 120
+
+    @classmethod
+    def _slim_tool_schema(cls, schema: dict) -> dict:
+        """Strip verbose sub-fields from a JSON-Schema tool definition.
+
+        Fix #8: the system prompt reached ~13 k chars (close to the 13 k
+        tool-call write limit) because each of the 1000+ per-task MCP
+        tools carried redundant ``title`` fields on every property and
+        multi-paragraph descriptions. We keep ``name``, ``description``,
+        ``parameters`` / ``inputSchema`` with only ``type``,
+        ``properties``, ``required``, ``items``; truncate descriptions
+        to one sentence; drop ``title`` entirely (JSON Schema treats it
+        as cosmetic).
+
+        Handles both flat schemas and OpenAI-style wrapped schemas
+        ``{"type": "function", "function": {...}}`` (what ``MCPTool.json``
+        returns). The wrapped form is preserved and its inner body is
+        slimmed; a bug in the flat-only version caused every MCP tool to
+        collapse to ``{}`` and disappear from the prompt.
+        """
+        if not isinstance(schema, dict):
+            return schema
+        if isinstance(schema.get("function"), dict):
+            inner = cls._slim_tool_schema(schema["function"])
+            wrapped: dict = {"type": schema.get("type", "function"), "function": inner}
+            return wrapped
+        out: dict = {}
+        if "name" in schema:
+            out["name"] = schema["name"]
+        desc = schema.get("description")
+        if isinstance(desc, str) and desc:
+            out["description"] = desc.strip()[: cls._MAX_DESC_CHARS]
+        params_key = "parameters" if "parameters" in schema else ("inputSchema" if "inputSchema" in schema else None)
+        if params_key:
+            out[params_key] = cls._slim_json_schema(schema[params_key])
+        return out
+
+    @classmethod
+    def _slim_json_schema(cls, node):
+        if not isinstance(node, dict):
+            return node
+        out: dict = {}
+        keep_keys = ("type", "properties", "required", "items", "enum", "oneOf", "anyOf")
+        for k in keep_keys:
+            if k in node:
+                v = node[k]
+                if k == "properties" and isinstance(v, dict):
+                    out[k] = {p: cls._slim_property(pv) for p, pv in v.items()}
+                elif k in ("oneOf", "anyOf") and isinstance(v, list):
+                    out[k] = [cls._slim_json_schema(x) for x in v]
+                elif k == "items":
+                    out[k] = cls._slim_json_schema(v)
+                else:
+                    out[k] = v
+        desc = node.get("description")
+        if isinstance(desc, str) and desc:
+            out["description"] = desc.strip()[: cls._MAX_PARAM_DESC_CHARS]
+        return out
+
+    @classmethod
+    def _slim_property(cls, prop):
+        if not isinstance(prop, dict):
+            return prop
+        out: dict = {}
+        for k in ("type", "enum", "items", "properties", "required", "oneOf", "anyOf"):
+            if k in prop:
+                v = prop[k]
+                if k == "items":
+                    out[k] = cls._slim_json_schema(v)
+                elif k == "properties" and isinstance(v, dict):
+                    out[k] = {p: cls._slim_property(pv) for p, pv in v.items()}
+                elif k in ("oneOf", "anyOf") and isinstance(v, list):
+                    out[k] = [cls._slim_json_schema(x) for x in v]
+                else:
+                    out[k] = v
+        desc = prop.get("description")
+        if isinstance(desc, str) and desc:
+            out["description"] = desc.strip()[: cls._MAX_PARAM_DESC_CHARS]
+        return out
+
+    # Fix #7: single-turn guards to prevent runaway generation. The eval
+    # dump at step-10 contained one musique rollout whose assistant turn was
+    # 488,222 characters of pure token repetition (e.g. ``"Jennifer"`` × 10k)
+    # yet terminated normally with reward 0. With no truncation, no
+    # repetition check, and no abnormal-termination flag, the signal was
+    # invisible to training. The thresholds below are generous (32k chars,
+    # 100 consecutive repeats of the same whitespace-separated token) and
+    # intentionally conservative so normal long answers are never flagged.
+    _MAX_TURN_CHARS = 32_000
+    _MAX_CONSECUTIVE_TOKEN_REPEATS = 100
+
+    @classmethod
+    def _detect_runaway(cls, raw: str) -> tuple[bool, str]:
+        """Return (is_runaway, reason) for pathological assistant output."""
+        if not raw:
+            return False, ""
+        if len(raw) > cls._MAX_TURN_CHARS:
+            return True, f"assistant turn exceeded {cls._MAX_TURN_CHARS} chars (got {len(raw)})"
+        tokens = raw.split()
+        if len(tokens) >= cls._MAX_CONSECUTIVE_TOKEN_REPEATS:
+            run, prev = 1, None
+            for tok in tokens:
+                if tok == prev:
+                    run += 1
+                    if run >= cls._MAX_CONSECUTIVE_TOKEN_REPEATS:
+                        return True, f"same token {tok!r} repeated {run}× consecutively"
+                else:
+                    run, prev = 1, tok
+        return False, ""
+
     def step(self, action):
+        raw_text = action if isinstance(action, str) else ""
+        if not raw_text and isinstance(action, list) and action:
+            first = action[0]
+            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+        bad, reason = self._detect_runaway(raw_text)
+        if bad:
+            self.total_steps += 1
+            info = {
+                "termination_reason": "TRUNCATION",
+                "termination_message": f"Runaway generation: {reason}",
+                "guard/runaway_chars": len(raw_text),
+            }
+            return (
+                f"Error: runaway generation detected ({reason}); terminating rollout.",
+                0.0,
+                True,
+                info,
+            )
         if self._task_mode == "mcp":
             return self._step_mcp(action)
         if self._task_mode == "web search":
@@ -219,6 +359,36 @@ class FusedEnv(CLIEnv):
             return super().step(action_objs[0].to_xml_string())
         return super().step(action)
 
+    _MAX_CONSECUTIVE_UNKNOWN = 3
+
+    @staticmethod
+    def _extract_boxed_from_raw(raw: str) -> str | None:
+        """Regex-rescue a ``\\boxed{…}`` payload from a raw assistant turn.
+
+        Used when the tool-call parser cannot recover a tool name — in the
+        eval dump the 64-step MAX_STEPS trajectory was exactly this loop:
+        the model answered ``\\boxed{B}`` as free text and the env replied
+        ``Error: The tool '' is not available`` 62 turns in a row.
+        """
+        if not raw:
+            return None
+        for tok in ("\\boxed{", "boxed{", "oxed{", "\x08oxed{"):
+            i = raw.find(tok)
+            if i < 0:
+                continue
+            i += len(tok)
+            depth = 1
+            j = i
+            while depth and j < len(raw):
+                if raw[j] == "{":
+                    depth += 1
+                elif raw[j] == "}":
+                    depth -= 1
+                j += 1
+            if depth == 0:
+                return raw[i : j - 1]
+        return None
+
     def _step_search(self, action):
         """Web-search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
         if SWEAction is None:
@@ -226,25 +396,52 @@ class FusedEnv(CLIEnv):
             self.total_steps += 1
             return "Error: r2egym not available for action parsing.", 0.0, False, {}
 
+        # Keep the raw model output so we can rescue \boxed{...} when the
+        # tool-call parser returns nothing useful.
+        raw_text = action if isinstance(action, str) else ""
+        if not raw_text and isinstance(action, list) and action:
+            first = action[0]
+            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+
         action_objs = self._unwrap_actions(action)
         if not action_objs:
             # Last-resort: try QwenToolParser directly on the raw string
-            raw = action if isinstance(action, str) else (action[0].action if isinstance(action, list) and action else "")
-            if raw:
+            if raw_text:
                 from rllm.parser.tool_parser import QwenToolParser as _QTP
-                tcs = _QTP().parse_qwen_tool_calls(raw)
+                tcs = _QTP().parse_qwen_tool_calls(raw_text)
                 if tcs and tcs[0].get("name") in ("finish", "submit"):
                     result = tcs[0].get("arguments", {}).get("result", "")
                     action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
             if not action_objs:
-                self.total_steps += 1
-                return "Error: could not parse any actions from model output.", 0.0, False, {}
+                # Parser exhausted: try \boxed{...} as implicit finish.
+                boxed = self._extract_boxed_from_raw(raw_text)
+                if boxed is not None:
+                    action_objs = [SWEAction(function_name="finish", parameters={"result": boxed})]
+                else:
+                    self.total_steps += 1
+                    self._search_consecutive_unknown += 1
+                    self._search_unknown_total += 1
+                    if self._search_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
+                        info = {
+                            "termination_reason": "ABNORMAL_PARSE_ERROR",
+                            "parser/consecutive_unknown": self._search_consecutive_unknown,
+                            "parser/unknown_total": self._search_unknown_total,
+                        }
+                        return (
+                            "Error: could not parse any actions; terminating rollout.",
+                            0.0,
+                            True,
+                            info,
+                        )
+                    return "Error: could not parse any actions from model output.", 0.0, False, {}
 
         observations: list[str] = []
         for action_obj in action_objs:
             fn = action_obj.function_name
 
             if fn == "web_search":
+                self._search_consecutive_unknown = 0
+                self._search_web_search_calls += 1
                 obs, reward, done, info = self._handle_web_search(action_obj)
                 if done:
                     return obs, reward, done, info
@@ -252,10 +449,25 @@ class FusedEnv(CLIEnv):
                 continue
 
             if fn in ("finish", "submit"):
+                self._search_consecutive_unknown = 0
                 return self._handle_search_finish(action_obj)
 
             # Docker-only tools are not available in web search mode
             self.total_steps += 1
+            self._search_consecutive_unknown += 1
+            self._search_unknown_total += 1
+            if self._search_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
+                info = {
+                    "termination_reason": "ABNORMAL_PARSE_ERROR",
+                    "parser/consecutive_unknown": self._search_consecutive_unknown,
+                    "parser/unknown_total": self._search_unknown_total,
+                }
+                return (
+                    f"Error: tool '{fn}' is not available; terminating after {self._search_consecutive_unknown} consecutive parse failures.",
+                    0.0,
+                    True,
+                    info,
+                )
             observations.append(
                 f"Error: The tool '{fn}' is not available for web search tasks. "
                 "Use web_search to find information and finish to submit your answer."
@@ -316,10 +528,57 @@ class FusedEnv(CLIEnv):
             self.total_steps += 1
             return "Error: r2egym not available for action parsing.", 0.0, False, {}
 
+        # Keep raw text so we can rescue a `\boxed{…}` implicit finish and
+        # report structural parse failures explicitly (fix #6).
+        raw_text = action if isinstance(action, str) else ""
+        if not raw_text and isinstance(action, list) and action:
+            first = action[0]
+            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+
         action_objs = self._unwrap_actions(action)
         if not action_objs:
-            self.total_steps += 1
-            return "Error: could not parse any actions from model output.", 0.0, False, {}
+            # Last-resort: try QwenToolParser, then \boxed{...} as implicit finish.
+            if raw_text:
+                try:
+                    from rllm.parser.tool_parser import QwenToolParser as _QTP
+                    tcs = _QTP().parse_qwen_tool_calls(raw_text)
+                    if tcs and tcs[0].get("name") in ("finish", "submit"):
+                        result = tcs[0].get("arguments", {}).get("result", "")
+                        action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
+                except Exception:
+                    pass
+            if not action_objs:
+                boxed = self._extract_boxed_from_raw(raw_text)
+                if boxed is not None:
+                    action_objs = [SWEAction(function_name="finish", parameters={"result": boxed})]
+                else:
+                    self.total_steps += 1
+                    self._mcp_consecutive_unknown = getattr(self, "_mcp_consecutive_unknown", 0) + 1
+                    self._mcp_unknown_total = getattr(self, "_mcp_unknown_total", 0) + 1
+                    if self._mcp_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
+                        info = {
+                            "termination_reason": "ABNORMAL_PARSE_ERROR",
+                            "termination_message": (
+                                f"MCP: {self._mcp_consecutive_unknown} consecutive turns "
+                                "without a parseable <tool_call>"
+                            ),
+                            "parser/consecutive_unknown": self._mcp_consecutive_unknown,
+                            "parser/unknown_total": self._mcp_unknown_total,
+                        }
+                        return (
+                            "Error: could not parse any actions; terminating rollout.",
+                            0.0,
+                            True,
+                            info,
+                        )
+                    return (
+                        "Error: could not parse any actions from model output. "
+                        "Emit exactly one <tool_call>{\"name\": ..., \"arguments\": {...}}</tool_call> "
+                        "block; use finish/submit to end the task.",
+                        0.0,
+                        False,
+                        {"parser/unknown_total": self._mcp_unknown_total},
+                    )
 
         observations: list[str] = []
         for action_obj in action_objs:
@@ -327,13 +586,48 @@ class FusedEnv(CLIEnv):
 
             # Handle finish/submit — terminates immediately
             if fn in ("finish", "submit"):
+                self._mcp_consecutive_unknown = 0
                 return self._handle_mcp_finish(action_obj)
 
             # Handle submit_result_difficulty_xxx
             if fn.startswith("submit_result_difficulty_"):
+                self._mcp_consecutive_unknown = 0
                 return self._handle_mcp_submit_result(action_obj)
 
             # Regular MCP tool call
+            # Empty function name means the parser found a <tool_call> block
+            # but couldn't recover the ``name`` key — treat as structural
+            # failure so the engine sees an explicit INVALID_REACT_STRUCTURE
+            # bucket instead of silently consuming a step with a confusing
+            # "Tool  not found" error.
+            if not fn:
+                self.total_steps += 1
+                self._mcp_consecutive_unknown += 1
+                self._mcp_unknown_total += 1
+                if self._mcp_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
+                    info = {
+                        "termination_reason": "INVALID_REACT_STRUCTURE",
+                        "termination_message": (
+                            f"MCP: {self._mcp_consecutive_unknown} consecutive "
+                            "tool_calls with empty/unparseable `name` field"
+                        ),
+                        "parser/consecutive_unknown": self._mcp_consecutive_unknown,
+                        "parser/unknown_total": self._mcp_unknown_total,
+                    }
+                    return (
+                        "Error: could not parse a tool `name` from the <tool_call> "
+                        "block; terminating rollout.",
+                        0.0,
+                        True,
+                        info,
+                    )
+                observations.append(
+                    "Error: empty tool name. Each <tool_call> must be valid JSON with a "
+                    "\"name\" string (e.g. {\"name\": \"finish\", \"arguments\": {...}})."
+                )
+                continue
+
+            self._mcp_consecutive_unknown = 0
             self._mcp_has_used_tools = True
             self.total_steps += 1
 
@@ -368,6 +662,13 @@ class FusedEnv(CLIEnv):
                 tool_outputs = self._mcp_connection_manager.execute_tool_calls(tool_calls)
                 output_str = tool_outputs.get(tool_call_id, "No output")
                 observations.append(f"Execution output of [{fn}]:\n{output_str}")
+                # Fix #3: track distinct successful tool names so the
+                # verifier can reward genuine exploration (gated on
+                # is_correct) rather than raw call count. A call is counted
+                # as "successful" only if the output doesn't start with the
+                # MCP server's "Error:" prefix.
+                if not str(output_str).lstrip().lower().startswith("error"):
+                    self._mcp_distinct_tools.add(fn)
             except Exception as e:
                 logger.error("MCP tool execution failed for %s: %s", fn, e)
                 observations.append(f"Execution output of [{fn}]:\nError: {str(e)}")
@@ -518,24 +819,51 @@ class FusedEnv(CLIEnv):
             enable_step_bonus=False,
         )
         reward_fn = RewardSearchFn(config)
+        question_text = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
         reward_input = RewardInput(
-            task_info={"ground_truth": ground_truth, "step_count": self.total_steps},
+            task_info={
+                "ground_truth": ground_truth,
+                "step_count": self.total_steps,
+                "question": question_text,
+                "data_source": self.entry.get("data_source"),
+            },
             action=answer,
         )
         reward_output = reward_fn(reward_input)
 
+        ws_calls = getattr(self, "_search_web_search_calls", 0)
+
+        # Penalize finish-without-search (bypass penalty).
+        bypass_penalty = -0.5 if ws_calls == 0 else 0.0
+
+        # Shaped search-count bonus: reward 2-4 searches, penalize single search.
+        # Trajectory data shows peak reward at search=2 (0.37) vs search=1 (0.36),
+        # but 60% of rollouts stop at 1 search. A small gradient nudge is enough.
+        if ws_calls == 1:
+            search_count_bonus = -0.05
+        elif 2 <= ws_calls <= 4:
+            search_count_bonus = 0.05
+        else:
+            search_count_bonus = 0.0
+
+        final_reward = max(0.0, float(reward_output.reward) + bypass_penalty + search_count_bonus)
+
         self._search_reward_debug = {
             "type": "web search",
-            "reward": float(reward_output.reward),
-            "resolved": reward_output.reward >= 1.0,
+            "reward": final_reward,
+            "resolved": final_reward >= 1.0,
             "reward_mode": "f1",
             "reward_source": "search_reward_fn",
             "is_correct": reward_output.is_correct,
             "verifier_error": "",
+            "reward/bypass_penalty": bypass_penalty,
+            "reward/search_count_bonus": search_count_bonus,
+            "reward/web_search_calls": ws_calls,
+            "parser/unknown_total": getattr(self, "_search_unknown_total", 0),
             **reward_output.metadata,
         }
         self._reward_debug = self._search_reward_debug
-        return float(reward_output.reward)
+        return final_reward
 
     def _compute_mcp_reward(self) -> float:
         """Compute verifier-based reward for MCP tasks."""
@@ -548,6 +876,7 @@ class FusedEnv(CLIEnv):
                 "submit_called": bool(self._mcp_answer),
                 "non_submit_tool_calls": self.total_steps - (1 if self._mcp_answer else 0),
                 "step_count": self.total_steps,
+                "distinct_successful_tools": len(self._mcp_distinct_tools),
             },
         }
         answer = self._mcp_answer

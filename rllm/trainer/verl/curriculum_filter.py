@@ -67,7 +67,7 @@ def _task_key(extra_info: Any) -> Optional[str]:
         return f"{img}@{sha}"
     if img:
         return str(img)
-    tid = extra_info.get("task_id")
+    tid = extra_info.get("task_id") or extra_info.get("uuid") or extra_info.get("id")
     return str(tid) if tid else None
 
 
@@ -94,23 +94,34 @@ class CurriculumFilter:
         apply_to_sources: Optional[list[str]] = None,
         blocklist_path: Optional[str] = None,
         infra_min_rollouts: int = 2,
+        zero_advantage_consecutive_steps: int = 2,
+        zero_advantage_sources: Optional[list[str]] = None,
     ) -> None:
         self.enable = bool(enable)
         self.consecutive_steps = int(max(1, consecutive_steps))
         self.apply_to_sources = set(apply_to_sources or ["cli"])
         self.blocklist_path = blocklist_path
-        # Minimum number of rollouts that must exhibit an infra-class signature
-        # (segfault, patch-failed, missing image, ...) for same-step quarantine
-        # to fire. Two is enough: a single flake shouldn't kill a task, but if
-        # two independent rollouts hit the same structural failure, the task
-        # is almost certainly unsolvable in the shipped container.
         self.infra_min_rollouts = int(max(1, infra_min_rollouts))
+        # Fix #7: zero-GRPO-advantage quarantine. In the MCP train dump,
+        # 30.5 % of prompts (39/128) produced identical rewards across all
+        # 8 rollouts (13 all-pass + 26 all-fail). Those produce zero
+        # advantage and waste compute. A prompt whose 8-rollout pass-rate
+        # stays in {0, 1} for K consecutive training steps is unlikely to
+        # ever yield a learning signal.
+        self.zero_advantage_consecutive_steps = int(max(1, zero_advantage_consecutive_steps))
+        self.zero_advantage_sources = set(zero_advantage_sources or ["mcp", "web_search"])
+        # Mask web_search rollouts where the agent never called web_search (bypass).
+        self.filter_zero_search = True
         self._lock = threading.Lock()
         # task_key -> #consecutive steps with identical nonzero exit_code
         self._streak: dict[str, int] = defaultdict(int)
         # task_key -> last seen exit code (int or None)
         self._last_code: dict[str, int] = {}
-        # Loaded blocklist: task_key -> {"reason": str, "exit_code": int, "count": int}
+        # Fix #7: task_key -> {"steps": int, "sign": -1|0|+1}
+        #   sign = +1 if last step all-pass, -1 if all-fail, 0 if mixed
+        self._zero_adv_streak: dict[str, int] = defaultdict(int)
+        self._zero_adv_sign: dict[str, int] = {}
+        # Loaded blocklist: task_key -> {"reason": str, ...}
         self._blocked: dict[str, dict] = {}
         self._load()
 
@@ -158,6 +169,7 @@ class CurriculumFilter:
             "curriculum_filter/total_blocked": 0,
             "curriculum_filter/newly_blocked_infra": 0,
             "curriculum_filter/newly_blocked_unapplicable": 0,
+            "curriculum_filter/newly_blocked_zero_advantage": 0,
         }
         if not self.enable:
             return metrics
@@ -193,7 +205,9 @@ class CurriculumFilter:
             if not key:
                 continue
             src = row.get("data_source", "unknown")
-            if self.apply_to_sources and src not in self.apply_to_sources:
+            applies_infra = src in self.apply_to_sources
+            applies_zero_adv = src in self.zero_advantage_sources
+            if not (applies_infra or applies_zero_adv):
                 continue
             verf = (row.get("debug") or {}).get("verification") or {}
             raw_code = verf.get("omnigril_exit_code")
@@ -208,15 +222,59 @@ class CurriculumFilter:
                 "reward": row.get("reward"),
                 "verr": str(verf.get("verifier_error") or ""),
                 "log": str(verf.get("log_tail") or verf.get("log") or ""),
+                "applies_infra": applies_infra,
+                "applies_zero_adv": applies_zero_adv,
             })
 
         # Decide which tasks to quarantine this step.
         newly_blocked = 0
         newly_blocked_infra = 0
         newly_blocked_unapplicable = 0
+        newly_blocked_zero_adv = 0
         with self._lock:
             for key, entries in groups.items():
                 if key in self._blocked:
+                    continue
+                applies_infra = any(e.get("applies_infra") for e in entries)
+                applies_zero_adv = any(e.get("applies_zero_adv") for e in entries)
+
+                # --- Zero-advantage pass (fix #7). --------------------------
+                # If every rollout shares the same pass/fail verdict, GRPO
+                # produces zero advantage: no learning signal. Require this
+                # to persist for K steps before quarantining — a prompt can
+                # legitimately be easy or hard on a single step.
+                if applies_zero_adv:
+                    rewards = [e.get("reward") for e in entries]
+                    valid = [r for r in rewards if isinstance(r, (int, float))]
+                    sign = 0
+                    if len(valid) == len(entries) and valid:
+                        all_pos = all(r > 0.0 for r in valid)
+                        all_zero = all(r <= 0.0 for r in valid)
+                        if all_pos:
+                            sign = +1
+                        elif all_zero:
+                            sign = -1
+                    if sign != 0 and self._zero_adv_sign.get(key) == sign:
+                        self._zero_adv_streak[key] += 1
+                    elif sign != 0:
+                        self._zero_adv_streak[key] = 1
+                    else:
+                        self._zero_adv_streak[key] = 0
+                    self._zero_adv_sign[key] = sign
+
+                    if self._zero_adv_streak[key] >= self.zero_advantage_consecutive_steps:
+                        self._blocked[key] = {
+                            "reason": "zero_advantage_all_pass" if sign > 0 else "zero_advantage_all_fail",
+                            "streak": int(self._zero_adv_streak[key]),
+                            "num_rollouts": len(entries),
+                        }
+                        newly_blocked += 1
+                        newly_blocked_zero_adv += 1
+                        self._zero_adv_streak.pop(key, None)
+                        self._zero_adv_sign.pop(key, None)
+                        continue
+
+                if not applies_infra:
                     continue
 
                 # --- Fast path: same-step structural failure. ---------------
@@ -291,6 +349,7 @@ class CurriculumFilter:
             metrics["curriculum_filter/newly_blocked"] = newly_blocked
             metrics["curriculum_filter/newly_blocked_infra"] = newly_blocked_infra
             metrics["curriculum_filter/newly_blocked_unapplicable"] = newly_blocked_unapplicable
+            metrics["curriculum_filter/newly_blocked_zero_advantage"] = newly_blocked_zero_adv
             metrics["curriculum_filter/total_blocked"] = len(self._blocked)
         return metrics
 
@@ -302,30 +361,41 @@ class CurriculumFilter:
         trajectory from the policy gradient', matching env-error handling.
         Returns the number of trajectories masked.
         """
-        if not self.enable or not self._blocked:
+        if not self.enable:
             return 0
         try:
             extras = batch.non_tensor_batch.get("extra_info") if batch is not None else None
         except Exception:
             extras = None
-        if extras is None:
-            return 0
         masked = 0
         for row in traj_dump:
-            idx = row.get("_idx")
-            if idx is None:
-                continue
-            try:
-                ei = extras[idx]
-                if hasattr(ei, "item"):
-                    ei = ei.item()
-            except Exception:
-                continue
-            key = _task_key(ei)
-            if key and key in self._blocked:
-                row["_curriculum_blocked"] = True
-                # Only mask if the sample is from a watched source.
-                if row.get("data_source", "unknown") in self.apply_to_sources:
+            # Mask blocked tasks.
+            if self._blocked and extras is not None:
+                idx = row.get("_idx")
+                if idx is not None:
+                    try:
+                        ei = extras[idx]
+                        if hasattr(ei, "item"):
+                            ei = ei.item()
+                        key = _task_key(ei)
+                        if key and key in self._blocked:
+                            row["_curriculum_blocked"] = True
+                            if row.get("data_source", "unknown") in self.apply_to_sources:
+                                row["reward"] = None
+                                masked += 1
+                                continue
+                    except Exception:
+                        pass
+
+            # Mask zero-search web_search rollouts so the model never learns
+            # to bypass retrieval. Only mask when reward > 0 to avoid
+            # interfering with already-zero-reward samples.
+            if self.filter_zero_search and row.get("data_source") == "web_search":
+                verf = (row.get("debug") or {}).get("verification") or {}
+                ws_calls = verf.get("reward/web_search_calls", None)
+                if ws_calls == 0 and row.get("reward") is not None and row["reward"] > 0:
                     row["reward"] = None
+                    row["_zero_search_masked"] = True
                     masked += 1
+
         return masked
