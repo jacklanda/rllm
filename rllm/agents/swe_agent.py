@@ -9,6 +9,7 @@ except ImportError:
 
 from rllm.agents.agent import Action, BaseAgent, Step, Trajectory
 from rllm.agents.system_prompts import SWE_SYSTEM_PROMPT, SWE_SYSTEM_PROMPT_FN_CALL, SWE_USER_PROMPT, SWE_USER_PROMPT_FN_CALL, SWEAGENT_SYSTEM_PROMPT, SWEAGENT_USER_PROMPT
+from rllm.agents._dual_parser import parse_dual_response  # noqa: F401  (re-exported for ETAgent)
 
 TOKEN_WARNING_THRESHOLD = 30000
 
@@ -86,6 +87,19 @@ class SWEAgent(BaseAgent):
         self._trajectory = Trajectory()
         self.reset()
 
+    def _parse_response(self, response: str) -> tuple[str, "SWEAction"]:
+        """Parse a model response into ``(thought, SWEAction)``.
+
+        Indirection point so subclasses (e.g. ``ETAgent``) can plug in
+        ``parse_dual_response`` for models that emit Qwen-style ``<tool_call>``
+        JSON. Default behaviour is unchanged: function-calling responses go
+        through ``parse_oai_response``, text responses through
+        ``parse_xml_response``.
+        """
+        if self.use_fn_calling:
+            return parse_oai_response(response)
+        return parse_xml_response(response)
+
     def process_model_response(self, response: str) -> tuple[str, str]:
         """
         Processes the model's response to extract thought and action components.
@@ -100,10 +114,7 @@ class SWEAgent(BaseAgent):
                 - The action string in XML format
                 - The processed response (may be reformatted if self.format_model_response is True)
         """
-        if self.use_fn_calling:
-            thought, action = parse_oai_response(response)
-        else:
-            thought, action = parse_xml_response(response)
+        thought, action = self._parse_response(response)
 
         action_str = action.to_xml_string()
         if self.format_model_response:
@@ -156,10 +167,7 @@ class SWEAgent(BaseAgent):
             None
         """
         self._trajectory.steps.append(self.cur_step)
-        if self.use_fn_calling:
-            thought, action = parse_oai_response(response)
-        else:
-            thought, action = parse_xml_response(response)
+        thought, action = self._parse_response(response)
         action_str = action.to_xml_string()
         assert self._trajectory.steps, "Trajectory should not be empty when update_from_model is called."
 

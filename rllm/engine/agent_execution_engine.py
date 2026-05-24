@@ -31,6 +31,19 @@ _ENV_TOOL_ERROR_SIGS = (
     "ERROR: file or directory not found",
 )
 
+# Signals that the model emitted a malformed / unrecognised tool call. The env
+# returns these as plain text observations with done=False, so without a
+# dedicated counter the trajectory just loops until max_steps. We treat ≥3
+# consecutive protocol errors as terminal and surface them as
+# ABNORMAL_PARSE_ERROR (reward=None, masked from loss) so the policy gets a
+# clean zero-advantage signal rather than learning from noise.
+_ENV_PROTOCOL_ERROR_SIGS = (
+    "You forgot to use a function call",
+    "Unknown function:",
+    "Could not build command for",
+)
+PROTOCOL_ERROR_TERMINATE_THRESHOLD = 3
+
 
 def _extract_tool_name(act) -> str:
     """Return a human-readable tool name for per-tool metric bucketing.
@@ -339,6 +352,7 @@ class AgentExecutionEngine:
         LOOP_DETECT_THRESHOLD = 3  # Warn after this many identical consecutive actions
         LOOP_TERMINATE_THRESHOLD = 5  # Terminate after this many identical consecutive actions
         _last_loop_action_is_tool_error = False  # True when the repeated action is an env-setup failure
+        consecutive_protocol_errors = 0  # Consecutive turns where env returned a protocol-error observation
 
         # Reset environment with the task using the executor
         loop = asyncio.get_event_loop()
@@ -895,6 +909,42 @@ class AgentExecutionEngine:
             cur_step.reward = reward
             cur_step.done = done
             cur_step.info.update(info)
+
+            # --- Protocol-error termination ---
+            # ETEnv / ToolEnv keep done=False on malformed tool calls so the
+            # agent can recover. Without a counter the trajectory just burns
+            # steps emitting JSON the parser can't read. Terminate after
+            # PROTOCOL_ERROR_TERMINATE_THRESHOLD consecutive offences and mask
+            # from loss — the model had no useful learning signal in those
+            # steps anyway, and we don't want to push the policy further toward
+            # a wrong protocol just because action_loop didn't catch it
+            # (different malformed strings reset that counter).
+            _obs_str_for_proto = str(next_observation)
+            _is_protocol_error = (not done) and any(sig in _obs_str_for_proto for sig in _ENV_PROTOCOL_ERROR_SIGS)
+            if _is_protocol_error:
+                consecutive_protocol_errors += 1
+                cur_step.info["tool_call_parse_error"] = True
+            else:
+                consecutive_protocol_errors = 0
+
+            if consecutive_protocol_errors >= PROTOCOL_ERROR_TERMINATE_THRESHOLD:
+                termination_reason = "ABNORMAL_PARSE_ERROR"
+                exception_message = f"Protocol-error loop: {consecutive_protocol_errors} consecutive malformed tool calls."
+                done = True
+                cur_step.done = done
+                cur_step.reward = None  # mask from loss
+                colorful_print(
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to protocol-error loop "
+                    f"({consecutive_protocol_errors} consecutive malformed tool calls — masking from loss).",
+                    "red",
+                )
+                self._trajectory_logs.append({
+                    "type": "protocol_error_terminated",
+                    "trajectory": idx,
+                    "step": step_idx,
+                    "consecutive_errors": consecutive_protocol_errors,
+                })
+                break
 
             # --- Incremental tokenization: include intermediate tool responses ---
             # When multiple tool calls were executed, intermediate <tool_response>
