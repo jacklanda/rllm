@@ -34,10 +34,10 @@ def _count_tool_calls_in_message(message_content: str) -> int:
 
     # Count tool call patterns (common patterns for search tools)
     # Pattern 1: <tool_call> tags
-    tool_call_tags = len(re.findall(r'<tool_call[^>]*>', message_content))
+    tool_call_tags = len(re.findall(r"<tool_call[^>]*>", message_content))
 
     # Pattern 2: Function call patterns like search(query="...")
-    function_calls = len(re.findall(r'\b(?:search|query|retrieve)\s*\([^)]*\)', message_content, re.IGNORECASE))
+    function_calls = len(re.findall(r"\b(?:search|query|retrieve)\s*\([^)]*\)", message_content, re.IGNORECASE))
 
     # Pattern 3: JSON tool call format
     json_calls = len(re.findall(r'"type"\s*:\s*"(?:function|tool_call)"', message_content))
@@ -58,14 +58,14 @@ def _has_tool_parse_error(text: str) -> bool:
     import re
 
     # Check for unclosed <think> tags
-    think_open = len(re.findall(r'<think>', text))
-    think_close = len(re.findall(r'</think>', text))
+    think_open = len(re.findall(r"<think>", text))
+    think_close = len(re.findall(r"</think>", text))
     if think_open != think_close:
         return True
 
     # Check for unclosed tool_call tags
-    tool_open = len(re.findall(r'<tool_call[^>]*>', text))
-    tool_close = len(re.findall(r'</tool_call>', text))
+    tool_open = len(re.findall(r"<tool_call[^>]*>", text))
+    tool_close = len(re.findall(r"</tool_call>", text))
     if tool_open != tool_close:
         return True
 
@@ -74,9 +74,9 @@ def _has_tool_parse_error(text: str) -> bool:
     json_patterns = re.findall(r'\{[^}]*"(?:query|function|tool)"[^}]*\}', text, re.DOTALL)
     for pattern in json_patterns:
         # Simple checks for obviously malformed JSON
-        if pattern.count('{') != pattern.count('}'):
+        if pattern.count("{") != pattern.count("}"):
             return True
-        if pattern.count('[') != pattern.count(']'):
+        if pattern.count("[") != pattern.count("]"):
             return True
         # Check for unmatched quotes (rough heuristic)
         quote_count = len(re.findall(r'(?<!\\)"', pattern))
@@ -98,14 +98,7 @@ def _has_tool_call_parse_exception(trajectory: Trajectory) -> bool:
     Returns:
         True if there are tool call parsing exceptions, False otherwise.
     """
-    parse_error_keywords = [
-        'error parsing tool call',
-        'failed to parse tool call',
-        'tool call parse error',
-        'cannot parse tool call',
-        'invalid tool call format',
-        'tool call parsing failed'
-    ]
+    parse_error_keywords = ["error parsing tool call", "failed to parse tool call", "tool call parse error", "cannot parse tool call", "invalid tool call format", "tool call parsing failed"]
 
     for step in trajectory.steps:
         # Check in observation
@@ -115,7 +108,7 @@ def _has_tool_call_parse_exception(trajectory: Trajectory) -> bool:
                 return True
 
         # Check in model_response
-        if hasattr(step, 'model_response') and step.model_response:
+        if hasattr(step, "model_response") and step.model_response:
             response_str = step.model_response.lower()
             if any(keyword in response_str for keyword in parse_error_keywords):
                 return True
@@ -123,21 +116,21 @@ def _has_tool_call_parse_exception(trajectory: Trajectory) -> bool:
         # Check in step info
         if step.info:
             # Check for explicit error flags
-            if step.info.get('tool_call_parse_error', False):
+            if step.info.get("tool_call_parse_error", False):
                 return True
-            if step.info.get('parse_error', False):
+            if step.info.get("parse_error", False):
                 return True
 
             # Check in error message if present
-            if 'error' in step.info or 'error_message' in step.info:
-                error_msg = str(step.info.get('error', '') or step.info.get('error_message', '')).lower()
+            if "error" in step.info or "error_message" in step.info:
+                error_msg = str(step.info.get("error", "") or step.info.get("error_message", "")).lower()
                 if any(keyword in error_msg for keyword in parse_error_keywords):
                     return True
 
         # Check in chat_completions
         if step.chat_completions:
             for msg in step.chat_completions:
-                content = str(msg.get('content', '')).lower()
+                content = str(msg.get("content", "")).lower()
                 if any(keyword in content for keyword in parse_error_keywords):
                     return True
 
@@ -166,7 +159,7 @@ def _extract_search_query(text: str) -> str | None:
         return match.group(1).strip()
 
     # Pattern 3: <query>...</query>
-    match = re.search(r'<query>([^<]+)</query>', text, re.IGNORECASE)
+    match = re.search(r"<query>([^<]+)</query>", text, re.IGNORECASE)
     if match:
         return match.group(1).strip()
 
@@ -186,7 +179,7 @@ def _has_repeated_query(trajectory: Trajectory) -> bool:
 
     for step in trajectory.steps:
         # Check in model_response
-        if hasattr(step, 'model_response') and step.model_response:
+        if hasattr(step, "model_response") and step.model_response:
             query = _extract_search_query(step.model_response)
             if query:
                 if query in seen_queries:
@@ -196,8 +189,8 @@ def _has_repeated_query(trajectory: Trajectory) -> bool:
         # Check in chat_completions
         if step.chat_completions:
             for msg in step.chat_completions:
-                if msg.get('role') == 'assistant' and msg.get('content'):
-                    query = _extract_search_query(msg['content'])
+                if msg.get("role") == "assistant" and msg.get("content"):
+                    query = _extract_search_query(msg["content"])
                     if query:
                         if query in seen_queries:
                             return True
@@ -220,19 +213,15 @@ def _has_search_error(trajectory: Trajectory) -> bool:
         if step.observation:
             obs_str = str(step.observation).lower()
             # Environment-specific error keywords
-            env_error_keywords = [
-                'timeout', 'timed out', 'connection error',
-                'retrieval error', 'search error', 'service unavailable',
-                'network error', 'connection refused'
-            ]
+            env_error_keywords = ["timeout", "timed out", "connection error", "retrieval error", "search error", "service unavailable", "network error", "connection refused"]
             if any(keyword in obs_str for keyword in env_error_keywords):
                 return True
 
         # Check info dict for environment error flags
         if step.info:
-            if step.info.get('search_error', False):
+            if step.info.get("search_error", False):
                 return True
-            if step.info.get('env_error', False):
+            if step.info.get("env_error", False):
                 return True
 
     return False
@@ -252,7 +241,7 @@ def _validate_trajectory(trajectory: Trajectory, config) -> tuple[str, str]:
         - "zero_reward": trajectory should get 0 reward but kept for advantage computation
         - "no_grad": trajectory participates in advantage computation but not gradient updates
     """
-    if not config or not hasattr(config, 'rllm') or not hasattr(config.rllm, 'trajectory_filtering'):
+    if not config or not hasattr(config, "rllm") or not hasattr(config.rllm, "trajectory_filtering"):
         return "keep", ""
 
     tf = config.rllm.trajectory_filtering
@@ -271,25 +260,25 @@ def _validate_trajectory(trajectory: Trajectory, config) -> tuple[str, str]:
     # 5.4.1 Break + 0 Reward (model-induced anomalies)
 
     # Check tool call count in single turn exceeds limit
-    max_tool_calls = getattr(tf, 'max_tool_calls_per_turn', 10)
+    max_tool_calls = getattr(tf, "max_tool_calls_per_turn", 10)
     for step in trajectory.steps:
         if step.chat_completions:
             for msg in step.chat_completions:
-                if msg.get('role') == 'assistant' and msg.get('content'):
-                    tool_count = _count_tool_calls_in_message(msg['content'])
+                if msg.get("role") == "assistant" and msg.get("content"):
+                    tool_count = _count_tool_calls_in_message(msg["content"])
                     if tool_count > max_tool_calls:
                         return "zero_reward", f"tool_call_limit_exceeded_{tool_count}"
 
     # Check for tool parse errors (structural issues in model output)
     for step in trajectory.steps:
-        if hasattr(step, 'model_response') and step.model_response:
+        if hasattr(step, "model_response") and step.model_response:
             if _has_tool_parse_error(step.model_response):
                 return "zero_reward", "tool_parse_error"
 
         if step.chat_completions:
             for msg in step.chat_completions:
-                if msg.get('role') == 'assistant' and msg.get('content'):
-                    if _has_tool_parse_error(msg['content']):
+                if msg.get("role") == "assistant" and msg.get("content"):
+                    if _has_tool_parse_error(msg["content"]):
                         return "zero_reward", "tool_parse_error"
 
     # Check for repeated queries
@@ -297,7 +286,7 @@ def _validate_trajectory(trajectory: Trajectory, config) -> tuple[str, str]:
         return "zero_reward", "repeated_query"
 
     # 5.4.3 Exceeding Search Turn Limit: Stop + 0 Reward
-    max_steps = getattr(tf, 'max_search_turns', None)
+    max_steps = getattr(tf, "max_search_turns", None)
     if max_steps is not None and len(trajectory.steps) > max_steps:
         return "zero_reward", f"max_search_turns_exceeded_{max_steps}"
 
@@ -315,14 +304,14 @@ def _compute_token_count(trajectory: Trajectory) -> int:
     """
     total_tokens = 0
     for step in trajectory.steps:
-        if hasattr(step, 'model_output') and step.model_output:
+        if hasattr(step, "model_output") and step.model_output:
             # Count prompt + completion tokens
             total_tokens += len(step.model_output.prompt_ids) + len(step.model_output.completion_ids)
         else:
             # Fallback: estimate from chat_completions
             if step.chat_completions:
                 for msg in step.chat_completions:
-                    content = msg.get('content', '')
+                    content = msg.get("content", "")
                     # Rough estimate: ~4 chars per token
                     total_tokens += len(content) // 4
 
@@ -855,5 +844,8 @@ class AgentWorkflowEngine:
     def shutdown(self):
         """Shutdown the workflow engine and cleanup resources."""
         if hasattr(self, "executor") and self.executor is not None:
-            self.executor.shutdown(wait=True)
+            self.executor.shutdown(wait=False, cancel_futures=True)
             self.executor = None
+
+    def __del__(self):
+        self.shutdown()

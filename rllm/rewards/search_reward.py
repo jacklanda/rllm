@@ -81,6 +81,35 @@ def repetition_penalty_reward(
     return round(float(score), 2)
 
 
+def length_restart_penalty(
+    text: str,
+    char_threshold: int = 6000,
+    char_saturation: int = 20000,
+    wait_threshold: int = 6,
+    wait_saturation: int = 20,
+) -> float:
+    """P1-3: penalize the rambling / self-restart pattern seen in step-0
+    evals. Scores in [-1.0, 0.0]. 0.0 means "under both thresholds".
+
+    The score is the max of two components:
+      - over-length: linear ramp from ``char_threshold`` to
+        ``char_saturation`` total assistant characters.
+      - restart-loop: linear ramp from ``wait_threshold`` to
+        ``wait_saturation`` occurrences of "Wait," (case-insensitive).
+    """
+    if not text:
+        return 0.0
+    total_chars = len(text)
+    length_score = 0.0
+    if total_chars > char_threshold and char_saturation > char_threshold:
+        length_score = min(1.0, (total_chars - char_threshold) / (char_saturation - char_threshold))
+    wait_count = len(re.findall(r"\bWait[,.]", text, flags=re.IGNORECASE))
+    wait_score = 0.0
+    if wait_count > wait_threshold and wait_saturation > wait_threshold:
+        wait_score = min(1.0, (wait_count - wait_threshold) / (wait_saturation - wait_threshold))
+    return -round(max(length_score, wait_score), 3)
+
+
 class RewardSearchFn:
     def __init__(self, config: RewardConfig):
         self.config = config
@@ -117,8 +146,85 @@ class RewardSearchFn:
         # Return the count, matched contents, and validity
         return len(matches), matches, True
 
+    # P2-6: lightweight unit/date/thousands normalisation. Step-0 evals
+    # showed ~50 close-miss failures across simpleqa/bamboogle/2wiki
+    # where extracted_answer and GT differed only by surface form
+    # (``"4990 J"`` vs ``"4990J"``, ``"1,142"`` vs ``"1142"``,
+    # ``"12/03/1988"`` vs ``"03/12/1988"``, ``"120,000 euros"`` vs
+    # ``"120000"``).
+    _UNIT_SUFFIX_PATTERN = re.compile(
+        r"^\s*(-?\d[\d,\.\s]*)\s*"
+        r"(?:%|"
+        r"usd|euros?|eur|gbp|dollars?|cents?|pounds?|yen|jpy|rmb|cny|"
+        r"kg|kgs|g|mg|lb|lbs|oz|ton|tons|tonnes?|"
+        r"km|m|cm|mm|mi|ft|in|inch|inches|yd|yard|yards|"
+        r"k|m|b|bn|mn|million|millions|billion|billions|thousand|thousands|"
+        r"j|kj|mj|cal|kcal|w|kw|mw|hp|"
+        r"v|mv|kv|a|ma|hz|khz|mhz|ghz|"
+        r"s|sec|secs|second|seconds|min|mins|minute|minutes|h|hr|hrs|hour|hours|"
+        r"people|persons|students|votes"
+        r")\s*$",
+        re.IGNORECASE,
+    )
+    _DATE_DMY_PATTERN = re.compile(r"^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\s*$")
+    _DATE_ISO_PATTERN = re.compile(r"^\s*(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\s*$")
+
+    @classmethod
+    def _normalize_number_token(cls, s: str) -> str | None:
+        """If ``s`` looks like a plain number (possibly with thousands
+        separators / decimals / a unit suffix), return a canonical form
+        ``"<num>[ <unit>]"`` where ``<num>`` drops separators; else None."""
+        if not s:
+            return None
+        txt = s.strip()
+        m = cls._UNIT_SUFFIX_PATTERN.match(txt)
+        if m:
+            num_part = m.group(1).replace(",", "").replace(" ", "")
+            try:
+                float(num_part)
+            except ValueError:
+                return None
+            return num_part
+        # Pure number with thousands separators / decimals.
+        if re.match(r"^-?\d[\d,\.\s]*$", txt):
+            num_part = txt.replace(",", "").replace(" ", "")
+            try:
+                float(num_part)
+            except ValueError:
+                return None
+            return num_part
+        return None
+
+    @classmethod
+    def _date_variants(cls, s: str) -> set[str]:
+        """Return canonical variants for an ambiguous DMY/MDY date
+        string. Empty set if ``s`` is not date-shaped."""
+        text = (s or "").strip()
+        m_iso = cls._DATE_ISO_PATTERN.match(text)
+        if m_iso:
+            y, a, b = m_iso.group(1), int(m_iso.group(2)), int(m_iso.group(3))
+            return {f"{y}-{a:02d}-{b:02d}"}
+        m = cls._DATE_DMY_PATTERN.match(text)
+        if not m:
+            return set()
+        a, b, y = int(m.group(1)), int(m.group(2)), m.group(3)
+        if len(y) == 2:
+            y = ("20" + y) if int(y) < 50 else ("19" + y)
+        variants: set[str] = set()
+        if 1 <= a <= 12 and 1 <= b <= 31:
+            variants.add(f"{y}-{a:02d}-{b:02d}")
+        if 1 <= b <= 12 and 1 <= a <= 31:
+            variants.add(f"{y}-{b:02d}-{a:02d}")
+        return variants
+
     def normalize_answer(self, s: str) -> str:
         """Normalize answer text for evaluation (following HotpotQA/SQuAD standards)"""
+
+        # P2-6: strip thousand separators inside numbers before the
+        # punctuation pass so "1,142" and "1142" collapse.
+        num_canon = self._normalize_number_token(s)
+        if num_canon is not None:
+            return num_canon
 
         def remove_articles(text):
             return re.sub(r"\b(a|an|the)\b", " ", text)
@@ -160,7 +266,14 @@ class RewardSearchFn:
 
     def exact_match_score(self, prediction: str, ground_truth: str) -> bool:
         """Calculate exact match score"""
-        return self.normalize_answer(prediction) == self.normalize_answer(ground_truth)
+        if self.normalize_answer(prediction) == self.normalize_answer(ground_truth):
+            return True
+        # P2-6: date DMY/MDY ambiguity — accept matching canonical variants.
+        pv = self._date_variants(str(prediction).strip())
+        gv = self._date_variants(str(ground_truth).strip())
+        if pv and gv and pv & gv:
+            return True
+        return False
 
     def _unwrap_json_fragment(self, text: str) -> str:
         """Unwrap JSON tool-call fragments that wrap the actual answer.
@@ -189,20 +302,60 @@ class RewardSearchFn:
             pass
         return text
 
+    _OPTION_LETTERS = {"A", "B", "C", "D", "E", "F"}
+
+    @classmethod
+    def _parse_letter_set(cls, s: str) -> set[str] | None:
+        """Parse a string as a set of option letters (e.g. 'ABC', 'A,B,D',
+        'A、B', 'A and C'). Returns ``None`` if the string doesn't look
+        like a pure letter set. P1-4: scienceqa multi-letter MCQ GTs
+        (``"ABC"``/``"CD"``) were universally scored 0 at step 0 because
+        the extractor only handled single letters.
+        """
+        if not s:
+            return None
+        text = str(s)
+        # First drop connector words that overlap option letters if used
+        # as char-class entries (``and`` contains ``a``/``n``/``d``).
+        text = re.sub(r"(?i)\b(and|以及|和|与|或)\b", " ", text)
+        # Now strip remaining delimiters and whitespace.
+        cleaned = re.sub(r"[\s,，、;；·.()\[\]{}\\/&+]+", "", text)
+        cleaned = cleaned.strip().upper()
+        if not cleaned:
+            return None
+        letters = set(cleaned)
+        if not letters or any(ch not in cls._OPTION_LETTERS for ch in letters):
+            return None
+        # Reject strings with duplicated letters (e.g. "AA") — unlikely
+        # to be a real MCQ answer and a hint the parse is off.
+        if len(letters) != len(cleaned):
+            return None
+        return letters
+
     def _map_value_to_option_letter(self, extracted: str, ground_truths: list[str]) -> str:
         """For multiple-choice questions where ground truth is A/B/C/D,
         if the model output a raw value instead of a letter, try to map it back.
 
         This is a no-op if ground truths are not single option letters.
+        Also normalises multi-letter MCQ answers (``"A,C"`` -> ``"AC"``,
+        order-insensitive) when the GT is a multi-letter set.
         """
-        option_letters = {"A", "B", "C", "D", "E"}
-        # Only apply if ALL ground truths are single option letters
-        if not ground_truths or not all(gt.strip().upper() in option_letters for gt in ground_truths):
+        if not ground_truths:
             return extracted
-        # If extracted is already a valid option letter, keep it
-        if extracted.strip().upper() in option_letters:
+
+        # Multi-letter path: both sides parse as letter sets -> canonical sorted form.
+        gt_letter_sets = [self._parse_letter_set(gt) for gt in ground_truths]
+        if all(s and len(s) >= 1 for s in gt_letter_sets) and any(len(s) >= 2 for s in gt_letter_sets):
+            extracted_letters = self._parse_letter_set(extracted)
+            if extracted_letters:
+                return "".join(sorted(extracted_letters))
+            return extracted
+
+        # Single-letter path (original behaviour).
+        if not all(gt.strip().upper() in self._OPTION_LETTERS for gt in ground_truths):
+            return extracted
+        if extracted.strip().upper() in self._OPTION_LETTERS:
             return extracted.strip().upper()
-        # Cannot map without seeing the original options — return as-is
         return extracted
 
     def _map_letter_to_option_value(self, extracted: str, question: str) -> str:
@@ -218,7 +371,7 @@ class RewardSearchFn:
         if not extracted or not question:
             return extracted
         cand = extracted.strip().upper()
-        if not (len(cand) == 1 and cand in "ABCDE"):
+        if not (len(cand) == 1 and cand in "ABCDEF"):
             return extracted
         # Find the option line in the question body.
         pattern = rf"(?mi)^\s*{re.escape(cand)}\s*[.)\:\-]\s*(.+?)\s*$"
@@ -471,6 +624,17 @@ class RewardSearchFn:
         # For multiple-choice (GPQA-style): try mapping raw values to option letters
         extracted_answer = self._map_value_to_option_letter(extracted_answer, ground_truths)
 
+        # P1-4: canonicalise multi-letter MCQ ground truths so the F1/EM
+        # path sees the same order/form as the extracted answer.
+        canon_gts: list[str] = []
+        for gt in ground_truths:
+            ls = self._parse_letter_set(gt)
+            if ls and len(ls) >= 2:
+                canon_gts.append("".join(sorted(ls)))
+            else:
+                canon_gts.append(gt)
+        ground_truths = canon_gts
+
         # Reverse mapping for MCQ-shaped datasets whose GT is prose (medqa).
         # Fix #1: 175/300 medqa rollouts output a bare letter while GT is a
         # noun phrase; pure f1 scoring of "C" vs "Colorectal cancer" is 0.
@@ -640,15 +804,44 @@ class RewardSearchFn:
         else:
             repetition_penalty_weighted = 0.0
 
+        # P1-3: length / self-restart penalty. Step-0 evals showed
+        # 53-99% of rollouts with single-message >8k chars and heavy
+        # "Wait," restart cycles. This signal is orthogonal to the
+        # n-gram repetition penalty above and catches long "rambling
+        # but not literally repeating" traces.
+        length_penalty_raw = 0.0
+        length_penalty_weighted = 0.0
+        if getattr(self.config, "apply_length_penalty", False):
+            try:
+                length_penalty_raw = length_restart_penalty(
+                    model_response,
+                    char_threshold=self.config.length_penalty_char_threshold,
+                    char_saturation=self.config.length_penalty_char_saturation,
+                    wait_threshold=self.config.length_penalty_wait_threshold,
+                    wait_saturation=self.config.length_penalty_wait_saturation,
+                )
+            except Exception as _e:
+                logger.debug("length_restart_penalty failed: %s", _e)
+                length_penalty_raw = 0.0
+            length_penalty_weighted = length_penalty_raw * self.config.length_penalty_weight
+            reward += length_penalty_weighted
+
         # Add tool call information and other reward components to metadata
         metadata.update({
             "base_reward": reward,
             "tool_call_reward": 0,
             "repetition_penalty_reward": repetition_penalty_weighted,
+            "length_penalty_reward": length_penalty_weighted,
             "step_bonus": step_bonus,
         })
 
         # Apply step bonus to final reward
         reward += step_bonus
+
+        # Upper-clamp the web-search reward to correct_reward (1.0 by default).
+        # Step bonus + partial-match scaling could otherwise push the total
+        # above the nominal ceiling, which skews training/eval aggregates.
+        if reward > self.config.correct_reward:
+            reward = self.config.correct_reward
 
         return RewardOutput(reward=reward, is_correct=is_correct, metadata=metadata)

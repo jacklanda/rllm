@@ -47,7 +47,10 @@ class LocalRetrievalTool(Tool):
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
         self.max_results = max_results
-        self.client = httpx.Client(timeout=timeout)
+        self.client = httpx.Client(
+            timeout=timeout,
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20, keepalive_expiry=30),
+        )
 
         # Suppress httpx INFO logs
         logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -88,39 +91,80 @@ class LocalRetrievalTool(Tool):
             },
         }
 
+    # P0-1: minimum useful passage size. step-0 evals showed 22-51% of
+    # web_search responses came back with < 20 words (just token lists
+    # like "Brob-Bron | Denys Fisher"), which killed multi-hop tasks
+    # (musique 9.9%, 2wiki 40%). We now prefer the long ``document``
+    # field over ``chunk_text`` fragments and drop results below a
+    # minimum word threshold.
+    _MIN_DOC_WORDS = 25
+    _summarize_disabled_reason: str | None = None
+
+    def _extract_doc_text(self, result: dict[str, Any]) -> str | None:
+        """Pull the longest-available textual field out of a retrieval result."""
+        candidates = []
+        doc = result.get("document")
+        if isinstance(doc, str) and doc.strip():
+            candidates.append(doc)
+        content = result.get("content")
+        if isinstance(content, dict):
+            for key in ("original_text", "chunk_text", "text"):
+                v = content.get(key)
+                if isinstance(v, str) and v.strip():
+                    candidates.append(v)
+        elif isinstance(content, str) and content.strip():
+            candidates.append(content)
+        for key in ("chunk_text", "text", "passage"):
+            v = result.get(key)
+            if isinstance(v, str) and v.strip():
+                candidates.append(v)
+        if not candidates:
+            return None
+        # Prefer the longest candidate — passages beat ``content.chunk_text``
+        # tokens which are often 1-3 entity strings.
+        return max(candidates, key=lambda s: len(s.split()))
+
     def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> list[str]:
         """Format search results for LLM consumption."""
         if not results:
-            return "No relevant documents found."
+            return ["No relevant documents found."]
 
-        content = None
-        documents = []
-        for i, result in enumerate(results[: self.max_results], 1):
-            # Extract key information
-            # doc_id = result.get("id", f"doc_{i}")
-            # content = result.get("content", "").get("original_text")  # use full text
-            try:
-                if "document" in result and "score" in result:
-                    content = result.get("document")  # use full document text
-                    # score = result.get("score", 0.0)
-                elif "content" in result and "chunk_text" in result["content"]:
-                    content = result.get("content").get("chunk_text")  # use chunked text
-                    # score = result.get("score", 0.0)
-                elif "chunk_text" in result:
-                    content = result.get("chunk_text")
-                else:
-                    raise ValueError("Unknown result format")
-            except Exception as _:
-                logger.warning(f"Error parsing content {content}")
-                content = "Nothing retrieved, please tweak your search query and search again."
-            else:
-                if not content:
-                    logger.warning(f"Error parsing content {content}")
-                    content = "Nothing retrieved, please tweak your search query and search again."
-
+        documents: list[str] = []
+        skipped_short = 0
+        for result in results:
+            content = self._extract_doc_text(result)
+            if not content:
+                continue
+            if len(content.split()) < self._MIN_DOC_WORDS:
+                skipped_short += 1
+                continue
             documents.append(content)
+            if len(documents) >= self.max_results:
+                break
+
+        if not documents:
+            # Fall back: take top candidate even if short so the model
+            # still sees something, but tag it so the rollout knows.
+            for result in results[: self.max_results]:
+                content = self._extract_doc_text(result)
+                if content:
+                    documents.append(content)
+            if not documents:
+                return ["No relevant documents found. Try a more specific query with named entities, dates, or numbers."]
+            documents.append("[retriever returned only low-content fragments; issue a more specific query with named entities, dates, or numbers]")
+        elif skipped_short:
+            documents.append(f"[{skipped_short} short fragments were filtered; narrow the query if you need more detail]")
 
         return documents
+
+    @classmethod
+    def _disable_summarization(cls, reason: str) -> None:
+        if cls._summarize_disabled_reason is None:
+            cls._summarize_disabled_reason = reason
+            logger.warning(
+                f"{reason} — disabling retrieval summarization for this process; "
+                "falling back to chunked docs without summarization"
+            )
 
     def forward(self, query: str, top_k: int | None = None, *args, **kwargs: Any) -> ToolOutput:
         """
@@ -137,10 +181,12 @@ class LocalRetrievalTool(Tool):
             # Use provided parameters or defaults
             top_k = top_k or self.max_results
 
-            # Prepare request payload
+            # Prepare request payload. Ask for more candidates than we
+            # plan to show so the min-word filter in
+            # ``_format_search_results`` has headroom (P0-1).
             payload = {
                 "query": query,
-                "top_k": max(top_k, 10),
+                "top_k": max(top_k, 15),
                 "description": "",
                 "args": [],  # Add empty args
                 "kwargs": {},  # Add empty kwargs
@@ -172,18 +218,19 @@ class LocalRetrievalTool(Tool):
 
             # Evidence-mode vs summary-mode (fix #4).
             #
-            # The abstractive ``/summarize`` endpoint collapses 3 docs into a
-            # 256-token paraphrase that routinely strips dates, proper nouns,
-            # and numeric identifiers — which is exactly what short-factoid
-            # multi-hop QA (musique 9.9 %, medqa 18.1 %, gaia 11.3 % in the
-            # eval dump) needs. Datasets whose summary preserves named
-            # entities (bamboogle 44.7 %, gpqa 43.4 %) do not have this gap.
-            #
-            # Default behaviour is now raw top-k passages. Set
-            # ``RLLM_RETRIEVAL_SUMMARIZE=1`` to restore legacy summaries.
-            use_summary = os.environ.get("RLLM_RETRIEVAL_SUMMARIZE", "0") == "1"
+            # Default behaviour is raw top-k passages. Set
+            # ``RLLM_RETRIEVAL_SUMMARIZE=1`` to request abstractive
+            # summaries via the server's ``/summarize`` endpoint.
+            # If that service is unavailable (unreachable, non-200,
+            # empty response, or raises), we auto fall back to the
+            # chunked setup of retrieval docs without summarization.
+            use_summary_requested = (
+                os.environ.get("RLLM_RETRIEVAL_SUMMARIZE", "0") == "1"
+                and self._summarize_disabled_reason is None
+            )
             content = "\n\n".join(documents)
-            if use_summary:
+            summary_used = False
+            if use_summary_requested:
                 try:
                     payload = {
                         "documents": [{"content": d} for d in documents],
@@ -191,16 +238,24 @@ class LocalRetrievalTool(Tool):
                     }
                     response = self.client.post(f"{self.server_url}/summarize", json=payload)
                     if response.status_code == 200:
-                        summary = response.json()
-                        content = summary.get("summary", "").split("# Summary:", 1)[-1].strip()
+                        summary_data = response.json()
+                        candidate = summary_data.get("summary", "").split("# Summary:", 1)[-1].strip()
+                        if candidate:
+                            content = candidate
+                            summary_used = True
+                        else:
+                            self._disable_summarization("Summarize endpoint returned empty content")
+                    else:
+                        self._disable_summarization(f"Summarize endpoint returned status {response.status_code}")
                 except Exception as e:
-                    logger.warning(f"Error during summarization: {e}")
+                    self._disable_summarization(f"Summarize service unavailable ({e})")
                     content = "\n\n".join(documents)
 
-            # Cap total content regardless of mode so the rollout prompt
-            # doesn't blow up; evidence mode gets a larger budget (2048
-            # words) than the old 256-word summary budget.
-            word_budget = 2048 if not use_summary else 256
+            # Cap total content by the *effective* mode, not the requested
+            # one: a summary fallback that yields chunked passages should
+            # get the 2048-word chunked budget, not the 256-word summary
+            # budget (which would truncate most of the evidence).
+            word_budget = 256 if summary_used else 2048
             words = content.split()
             if len(words) >= word_budget:
                 content = " ".join(words[:word_budget]) + "..."
@@ -218,11 +273,16 @@ class LocalRetrievalTool(Tool):
         except Exception as e:
             return ToolOutput(name=self.name, error=f"Unexpected error: {str(e)}")
 
+    def close(self):
+        """Explicitly close the HTTP client and release connections."""
+        if hasattr(self, "client") and self.client is not None:
+            self.client.close()
+            self.client = None
+
     def __del__(self):
         """Clean up HTTP client."""
         try:
-            if hasattr(self, "client"):
-                self.client.close()
+            self.close()
         except Exception:
             pass
 

@@ -13,6 +13,24 @@ from rllm.tools.tool_base import Tool
 
 logger = logging.getLogger(__name__)
 
+FINISH_TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "finish",
+        "description": "Submit your final answer. Call this tool when you have enough information to answer the question confidently.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "Your final answer to the question",
+                }
+            },
+            "required": ["result"],
+        },
+    },
+}
+
 
 class ToolAgent(BaseAgent):
     """
@@ -52,7 +70,8 @@ class ToolAgent(BaseAgent):
         parser_class: type[ToolParser] = get_tool_parser(parser_name=parser_name)
         self.tool_parser = parser_class()
 
-        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(self.tools.json, indent=0, ensure_ascii=False))
+        tools_json = self.tools.json + [FINISH_TOOL_SCHEMA]
+        self.tools_prompt = self.tool_parser.get_tool_prompt(json.dumps(tools_json, indent=0, ensure_ascii=False))
 
         # Initialize state according to BaseAgent
         self._trajectory = Trajectory()
@@ -127,6 +146,7 @@ class ToolAgent(BaseAgent):
         # Append assistant message to chat history
         assistant_message = {"role": "assistant", "content": assistant_content}
         if len(tool_calls_dict) > 0:
+
             def _json_safe(value: Any) -> Any:
                 if isinstance(value, dict):
                     return {str(k): _json_safe(v) for k, v in value.items()}

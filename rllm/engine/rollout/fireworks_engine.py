@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import subprocess
 import time
 from urllib.parse import urljoin
 
@@ -67,7 +68,8 @@ class FireworksEngine(OpenAIEngine):
     def _upload_lora(self, fireworks_model_id, lora_adapter_path: str, base_model: str, account_id: str) -> None:
         upload_model_command = f"firectl create model {fireworks_model_id} {lora_adapter_path} --base-model {base_model} -a {account_id} --output json"
         print(f"running command: {upload_model_command}")
-        upload_model_output = os.popen(upload_model_command).read()
+        result = subprocess.run(upload_model_command, shell=True, capture_output=True, text=True)
+        upload_model_output = result.stdout
         print("Fireworks upload model message: ", upload_model_output)
         upload_model_output = json.loads(upload_model_output)
 
@@ -78,8 +80,8 @@ class FireworksEngine(OpenAIEngine):
     def _hot_load_lora(self, model_id: str, deployment: str, account_id: str) -> None:
         load_lora_command = f"firectl load-lora {model_id} --deployment {deployment} --replace-merged-addon -a {account_id}"
         print(f"Running command: {load_lora_command}")
-        load_lora_output = os.popen(load_lora_command).read()
-        print(load_lora_output)
+        result = subprocess.run(load_lora_command, shell=True, capture_output=True, text=True)
+        print(result.stdout)
 
     async def _probe_deployment(self, model_name) -> bool:
         print("Probing model: ", model_name)

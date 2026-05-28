@@ -18,7 +18,11 @@ from unittest.mock import mock_open, patch
 
 import numpy as np
 
-from rllm.rewards.code_utils.pyext2 import RuntimeModule
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from rllm.rewards.code_utils.pyext2 import RuntimeModule
 
 from .utils import BASE_IMPORTS
 
@@ -437,6 +441,10 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
                 exec_results["debug"][i] = {"inputs": inputs, "gt_outputs": outputs, "exec_outputs": stdout, "stderr": stderr}
         if early_stop and exec_code <= 0:
             break
+    try:
+        os.unlink(temp_program_path)
+    except OSError:
+        pass
     return exec_results
 
 

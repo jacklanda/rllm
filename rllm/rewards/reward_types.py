@@ -41,6 +41,18 @@ class RewardConfig:
     repetition_penalty_weight: float = 0.5
     repetition_max_n: int = 4
 
+    # P1-3: length / self-restart ("Wait, no...") penalty. Step-0 evals
+    # showed 53–99% of rollouts with single-message >8k chars and heavy
+    # "Wait," restart cycles that drown out retrieval context. These
+    # knobs apply a mild negative nudge to keep training signal clean
+    # without punishing legitimate long reasoning.
+    apply_length_penalty: bool = False
+    length_penalty_weight: float = 0.1
+    length_penalty_char_threshold: int = 6000
+    length_penalty_char_saturation: int = 20000
+    length_penalty_wait_threshold: int = 6
+    length_penalty_wait_saturation: int = 20
+
     # Toggle for using Together Code Interpreter
     use_together_code_interpreter: bool = False
 

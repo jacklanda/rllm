@@ -75,6 +75,7 @@ rllm:
     # - Tool parse errors (unclosed <think> tags, malformed JSON, etc.)
     # - Repeated queries (identical search queries within a trajectory)
     # - Search errors (environment timeouts, retrieval errors, etc.)
+  dump_trajectory_files: True
   rejection_sample:
     enable: False
     multiplier: 1

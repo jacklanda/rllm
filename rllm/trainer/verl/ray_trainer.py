@@ -94,6 +94,23 @@ import torch
 from verl.utils.torch_functional import masked_mean, masked_whiten
 
 
+DR_GRPO_LOSS_AGG_MODE = "seq-mean-token-sum-norm"
+
+
+def validate_dr_grpo_config(config):
+    if config.algorithm.adv_estimator != "dr_grpo":
+        return
+
+    loss_agg_mode = config.actor_rollout_ref.actor.loss_agg_mode
+    if loss_agg_mode != DR_GRPO_LOSS_AGG_MODE:
+        raise ValueError(
+            "Dr.GRPO requires actor_rollout_ref.actor.loss_agg_mode="
+            f"{DR_GRPO_LOSS_AGG_MODE!r}; got {loss_agg_mode!r}. "
+            "This removes response-length normalization by dividing each "
+            "sequence token-sum loss by the fixed response width."
+        )
+
+
 def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty="kl"):
     responses = data.batch["responses"]
     response_length = responses.size(1)
@@ -138,25 +155,15 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         advantages, returns = core_algos.compute_gae_advantage_return(token_level_rewards=token_level_rewards, values=values, response_mask=response_mask, gamma=gamma, lam=lam)
         data.batch["advantages"] = advantages
         data.batch["returns"] = returns
-    elif adv_estimator == "grpo":
+    elif adv_estimator in ("grpo", "grpo_no_std", "dr_grpo"):
         token_level_rewards = data.batch["token_level_rewards"]
         index = data.non_tensor_batch["uid"]
         responses = data.batch["responses"]
         response_length = responses.size(-1)
         attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
-        advantages, returns = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards, response_mask=response_mask, index=index)
-        data.batch["advantages"] = advantages
-        data.batch["returns"] = returns
-
-    elif adv_estimator == "grpo_no_std":
-        token_level_rewards = data.batch["token_level_rewards"]
-        index = data.non_tensor_batch["uid"]
-        responses = data.batch["responses"]
-        response_length = responses.size(-1)
-        attention_mask = data.batch["attention_mask"]
-        response_mask = attention_mask[:, -response_length:]
-        advantages, returns = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards, response_mask=response_mask, index=index, norm_adv_by_std_in_grpo=False)
+        use_std_norm = bool(norm_adv_by_std_in_grpo) and adv_estimator == "grpo"
+        advantages, returns = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards, response_mask=response_mask, index=index, norm_adv_by_std_in_grpo=use_std_norm)
         data.batch["advantages"] = advantages
         data.batch["returns"] = returns
 
@@ -382,6 +389,7 @@ class RayPPOTrainer(object):
 
         self.tokenizer = tokenizer
         self.config = config
+        validate_dr_grpo_config(config)
         self.reward_fn = reward_fn
         self.val_reward_fn = val_reward_fn
 
@@ -559,7 +567,7 @@ class RayPPOTrainer(object):
             critic_cls = RayClassWithInitArgs(cls=self.role_worker_mapping[Role.Critic], config=self.config.critic)
             self.resource_pool_to_cls[resource_pool]["critic"] = critic_cls
             self.use_critic = True
-        elif self.config.algorithm.adv_estimator == "grpo" or self.config.algorithm.adv_estimator == "grpo_no_std":
+        elif self.config.algorithm.adv_estimator in ("grpo", "grpo_no_std", "dr_grpo"):
             self.use_critic = False
         elif self.config.algorithm.adv_estimator == "gdpo":
             self.use_critic = False
@@ -726,7 +734,15 @@ class RayPPOTrainer(object):
                             batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
 
                         # compute advantages, executed on the driver process
-                        batch = compute_advantage(batch, adv_estimator=self.config.algorithm.adv_estimator, gamma=self.config.algorithm.gamma, lam=self.config.algorithm.lam, num_repeat=self.config.actor_rollout_ref.rollout.n)
+                        batch = compute_advantage(
+                            batch,
+                            adv_estimator=self.config.algorithm.adv_estimator,
+                            gamma=self.config.algorithm.gamma,
+                            lam=self.config.algorithm.lam,
+                            num_repeat=self.config.actor_rollout_ref.rollout.n,
+                            norm_adv_by_std_in_grpo=self.config.algorithm.norm_adv_by_std_in_grpo,
+                            config=self.config.algorithm,
+                        )
 
                     # update critic
                     if self.use_critic:

@@ -103,7 +103,7 @@ class Tracking:
             run_id = config.get("trainer", {}).get("run_id", None) if config else None
             if run_id:
                 wandb_kwargs["id"] = run_id
-                wandb_kwargs["resume"] = "must"
+                wandb_kwargs["resume"] = "allow"
             wandb.init(**wandb_kwargs)
             self.logger["wandb"] = wandb
 
@@ -197,20 +197,14 @@ class Tracking:
         if self._finished:
             return
 
-        if "wandb" in self.logger:
-            self.logger["wandb"].finish(exit_code=0)
-        if "swanlab" in self.logger:
-            self.logger["swanlab"].finish()
-        if "vemlp_wandb" in self.logger:
-            self.logger["vemlp_wandb"].finish(exit_code=0)
-        if "tensorboard" in self.logger:
-            self.logger["tensorboard"].finish()
-        if "clearml" in self.logger:
-            self.logger["clearml"].finish()
-        if "trackio" in self.logger:
-            self.logger["trackio"].finish()
-        if "file" in self.logger:
-            self.logger["file"].finish()
+        for name, logger_instance in list(self.logger.items()):
+            try:
+                if name in ("wandb", "vemlp_wandb"):
+                    logger_instance.finish(exit_code=0)
+                elif hasattr(logger_instance, "finish"):
+                    logger_instance.finish()
+            except Exception:
+                pass
 
         self.logger.clear()
         self._finished = True
@@ -286,13 +280,40 @@ class FileLogger:
             self.filepath = os.path.join(directory, f"{self.experiment_name}.jsonl")
             print(f"Creating file logger at {self.filepath}")
         self.fp = open(self.filepath, "w")
+        self._closed = False
 
     def log(self, data, step):
+        if self._closed:
+            return
         data = {"step": step, "data": data}
-        self.fp.write(json.dumps(data) + "\n")
+        self.fp.write(json.dumps(data, default=self._json_default) + "\n")
+        self.fp.flush()
+
+    @staticmethod
+    def _json_default(obj):
+        import numpy as np
+
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return str(obj)
+
+    def flush(self):
+        if not self._closed:
+            self.fp.flush()
 
     def finish(self):
+        if self._closed:
+            return
+        self._closed = True
+        self.fp.flush()
         self.fp.close()
+
+    def __del__(self):
+        self.finish()
 
 
 class _TensorboardAdapter:

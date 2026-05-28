@@ -30,16 +30,45 @@ except ImportError:
     MCPConnectionManager = None
     MCPEnvironment = None
 
+try:
+    from rllm.environments.endless_terminals.et_env import ETEnv
+except ImportError:
+    ETEnv = None
+
+
+def _is_et_entry(entry: dict) -> bool:
+    """Heuristic detector for Endless Terminals rows.
+
+    Two signals (either is sufficient):
+      1. ``data_source == "endless_terminals"`` (stamped by convert_to_parquet.py).
+      2. Schema match: docker_image + final_state_test + no repo_name/commit_hash
+         (ET rows are self-contained CLI tasks, not SWE-Bench-style repo issues).
+    """
+    if not isinstance(entry, dict):
+        return False
+    if entry.get("data_source") == "endless_terminals":
+        return True
+    if entry.get("docker_image") and entry.get("final_state_test") and entry.get("instruction") and not entry.get("repo_name") and not entry.get("commit_hash"):
+        return True
+    return False
+
 
 class FusedEnv(CLIEnv):
     """Fused environment combining CLI/SWE Docker tools with external web search and MCP tools.
 
-    Operates in three modes based on data type:
+    Operates in four modes based on data type:
 
-    **CLI mode** (entry has ``docker_image``):
+    **CLI mode** (entry has ``docker_image`` and SWE-Bench schema):
         Extends CLIEnv (which extends SWEEnv). Intercepts ``web_search`` tool
         calls and routes them to a ``LocalRetrievalTool`` running outside the Docker
         container, while all other tool calls are delegated to Docker via the parent.
+
+    **ET mode** (entry has ``data_source="endless_terminals"`` or matches the
+        ET schema — docker_image + final_state_test, no repo_name):
+        Wraps a standalone ``ETEnv`` instance. ETEnv talks to the remote Docker
+        daemon directly (no r2egym RepoEnv), runs the ET initial-state pytest,
+        executes function-call XML actions, and returns a binary reward from
+        ``/logs/verifier/reward.txt`` after ``tests/test.sh``.
 
     **Web search mode** (entry has ``data_source`` but no ``docker_image`` or ``tools_py``):
         No Docker container is created. Only ``web_search`` and ``finish``/``submit``
@@ -61,13 +90,14 @@ class FusedEnv(CLIEnv):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.retrieval_server_url = retrieval_server_url or os.environ.get(
-            "RETRIEVAL_SERVER_URL", "http://127.0.0.1:65432"
-        )
+        self.retrieval_server_url = retrieval_server_url or os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:65432")
         self.retrieval_max_results = retrieval_max_results
 
-        # Detect task mode: CLI, MCP, or Web Search
-        if self.entry.get("docker_image"):
+        # Detect task mode: ET (checked before CLI since ET rows also carry a
+        # docker_image), CLI, MCP, or Web Search.
+        if _is_et_entry(self.entry):
+            self._task_mode = "et"
+        elif self.entry.get("docker_image"):
             self._task_mode = "cli"
         elif self.entry.get("tools_py"):
             self._task_mode = "mcp"
@@ -88,15 +118,21 @@ class FusedEnv(CLIEnv):
         self._mcp_unknown_total = 0
         self._mcp_distinct_tools: set[str] = set()
 
+        # ET mode state — built lazily in _reset_et so failures during ETEnv
+        # construction surface in reset() (which the engine wraps in retry
+        # logic) rather than the constructor (which it does not).
+        self._et_inner: "ETEnv | None" = None
+        self._et_reward_debug: dict = {}
+        self._et_consecutive_unknown = 0
+        self._et_unknown_total = 0
+
     def _get_retrieval_tool(self):
         """Return the class-level shared retrieval tool (lazy-initialized, thread-safe)."""
         if FusedEnv._shared_retrieval_tool is None:
             with FusedEnv._retrieval_lock:
                 if FusedEnv._shared_retrieval_tool is None:
                     if LocalRetrievalTool is None:
-                        logger.warning(
-                            "LocalRetrievalTool not available — web_search will return errors"
-                        )
+                        logger.warning("LocalRetrievalTool not available — web_search will return errors")
                         return None
                     FusedEnv._shared_retrieval_tool = LocalRetrievalTool(
                         server_url=self.retrieval_server_url,
@@ -113,11 +149,23 @@ class FusedEnv(CLIEnv):
     # ------------------------------------------------------------------
 
     def reset(self) -> tuple[str, dict]:
+        if self._task_mode == "et":
+            return self._reset_et()
         if self._task_mode == "mcp":
             return self._reset_mcp()
         if self._task_mode == "web search":
             return self._reset_search()
         return self._reset_swe()
+
+    def _reset_et(self) -> tuple[str, dict]:
+        """Reset for ET-mode tasks (delegates to ETEnv)."""
+        if ETEnv is None:
+            raise RuntimeError("ETEnv import failed; cannot run endless_terminals tasks. " "Check that rllm.environments.endless_terminals.et_env is importable.")
+        if self._et_inner is None:
+            self._et_inner = ETEnv.from_dict(self.entry)
+        obs, info = self._et_inner.reset()
+        info["task_type"] = "et"
+        return obs, info
 
     def _reset_search(self) -> tuple[str, dict]:
         """Reset for web-search-mode tasks (no Docker)."""
@@ -128,6 +176,13 @@ class FusedEnv(CLIEnv):
         self._search_web_search_calls = 0
         self._search_consecutive_unknown = 0
         self._search_unknown_total = 0
+        # P0-2: track low-content (junk) retrieval responses so the
+        # reward can punish "finish after 2 searches that returned
+        # nothing useful" — the dominant failure mode for
+        # simpleqa/hotpotqa/medqa at step 0.
+        self._search_low_content_responses = 0
+        self._search_retrieval_seen_docs = set()
+        self._search_retrieval_duplicate_hits = 0
 
         question = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
         # Strip stale answer-format instructions that conflict with FUSED_SEARCH_USER_PROMPT
@@ -166,14 +221,13 @@ class FusedEnv(CLIEnv):
         if MCPConnectionManager is not None and MCPEnvironment is not None:
             try:
                 from pathlib import Path
+
                 tools_path = Path(tools_py_abs)
                 if tools_path.exists() and tools_path.is_file():
                     server_script = MCPEnvironment._ensure_server_script(tools_path.parent)
                     mcp_server_command = sys.executable
                     mcp_server_args = [str(server_script)]
-                    self._mcp_connection_manager = MCPConnectionManager(
-                        mcp_server_command, mcp_server_args
-                    )
+                    self._mcp_connection_manager = MCPConnectionManager(mcp_server_command, mcp_server_args)
                     self._mcp_connection_manager.start()
                     # Extract tool schemas from discovered tools (deduplicate by name)
                     seen = set()
@@ -340,6 +394,8 @@ class FusedEnv(CLIEnv):
             return self._step_mcp(action)
         if self._task_mode == "web search":
             return self._step_search(action)
+        if self._task_mode == "et":
+            return self._step_et(action)
         return self._step_swe(action)
 
     def _step_swe(self, action):
@@ -358,6 +414,77 @@ class FusedEnv(CLIEnv):
         if action_objs:
             return super().step(action_objs[0].to_xml_string())
         return super().step(action)
+
+    def _step_et(self, action):
+        """ET-mode step: route into the wrapped ETEnv, with structural-error
+        bookkeeping that mirrors the CLI/MCP modes so the engine sees the
+        same termination_reason taxonomy across data sources.
+        """
+        if self._et_inner is None:
+            return (
+                "Error: ET env not initialized; call reset() first.",
+                0.0,
+                True,
+                {
+                    "termination_reason": "ENV_INIT_ERROR",
+                },
+            )
+
+        # Keep raw text so we can rescue \boxed{...} as an implicit submit and
+        # report structural parse failures explicitly.
+        raw_text = action if isinstance(action, str) else ""
+        if not raw_text and isinstance(action, list) and action:
+            first = action[0]
+            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+
+        action_objs = self._unwrap_actions(action) if SWEAction is not None else []
+
+        if not action_objs:
+            if raw_text:
+                try:
+                    from rllm.parser.tool_parser import QwenToolParser as _QTP
+
+                    tcs = _QTP().parse_qwen_tool_calls(raw_text)
+                    if tcs and tcs[0].get("name") in ("finish", "submit"):
+                        action_objs = [SWEAction(function_name="submit", parameters={})]
+                except Exception:
+                    pass
+            if not action_objs:
+                boxed = self._extract_boxed_from_raw(raw_text) if raw_text else None
+                if boxed is not None:
+                    action_objs = [SWEAction(function_name="submit", parameters={})]
+                else:
+                    self._et_consecutive_unknown += 1
+                    self._et_unknown_total += 1
+                    if self._et_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
+                        info = {
+                            "termination_reason": "ABNORMAL_PARSE_ERROR",
+                            "parser/consecutive_unknown": self._et_consecutive_unknown,
+                            "parser/unknown_total": self._et_unknown_total,
+                        }
+                        return (
+                            "Error: could not parse any actions; terminating rollout.",
+                            0.0,
+                            True,
+                            info,
+                        )
+                    return "Error: could not parse any actions from model output.", 0.0, False, {}
+
+        # ETEnv accepts one action at a time. Run them sequentially; the
+        # first finish/submit terminates the rollout.
+        observations: list[str] = []
+        last_info: dict = {}
+        for action_obj in action_objs:
+            self._et_consecutive_unknown = 0
+            obs, _r, done, info = self._et_inner.step(action_obj)
+            observations.append(str(obs))
+            last_info = info
+            if done:
+                combined = "\n".join(observations) if observations else str(obs)
+                return combined, 0.0, True, info
+
+        combined = "\n".join(observations) if observations else "No tool calls executed."
+        return combined, 0.0, False, last_info
 
     _MAX_CONSECUTIVE_UNKNOWN = 3
 
@@ -408,6 +535,7 @@ class FusedEnv(CLIEnv):
             # Last-resort: try QwenToolParser directly on the raw string
             if raw_text:
                 from rllm.parser.tool_parser import QwenToolParser as _QTP
+
                 tcs = _QTP().parse_qwen_tool_calls(raw_text)
                 if tcs and tcs[0].get("name") in ("finish", "submit"):
                     result = tcs[0].get("arguments", {}).get("result", "")
@@ -468,10 +596,7 @@ class FusedEnv(CLIEnv):
                     True,
                     info,
                 )
-            observations.append(
-                f"Error: The tool '{fn}' is not available for web search tasks. "
-                "Use web_search to find information and finish to submit your answer."
-            )
+            observations.append(f"Error: The tool '{fn}' is not available for web search tasks. " "Use web_search to find information and finish to submit your answer.")
 
         combined = "\n".join(observations) if observations else "No tool calls executed."
         return combined, 0.0, False, {}
@@ -541,6 +666,7 @@ class FusedEnv(CLIEnv):
             if raw_text:
                 try:
                     from rllm.parser.tool_parser import QwenToolParser as _QTP
+
                     tcs = _QTP().parse_qwen_tool_calls(raw_text)
                     if tcs and tcs[0].get("name") in ("finish", "submit"):
                         result = tcs[0].get("arguments", {}).get("result", "")
@@ -558,10 +684,7 @@ class FusedEnv(CLIEnv):
                     if self._mcp_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
                         info = {
                             "termination_reason": "ABNORMAL_PARSE_ERROR",
-                            "termination_message": (
-                                f"MCP: {self._mcp_consecutive_unknown} consecutive turns "
-                                "without a parseable <tool_call>"
-                            ),
+                            "termination_message": (f"MCP: {self._mcp_consecutive_unknown} consecutive turns " "without a parseable <tool_call>"),
                             "parser/consecutive_unknown": self._mcp_consecutive_unknown,
                             "parser/unknown_total": self._mcp_unknown_total,
                         }
@@ -572,9 +695,7 @@ class FusedEnv(CLIEnv):
                             info,
                         )
                     return (
-                        "Error: could not parse any actions from model output. "
-                        "Emit exactly one <tool_call>{\"name\": ..., \"arguments\": {...}}</tool_call> "
-                        "block; use finish/submit to end the task.",
+                        "Error: could not parse any actions from model output. " 'Emit exactly one <tool_call>{"name": ..., "arguments": {...}}</tool_call> ' "block; use finish/submit to end the task.",
                         0.0,
                         False,
                         {"parser/unknown_total": self._mcp_unknown_total},
@@ -607,24 +728,17 @@ class FusedEnv(CLIEnv):
                 if self._mcp_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
                     info = {
                         "termination_reason": "INVALID_REACT_STRUCTURE",
-                        "termination_message": (
-                            f"MCP: {self._mcp_consecutive_unknown} consecutive "
-                            "tool_calls with empty/unparseable `name` field"
-                        ),
+                        "termination_message": (f"MCP: {self._mcp_consecutive_unknown} consecutive " "tool_calls with empty/unparseable `name` field"),
                         "parser/consecutive_unknown": self._mcp_consecutive_unknown,
                         "parser/unknown_total": self._mcp_unknown_total,
                     }
                     return (
-                        "Error: could not parse a tool `name` from the <tool_call> "
-                        "block; terminating rollout.",
+                        "Error: could not parse a tool `name` from the <tool_call> " "block; terminating rollout.",
                         0.0,
                         True,
                         info,
                     )
-                observations.append(
-                    "Error: empty tool name. Each <tool_call> must be valid JSON with a "
-                    "\"name\" string (e.g. {\"name\": \"finish\", \"arguments\": {...}})."
-                )
+                observations.append("Error: empty tool name. Each <tool_call> must be valid JSON with a " '"name" string (e.g. {"name": "finish", "arguments": {...}}).')
                 continue
 
             self._mcp_consecutive_unknown = 0
@@ -646,13 +760,15 @@ class FusedEnv(CLIEnv):
                 else:
                     restored_params[k] = v
             tool_call_id = str(uuid.uuid4())
-            tool_calls = [{
-                "id": tool_call_id,
-                "function": {
-                    "name": fn,
-                    "arguments": json.dumps(restored_params, ensure_ascii=False),
+            tool_calls = [
+                {
+                    "id": tool_call_id,
+                    "function": {
+                        "name": fn,
+                        "arguments": json.dumps(restored_params, ensure_ascii=False),
+                    },
                 }
-            }]
+            ]
 
             if self._mcp_connection_manager is None:
                 observations.append(f"Execution output of [{fn}]:\nError: MCP server not available.")
@@ -695,7 +811,38 @@ class FusedEnv(CLIEnv):
 
         try:
             result = tool.forward(query=query, top_k=top_k)
-            observation = f"Execution output of [web_search]:\n{result.to_string()}"
+            raw = result.to_string()
+            # P2-8: dedup passages already seen in this rollout so the
+            # model is forced to issue queries that surface new evidence.
+            # simpleqa/gpqa at step-0 showed 864 / 138 consecutive
+            # near-identical responses respectively.
+            seen: set = getattr(self, "_search_retrieval_seen_docs", set())
+            new_chunks: list[str] = []
+            dup_count = 0
+            for chunk in raw.split("\n\n"):
+                sig = chunk.strip()[:400]
+                if not sig:
+                    continue
+                h = hash(sig)
+                if h in seen:
+                    dup_count += 1
+                    continue
+                seen.add(h)
+                new_chunks.append(chunk)
+            if not new_chunks and raw.strip():
+                # All chunks dedup'd away — surface a hint instead of
+                # returning the identical passage a second time.
+                body = "All returned passages were already surfaced by a previous " "search. Rephrase the query (add entities, dates, or " "constraints) to retrieve new evidence."
+            else:
+                body = "\n\n".join(new_chunks) if new_chunks else raw
+            self._search_retrieval_seen_docs = seen
+            self._search_retrieval_duplicate_hits = getattr(self, "_search_retrieval_duplicate_hits", 0) + dup_count
+            # P0-2: count low-content responses (fewer than 20 words
+            # after stripping the header) for reward shaping downstream.
+            word_count = len(body.split())
+            if word_count < 20:
+                self._search_low_content_responses = getattr(self, "_search_low_content_responses", 0) + 1
+            observation = f"Execution output of [web_search]:\n{body}"
         except Exception as e:
             logger.error("web_search execution failed: %s", str(e))
             observation = f"Execution output of [web_search]:\nError executing web_search: {str(e)}"
@@ -771,13 +918,15 @@ class FusedEnv(CLIEnv):
                 else:
                     restored_params[k] = v
             tool_call_id = str(uuid.uuid4())
-            tool_calls = [{
-                "id": tool_call_id,
-                "function": {
-                    "name": fn,
-                    "arguments": json.dumps(restored_params, ensure_ascii=False),
+            tool_calls = [
+                {
+                    "id": tool_call_id,
+                    "function": {
+                        "name": fn,
+                        "arguments": json.dumps(restored_params, ensure_ascii=False),
+                    },
                 }
-            }]
+            ]
             try:
                 self._mcp_connection_manager.execute_tool_calls(tool_calls)
             except Exception:
@@ -794,6 +943,8 @@ class FusedEnv(CLIEnv):
             return self._compute_mcp_reward()
         if self._task_mode == "web search":
             return self._compute_search_reward()
+        if self._task_mode == "et":
+            return self._compute_et_reward()
         return super().compute_final_reward()
 
     def compute_final_reward_metadata(self) -> dict:
@@ -803,7 +954,47 @@ class FusedEnv(CLIEnv):
         if self._task_mode == "web search":
             self._compute_search_reward()
             return self._search_reward_debug
+        if self._task_mode == "et":
+            self._compute_et_reward()
+            return self._et_reward_debug
         return super().compute_final_reward_metadata()
+
+    def _compute_et_reward(self) -> float:
+        """ET-mode reward: delegate to ETEnv.compute_final_reward_metadata,
+        then surface the binary 1.0/0.0 as the rollout reward.
+        """
+        if self._et_inner is None:
+            self._et_reward_debug = {
+                "type": "endless_terminals",
+                "reward": 0.0,
+                "resolved": False,
+                "reward_mode": "binary",
+                "reward_source": "et_env_uninitialized",
+                "verifier_error": "ETEnv was never reset; cannot run verifier.",
+            }
+            self._reward_debug = self._et_reward_debug
+            return 0.0
+        meta = {}
+        try:
+            meta = self._et_inner.compute_final_reward_metadata() or {}
+        except Exception as exc:
+            meta = {
+                "type": "endless_terminals",
+                "reward": 0.0,
+                "resolved": False,
+                "reward_mode": "binary",
+                "reward_source": "et_env_exception",
+                "verifier_error": f"{type(exc).__name__}: {exc}"[:512],
+            }
+        meta.setdefault("type", "endless_terminals")
+        meta.setdefault("reward_mode", "binary")
+        meta.setdefault("parser/unknown_total", self._et_unknown_total)
+        reward = float(meta.get("reward", 0.0))
+        meta["reward"] = reward
+        meta.setdefault("resolved", reward >= 1.0)
+        self._et_reward_debug = meta
+        self._reward_debug = self._et_reward_debug
+        return reward
 
     def _compute_search_reward(self) -> float:
         """Compute F1-based reward for web search tasks."""
@@ -815,7 +1006,10 @@ class FusedEnv(CLIEnv):
 
         config = RewardConfig(
             toolcall_bonus=0.0,
-            apply_repetition_penalty=False,
+            apply_repetition_penalty=True,
+            repetition_penalty_weight=0.2,
+            apply_length_penalty=True,
+            length_penalty_weight=0.15,
             enable_step_bonus=False,
         )
         reward_fn = RewardSearchFn(config)
@@ -832,21 +1026,23 @@ class FusedEnv(CLIEnv):
         reward_output = reward_fn(reward_input)
 
         ws_calls = getattr(self, "_search_web_search_calls", 0)
+        low_content = getattr(self, "_search_low_content_responses", 0)
+        dup_hits = getattr(self, "_search_retrieval_duplicate_hits", 0)
 
         # Penalize finish-without-search (bypass penalty).
         bypass_penalty = -0.5 if ws_calls == 0 else 0.0
 
-        # Shaped search-count bonus: reward 2-4 searches, penalize single search.
-        # Trajectory data shows peak reward at search=2 (0.37) vs search=1 (0.36),
-        # but 60% of rollouts stop at 1 search. A small gradient nudge is enough.
-        if ws_calls == 1:
-            search_count_bonus = -0.05
-        elif 2 <= ws_calls <= 4:
-            search_count_bonus = 0.05
-        else:
-            search_count_bonus = 0.0
+        # P0-2: punish "early finish on junk" — if the rollout made <=2
+        # searches AND the majority of them returned low-content
+        # responses AND we got a wrong answer, the model is exploiting
+        # the old "submit after 2 searches" shortcut. We apply a small
+        # negative nudge on top of the existing 0 reward so the policy
+        # has a clear signal to keep searching when evidence is thin.
+        early_junk_penalty = 0.0
+        if not reward_output.is_correct and ws_calls > 0 and ws_calls <= 2 and low_content >= ws_calls:
+            early_junk_penalty = -0.1
 
-        final_reward = max(0.0, float(reward_output.reward) + bypass_penalty + search_count_bonus)
+        final_reward = max(0.0, min(1.0, float(reward_output.reward) + bypass_penalty + early_junk_penalty))
 
         self._search_reward_debug = {
             "type": "web search",
@@ -854,11 +1050,13 @@ class FusedEnv(CLIEnv):
             "resolved": final_reward >= 1.0,
             "reward_mode": "f1",
             "reward_source": "search_reward_fn",
-            "is_correct": reward_output.is_correct,
+            "is_correct": bool(reward_output.is_correct) if reward_output.is_correct is not None else False,
             "verifier_error": "",
             "reward/bypass_penalty": bypass_penalty,
-            "reward/search_count_bonus": search_count_bonus,
+            "reward/early_junk_penalty": early_junk_penalty,
             "reward/web_search_calls": ws_calls,
+            "reward/low_content_responses": low_content,
+            "reward/duplicate_passage_hits": dup_hits,
             "parser/unknown_total": getattr(self, "_search_unknown_total", 0),
             **reward_output.metadata,
         }
@@ -893,7 +1091,7 @@ class FusedEnv(CLIEnv):
             "resolved": reward_output.reward >= 1.0,
             "reward_mode": "verifier",
             "reward_source": "verifier_reward_fn",
-            "is_correct": reward_output.is_correct,
+            "is_correct": bool(reward_output.is_correct) if reward_output.is_correct is not None else False,
             "verifier_error": reward_output.metadata.get("error", ""),
             **reward_output.metadata,
         }
@@ -906,6 +1104,8 @@ class FusedEnv(CLIEnv):
             return self._mcp_reward_debug
         if self._task_mode == "web search":
             return self._search_reward_debug
+        if self._task_mode == "et":
+            return self._et_reward_debug
         return self._reward_debug
 
     # ------------------------------------------------------------------
@@ -922,9 +1122,23 @@ class FusedEnv(CLIEnv):
                 pass
             self._mcp_connection_manager = None
         # Do NOT close _shared_retrieval_tool — it is shared across all FusedEnv instances
+        # ET mode owns its own ETEnv instance — close it (best-effort, gated
+        # internally by RLLM_ET_KEEP_CONTAINER for debugging).
+        if self._task_mode == "et" and self._et_inner is not None:
+            try:
+                self._et_inner.close()
+            except Exception:
+                pass
+            self._et_inner = None
         # Clean up Docker (CLI mode only)
         if self._task_mode == "cli":
             super().close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # factory

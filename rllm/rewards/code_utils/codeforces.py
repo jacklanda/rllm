@@ -1,5 +1,9 @@
 # modifed from https://github.com/hendrycks/apps/blob/main/eval/testing_util.py to fix some evaluation bugs and add instructions
-from rllm.rewards.code_utils.pyext2 import RuntimeModule
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from rllm.rewards.code_utils.pyext2 import RuntimeModule
 import signal
 import numpy as np
 
@@ -343,59 +347,42 @@ def execute_std_code(method, synthesized_code, inputs_list, outputs_list, timeou
     exec_results = {}
     if debug:
         exec_results["debug"] = {}
-    for i, inputs in enumerate(inputs_list):
-        remove_tmp_files()
-        outputs = outputs_list[i]
-        if isinstance(inputs, list):
-            inputs = "\n".join(inputs)
-        if isinstance(outputs, list):
-            outputs = "\n".join(outputs)
+    try:
+        for i, inputs in enumerate(inputs_list):
+            remove_tmp_files()
+            outputs = outputs_list[i]
+            if isinstance(inputs, list):
+                inputs = "\n".join(inputs)
+            if isinstance(outputs, list):
+                outputs = "\n".join(outputs)
 
+            try:
+                result = subprocess.run(["python", temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
+                exec_code = 999
+            except subprocess.TimeoutExpired:
+                exec_code = -1
+            except Exception as e:
+                print(e)
+                exec_code = -2
+
+            if exec_code > 0:
+                if compare_std_results(result.stdout, outputs, debug):
+                    exec_code = 1
+                else:
+                    exec_code = 0
+            assert exec_code != -3
+            exec_results[i] = (exec_code == 1, EXECUTION_RESULTS[exec_code] if exec_code > -3 else EXECUTION_RESULTS[exec_code].format(result.returncode))
+            if exec_code >= 0:
+                if debug:
+                    print_debug_info(inputs=inputs, outputs=outputs, exec_outputs=result.stdout)
+                    exec_results["debug"][i] = {"inputs": inputs, "gt_outputs": outputs, "exec_outputs": result.stdout}
+            if early_stop and exec_code <= 0:
+                break
+    finally:
         try:
-            result = subprocess.run(["python", temp_program_path], input=inputs, text=True, capture_output=True, timeout=timeout)
-            exec_code = 999
-        except subprocess.TimeoutExpired:
-            exec_code = -1
-        except Exception as e:
-            print(e)
-            exec_code = -2
-
-        if exec_code > 0:
-            # if result.returncode != 0:
-            #     try:
-            #         inputs_tmp_file = open(create_temp_file(inputs), 'r')
-            #         result = subprocess.run(['python', temp_program_path], stdin=inputs_tmp_file, text=True, capture_output=True, timeout=timeout)
-            #         assert result.returncode == 0
-            #         if compare_std_results(result.stdout, outputs, debug):
-            #             exec_code = 1
-            #         else:
-            #             exec_code = 0
-            #     except:
-            #         try:
-            #             inputs_tmp_file = 'input.txt'
-            #             with open(inputs_tmp_file, 'w') as ftemp:
-            #                 ftemp.write(inputs)
-            #             result = subprocess.run(['python', temp_program_path], text=True, timeout=timeout)
-            #             assert result.returncode == 0
-            #             if compare_std_results(open('output.txt').read(), outputs, debug):
-            #                 exec_code = 1
-            #             else:
-            #                 exec_code = 0
-
-            #         except:
-            #             exec_code = -3
-            if compare_std_results(result.stdout, outputs, debug):
-                exec_code = 1
-            else:
-                exec_code = 0
-        assert exec_code != -3
-        exec_results[i] = (exec_code == 1, EXECUTION_RESULTS[exec_code] if exec_code > -3 else EXECUTION_RESULTS[exec_code].format(result.returncode))
-        if exec_code >= 0:
-            if debug:
-                print_debug_info(inputs=inputs, outputs=outputs, exec_outputs=result.stdout)
-                exec_results["debug"][i] = {"inputs": inputs, "gt_outputs": outputs, "exec_outputs": result.stdout}
-        if early_stop and exec_code <= 0:
-            break
+            os.unlink(temp_program_path)
+        except OSError:
+            pass
     return exec_results
 
 

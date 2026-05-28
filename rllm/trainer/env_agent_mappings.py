@@ -17,6 +17,8 @@ ENV_CLASSES = {
     "swe": safe_import("rllm.environments.swe.swe", "SWEEnv"),
     "cli": safe_import("rllm.environments.cli.cli", "CLIEnv"),
     "fused": safe_import("rllm.environments.fused.fused", "FusedEnv"),
+    "endless_terminals": safe_import("rllm.environments.endless_terminals.et_env", "ETEnv"),
+    "et": safe_import("rllm.environments.endless_terminals.et_env", "ETEnv"),
     "competition_coding": safe_import("rllm.environments.code.competition_coding", "CompetitionCodingEnv"),
     "single_turn_env": safe_import("rllm.environments.base.single_turn_env", "SingleTurnEnvironment"),
 }
@@ -30,6 +32,7 @@ AGENT_CLASSES = {
     "sweagent": safe_import("rllm.agents.swe_agent", "SWEAgent"),
     "cli_agent": safe_import("rllm.agents.cli_agent", "CLIAgent"),
     "fused_agent": safe_import("rllm.agents.fused_agent", "FusedAgent"),
+    "et_agent": safe_import("rllm.agents.et_agent", "ETAgent"),
     "math_agent": safe_import("rllm.agents.math_agent", "MathAgent"),
     "code_agent": safe_import("rllm.agents.code_agent", "CompetitionCodingAgent"),
 }

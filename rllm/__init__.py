@@ -23,6 +23,18 @@ import warnings
 warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
 
+# The "Gym has been unmaintained..." banner is NOT a warnings.warn() call —
+# gym/__init__.py does `print(notice, file=sys.stderr)` directly, reading from
+# the `gym_notices` package. warnings.filterwarnings cannot suppress raw prints,
+# so we neutralize the source by emptying gym_notices.notices before gym is
+# imported by any downstream dependency (e.g. r2egym).
+try:
+    import gym_notices.notices as _gym_notices
+
+    _gym_notices.notices = {}
+except ImportError:
+    pass
+
 # Import commonly used classes
 from .agents import Action, BaseAgent, Episode, Step, Trajectory
 

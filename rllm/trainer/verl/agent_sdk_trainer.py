@@ -31,7 +31,11 @@ from verl.trainer.ppo.ray_trainer import (
 from verl.trainer.ppo.rollout_corr_helper import compute_rollout_correction_and_add_to_batch
 from verl.trainer.ppo.utils import Role, WorkerType
 from verl.utils.debug import marked_timer
-from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
+from rllm.trainer.verl.ray_trainer import (
+    compute_advantage,
+    compute_data_metrics,
+    validate_dr_grpo_config,
+)
 from verl.utils.tracking import Tracking
 
 from rllm.engine.agent_sdk_engine import AgentSdkEngine
@@ -69,6 +73,7 @@ class AgentSdkTrainer(RayPPOTrainer):
             resource_pool_manager=resource_pool_manager,
             ray_worker_group_cls=ray_worker_group_cls,
         )
+        validate_dr_grpo_config(config)
 
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)

@@ -177,6 +177,26 @@ def _sweagent_tool_files() -> list[str]:
     return files
 
 
+# pytest's terse summary line is the most reliable cross-version anchor; we
+# accept either "5 passed" or "5 passed, 1 failed in 1.23s". When the verifier
+# script swallows pytest output we return (None, None) so the partial-reward
+# branch falls back to the binary verdict.
+_PYTEST_PASSED_RE = re.compile(r"\b(\d+)\s+passed\b")
+_PYTEST_FAILED_RE = re.compile(r"\b(\d+)\s+(?:failed|errors?)\b")
+
+
+def _parse_pytest_counts(text: str) -> tuple[int | None, int]:
+    if not text:
+        return None, 0
+    passed_m = _PYTEST_PASSED_RE.search(text)
+    failed_m = _PYTEST_FAILED_RE.search(text)
+    if not passed_m and not failed_m:
+        return None, 0
+    passed = int(passed_m.group(1)) if passed_m else 0
+    failed = int(failed_m.group(1)) if failed_m else 0
+    return passed, failed
+
+
 class ETEnv(BaseEnv):
     """Endless Terminals environment.
 
@@ -187,7 +207,7 @@ class ETEnv(BaseEnv):
     computed at episode end by ``compute_final_reward_metadata()``.
     """
 
-    SUPPORTED_FUNCTIONS = ("execute_bash", "str_replace_editor", "submit", "finish")
+    SUPPORTED_FUNCTIONS = ("execute_bash", "str_replace_editor", "file_editor", "submit", "finish")
 
     def __init__(
         self,
@@ -195,6 +215,8 @@ class ETEnv(BaseEnv):
         step_timeout: int = 90,
         reward_timeout: int | None = None,
         verbose: bool = False,
+        partial_reward: bool = False,
+        finish_without_evidence_penalty: float = 0.0,
     ):
         if SWEAction is None:
             raise RuntimeError("r2egym is required for ETEnv (Action parsing).")
@@ -227,6 +249,11 @@ class ETEnv(BaseEnv):
         self.reward_timeout = int(reward_timeout) if reward_timeout else int(self.verifier_timeout_sec)
         self.verbose = verbose
 
+        # Partial-reward / shaping toggles. Defaults preserve binary 0/1
+        # behaviour for backward compat; FUSED ET grpo configs can opt in.
+        self.partial_reward: bool = bool(partial_reward)
+        self.finish_without_evidence_penalty: float = float(finish_without_evidence_penalty)
+
         self.client = None
         self.container = None
         self.container_name: str = ""
@@ -235,6 +262,11 @@ class ETEnv(BaseEnv):
         self._reward_debug: dict = {}
         self._tools_installed: bool = False
         self._closed: bool = False
+        # Track whether the agent ever issued a "verification-style" read
+        # action (cat / ls / head / tail / stat / file_editor view / test -f
+        # / find -name). Used by the optional finish-without-evidence
+        # shaping path.
+        self._evidence_actions: int = 0
 
     # ------------------------------------------------------------------
     # Reset / step / close
@@ -343,7 +375,10 @@ class ETEnv(BaseEnv):
 
         if fn in ("submit", "finish"):
             # Episode ends; reward is computed by the engine via
-            # compute_final_reward_metadata(). Return done=True.
+            # compute_final_reward_metadata(). Stash evidence-flag for the
+            # reward path to read; cannot be applied here because the binary
+            # reward is computed later.
+            self._reward_debug["_finish_evidence_count"] = int(self._evidence_actions)
             return ("<<<Finished>>>", 0.0, True, {"task_id": self.task_id, "cwd": DEFAULT_CWD})
 
         # Tool-name drift: 4B-Thinking has seen ``file_editor`` in pretraining
@@ -377,6 +412,23 @@ class ETEnv(BaseEnv):
                 False,
                 {"task_id": self.task_id, "cwd": DEFAULT_CWD},
             )
+
+        # Evidence-action accounting (cheap, conservative): does this step
+        # *read* state rather than mutate it? If yes, count it toward the
+        # "finish without evidence" guard. View-only file_editor calls and
+        # read-flavored bash one-liners qualify; redirections / writes / pip
+        # installs / chmods do not.
+        if fn in ("str_replace_editor", "file_editor"):
+            if (params.get("command") or "") == "view":
+                self._evidence_actions += 1
+        elif fn == "execute_bash":
+            raw = (params.get("cmd") or params.get("command") or "").strip()
+            head = raw.split(maxsplit=1)[0] if raw else ""
+            head = head.split("/")[-1]  # strip any /usr/bin/ prefix
+            if head in {"cat", "ls", "head", "tail", "stat", "find", "grep", "wc", "file", "test"}:
+                # Exclude when redirecting output to a file (mutates state).
+                if ">" not in raw and ">>" not in raw:
+                    self._evidence_actions += 1
 
         rc, output = _exec(self.container, cmd_argv, workdir=DEFAULT_CWD, timeout=self.step_timeout)
         observation = output if output else ""
@@ -481,6 +533,20 @@ class ETEnv(BaseEnv):
                 continue
             # Rewrite shebang for portability.
             content = re.sub(r"^#![^\n]*\n", "#!/usr/bin/env python3\n", content, count=1)
+            # ET base images are minimal: r2egym's str_replace_editor.py imports
+            # chardet unconditionally, but most ET dockerfiles do NOT install it
+            # (training-step-1 dump: 96 chardet ImportError observations across
+            # 128 trajectories, all on file_editor / str_replace_editor calls).
+            # Soft-import: if chardet is missing, fall back to utf-8 — every ET
+            # task ships utf-8 text fixtures, so this is lossless in practice.
+            content = content.replace(
+                "import chardet\n",
+                "try:\n    import chardet\nexcept ImportError:  # ET base images may lack chardet\n    chardet = None\n",
+            )
+            content = content.replace(
+                'encoding = chardet.detect(path.read_bytes())["encoding"]',
+                'encoding = chardet.detect(path.read_bytes())["encoding"] if chardet is not None else None',
+            )
             name = os.path.basename(src)  # e.g. "execute_bash.py"
             stem = os.path.splitext(name)[0]
             dest = f"{TOOLS_DIR}/{stem}"
@@ -490,6 +556,17 @@ class ETEnv(BaseEnv):
                 logger.warning("ETEnv: put_archive failed for %s -> %s: %s", src, dest, exc)
                 continue
             _exec(self.container, ["chmod", "+x", dest], timeout=10)
+            # Provide ``file_editor`` as a name-equivalent symlink to
+            # ``str_replace_editor`` so tool calls under either name resolve to
+            # the same in-container script. The system prompt advertises
+            # ``file_editor`` as canonical; the trainer-side aliasing in step()
+            # remains as a defence-in-depth.
+            if stem == "str_replace_editor":
+                _exec(
+                    self.container,
+                    ["ln", "-sf", dest, f"{TOOLS_DIR}/file_editor"],
+                    timeout=10,
+                )
 
         # Smoke-test that python3 is callable. ET dockerfiles install python3 +
         # pytest, so this should always succeed; warn loudly if not.
@@ -626,6 +703,36 @@ class ETEnv(BaseEnv):
                     "verifier_error": f"reward_txt_unexpected:{reward_text[:32]!r}",
                 }
             )
+
+        # ---------- Optional shaping (opt-in via constructor flags) ----------
+        # Both flags are off by default; existing FUSED ET experiments retain
+        # binary 0/1 reward unless explicitly enabled in the env config.
+        debug["reward_binary"] = float(debug.get("reward", 0.0))
+        debug["evidence_actions_before_finish"] = int(self._evidence_actions)
+        passed, failed = _parse_pytest_counts(output)
+        if passed is not None:
+            debug["pytest_passed"] = passed
+            debug["pytest_failed"] = failed
+            total = passed + failed
+            debug["pytest_pass_fraction"] = (passed / total) if total > 0 else 0.0
+        else:
+            debug["pytest_pass_fraction"] = None
+
+        if self.partial_reward and debug["reward_binary"] < 1.0 and debug.get("pytest_pass_fraction"):
+            # Tier the partial reward: pass-fraction in [0, 0.7) gets a small
+            # signal; ≥0.7 gets a stronger signal but never crosses the
+            # binary threshold, so the verifier remains the gold standard.
+            frac = debug["pytest_pass_fraction"]
+            partial = 0.5 * frac if frac < 0.7 else 0.8 * frac  # capped <1.0
+            debug["reward"] = float(min(0.95, partial))
+            debug["reward_mode"] = "binary+partial"
+
+        if self.finish_without_evidence_penalty > 0.0 and self._evidence_actions == 0 and debug["reward_binary"] < 1.0:
+            # Discourage "give up and finish" without ever inspecting state.
+            penalty = float(self.finish_without_evidence_penalty)
+            debug["reward"] = float(max(-1.0, debug["reward"] - penalty))
+            debug["finish_without_evidence_penalty_applied"] = penalty
+
         self._reward_debug = debug
         return debug
 

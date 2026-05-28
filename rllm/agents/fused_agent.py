@@ -8,7 +8,7 @@ from rllm.agents.cli_agent import (
     generate_tool_schemas,
     parse_r2egym_tool_docstring,
 )
-from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_SYSTEM_PROMPT, FUSED_MCP_USER_PROMPT
+from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_SYSTEM_PROMPT, FUSED_MCP_USER_PROMPT, FUSED_ET_SYSTEM_PROMPT, FUSED_ET_USER_PROMPT
 from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,7 @@ def _build_fused_tools_system_prompt(scaffold: str = "r2egym") -> str:
     schemas.append(web_search_schema)
 
     tool_parser = QwenToolParser()
-    schemas_str = "\n".join(
-        json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
-    )
+    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
     return FUSED_AGENT_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
@@ -57,9 +55,7 @@ def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
     schemas.append(web_search_schema)
 
     tool_parser = QwenToolParser()
-    schemas_str = "\n".join(
-        json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
-    )
+    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
     return FUSED_SEARCH_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
@@ -83,11 +79,35 @@ def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2eg
             pass
 
     tool_parser = QwenToolParser()
-    schemas_str = "\n".join(
-        json.dumps(s, indent=0, ensure_ascii=False) for s in schemas
-    )
+    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
     return FUSED_MCP_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+
+
+def _build_fused_et_system_prompt(scaffold: str = "r2egym") -> str:
+    """Build the ET-mode system prompt: execute_bash + str_replace_editor + finish only.
+
+    ET tasks are offline (no web_search) and have no repo-wide ripgrep helper
+    (no `search` tool), so we whitelist the minimal toolset and use an
+    ET-specific framing that drops the github-issue language.
+    """
+    # ET supports execute_bash, str_replace_editor (file_editor in r2egym
+    # naming), and finish. No web_search, no `search` (rg) tool.
+    keep = {"execute_bash", "file_editor", "str_replace_editor", "finish"}
+    schemas = []
+    for f in R2EGYM_TOOL_FILES:
+        try:
+            schema = parse_r2egym_tool_docstring(f)
+            name = schema.get("function", schema).get("name") if isinstance(schema, dict) else None
+            if name in keep:
+                schemas.append(schema)
+        except Exception:
+            pass
+
+    tool_parser = QwenToolParser()
+    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
+    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
+    return FUSED_ET_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
 
 
 class FusedAgent(CLIAgent):
@@ -105,6 +125,7 @@ class FusedAgent(CLIAgent):
     # Valid tool sets per task type
     _VALID_TOOLS_FUSED_SWE = {"file_editor", "search", "execute_bash", "finish", "web_search"}
     _VALID_TOOLS_FUSED_SEARCH = {"web_search", "finish"}
+    _VALID_TOOLS_FUSED_ET = {"execute_bash", "str_replace_editor", "file_editor", "finish", "submit"}
 
     def __init__(self, scaffold: str = "r2egym"):
         # Call CLIAgent.__init__ — it sets up tool_parser, system_prompt, etc.
@@ -115,6 +136,8 @@ class FusedAgent(CLIAgent):
         self.system_prompt = _build_fused_tools_system_prompt(scaffold)
         # Pre-build the search-only system prompt (lightweight, reusable)
         self._search_system_prompt = _build_fused_search_system_prompt(scaffold)
+        # Pre-build the ET system prompt (lightweight, reusable)
+        self._et_system_prompt = _build_fused_et_system_prompt(scaffold)
         # Re-initialize messages with the new system prompt
         self.messages = [
             {
@@ -142,6 +165,15 @@ class FusedAgent(CLIAgent):
                 }
                 # Restrict parser to search-only tools for name normalization
                 self.tool_parser.valid_tools = self._VALID_TOOLS_FUSED_SEARCH
+            elif task_type == "et":
+                self.user_prompt_template = FUSED_ET_USER_PROMPT
+                # Swap to ET system prompt (execute_bash + str_replace_editor +
+                # finish only — no web_search, no rg-style `search`).
+                self.messages[0] = {
+                    "role": "system",
+                    "content": self._et_system_prompt,
+                }
+                self.tool_parser.valid_tools = self._VALID_TOOLS_FUSED_ET
             elif task_type == "mcp":
                 self.user_prompt_template = FUSED_MCP_USER_PROMPT
                 # Build dynamic system prompt from MCP tool schemas

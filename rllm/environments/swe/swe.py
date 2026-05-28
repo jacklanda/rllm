@@ -13,6 +13,16 @@ from datasets import Dataset, load_dataset
 warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
 
+# The unmaintained-gym banner is printed via `print(..., file=sys.stderr)` from
+# gym/__init__.py, not via warnings.warn — so filterwarnings cannot silence it.
+# Empty the notices dict before gym imports to short-circuit the print.
+try:
+    import gym_notices.notices as _gym_notices
+
+    _gym_notices.notices = {}
+except ImportError:
+    pass
+
 try:
     import r2egym
     from r2egym.agenthub.action import Action
@@ -55,18 +65,7 @@ R2E_ENV_IDS = [
 DEFAULT_R2E_ENV_ID = "R2E-Gym/R2E-Gym-Lite"
 
 
-_PYTEST_SUMMARY_RE = re.compile(
-    r"=+\s*"
-    r"(?:(?P<failed>\d+)\s+failed[,\s]*)?"
-    r"(?:(?P<passed>\d+)\s+passed[,\s]*)?"
-    r"(?:(?P<skipped>\d+)\s+skipped[,\s]*)?"
-    r"(?:(?P<xfailed>\d+)\s+xfailed[,\s]*)?"
-    r"(?:(?P<xpassed>\d+)\s+xpassed[,\s]*)?"
-    r"(?:(?P<errors>\d+)\s+errors?[,\s]*)?"
-    r"(?:(?P<warnings>\d+)\s+warnings?[,\s]*)?"
-    r"(?:(?P<deselected>\d+)\s+deselected[,\s]*)?"
-    r"in\s+[0-9.]+s"
-)
+_PYTEST_SUMMARY_RE = re.compile(r"=+\s*" r"(?:(?P<failed>\d+)\s+failed[,\s]*)?" r"(?:(?P<passed>\d+)\s+passed[,\s]*)?" r"(?:(?P<skipped>\d+)\s+skipped[,\s]*)?" r"(?:(?P<xfailed>\d+)\s+xfailed[,\s]*)?" r"(?:(?P<xpassed>\d+)\s+xpassed[,\s]*)?" r"(?:(?P<errors>\d+)\s+errors?[,\s]*)?" r"(?:(?P<warnings>\d+)\s+warnings?[,\s]*)?" r"(?:(?P<deselected>\d+)\s+deselected[,\s]*)?" r"in\s+[0-9.]+s")
 
 # Signatures that mean the patched source won't even parse/apply, so no
 # meaningful test signal can come out of this rollout — the verifier will
@@ -169,6 +168,7 @@ def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> st
             old_str = params.get("old_str", "")
             if old_str and isinstance(old_str, str):
                 import shlex
+
                 key = old_str.splitlines()[0] if old_str else ""
                 if key and len(key) >= 3:
                     q = shlex.quote(key)
@@ -176,10 +176,7 @@ def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> st
                         out, _rc = runtime.run(f"grep -n -F -- {q} {shlex.quote(path)} | head -5", timeout=10)
                         lines = [ln for ln in str(out).splitlines() if ln.strip()]
                         if lines:
-                            obs += (
-                                "\n\n[editor-hint] First match line(s) in {p}: {ls}.\n"
-                                "Pick a unique anchor by extending old_str with the surrounding line(s)."
-                            ).format(p=path, ls=", ".join(ln.split(":", 1)[0] for ln in lines))
+                            obs += ("\n\n[editor-hint] First match line(s) in {p}: {ls}.\n" "Pick a unique anchor by extending old_str with the surrounding line(s).").format(p=path, ls=", ".join(ln.split(":", 1)[0] for ln in lines))
                     except Exception:
                         pass
             return obs
@@ -190,36 +187,30 @@ def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> st
             if isinstance(old_str, str) and old_str.strip():
                 try:
                     import difflib
+
                     out, _rc = runtime.run(
                         f"sed -n '1,4000p' {__import__('shlex').quote(path)}",
                         timeout=10,
                     )
                     haystack = str(out).splitlines()
                     needle = old_str.splitlines()
-                    cand = difflib.get_close_matches(
-                        needle[0] if needle else "", haystack, n=1, cutoff=0.6
-                    ) if needle else []
+                    cand = difflib.get_close_matches(needle[0] if needle else "", haystack, n=1, cutoff=0.6) if needle else []
                     if cand:
-                        obs += (
-                            "\n\n[editor-hint] Closest line in {p}: {c!r}.\n"
-                            "Fix whitespace / capitalization drift, then retry with the exact text."
-                        ).format(p=path, c=cand[0][:200])
+                        obs += ("\n\n[editor-hint] Closest line in {p}: {c!r}.\n" "Fix whitespace / capitalization drift, then retry with the exact text.").format(p=path, c=cand[0][:200])
                 except Exception:
                     pass
             return obs
 
         # --- (3) Post-edit py_compile gate. ------------------------------------
         if (
-            cmd in {"str_replace", "insert", "create"}
-            and path.endswith(".py")
-            and runtime is not None
-            and "Error" not in obs.split("\n", 1)[0]  # tool itself reported success
+            cmd in {"str_replace", "insert", "create"} and path.endswith(".py") and runtime is not None and "Error" not in obs.split("\n", 1)[0]  # tool itself reported success
         ):
             import shlex
+
             q = shlex.quote(path)
             try:
                 out, _rc = runtime.run(
-                    f"python3 -c \"import py_compile,sys; py_compile.compile({q!r}, doraise=True)\" 2>&1 || true",
+                    f'python3 -c "import py_compile,sys; py_compile.compile({q!r}, doraise=True)" 2>&1 || true',
                     timeout=20,
                 )
                 out_s = str(out)
@@ -228,15 +219,10 @@ def _enrich_file_editor_observation(action_obj, observation: str, runtime) -> st
                     # backup for str_replace / insert. If the backup is absent
                     # (e.g. `create`), fall back to `git checkout --`.
                     runtime.run(
-                        f"(test -f {q}.__rllm_bak__ && mv -f {q}.__rllm_bak__ {q}) "
-                        f"|| (cd /testbed && git checkout -- {q} 2>/dev/null) || true",
+                        f"(test -f {q}.__rllm_bak__ && mv -f {q}.__rllm_bak__ {q}) " f"|| (cd /testbed && git checkout -- {q} 2>/dev/null) || true",
                         timeout=10,
                     )
-                    obs += (
-                        "\n\n[editor-hint] Post-edit py_compile FAILED and the edit has been reverted.\n"
-                        f"Compiler said:\n{out_s.strip()[-400:]}\n"
-                        "View the file, then retry with a correct edit."
-                    )
+                    obs += "\n\n[editor-hint] Post-edit py_compile FAILED and the edit has been reverted.\n" f"Compiler said:\n{out_s.strip()[-400:]}\n" "View the file, then retry with a correct edit."
             except Exception:
                 pass
     except Exception:
@@ -331,9 +317,13 @@ class SWEEnv(BaseEnv):
         # gemcli/gemswe samples, so no pre-trajectory patching is required.
 
         self.total_steps = 0
+        self._viewed_files: set[str] = set()
         # Dump a container-env fingerprint on every reset so tool-env regressions are grep-able.
         self._log_container_fingerprint()
-        return self.env.get_task_instruction(), {}
+        # Gather environment context (CWD + file tree) for agent spatial awareness.
+        env_context = self._get_env_context()
+        cwd = self._get_cwd()
+        return self.env.get_task_instruction(), {"env_context": env_context, "cwd": cwd}
 
     def _copy_content_to_container(self, content: str, container_path: str, *, suffix: str = ".sh", chmod: bool = False) -> None:
         with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False) as f:
@@ -348,12 +338,34 @@ class SWEEnv(BaseEnv):
 
     def _log_container_fingerprint(self):
         """Log python3 path, chardet version, and file_editor availability for regression detection."""
-        cmd = (
-            "python3 -c 'import sys,chardet; print(\"python3:\",sys.executable,\"chardet:\",chardet.__version__)' 2>&1; "
-            "ls -la /usr/local/bin/file_editor 2>&1 | head -1"
-        )
+        cmd = 'python3 -c \'import sys,chardet; print("python3:",sys.executable,"chardet:",chardet.__version__)\' 2>&1; ' "ls -la /usr/local/bin/file_editor 2>&1 | head -1"
         out, _ = self.env.runtime.run(cmd, timeout=15)
         logger.info("container_fingerprint: %s", (out or "").strip())
+
+    def _get_cwd(self) -> str:
+        """Get the current working directory inside the container."""
+        if self.env is None or self.env.runtime is None:
+            return "/testbed"
+        out, _ = self.env.runtime.run("pwd", timeout=5)
+        return (out or "/testbed").strip()
+
+    def _get_env_context(self) -> str:
+        """Get environment context (CWD + file tree) for agent spatial awareness.
+
+        Returns a formatted string with the current working directory and a
+        depth-limited file tree of the repository, suitable for injection into
+        the agent's observation to prevent blind file operations.
+        """
+        if self.env is None or self.env.runtime is None:
+            return ""
+        cwd_output, _ = self.env.runtime.run("pwd", timeout=5)
+        cwd = (cwd_output or "/testbed").strip()
+        tree_output, _ = self.env.runtime.run(
+            "find . -maxdepth 2 -not -path '*/\\.*' -not -path '*/__pycache__/*' " "-not -path '*/node_modules/*' -not -path '*/.git/*' | sort | head -80",
+            timeout=10,
+        )
+        tree = (tree_output or "").strip()
+        return f"Current Working Directory: {cwd}\nRepository Structure (depth=2):\n{tree}"
 
     def _fix_tool_shebangs(self):
         """Fix tool script shebangs in the Docker container to use portable interpreter path.
@@ -368,10 +380,7 @@ class SWEEnv(BaseEnv):
         else:
             tool_names = ["str_replace_editor", "execute_bash", "submit"]
 
-        sed_cmds = " && ".join(
-            f"sed -i '1s|^#!.*python.*$|#!/usr/bin/env python3|' /usr/local/bin/{name}"
-            for name in tool_names
-        )
+        sed_cmds = " && ".join(f"sed -i '1s|^#!.*python.*$|#!/usr/bin/env python3|' /usr/local/bin/{name}" for name in tool_names)
         output, error_code = self.env.runtime.run(sed_cmds, timeout=15)
         if error_code and "Error" in str(error_code):
             logger.warning("Failed to fix tool shebangs: %s", output)
@@ -387,9 +396,7 @@ class SWEEnv(BaseEnv):
         2. core.warnAmbiguousRefs=false disables ambiguous ref warnings
         """
         self.env.runtime.run(
-            "git config advice.objectNameWarning false 2>/dev/null; "
-            "git config advice.ambiguousFetchRefspec false 2>/dev/null; "
-            "git config core.warnAmbiguousRefs false 2>/dev/null",
+            "git config advice.objectNameWarning false 2>/dev/null; " "git config advice.ambiguousFetchRefspec false 2>/dev/null; " "git config core.warnAmbiguousRefs false 2>/dev/null",
             timeout=15,
         )
 
@@ -413,14 +420,9 @@ class SWEEnv(BaseEnv):
 
         attempts = [
             ("python3 -m pip", f"python3 -m pip install --quiet --disable-pip-version-check {deps_arg}"),
-            ("ensurepip+pip",
-             "python3 -m ensurepip --default-pip >/dev/null 2>&1; "
-             f"python3 -m pip install --quiet --disable-pip-version-check {deps_arg}"),
+            ("ensurepip+pip", "python3 -m ensurepip --default-pip >/dev/null 2>&1; " f"python3 -m pip install --quiet --disable-pip-version-check {deps_arg}"),
             ("pip3", f"pip3 install --quiet --disable-pip-version-check {deps_arg}"),
-            ("apt-get",
-             "apt-get update -qq >/dev/null 2>&1 && "
-             "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "
-             "python3-chardet python3-coverage >/dev/null 2>&1"),
+            ("apt-get", "apt-get update -qq >/dev/null 2>&1 && " "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq " "python3-chardet python3-coverage >/dev/null 2>&1"),
         ]
         install_log = []
         for label, cmd in attempts:
@@ -431,8 +433,7 @@ class SWEEnv(BaseEnv):
                 return
 
         logger.warning(
-            "Tool-dependency smoke test FAILED after all install strategies; "
-            "file_editor will crash with ModuleNotFoundError. attempts=%s last_smoke=%s",
+            "Tool-dependency smoke test FAILED after all install strategies; " "file_editor will crash with ModuleNotFoundError. attempts=%s last_smoke=%s",
             " | ".join(install_log),
             (smoke_out or "").strip(),
         )
@@ -704,13 +705,31 @@ class SWEEnv(BaseEnv):
 
         if not action_obj.function_name:
             return (
-                "You forgot to use a function call in your response. "
-                "YOU MUST USE A FUNCTION CALL IN EACH RESPONSE.\n"
-                "IMPORTANT: YOU SHOULD NEVER ASK FOR HUMAN HELP.",
+                "You forgot to use a function call in your response. " "YOU MUST USE A FUNCTION CALL IN EACH RESPONSE.\n" "IMPORTANT: YOU SHOULD NEVER ASK FOR HUMAN HELP.",
                 0,
                 False,
                 {},
             )
+
+        # Auto-resolve relative paths for file_editor calls
+        if action_obj.function_name == "file_editor":
+            params = action_obj.parameters or {}
+            path_val = params.get("path", "")
+            if path_val and not path_val.startswith("/"):
+                cwd = self._get_cwd()
+                params["path"] = f"{cwd}/{path_val}"
+                action_obj = Action(function_name=action_obj.function_name, parameters=params)
+
+        # Track viewed files and warn on blind edits
+        _edit_without_view = False
+        if action_obj.function_name == "file_editor":
+            params = action_obj.parameters or {}
+            cmd = params.get("command", "")
+            path_val = params.get("path", "")
+            if cmd == "view" and path_val:
+                self._viewed_files.add(path_val)
+            elif cmd == "str_replace" and path_val and path_val not in getattr(self, "_viewed_files", set()):
+                _edit_without_view = True
 
         # RepoEnv always returns 0 reward, must be evaluated by DockerRuntime.
         obs, reward, done, info = self.env.step(action_obj)
@@ -736,6 +755,19 @@ class SWEEnv(BaseEnv):
                 observation = _enrich_file_editor_observation(action_obj, observation, runtime)
             except Exception:
                 pass
+
+        # Path-error hint: when a file operation fails due to a missing path,
+        # suggest exploration commands so the agent doesn't blindly retry.
+        if "does not exist" in observation or "No such file or directory" in observation:
+            observation += "\n\nHint: The specified path does not exist. " "Try `find . -name '<filename>'` to locate the file, " "or `ls` to see the current directory contents."
+
+        # Warn when str_replace targets a file that hasn't been viewed yet
+        if _edit_without_view and "ERROR" not in observation.split("\n", 1)[0]:
+            observation += "\n\n[editor-hint] You are editing a file you haven't viewed yet. " "Use `file_editor(view, path=...)` first to see the current content and avoid mismatches."
+
+        # Inject CWD into info so the agent always knows its location.
+        cwd = self._get_cwd()
+        info["cwd"] = cwd
 
         return observation, reward, done, info
 

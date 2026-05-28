@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from unittest.mock import Mock, patch
 
 import pytest
@@ -152,6 +154,24 @@ class TestMCPEnvironment:
         assert env.max_steps == 10
         assert env.task is None
         assert env.reward_fn is not None  # Should use zero_reward
+
+    def test_ensure_server_script_silences_mcp_run_warnings(self, tmp_path):
+        """Generated MCP server wrapper should suppress duplicate-tool logs through run()."""
+        (tmp_path / "tools.py").write_text(
+            "import logging\n"
+            "class _MCP:\n"
+            "    def run(self):\n"
+            "        logging.getLogger('mcp.server.fastmcp.tools.tool_manager').warning('Tool already exists: duplicate_tool')\n"
+            "mcp = _MCP()\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert "Tool already exists" not in result.stdout
+        assert "Tool already exists" not in result.stderr
 
     @patch.object(MCPConnectionManager, "start")
     @patch.object(MCPConnectionManager, "__init__", return_value=None)

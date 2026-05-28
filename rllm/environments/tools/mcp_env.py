@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import queue
 import sys
 import threading
@@ -78,6 +79,7 @@ class MCPConnectionManager:
                     self._stop_no_lock()
                     if "Racing" in str(last_error):
                         import time
+
                         time.sleep(0.5 * (attempt + 1))
                         continue
                     raise Exception(f"Failed to initialize MCP connection: {last_error}")
@@ -110,7 +112,16 @@ class MCPConnectionManager:
         self.running = False
         self.request_queue.put(("stop", None, None))
         if self.worker_thread:
-            self.worker_thread.join(timeout=5)
+            self.worker_thread.join(timeout=10)
+            self.worker_thread = None
+        self.session = None
+        self.tool_map = {}
+
+    def __del__(self):
+        try:
+            self.stop()
+        except Exception:
+            pass
 
     def execute_tool_calls(self, tool_calls: list[dict[str, Any]]) -> dict[str, str]:
         """Execute tool calls and return results."""
@@ -182,7 +193,12 @@ class MCPConnectionManager:
 
         # Use AsyncExitStack properly within this event loop
         self.exit_stack = AsyncExitStack()
-        self.stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
+        # Route subprocess stderr to /dev/null: stdio_client forwards it to
+        # the parent's stderr by default, leaking MCP server warnings (e.g.
+        # "Tool already exists" from duplicate @mcp.tool defs in tools.py)
+        # into Ray worker logs.
+        self._mcp_errlog = self.exit_stack.enter_context(open(os.devnull, "w"))
+        self.stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params, errlog=self._mcp_errlog))
         stdio, write = self.stdio_transport
         self.session = await self.exit_stack.enter_async_context(ClientSession(stdio, write))
 
@@ -293,7 +309,12 @@ class MCPEnvironment(BaseEnv):
         server_script.write_text(
             "import sys\n"
             "import logging\n"
-            "logging.getLogger('mcp.server').setLevel(logging.WARNING)\n"
+            "_MCP_LOGGERS = ('mcp', 'mcp.server', 'mcp.server.fastmcp', 'mcp.server.fastmcp.tools', 'mcp.server.fastmcp.tools.tool_manager')\n"
+            "for _name in _MCP_LOGGERS:\n"
+            "    _lg = logging.getLogger(_name)\n"
+            "    _lg.setLevel(logging.CRITICAL)\n"
+            "    _lg.propagate = False\n"
+            "    _lg.disabled = True\n"
             "from pathlib import Path\n"
             "sys.path.insert(0, str(Path(__file__).parent))\n"
             "import tools\n"
@@ -366,11 +387,16 @@ class MCPEnvironment(BaseEnv):
             self._submit_without_tool_retries += 1
             remaining = self._max_submit_without_tool_retries - self._submit_without_tool_retries
             if self._submit_without_tool_retries <= self._max_submit_without_tool_retries:
-                return {}, 0.0, False, {
-                    "rejected_submit": True,
-                    "reason": "submit_without_tool_call",
-                    "remaining_retries": max(remaining, 0),
-                }
+                return (
+                    {},
+                    0.0,
+                    False,
+                    {
+                        "rejected_submit": True,
+                        "reason": "submit_without_tool_call",
+                        "remaining_retries": max(remaining, 0),
+                    },
+                )
 
             forced_reward = -5.0
             info_dict = {

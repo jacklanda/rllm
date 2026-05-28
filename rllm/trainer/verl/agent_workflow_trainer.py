@@ -28,7 +28,11 @@ from verl.trainer.ppo.ray_trainer import (
 )
 from verl.trainer.ppo.utils import Role, WorkerType
 from verl.utils.debug import marked_timer
-from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
+from rllm.trainer.verl.ray_trainer import (
+    compute_advantage,
+    compute_data_metrics,
+    validate_dr_grpo_config,
+)
 
 from rllm.engine.agent_workflow_engine import AgentWorkflowEngine
 from rllm.engine.rollout.verl_engine import VerlEngine
@@ -51,6 +55,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         workflow_args=None,
     ):
         super().__init__(config=config, tokenizer=tokenizer, processor=processor, role_worker_mapping=role_worker_mapping, resource_pool_manager=resource_pool_manager, ray_worker_group_cls=ray_worker_group_cls, reward_fn=reward_fn, val_reward_fn=val_reward_fn)
+        validate_dr_grpo_config(config)
 
         self.workflow_class = workflow_class
         self.workflow_args = workflow_args or {}

@@ -15,12 +15,39 @@ import inspect
 import json
 import logging
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from rllm.rewards.reward_types import RewardOutput
 
 logger = logging.getLogger(__name__)
+
+_MCP_REGISTRATION_LOGGERS = (
+    "mcp",
+    "mcp.server",
+    "mcp.server.fastmcp",
+    "mcp.server.fastmcp.tools",
+    "mcp.server.fastmcp.tools.tool_manager",
+)
+
+
+@contextmanager
+def _silence_mcp_registration_loggers():
+    """Mute FastMCP registration warnings while importing task tools."""
+    previous = {}
+    for name in _MCP_REGISTRATION_LOGGERS:
+        log = logging.getLogger(name)
+        previous[name] = (log.level, log.propagate, log.disabled)
+        log.setLevel(logging.CRITICAL)
+        log.propagate = False
+        log.disabled = True
+    try:
+        yield
+    finally:
+        for name, state in previous.items():
+            log = logging.getLogger(name)
+            log.level, log.propagate, log.disabled = state
 
 
 # ---------------------------------------------------------------------------
@@ -68,22 +95,46 @@ def _coerce_payload_shape(payload: Any) -> Any:
     incompatible outer shapes (array vs. object).  When the model picks
     the object shape but the verifier expects an array, the inner list
     is usually present under a single wrapper key.  Recover it.
+
+    Coercion strategies (tried in order):
+    1. Single-key dict whose value is a list → return that list.
+    2. Dict with a known wrapper key (result/items/data/...) → return its list.
+    3. Dict that is itself a plausible list *element* → wrap as [payload].
     """
     if isinstance(payload, dict):
+        # Strategy 1: single-key wrapper
         if len(payload) == 1:
             only_val = next(iter(payload.values()))
             if isinstance(only_val, list):
                 return only_val
+        # Strategy 2: known wrapper keys
         for key in ("result", "results", "items", "data", "answer", "pairings"):
             v = payload.get(key)
             if isinstance(v, list):
                 return v
+        # Strategy 3: bare single-element — the agent submitted one dict instead
+        # of a list of dicts.  Wrap it unless it looks like a meta/schema wrapper.
+        _META_KEYS = {"type", "schema", "format", "description", "$schema", "definitions"}
+        if not (payload.keys() & _META_KEYS):
+            return [payload]
+    # Handle double-stringified JSON: the payload is still a string after the
+    # first json.loads pass (e.g. finish tool result was double-escaped).
+    if isinstance(payload, str):
+        try:
+            inner = json.loads(payload)
+            if isinstance(inner, list):
+                return inner
+            if isinstance(inner, dict):
+                return _coerce_payload_shape(inner)
+        except (json.JSONDecodeError, ValueError):
+            pass
     return None
 
 
 # ---------------------------------------------------------------------------
 # Tool-call reward helpers
 # ---------------------------------------------------------------------------
+
 
 def _get_tool_call_reward(task_info: dict[str, Any]) -> tuple[float, dict[str, Any]]:
     """Compute step-penalty and tool-call bonus/penalty.
@@ -138,6 +189,7 @@ def _get_tool_call_reward(task_info: dict[str, Any]) -> tuple[float, dict[str, A
 # Tools context helpers
 # ---------------------------------------------------------------------------
 
+
 def _wrap_tool_for_verifier(fn):
     """Wrap a raw tool function so it returns ``{"result": <value>}`` format.
 
@@ -148,6 +200,7 @@ def _wrap_tool_for_verifier(fn):
     gap so the verifier's ``isinstance(result, dict) and "result" in result``
     checks succeed.
     """
+
     @functools.wraps(fn)
     def wrapped(*args, **kwargs):
         result = fn(*args, **kwargs)
@@ -155,6 +208,7 @@ def _wrap_tool_for_verifier(fn):
         if isinstance(result, dict) and "result" in result:
             return result
         return {"result": result}
+
     return wrapped
 
 
@@ -173,7 +227,18 @@ def _load_tools_from_tools_py(tools_py: str) -> dict[str, Any]:
     if spec is None or spec.loader is None:
         return {}
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    import sys as _sys
+
+    tools_dir = str(tools_path.parent)
+    _inserted = tools_dir not in _sys.path
+    if _inserted:
+        _sys.path.insert(0, tools_dir)
+    try:
+        with _silence_mcp_registration_loggers():
+            spec.loader.exec_module(module)
+    finally:
+        if _inserted and tools_dir in _sys.path:
+            _sys.path.remove(tools_dir)
 
     tools: dict[str, Any] = {}
     for name, value in vars(module).items():
@@ -200,6 +265,7 @@ def _build_tools_context(task_info: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Main reward function
 # ---------------------------------------------------------------------------
+
 
 def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
     """Compute reward for general agent / MCP tasks using verifier code.
@@ -263,11 +329,7 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
     # When the first pass reports a list/shape mismatch and the payload is
     # a single-list-valued dict, retry with the inner list.
     coercion_retry = False
-    if (
-        isinstance(verifier_result, dict)
-        and verifier_result.get("passed") is False
-        and _looks_like_structural_msg(verifier_result.get("message", ""))
-    ):
+    if isinstance(verifier_result, dict) and verifier_result.get("passed") is False and _looks_like_structural_msg(verifier_result.get("message", "")):
         coerced = _coerce_payload_shape(parsed_action)
         if coerced is not None and coerced is not parsed_action:
             try:

@@ -1,4 +1,5 @@
 import json
+import re
 
 import hydra
 from datasets import load_dataset
@@ -119,6 +120,28 @@ def prepare_validation_data(train_size=None, test_size=None):
     for path in [_2wiki_path, bamboogle_path, gpqa_diamond_path, musique, gaia_path]:
         with open(path) as f:
             data = json.load(f)
+            # P2-7: filter GAIA samples that require non-textual evidence
+            # (images, YouTube clips, audio, banners, symbols, paintings,
+            # attached files). step-0 eval showed ~25% of GAIA depends on
+            # modalities the retriever-only agent cannot access, and those
+            # rollouts drag GAIA accuracy to an unrecoverable ceiling.
+            if data and isinstance(data, list) and data[0].get("data_source", "") == "gaia":
+                vis_pat = re.compile(
+                    r"\b(image|picture|photo|photograph|youtube|video|audio|"
+                    r"recording|banner|symbol|painting|attached file|attachment|"
+                    r"file provided|the\s+file|\.pdf|\.mp3|\.mp4|\.png|\.jpg|\.jpeg|"
+                    r"\.xlsx|\.docx|\.csv|\.xls|\.doc)\b",
+                    re.IGNORECASE,
+                )
+                before = len(data)
+                data = [
+                    ex for ex in data
+                    if not vis_pat.search(str(ex.get("question") or ex.get("problem_statement") or ""))
+                    and not ex.get("Annotator Metadata", {}).get("Number of Images", 0)
+                ]
+                dropped = before - len(data)
+                if dropped:
+                    print(f"[P2-7] dropped {dropped}/{before} gaia samples requiring non-textual evidence")
             validation_data.extend(data)
             source = data[0].get("data_source", "unknown") if len(data) > 0 else "unknown"
             source2count[source] = source2count.get(source, 0) + len(data)

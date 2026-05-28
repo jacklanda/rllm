@@ -86,8 +86,7 @@ def parse_r2egym_tool_docstring(tool_file_path: str) -> dict:
     # Pattern 1: (N) name (type, required/optional): description
     # Also handles: N. **name** (`type`, required): description
     param_pattern = re.compile(
-        r"(?:\((\d+)\)|(\d+)\.)\s+\*{0,2}(\w+)\*{0,2}\s+"
-        r"\(?[`]?(\w+)[`]?,\s*(required|optional)\)?\s*:\s*(.*?)(?=(?:\n\s*(?:\(\d+\)|\d+\.)|\Z))",
+        r"(?:\((\d+)\)|(\d+)\.)\s+\*{0,2}(\w+)\*{0,2}\s+" r"\(?[`]?(\w+)[`]?,\s*(required|optional)\)?\s*:\s*(.*?)(?=(?:\n\s*(?:\(\d+\)|\d+\.)|\Z))",
         re.DOTALL,
     )
 
@@ -262,8 +261,8 @@ class CLIAgent(BaseAgent):
         """Update agent state from environment observation.
 
         On the first step (no prior trajectory steps), wraps the observation
-        in the user prompt template. On subsequent steps, wraps in
-        <tool_response> tags.
+        in the user prompt template with environment context (CWD + file tree).
+        On subsequent steps, wraps in <tool_response> tags with a CWD reminder.
         """
         if self._trajectory.steps:
             # Subsequent steps: wrap observation in <tool_response> tags
@@ -278,20 +277,34 @@ class CLIAgent(BaseAgent):
             # Track repeated str_replace failures to break edit loops early.
             # If the observation indicates a str_replace failure, record the key;
             # if the agent retries the exact same edit, we'll intercept in update_from_model.
-            if any(marker in observation for marker in (
-                "No occurrences of", "Multiple occurrences of",
-                "No replacement was performed", "did not appear verbatim",
-            )):
+            if any(
+                marker in observation
+                for marker in (
+                    "No occurrences of",
+                    "Multiple occurrences of",
+                    "No replacement was performed",
+                    "did not appear verbatim",
+                )
+            ):
                 # This was a failed edit — _last_failed_edit_key was set in update_from_model
                 pass
             else:
                 # Edit succeeded or this wasn't an edit — reset tracking
                 self._last_failed_edit_key = None
                 self._failed_edit_repeat_count = 0
+
+            # Inject lightweight CWD reminder on subsequent steps
+            cwd = info.get("cwd", "")
+            if cwd:
+                observation = f"[CWD: {cwd}]\n{observation}"
         else:
             # First step: format as the initial user message with problem statement
             observation = str(observation)
-            observation = self.user_prompt_template.format(problem_statement=observation)
+            # Inject environment context (CWD + file tree) before the problem statement
+            env_context = info.get("env_context", "")
+            if env_context:
+                observation = f"[ENVIRONMENT]\n{env_context}\n[/ENVIRONMENT]\n\n{observation}"
+            observation = self.user_prompt_template.replace("{problem_statement}", observation)
 
         # Add step budget / token budget warnings
         max_steps = info.get("max_steps", None)
@@ -369,10 +382,7 @@ class CLIAgent(BaseAgent):
                         self._has_run_tests = True
 
                 # Detect repeated failing str_replace and redirect to view the file.
-                is_str_replace = (
-                    tc.name in ("file_editor", "str_replace_editor")
-                    and tc.arguments.get("command") == "str_replace"
-                )
+                is_str_replace = tc.name in ("file_editor", "str_replace_editor") and tc.arguments.get("command") == "str_replace"
                 if is_str_replace:
                     edit_key = (tc.arguments.get("path", ""), tc.arguments.get("old_str", ""))
                     if edit_key == self._last_failed_edit_key:
@@ -381,11 +391,7 @@ class CLIAgent(BaseAgent):
                             path = tc.arguments.get("path", "")
                             swe_action = SWEAction(
                                 function_name="execute_bash",
-                                parameters={"cmd": (
-                                    f"echo '[REPEATED EDIT BLOCKED] You have retried the same failing str_replace "
-                                    f"{self._failed_edit_repeat_count + 1} times. Viewing the file instead:' && "
-                                    f"cat -n {path}"
-                                )},
+                                parameters={"cmd": (f"echo '[REPEATED EDIT BLOCKED] You have retried the same failing str_replace " f"{self._failed_edit_repeat_count + 1} times. Viewing the file instead:' && " f"cat -n {path}")},
                             )
                             actions.append(Action(action=swe_action.to_xml_string()))
                             continue  # Skip remaining processing for this tool call
@@ -402,10 +408,12 @@ class CLIAgent(BaseAgent):
                         parameters={"cmd": "echo '[SUBMISSION BLOCKED] You have made edits but have not run any tests. Please run the relevant test suite (e.g., python -m pytest <test_file> -x) to verify your fix before submitting.'"},
                     )
                     actions.append(Action(action=swe_action.to_xml_string()))
-                    continue  # Skip remaining tool calls after blocked submission
+                    break  # Stop processing remaining tool calls
                 else:
                     swe_action = _tool_call_to_swe_action(action_dict)
                     actions.append(Action(action=swe_action.to_xml_string()))
+                    if is_submit:
+                        break  # Terminate on first valid finish/submit
 
         if not actions:
             # No tool call found - model is either finishing or malformed
@@ -445,10 +453,15 @@ class CLIAgent(BaseAgent):
             self._has_run_tests = True
 
         # Track repeated str_replace failures
-        if any(marker in observation for marker in (
-            "No occurrences of", "Multiple occurrences of",
-            "No replacement was performed", "did not appear verbatim",
-        )):
+        if any(
+            marker in observation
+            for marker in (
+                "No occurrences of",
+                "Multiple occurrences of",
+                "No replacement was performed",
+                "did not appear verbatim",
+            )
+        ):
             pass  # _last_failed_edit_key was set in update_from_model
         else:
             self._last_failed_edit_key = None

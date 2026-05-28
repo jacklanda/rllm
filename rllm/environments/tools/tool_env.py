@@ -46,9 +46,11 @@ class ToolEnvironment(BaseEnv):
         else:
             self.reward_fn = reward_fn
 
-    def reset(self):
+    def reset(self, task=None, seed=None):
         """Reset the environment and return initial observations."""
         self.step_count = 0
+        if task is not None:
+            self.task = task
 
         return self.task, {}
 
@@ -62,6 +64,13 @@ class ToolEnvironment(BaseEnv):
         Returns:
             next_observations, rewards, terminateds, infos
         """
+        try:
+            from rllm.agents.agent import Action as _AgentAction
+        except Exception:
+            _AgentAction = None
+        if _AgentAction is not None and isinstance(action, _AgentAction):
+            action = action.action
+
         if action is None:
             action = []
 
@@ -91,7 +100,15 @@ class ToolEnvironment(BaseEnv):
                         break
                 if finish_action:
                     arguments = finish_action.get("function", {}).get("arguments", {})
-                    llm_response = arguments.get("response", "")
+                    if isinstance(arguments, str):
+                        try:
+                            arguments = json.loads(arguments)
+                        except Exception:
+                            arguments = {"result": arguments}
+                    if isinstance(arguments, dict):
+                        llm_response = arguments.get("result", "") or arguments.get("response", "")
+                    else:
+                        llm_response = str(arguments)
                 else:
                     # No finish tool call found, use the action itself
                     llm_response = str(action)

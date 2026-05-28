@@ -20,6 +20,7 @@ Two layers:
 
 The runtime layer is gated by ``config.rllm.curriculum_filter.enable``.
 """
+
 from __future__ import annotations
 
 import json
@@ -215,16 +216,18 @@ class CurriculumFilter:
                 code = int(raw_code) if raw_code not in (None, "", "None") else None
             except Exception:
                 code = None
-            groups[key].append({
-                "code": code,
-                "src": src,
-                "idx": idx,
-                "reward": row.get("reward"),
-                "verr": str(verf.get("verifier_error") or ""),
-                "log": str(verf.get("log_tail") or verf.get("log") or ""),
-                "applies_infra": applies_infra,
-                "applies_zero_adv": applies_zero_adv,
-            })
+            groups[key].append(
+                {
+                    "code": code,
+                    "src": src,
+                    "idx": idx,
+                    "reward": row.get("reward"),
+                    "verr": str(verf.get("verifier_error") or ""),
+                    "log": str(verf.get("log_tail") or verf.get("log") or ""),
+                    "applies_infra": applies_infra,
+                    "applies_zero_adv": applies_zero_adv,
+                }
+            )
 
         # Decide which tasks to quarantine this step.
         newly_blocked = 0
@@ -283,17 +286,10 @@ class CurriculumFilter:
                 # or an "unapplicable_patch" verifier error, we don't need to
                 # wait consecutive_steps — the task is structurally broken.
                 rewards = [e.get("reward") for e in entries]
-                all_zero_reward = len(entries) >= self.infra_min_rollouts and all(
-                    (r is None) or (isinstance(r, (int, float)) and r <= 0.0)
-                    for r in rewards
-                )
+                all_zero_reward = len(entries) >= self.infra_min_rollouts and all((r is None) or (isinstance(r, (int, float)) and r <= 0.0) for r in rewards)
                 if all_zero_reward:
                     infra_hits = sum(1 for e in entries if is_infra_failure(e.get("log", "")))
-                    unapp_hits = sum(
-                        1 for e in entries
-                        if e.get("verr") == "unapplicable_patch"
-                        or "unapplicable_patch" in e.get("verr", "")
-                    )
+                    unapp_hits = sum(1 for e in entries if e.get("verr") == "unapplicable_patch" or "unapplicable_patch" in e.get("verr", ""))
                     if infra_hits >= self.infra_min_rollouts:
                         self._blocked[key] = {
                             "reason": "infra_signature",
@@ -326,9 +322,7 @@ class CurriculumFilter:
                     continue
                 c = Counter(codes)
                 top_code, top_count = c.most_common(1)[0]
-                all_identical_nonzero = (
-                    top_count == len(entries) and top_code != 0 and len(entries) >= 2
-                )
+                all_identical_nonzero = top_count == len(entries) and top_code != 0 and len(entries) >= 2
                 if all_identical_nonzero and self._last_code.get(key) == top_code:
                     self._streak[key] += 1
                 else:
@@ -368,6 +362,11 @@ class CurriculumFilter:
         except Exception:
             extras = None
         masked = 0
+        # Mask any source we manage — either via infra path (apply_to_sources)
+        # or via the zero-advantage path (zero_advantage_sources). Without the
+        # union here, ET tasks could be quarantined but never have their reward
+        # masked, defeating the purpose of the blocklist.
+        managed_sources = set(self.apply_to_sources) | set(self.zero_advantage_sources)
         for row in traj_dump:
             # Mask blocked tasks.
             if self._blocked and extras is not None:
@@ -380,7 +379,7 @@ class CurriculumFilter:
                         key = _task_key(ei)
                         if key and key in self._blocked:
                             row["_curriculum_blocked"] = True
-                            if row.get("data_source", "unknown") in self.apply_to_sources:
+                            if row.get("data_source", "unknown") in managed_sources:
                                 row["reward"] = None
                                 masked += 1
                                 continue

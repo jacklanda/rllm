@@ -7,12 +7,52 @@ import uuid
 
 class _SafeEncoder(json.JSONEncoder):
     def default(self, o):
+        import numpy as np
+
         if isinstance(o, type):
             return str(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
+        if isinstance(o, (np.floating,)):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
         try:
             return super().default(o)
         except TypeError:
             return str(o)
+
+
+def _is_truthy(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
+def _reward_value(row):
+    reward = row.get("reward")
+    if reward is None:
+        return None
+    try:
+        return float(reward)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rename_task_label_fields(value):
+    if isinstance(value, dict):
+        renamed = {}
+        for key, item in value.items():
+            renamed_key = "task" if key == "task_label" else key
+            renamed[renamed_key] = _rename_task_label_fields(item)
+        return renamed
+    if isinstance(value, list):
+        return [_rename_task_label_fields(item) for item in value]
+    return value
+
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from pprint import pprint
@@ -33,7 +73,11 @@ from verl.trainer.ppo.ray_trainer import (
     compute_response_mask,
 )
 from verl.trainer.ppo.utils import Role, WorkerType
-from rllm.trainer.verl.ray_trainer import compute_advantage, compute_data_metrics
+from rllm.trainer.verl.ray_trainer import (
+    compute_advantage,
+    compute_data_metrics,
+    validate_dr_grpo_config,
+)
 from verl.utils.debug import marked_timer
 from verl.utils.metric import reduce_metrics
 
@@ -49,7 +93,8 @@ def _patch_rlhf_dataset_answer_norm():
     def patched(self):
         dataframes = []
         for parquet_file in self.data_files:
-            df = datasets.load_dataset("parquet", data_files=parquet_file)["train"]
+            # Use Dataset.from_parquet to avoid HF datasets script-resolution HEAD requests to S3.
+            df = datasets.Dataset.from_parquet(parquet_file)
             # Normalize top-level answer column
             if "answer" in df.features:
                 if not isinstance(df.features["answer"], datasets.Value):
@@ -65,6 +110,7 @@ def _patch_rlhf_dataset_answer_norm():
             # so it survives the common-column intersection across datasets
             if "data_source" in df.column_names and "extra_info" in df.column_names:
                 import json as _json
+
                 def _inject_data_source(x):
                     ei = x["extra_info"]
                     if isinstance(ei, str):
@@ -74,10 +120,12 @@ def _patch_rlhf_dataset_answer_norm():
                     if "data_source" not in ei and x.get("data_source"):
                         ei["data_source"] = x["data_source"]
                     return {"extra_info": ei}
+
                 df = df.map(_inject_data_source)
             # Serialize extra_info struct to JSON string so schemas are compatible across datasets
             if "extra_info" in df.column_names:
                 import json as _json
+
                 df = df.map(lambda x: {"extra_info": _json.dumps(x["extra_info"]) if not isinstance(x["extra_info"], str) else x["extra_info"]})
                 new_features = df.features.copy()
                 new_features["extra_info"] = datasets.Value("string")
@@ -91,6 +139,7 @@ def _patch_rlhf_dataset_answer_norm():
         self.dataframe = datasets.concatenate_datasets(dataframes)
         # run the rest of the original method after dataframe is set
         import numpy as np
+
         total = len(self.dataframe)
         print(f"dataset len: {total}")
         if self.max_samples > 0 and self.max_samples < total:
@@ -126,6 +175,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         agent_args=None,
     ):
         super().__init__(config=config, tokenizer=tokenizer, role_worker_mapping=role_worker_mapping, resource_pool_manager=resource_pool_manager, ray_worker_group_cls=ray_worker_group_cls, reward_fn=reward_fn, val_reward_fn=val_reward_fn)
+        validate_dr_grpo_config(config)
         self.env_class = env_class
         self.agent_class = agent_class
         self.env_args = env_args or {}
@@ -144,6 +194,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         # disabled or when config subtree is missing (older configs).
         try:
             from rllm.trainer.verl.curriculum_filter import CurriculumFilter
+
             cf_cfg = self.config.rllm.get("curriculum_filter", None) if hasattr(self.config.rllm, "get") else None
             if cf_cfg is None:
                 cf_cfg = OmegaConf.create({"enable": False})
@@ -152,17 +203,181 @@ class AgentPPOTrainer(RayPPOTrainer):
             if cf_enable and not cf_path:
                 cf_path = os.path.join(self.config.trainer.default_local_dir, "curriculum_blocklist.json")
             apply_sources = list(getattr(cf_cfg, "apply_to_sources", ["cli"]) or ["cli"])
+            # Zero-advantage quarantine: defaults preserve legacy behaviour
+            # (mcp + web_search) but `endless_terminals` benefits enormously —
+            # train_trajectory/global_steps_1.json shows 7/16 ET tasks were 0/8
+            # and 1/16 was 8/8, i.e. 50% of GRPO samples carried zero advantage.
+            zero_adv_sources = list(getattr(cf_cfg, "zero_advantage_sources", ["mcp", "web_search", "endless_terminals"]) or ["mcp", "web_search", "endless_terminals"])
+            zero_adv_steps = int(getattr(cf_cfg, "zero_advantage_consecutive_steps", 2))
             self.curriculum_filter = CurriculumFilter(
                 enable=cf_enable,
                 consecutive_steps=int(getattr(cf_cfg, "consecutive_steps", 3)),
                 apply_to_sources=apply_sources,
                 blocklist_path=cf_path,
+                zero_advantage_consecutive_steps=zero_adv_steps,
+                zero_advantage_sources=zero_adv_sources,
             )
             if cf_enable:
-                print(f"[curriculum_filter] enabled; consecutive_steps={self.curriculum_filter.consecutive_steps} sources={apply_sources} blocklist={cf_path}")
+                print(f"[curriculum_filter] enabled; consecutive_steps={self.curriculum_filter.consecutive_steps} " f"sources={apply_sources} zero_adv_sources={zero_adv_sources} " f"zero_adv_steps={zero_adv_steps} blocklist={cf_path}")
         except Exception as _cf_exc:  # noqa: BLE001
             print(f"[curriculum_filter] disabled (init failed: {_cf_exc})")
             self.curriculum_filter = None
+
+    def _rllm_cfg_value(self, key, default=None):
+        if not hasattr(self.config, "rllm"):
+            return default
+        try:
+            return self.config.rllm.get(key, default)
+        except Exception:
+            return getattr(self.config.rllm, key, default)
+
+    def _should_dump_trajectory_files(self) -> bool:
+        return _is_truthy(self._rllm_cfg_value("dump_trajectory_files", True), default=True)
+
+    def _batch_results_config(self):
+        batch_results_dir = self._rllm_cfg_value("batch_results_dir", None)
+        if not batch_results_dir:
+            return None
+        return {
+            "batch_results_dir": str(batch_results_dir),
+            "sample_n": int(self._rllm_cfg_value("offline_rs_sample_n", self.config.actor_rollout_ref.rollout.n)),
+            "reward_threshold": float(self._rllm_cfg_value("offline_rs_reward_threshold", 0.6)),
+            "max_per_problem": int(self._rllm_cfg_value("offline_rs_max_trajectory_per_problem", 1)),
+            "min_trials": int(self._rllm_cfg_value("offline_rs_min_sample_trial", 1)),
+        }
+
+    def _dump_offline_rs_batch_results(self, merged_data, file_stem):
+        cfg = self._batch_results_config()
+        if cfg is None:
+            return
+
+        from collections import Counter, defaultdict
+
+        rows = merged_data.get("accept_traj", []) + merged_data.get("reject_traj", [])
+        accepted_by_uid = defaultdict(list)
+        trial_counts = Counter()
+        source_counts = Counter()
+        selected_source_counts = Counter()
+
+        for row in rows:
+            uid = row.get("uuid") or row.get("prompt")
+            if not uid:
+                continue
+            trial_counts[uid] += 1
+            source_counts[row.get("data_source", "unknown")] += 1
+            reward = _reward_value(row)
+            if reward is not None and reward >= cfg["reward_threshold"]:
+                accepted_by_uid[uid].append(row)
+
+        selected = []
+        selected_rewards = {}
+        for uid, uid_rows in accepted_by_uid.items():
+            if trial_counts[uid] < cfg["min_trials"]:
+                continue
+            ranked = sorted(
+                uid_rows,
+                key=lambda item: _reward_value(item) if _reward_value(item) is not None else float("-inf"),
+                reverse=True,
+            )[: cfg["max_per_problem"]]
+            if ranked:
+                selected_rewards[uid] = _reward_value(ranked[0])
+            for rank, original_row in enumerate(ranked, start=1):
+                row = _rename_task_label_fields(dict(original_row))
+                row["sample_trial"] = trial_counts[uid]
+                row["accepted_rank"] = rank
+                selected.append(row)
+                selected_source_counts[row.get("data_source", "unknown")] += 1
+
+        result = {
+            "batch_file": file_stem,
+            "sample_n": cfg["sample_n"],
+            "reward_threshold": cfg["reward_threshold"],
+            "max_trajectory_per_problem": cfg["max_per_problem"],
+            "min_sample_trial": cfg["min_trials"],
+            "num_questions": len(trial_counts),
+            "num_trials": sum(trial_counts.values()),
+            "num_usable_questions": len(selected_rewards),
+            "num_selected_trajectories": len(selected),
+            "min_selected_reward": min(selected_rewards.values(), default=None),
+            "max_selected_reward": max(selected_rewards.values(), default=None),
+            "source_trials": dict(source_counts),
+            "source_selected": dict(selected_source_counts),
+            "selected_trajectories": selected,
+        }
+
+        batch_results_dir = cfg["batch_results_dir"]
+        os.makedirs(batch_results_dir, exist_ok=True)
+        out_path = os.path.join(batch_results_dir, f"{file_stem}.json")
+        tmp_path = f"{out_path}.tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(result, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+        os.replace(tmp_path, out_path)
+        print(
+            "[offline-rs][batch] "
+            f"{file_stem}: questions={len(trial_counts)} trials={sum(trial_counts.values())} "
+            f"usable_questions={len(selected_rewards)} selected={len(selected)} "
+            f"threshold={cfg['reward_threshold']} dump={out_path}",
+            flush=True,
+        )
+
+    def _create_dataloader(self, train_dataset=None, val_dataset=None, collate_fn=None, train_sampler=None):
+        """Override parent to inject curriculum sampler for easy-to-hard training."""
+        super()._create_dataloader(train_dataset, val_dataset, collate_fn, train_sampler)
+
+        self.curriculum_sampler = None
+        try:
+            cur_cfg = self.config.rllm.get("curriculum", None) if hasattr(self.config.rllm, "get") else None
+            if cur_cfg is None or not bool(getattr(cur_cfg, "enable", False)):
+                return
+
+            from torchdata.stateful_dataloader import StatefulDataLoader
+            from verl.utils.dataset.rl_dataset import collate_fn as default_collate_fn
+            from rllm.trainer.verl.curriculum_sampler import CurriculumSampler, extract_difficulty_info
+
+            difficulty_key = str(getattr(cur_cfg, "difficulty_key", "difficulty"))
+            rank_score_key = str(getattr(cur_cfg, "rank_score_key", "rank_score"))
+            warmup_steps = int(getattr(cur_cfg, "warmup_steps", 20))
+            transition_steps = int(getattr(cur_cfg, "transition_steps", 50))
+            full_mix_steps = int(getattr(cur_cfg, "full_mix_steps", 100))
+
+            difficulties, rank_scores = extract_difficulty_info(
+                self.train_dataset,
+                difficulty_key=difficulty_key,
+                rank_score_key=rank_score_key,
+            )
+
+            from collections import Counter
+
+            diff_dist = Counter(difficulties)
+            if diff_dist.get("easy", 0) == 0:
+                print("[curriculum] no 'easy' samples found in dataset, skipping curriculum sampler")
+                return
+
+            batch_size = self.config.data.train_batch_size
+            num_batches = max(1, len(self.train_dataset) // batch_size)
+
+            self.curriculum_sampler = CurriculumSampler(
+                difficulties=difficulties,
+                rank_scores=rank_scores,
+                batch_size=batch_size,
+                warmup_steps=warmup_steps,
+                transition_steps=transition_steps,
+                full_mix_steps=full_mix_steps,
+                num_batches_per_epoch=num_batches,
+            )
+
+            self.train_dataloader = StatefulDataLoader(
+                dataset=self.train_dataset,
+                batch_size=batch_size,
+                sampler=self.curriculum_sampler,
+                drop_last=True,
+                collate_fn=default_collate_fn,
+            )
+
+            print(f"[curriculum] enabled; warmup={warmup_steps} transition={transition_steps} " f"full_mix={full_mix_steps} | data: {dict(diff_dist)}")
+        except Exception as _cur_exc:  # noqa: BLE001
+            print(f"[curriculum] disabled (init failed: {_cur_exc})")
+            self.curriculum_sampler = None
 
     def init_workers(self):
         super().init_workers()
@@ -193,6 +408,18 @@ class AgentPPOTrainer(RayPPOTrainer):
             **engine_args,
         )
 
+    @staticmethod
+    def _get_extra_info_field(ei, field: str, default=""):
+        """Safely extract a field from an extra_info entry that may be a JSON string or dict."""
+        if isinstance(ei, str):
+            try:
+                ei = json.loads(ei)
+            except (json.JSONDecodeError, ValueError):
+                return default
+        if isinstance(ei, dict):
+            return ei.get(field, default)
+        return default
+
     def _check_docker_connectivity(self):
         """Pre-flight check: verify Docker daemon is reachable before launching trajectories."""
         docker_host = os.environ.get("DOCKER_HOST", "")
@@ -201,16 +428,13 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         try:
             import docker
+
             client = docker.from_env(timeout=10)
             client.ping()
             client.close()
             print(f"Docker health check passed (host={docker_host})")
         except Exception as e:
-            raise RuntimeError(
-                f"Docker daemon is unreachable at {docker_host}: {e}\n"
-                f"Please ensure the Docker daemon is running and accessible. "
-                f"You can verify with: DOCKER_API_VERSION=1.44 docker -H {docker_host} info"
-            ) from e
+            raise RuntimeError(f"Docker daemon is unreachable at {docker_host}: {e}\n" f"Please ensure the Docker daemon is running and accessible. " f"You can verify with: DOCKER_API_VERSION=1.44 docker -H {docker_host} info") from e
 
         # Pre-seed R2E-Gym's shared Docker client with a large HTTP connection
         # pool. With hundreds of parallel agents, the default pool size of 10
@@ -218,6 +442,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         # connection" — dropped connections are opened again, wasting time.
         try:
             from r2egym.agenthub.runtime.docker import DockerRuntime
+
             n_parallel = int(self.config.rllm.agent.get("engine_args", {}).get("n_parallel_agents", 64) or 64)
             pool_size = max(64, n_parallel + 32)
             if DockerRuntime._shared_docker_client is None:
@@ -234,6 +459,72 @@ class AgentPPOTrainer(RayPPOTrainer):
         except Exception as e:
             print(f"WARN: could not pre-seed R2E-Gym Docker client with large pool: {e}")
 
+        # Endless-Terminals image spot-check: when training/evaluating ET tasks,
+        # verify a few of the gemcli/task_* images exist on the daemon so a
+        # misconfigured DOCKER_HOST surfaces immediately instead of after the
+        # first rollout. Triggered for native ET runs and for `fused` runs whose
+        # train/val data lists include the endless_terminals parquet.
+        try:
+            env_name = self.config.rllm.env.get("name", "") if hasattr(self.config, "rllm") else ""
+            train_files = list(getattr(self.config.data, "train_files", []) or [])
+            val_files = list(getattr(self.config.data, "val_files", []) or [])
+            data_files = [str(p) for p in (train_files + val_files)]
+            uses_et = env_name in ("endless_terminals", "et") or any("endless_terminals" in p for p in data_files)
+            if uses_et:
+                self._check_endless_terminals_images(client_base_url=docker_host)
+        except Exception as e:
+            print(f"WARN: ET image spot-check skipped: {e}")
+
+    def _check_endless_terminals_images(self, client_base_url: str):
+        """Probe up to 8 ET image names against the daemon and warn on misses."""
+        import json
+        import random
+        from pathlib import Path
+
+        candidates: list[str] = []
+        # Resolve the train file paths from config; they may be a single string,
+        # a list, or absent. Be liberal in what we accept.
+        train_files_cfg = []
+        try:
+            train_files_cfg = list(self.config.data.train_files) if not isinstance(self.config.data.train_files, str) else [self.config.data.train_files]
+        except Exception:
+            pass
+        for tf in train_files_cfg:
+            tf_path = Path(tf)
+            # Heuristic: the parquet lives next to et_tasks.json under
+            # experiments/artifacts/endless_terminals/. Read 8 random tasks.
+            sibling = tf_path.parent / "et_tasks.json"
+            if sibling.exists():
+                try:
+                    tasks = json.loads(sibling.read_text(encoding="utf-8"))
+                    sample = random.sample(tasks, min(8, len(tasks)))
+                    candidates.extend(t["environment"]["docker_image"] for t in sample)
+                    break
+                except Exception:
+                    continue
+        if not candidates:
+            return
+
+        import docker
+
+        client = docker.DockerClient(base_url=client_base_url, timeout=20, version=os.environ.get("DOCKER_API_VERSION", "auto"))
+        present, missing = [], []
+        try:
+            for name in candidates:
+                try:
+                    client.images.get(name)
+                    present.append(name)
+                except Exception:
+                    missing.append(name)
+        finally:
+            try:
+                client.close()
+            except Exception:
+                pass
+        print(f"ET image spot-check: {len(present)}/{len(candidates)} present (host={client_base_url})")
+        if missing:
+            print(f"WARN: missing ET images on daemon: {missing[:5]}{'...' if len(missing) > 5 else ''}")
+
     def _check_retrieval_connectivity(self):
         """Pre-flight check: verify retrieval server is reachable before launching trajectories."""
         retrieval_url = os.environ.get("RETRIEVAL_SERVER_URL", "")
@@ -242,16 +533,13 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         try:
             import httpx
+
             with httpx.Client(timeout=10) as client:
                 response = client.get(f"{retrieval_url.rstrip('/')}/health")
                 response.raise_for_status()
             print(f"Retrieval health check passed (host={retrieval_url})")
         except Exception as e:
-            raise RuntimeError(
-                f"Retrieval server is unreachable at {retrieval_url}: {e}\n"
-                f"Please ensure the retrieval server is running and accessible. "
-                f"You can verify with: curl {retrieval_url.rstrip('/')}/health"
-            ) from e
+            raise RuntimeError(f"Retrieval server is unreachable at {retrieval_url}: {e}\n" f"Please ensure the retrieval server is running and accessible. " f"You can verify with: curl {retrieval_url.rstrip('/')}/health") from e
 
     def init_envs_and_agents(self, batch):
         """
@@ -307,6 +595,12 @@ class AgentPPOTrainer(RayPPOTrainer):
             config=OmegaConf.to_container(self.config, resolve=True),
         )
 
+        try:
+            self._fit_agent_inner(logger)
+        finally:
+            logger.finish()
+
+    def _fit_agent_inner(self, logger):
         self.global_steps = 0
 
         # load checkpoint before doing anything
@@ -327,6 +621,9 @@ class AgentPPOTrainer(RayPPOTrainer):
         self.global_steps += 1
 
         for epoch in range(self.config.trainer.total_epochs):
+            if self.curriculum_sampler is not None:
+                self.curriculum_sampler.set_step(self.global_steps)
+                print(f"[curriculum] epoch={epoch} step={self.global_steps} phase={self.curriculum_sampler.current_phase} weights={self.curriculum_sampler.get_current_weights()}")
             print(f"epoch {epoch}, step {self.global_steps} started")
             for batch_dict in self.train_dataloader:
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
@@ -335,7 +632,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 if "data_source" not in batch.non_tensor_batch and "extra_info" in batch.non_tensor_batch:
                     extra_infos = batch.non_tensor_batch["extra_info"]
                     data_sources = np.array(
-                        [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                        [self._get_extra_info_field(ei, "data_source", "unknown") for ei in extra_infos],
                         dtype=object,
                     )
                     batch.non_tensor_batch["data_source"] = data_sources
@@ -357,12 +654,18 @@ class AgentPPOTrainer(RayPPOTrainer):
                         _ei = batch.non_tensor_batch.get("extra_info")
                         if _ds is not None and _ei is not None:
                             from collections import Counter as _Counter
+
                             _cli_keys = []
                             for _j, _src in enumerate(_ds):
                                 if _src == "cli":
                                     _e = _ei[_j]
                                     if hasattr(_e, "item"):
                                         _e = _e.item()
+                                    if isinstance(_e, str):
+                                        try:
+                                            _e = json.loads(_e)
+                                        except (json.JSONDecodeError, ValueError):
+                                            _e = {}
                                     if isinstance(_e, dict):
                                         _k = f"{_e.get('docker_image','?')}@{_e.get('commit_hash','?')}"
                                         _cli_keys.append(_k)
@@ -371,12 +674,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                                 _uniq = len(_cnts)
                                 _max_obs = max(_cnts.values())
                                 if _max_obs > _max_per_task:
-                                    print(
-                                        f"[cli_diversity] step={self.global_steps} "
-                                        f"unique_cli_tasks={_uniq} max_rollouts_per_task={_max_obs} "
-                                        f"(> threshold {_max_per_task}); lower rollout.n or raise "
-                                        f"train_batch_size to improve GRPO advantage variance."
-                                    )
+                                    print(f"[cli_diversity] step={self.global_steps} " f"unique_cli_tasks={_uniq} max_rollouts_per_task={_max_obs} " f"(> threshold {_max_per_task}); lower rollout.n or raise " f"train_batch_size to improve GRPO advantage variance.")
                 except Exception:
                     pass
 
@@ -457,10 +755,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         high_variance_groups = 0
                         verifier_missing_mask = None
                         if "reward_metadata" in batch.non_tensor_batch:
-                            verifier_missing_mask = np.array([
-                                0 if isinstance(metadata, dict) and metadata else 1
-                                for metadata in batch.non_tensor_batch["reward_metadata"]
-                            ], dtype=np.int32)
+                            verifier_missing_mask = np.array([0 if isinstance(metadata, dict) and metadata else 1 for metadata in batch.non_tensor_batch["reward_metadata"]], dtype=np.int32)
                         for uid in unique_uids:
                             uid_mask = uids == uid
                             uid_rewards = reward_tensor[uid_mask].sum(-1)  # Sum rewards for each sequence
@@ -521,6 +816,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         batch_data_sources = batch.non_tensor_batch.get("data_source")
                         if batch_data_sources is not None:
                             from collections import defaultdict
+
                             source_rewards = defaultdict(list)
                             for uid in unique_uids:
                                 uid_mask = uids == uid
@@ -551,6 +847,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                             # If no valid samples remain, skip this batch and get a new one
                             if not valid_mask.any():
+                                print("[rejection_sample] skipping batch before policy update: " f"all {len(unique_uids)} uid groups were rejected " f"(solve_none={solve_none}, solve_all={solve_all}, " f"solve_no_variance={solve_no_variance}, " f"verifier_missing_groups={verifier_missing_groups}, " f"high_variance_groups={high_variance_groups}, " f"rollout_n={self.config.actor_rollout_ref.rollout.n}, " f"filter_zero_variance={self.config.rllm.rejection_sample.get('filter_zero_variance', False)})")
                                 continue
 
                             # Filter batch to keep only valid samples
@@ -579,6 +876,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                                 ) * num_trainer_replicas
                                 if not max_batch_size:
                                     # give up, you got everything either all wrong or right.
+                                    print("[rejection_sample] skipping batch before policy update: " "valid last-step trajectories are fewer than trainer world size " f"(valid_last_steps={last_step_batch.batch['input_ids'].shape[0]}, " f"world_size={num_trainer_replicas})")
                                     continue
 
                                 size_mask = torch.zeros(last_step_batch.batch["input_ids"].shape[0], dtype=torch.bool)
@@ -600,6 +898,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                                 max_batch_size = (batch.batch["input_ids"].shape[0] // num_trainer_replicas) * num_trainer_replicas
                                 if not max_batch_size:
                                     # give up, you got everything either all wrong or right.
+                                    print("[rejection_sample] skipping batch before policy update: " "valid trajectories are fewer than trainer world size " f"(valid_trajectories={batch.batch['input_ids'].shape[0]}, " f"world_size={num_trainer_replicas})")
                                     continue
 
                                 size_mask = torch.zeros(batch.batch["input_ids"].shape[0], dtype=torch.bool)
@@ -748,10 +1047,20 @@ class AgentPPOTrainer(RayPPOTrainer):
                 metrics.update(compute_data_metrics(batch=batch, use_critic=self.use_critic))
                 metrics.update(compute_timing_metrics(batch=batch, timing_raw=timing_raw))
 
+                if self.curriculum_sampler is not None:
+                    cw = self.curriculum_sampler.get_current_weights()
+                    metrics["curriculum/phase"] = self.curriculum_sampler.current_phase
+                    metrics["curriculum/weight_easy"] = cw["easy"]
+                    metrics["curriculum/weight_medium"] = cw["medium"]
+                    metrics["curriculum/weight_hard"] = cw["hard"]
+
                 # TODO: make a canonical logger that supports various backend
                 logger.log(data=metrics, step=self.global_steps)
 
                 self.global_steps += 1
+
+                if self.curriculum_sampler is not None:
+                    self.curriculum_sampler.set_step(self.global_steps)
 
                 if self.global_steps >= self.total_training_steps:
                     # perform validation after training
@@ -783,7 +1092,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             if "data_source" not in test_batch.non_tensor_batch and "extra_info" in test_batch.non_tensor_batch:
                 extra_infos = test_batch.non_tensor_batch["extra_info"]
                 data_sources = np.array(
-                    [ei.get("data_source", "unknown") if isinstance(ei, dict) else "unknown" for ei in extra_infos],
+                    [self._get_extra_info_field(ei, "data_source", "unknown") for ei in extra_infos],
                     dtype=object,
                 )
                 test_batch.non_tensor_batch["data_source"] = data_sources
@@ -831,6 +1140,10 @@ class AgentPPOTrainer(RayPPOTrainer):
             rewards_lst.append(reward_tensor.sum(-1).cpu())
             data_source_lst.append(test_batch.non_tensor_batch.get("data_source", ["unknown"] * reward_tensor.shape[0]))
             uid_lst.append(test_batch.non_tensor_batch["uid"])
+
+        if not rewards_lst:
+            print("No valid validation trajectories across all batches. Returning empty metrics.")
+            return {}
 
         reward_tensor = torch.cat(rewards_lst, dim=0)  # (batch_size,)
         data_sources = np.concatenate(data_source_lst, axis=0)
@@ -965,15 +1278,18 @@ class AgentPPOTrainer(RayPPOTrainer):
             if dropped_dump:
                 subdir = "evals_trajectory" if is_eval else "train_trajectory"
                 save_dir = os.path.join(self.config.trainer.default_local_dir, subdir)
-                os.makedirs(save_dir, exist_ok=True)
                 file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
                 merged_data = {
                     "traj_stats": {},
                     "accept_traj": [],
                     "reject_traj": dropped_dump,
                 }
-                with open(file_path, "w") as f:
-                    json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+                file_stem = f"global_steps_{self.global_steps}"
+                self._dump_offline_rs_batch_results(merged_data, file_stem)
+                if self._should_dump_trajectory_files():
+                    os.makedirs(save_dir, exist_ok=True)
+                    with open(file_path, "w") as f:
+                        json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
             empty_output = DataProto.from_dict(tensors={}, non_tensors={"idxs": np.array([])})
             metrics = {"traj/accept_rate": 0.0}
             return empty_output, metrics
@@ -1068,6 +1384,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             except Exception:
                 extras = None
             from rllm.trainer.verl.curriculum_filter import _task_key
+
             # Build the minimal proxy dump the filter needs.
             ds_arr = batch.non_tensor_batch.get("data_source") if batch is not None else None
             proxy_dump = []
@@ -1079,12 +1396,14 @@ class AgentPPOTrainer(RayPPOTrainer):
                     _tr = _tr.item() if hasattr(_tr, "item") else (float(_tr) if _tr is not None else None)
                 except Exception:
                     _tr = None
-                proxy_dump.append({
-                    "_idx": int(_idx),
-                    "data_source": src,
-                    "reward": _tr,
-                    "debug": {"verification": _traj.get("reward_debug", {}) or {}},
-                })
+                proxy_dump.append(
+                    {
+                        "_idx": int(_idx),
+                        "data_source": src,
+                        "reward": _tr,
+                        "debug": {"verification": _traj.get("reward_debug", {}) or {}},
+                    }
+                )
             cf_metrics = cf.update_from_dump(proxy_dump, batch)
             # Apply blocklist: set trajectory_reward=None for any blocked task.
             n_masked = 0
@@ -1095,6 +1414,8 @@ class AgentPPOTrainer(RayPPOTrainer):
                         _ei = extras[_idx]
                         if hasattr(_ei, "item"):
                             _ei = _ei.item()
+                        if isinstance(_ei, str):
+                            _ei = json.loads(_ei)
                     except Exception:
                         continue
                     _key = _task_key(_ei)
@@ -1137,11 +1458,16 @@ class AgentPPOTrainer(RayPPOTrainer):
                 traj_score = 0.0
             traj_scores.append(traj_score)
 
-            # Extract reward components from metadata for GDPO
+            # Extract reward components from metadata for GDPO.
+            # When trajectory_reward is None (env-error loops, curriculum-blocked tasks)
+            # the response mask is already zeroed above, so these values don't contribute
+            # to gradient — coerce to 0.0 so tensor assignment below doesn't crash.
             reward_metadata = traj.get("reward_metadata", {})
             base_reward = reward_metadata.get("base_reward", traj["trajectory_reward"])
-            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0)
-            step_bonus = reward_metadata.get("step_bonus", 0.0)
+            if base_reward is None:
+                base_reward = 0.0
+            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0) or 0.0
+            step_bonus = reward_metadata.get("step_bonus", 0.0) or 0.0
 
             # Store base reward and bonus rewards separately
             traj_base_rewards.append(base_reward)
@@ -1153,11 +1479,18 @@ class AgentPPOTrainer(RayPPOTrainer):
             original_idx = traj["idx"]
             valid_indices.append(original_idx)
 
+            _raw_reward = traj["trajectory_reward"]
+            if _raw_reward is None:
+                _dump_reward = None
+            elif hasattr(_raw_reward, "item"):
+                _dump_reward = _raw_reward.item()
+            else:
+                _dump_reward = float(_raw_reward)
             trajectories_w_metadata.append(
                 {
                     "steps": len([turn for turn in trajectories_w_metadata if turn["role"] not in ["system", "user"]]),
-                    "reward": traj["trajectory_reward"].item() if hasattr(traj["trajectory_reward"], "item") else float(traj["trajectory_reward"]),
-                    "ground_truth": batch.non_tensor_batch.get("extra_info")[original_idx].get("ground_truth", ""),
+                    "reward": _dump_reward,
+                    "ground_truth": self._get_extra_info_field(batch.non_tensor_batch.get("extra_info")[original_idx], "ground_truth", ""),
                 }
             )
             chat_completions.append(trajectories_w_metadata)
@@ -1188,10 +1521,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Surface the raw per-trajectory metric lists so callers (e.g. _validate_agent)
         # can aggregate them across multiple batches and emit val/ metrics.
-        metrics["_raw_traj_metrics"] = {
-            k: [v for v in vs if isinstance(v, (int, float)) and v >= 0]
-            for k, vs in traj_metrics.items()
-        }
+        metrics["_raw_traj_metrics"] = {k: [v for v in vs if isinstance(v, (int, float)) and v >= 0] for k, vs in traj_metrics.items()}
 
         verifier_pass_rates = [m.get("pass_rate") for m in reward_metadata_list if isinstance(m, dict) and m.get("pass_rate") is not None]
         verifier_resolved = [1.0 if m.get("resolved") else 0.0 for m in reward_metadata_list if isinstance(m, dict) and "resolved" in m]
@@ -1217,10 +1547,9 @@ class AgentPPOTrainer(RayPPOTrainer):
         if tests_total:
             metrics["traj/tests_total_mean"] = float(np.mean(tests_total))
 
-        # Save chat completions and stats to files
+        # Prepare chat completion dumps and stats.
         subdir = "evals_trajectory" if is_eval else "train_trajectory"
         save_dir = os.path.join(self.config.trainer.default_local_dir, subdir)
-        os.makedirs(save_dir, exist_ok=True)
 
         # Dump trajectories with uuid and prompt
         traj_dump = []
@@ -1236,23 +1565,32 @@ class AgentPPOTrainer(RayPPOTrainer):
                     prompt = msg["content"]
                     break
 
-            traj_dump.append({
-                "uuid": str(u_id),
-                "prompt": prompt,
-                "data_source": batch.non_tensor_batch.get("data_source", ["unknown"] * (idx + 1))[idx] if batch is not None else "unknown",
-                "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
-                "reward": traj["trajectory_reward"].item() if hasattr(traj["trajectory_reward"], "item") else float(traj["trajectory_reward"]),
-                "termination_reason": traj.get("termination_reason"),
-                "trajectory": messages,
-                "debug": {
-                    "verification": traj.get("reward_debug", {}),
-                    "reward_metadata": traj.get("reward_metadata", {}),
-                    "ground_truth": batch.non_tensor_batch.get("extra_info")[idx].get("ground_truth", "") if batch is not None else "",
-                    "metrics": traj.get("metrics", {}),
-                    "exception": traj.get("exception", ""),
-                },
-                "_idx": int(idx),
-            })
+            _raw_reward = traj["trajectory_reward"]
+            if _raw_reward is None:
+                _dump_reward = None
+            elif hasattr(_raw_reward, "item"):
+                _dump_reward = _raw_reward.item()
+            else:
+                _dump_reward = float(_raw_reward)
+            traj_dump.append(
+                {
+                    "uuid": str(u_id),
+                    "prompt": prompt,
+                    "data_source": batch.non_tensor_batch.get("data_source", ["unknown"] * (idx + 1))[idx] if batch is not None else "unknown",
+                    "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
+                    "reward": _dump_reward,
+                    "termination_reason": traj.get("termination_reason"),
+                    "trajectory": messages,
+                    "debug": {
+                        "verification": traj.get("reward_debug", {}),
+                        "reward_metadata": traj.get("reward_metadata", {}),
+                        "ground_truth": self._get_extra_info_field(batch.non_tensor_batch.get("extra_info")[idx], "ground_truth", "") if batch is not None else "",
+                        "metrics": traj.get("metrics", {}),
+                        "exception": traj.get("exception", ""),
+                    },
+                    "_idx": int(idx),
+                }
+            )
 
         # Drop internal helper keys before JSON dump / downstream stats.
         # (Curriculum-filter hook runs earlier, before token packing.)
@@ -1269,6 +1607,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_PARSE_ERROR",
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
+            "ABNORMAL_ACTION_LOOP",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1284,6 +1623,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_PARSE_ERROR",
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
+            "ABNORMAL_ACTION_LOOP",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1293,6 +1633,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Per-source termination reason and verifier_error counters
         from collections import defaultdict as _dd
+
         source_termination: dict = _dd(lambda: _dd(int))
         source_verifier_error: dict = _dd(list)
         source_env_loop: dict = _dd(int)
@@ -1333,9 +1674,13 @@ class AgentPPOTrainer(RayPPOTrainer):
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
-        with open(file_path, "w") as f:
-            print(f"Saving merged trajectories and stats to {file_path}")
-            json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+        file_stem = f"global_steps_{self.global_steps}"
+        self._dump_offline_rs_batch_results(merged_data, file_stem)
+        if self._should_dump_trajectory_files():
+            os.makedirs(save_dir, exist_ok=True)
+            with open(file_path, "w") as f:
+                print(f"Saving merged trajectories and stats to {file_path}")
+                json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
         # left pad prompts
         max_prompt_length = self.config.data.max_prompt_length
@@ -1503,13 +1848,17 @@ class AgentPPOTrainer(RayPPOTrainer):
             episode_steps = episode["steps"]
             idx = episode["idx"]
             training_reward = episode["trajectory_reward"]
+            if training_reward is None:
+                training_reward = 0.0
             mc_returns = episode["mc_returns"]
 
             # Extract reward components from metadata for GDPO
             reward_metadata = episode.get("reward_metadata", {})
             base_reward = reward_metadata.get("base_reward", training_reward)
-            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0)
-            step_bonus = reward_metadata.get("step_bonus", 0.0)
+            if base_reward is None:
+                base_reward = 0.0
+            tool_call_reward = reward_metadata.get("tool_call_reward", 0.0) or 0.0
+            step_bonus = reward_metadata.get("step_bonus", 0.0) or 0.0
 
             training_base_rewards.append(base_reward)
             training_bonus_rewards.append(tool_call_reward + step_bonus)
@@ -1635,21 +1984,30 @@ class AgentPPOTrainer(RayPPOTrainer):
             # In stepwise mode, episode["steps"] is a list of dicts with "prompt" and "response"
             main_prompt = episode_steps[0]["prompt"] if episode_steps else ""
 
-            traj_dump.append({
-                "uuid": str(u_id),
-                "prompt": main_prompt,
-                "data_source": data_sources[idx] if data_sources is not None and len(data_sources) > idx else "unknown",
-                "steps": len([turn for turn in episode_steps if turn["prompt"] not in ["system", "user"]]),
-                "reward": episode["trajectory_reward"].item() if hasattr(episode["trajectory_reward"], "item") else float(episode["trajectory_reward"]),
-                "termination_reason": episode.get("termination_reason"),
-                "trajectory": episode_steps,
-                "debug": {
-                    "verification": episode.get("reward_debug", {}),
-                    "reward_metadata": episode.get("reward_metadata", {}),
-                    "metrics": episode.get("metrics", {}),
-                    "exception": episode.get("exception", ""),
-                },
-            })
+            _raw_reward = episode["trajectory_reward"]
+            if _raw_reward is None:
+                _dump_reward = None
+            elif hasattr(_raw_reward, "item"):
+                _dump_reward = _raw_reward.item()
+            else:
+                _dump_reward = float(_raw_reward)
+            traj_dump.append(
+                {
+                    "uuid": str(u_id),
+                    "prompt": main_prompt,
+                    "data_source": data_sources[idx] if data_sources is not None and len(data_sources) > idx else "unknown",
+                    "steps": len([turn for turn in episode_steps if turn["prompt"] not in ["system", "user"]]),
+                    "reward": _dump_reward,
+                    "termination_reason": episode.get("termination_reason"),
+                    "trajectory": episode_steps,
+                    "debug": {
+                        "verification": episode.get("reward_debug", {}),
+                        "reward_metadata": episode.get("reward_metadata", {}),
+                        "metrics": episode.get("metrics", {}),
+                        "exception": episode.get("exception", ""),
+                    },
+                }
+            )
 
         # Collect termination reason statistics
         all_reasons = [
@@ -1661,6 +2019,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_PARSE_ERROR",
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
+            "ABNORMAL_ACTION_LOOP",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1676,6 +2035,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_PARSE_ERROR",
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
+            "ABNORMAL_ACTION_LOOP",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1685,6 +2045,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         # Per-source termination reason and verifier_error counters
         from collections import defaultdict as _dd
+
         source_termination: dict = _dd(lambda: _dd(int))
         source_verifier_error: dict = _dd(list)
         source_env_loop: dict = _dd(int)
@@ -1724,9 +2085,13 @@ class AgentPPOTrainer(RayPPOTrainer):
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
-        with open(file_path, "w") as f:
-            print(f"Saving merged chat completions and stats (Stepwise) to {file_path}")
-            json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+        file_stem = f"global_steps_{self.global_steps}"
+        self._dump_offline_rs_batch_results(merged_data, file_stem)
+        if self._should_dump_trajectory_files():
+            os.makedirs(save_dir, exist_ok=True)
+            with open(file_path, "w") as f:
+                print(f"Saving merged chat completions and stats (Stepwise) to {file_path}")
+                json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
         result = DataProto.from_dict(tensors=tensor_batch, non_tensors=non_tensor_batch, meta_info=meta_info)
 

@@ -45,6 +45,64 @@ _ENV_PROTOCOL_ERROR_SIGS = (
 PROTOCOL_ERROR_TERMINATE_THRESHOLD = 3
 
 
+# --- Soft-repeat detection (fix for ABNORMAL_REPEATED_QUERY blind spot). -----
+# train_trajectory/global_steps_1.json shows 18 / 128 trajectories where the
+# same bash command was issued ≥3 times — yet the exact-string ACTION_LOOP
+# detector caught zero of them, because the model alternates between
+# semantically equivalent forms (``grep -oP 'v\d+'`` vs ``grep -o 'v[0-9]'``).
+# We normalize aggressively: strip whitespace runs, collapse quoting, drop
+# common shell decorations. Two actions are then ‘soft-equal’ if their
+# normalized forms have Jaccard trigram similarity ≥ 0.85.
+_SHELL_NORM_RE = re.compile(r"[\"'`\\]")  # quote / escape characters
+_WHITESPACE_RUN_RE = re.compile(r"\s+")
+
+
+def _normalize_action_str(s: str) -> str:
+    """Aggressive normalization for soft-repeat similarity comparison."""
+    s = (s or "").strip().lower()
+    s = _SHELL_NORM_RE.sub("", s)
+    s = _WHITESPACE_RUN_RE.sub(" ", s)
+    return s
+
+
+def _trigram_set(s: str) -> set:
+    if len(s) < 3:
+        return {s}
+    return {s[i : i + 3] for i in range(len(s) - 2)}
+
+
+def _soft_repeat_count(recent_norms: list[str], threshold: float = 0.55) -> int:
+    """Count how many of the last <=5 normalized actions are mutually
+    near-duplicates of the most recent one. The most recent action counts
+    as 1 toward its own group.
+    """
+    if not recent_norms:
+        return 0
+    last = recent_norms[-1]
+    if not last:
+        return 0
+    last_tri = _trigram_set(last)
+    count = 1
+    # Walk backwards; stop at the first non-match so we only count an
+    # uninterrupted streak — interleaved unrelated actions reset the streak.
+    for prev in reversed(recent_norms[:-1]):
+        if not prev:
+            break
+        if prev == last:
+            count += 1
+            continue
+        prev_tri = _trigram_set(prev)
+        union = last_tri | prev_tri
+        if not union:
+            break
+        sim = len(last_tri & prev_tri) / len(union)
+        if sim >= threshold:
+            count += 1
+        else:
+            break
+    return count
+
+
 def _extract_tool_name(act) -> str:
     """Return a human-readable tool name for per-tool metric bucketing.
 
@@ -72,6 +130,7 @@ def _extract_tool_name(act) -> str:
         return m.group(1)
     return "unknown"
 
+
 import torch
 
 from rllm.agents.agent import Action, BaseAgent, Trajectory
@@ -94,7 +153,8 @@ def _log_fd_count(label: str):
     """Log the current process's open file descriptor count for leak diagnostics."""
     try:
         import os
-        fd_count = len(os.listdir(f'/proc/{os.getpid()}/fd'))
+
+        fd_count = len(os.listdir(f"/proc/{os.getpid()}/fd"))
         logger.info(f"[FD Monitor] {label}: {fd_count} open file descriptors")
     except Exception:
         pass
@@ -106,18 +166,14 @@ class InvalidReactStructureError(Exception):
 
 class DockerConnectionError(Exception):
     """Raised when Docker daemon is unreachable, to fast-fail all trajectories."""
+
     pass
 
 
 def _is_docker_connection_error(exc: Exception) -> bool:
     """Check if an exception indicates Docker daemon connectivity failure."""
     msg = str(exc).lower()
-    return (
-        "error while fetching server api version" in msg
-        or ("connection refused" in msg and ("docker" in msg or "/version" in msg or "/containers" in msg))
-        or ("connection aborted" in msg and "permission denied" in msg)
-        or ("max retries exceeded" in msg and ("/version" in msg or "/containers" in msg))
-    )
+    return "error while fetching server api version" in msg or ("connection refused" in msg and ("docker" in msg or "/version" in msg or "/containers" in msg)) or ("connection aborted" in msg and "permission denied" in msg) or ("max retries exceeded" in msg and ("/version" in msg or "/containers" in msg))
 
 
 class AgentExecutionEngine:
@@ -177,9 +233,9 @@ class AgentExecutionEngine:
 
         # Trajectory filtering toggles (read from config, default to True for backward compat)
         _tf = self.config.get("rllm", {}).get("trajectory_filtering", {}) if self.config is not None else {}
-        self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)       # Per-step \boxed{} / tool_call validation + retry
-        self.enforce_react_structure = _tf.get("enforce_react_structure", False)         # Min 5 steps + final \boxed{} check
-        self.max_tool_calls_per_turn = _tf.get("max_tool_calls_per_turn", 10)           # Max tool calls per single model turn
+        self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)  # Per-step \boxed{} / tool_call validation + retry
+        self.enforce_react_structure = _tf.get("enforce_react_structure", False)  # Min 5 steps + final \boxed{} check
+        self.max_tool_calls_per_turn = _tf.get("max_tool_calls_per_turn", 10)  # Max tool calls per single model turn
 
         self.incremental_tokenization = self.config.get("rllm", {}).get("incremental_tokenization", False) if self.config is not None else False
 
@@ -320,7 +376,7 @@ class AgentExecutionEngine:
         is_eval = kwargs.get("meta_info", {}).get("validate", False)
         effective_timeout = self.eval_trajectory_timeout if is_eval else self.trajectory_timeout
         # Per-task-type step budget: CLI tasks get a larger budget when cli_max_steps is set
-        effective_max_steps = (self.cli_max_steps if (self.cli_max_steps and task_label == "cli") else self.max_steps)
+        effective_max_steps = self.cli_max_steps if (self.cli_max_steps and task_label == "cli") else self.max_steps
 
         termination_reason = None
         exception_message = ""  # Track exception message for non-ENV_DONE terminations
@@ -384,22 +440,22 @@ class AgentExecutionEngine:
             color = "green" if reward > 0 else "yellow"
             verr = (reward_debug or {}).get("verifier_error", "")
             colorful_print(
-                f"Trajectory {idx} ({task_label}) [gold_patch_sanity]: "
-                f"reward={reward} applied={reward_debug.get('gold_patch_applied') if isinstance(reward_debug, dict) else None} "
-                f"verifier_error={verr!r} reward_time={reward_time:.2f}s",
+                f"Trajectory {idx} ({task_label}) [gold_patch_sanity]: " f"reward={reward} applied={reward_debug.get('gold_patch_applied') if isinstance(reward_debug, dict) else None} " f"verifier_error={verr!r} reward_time={reward_time:.2f}s",
                 color,
             )
-            self._trajectory_logs.append({
-                "type": "trajectory",
-                "idx": env.idx,
-                "task_label": task_label,
-                "dropped": True,
-                "termination_reason": "GOLD_PATCH_SANITY",
-                "reward": reward,
-                "num_steps": 0,
-                "reward_debug": reward_debug,
-                "chat_completions": [],
-            })
+            self._trajectory_logs.append(
+                {
+                    "type": "trajectory",
+                    "idx": env.idx,
+                    "task_label": task_label,
+                    "dropped": True,
+                    "termination_reason": "GOLD_PATCH_SANITY",
+                    "reward": reward,
+                    "num_steps": 0,
+                    "reward_debug": reward_debug,
+                    "chat_completions": [],
+                }
+            )
             # Dropped result: masked from loss by the trainer. Reward + debug
             # are still visible in trajectory dumps / wandb.
             return {
@@ -533,14 +589,16 @@ class AgentExecutionEngine:
                     if retry_count > max_step_retries:
                         # Max retries exhausted, treat as abnormal parse error (5.4.1)
                         print("Trajectory:", idx, "Step:", step_idx, "Response:", response, "Tool calls:", tool_calls, "Finish reason:", finish_reason)
-                        self._trajectory_logs.append({
-                            "type": "retry_exhausted",
-                            "trajectory": idx,
-                            "step": step_idx,
-                            "response": response,
-                            "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
-                            "finish_reason": finish_reason,
-                        })
+                        self._trajectory_logs.append(
+                            {
+                                "type": "retry_exhausted",
+                                "trajectory": idx,
+                                "step": step_idx,
+                                "response": response,
+                                "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
+                                "finish_reason": finish_reason,
+                            }
+                        )
                         colorful_print(
                             f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
@@ -563,16 +621,18 @@ class AgentExecutionEngine:
                     """
 
                     print("Trajectory:", idx, "Step:", step_idx, "Response:", response, "Tool calls:", tool_calls, "Finish reason:", finish_reason)
-                    self._trajectory_logs.append({
-                        "type": "retry",
-                        "trajectory": idx,
-                        "step": step_idx,
-                        "retry_count": retry_count,
-                        "max_step_retries": max_step_retries,
-                        "response": response,
-                        "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
-                        "finish_reason": finish_reason,
-                    })
+                    self._trajectory_logs.append(
+                        {
+                            "type": "retry",
+                            "trajectory": idx,
+                            "step": step_idx,
+                            "retry_count": retry_count,
+                            "max_step_retries": max_step_retries,
+                            "response": response,
+                            "tool_calls": [str(tc) for tc in tool_calls] if tool_calls else [],
+                            "finish_reason": finish_reason,
+                        }
+                    )
                     colorful_print(
                         f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output (retry {retry_count}/{max_step_retries}): " f"No tool calls and no \\boxed{{}}, retrying.",
                         "yellow",
@@ -672,18 +732,27 @@ class AgentExecutionEngine:
             # Enforce max_tool_calls_per_turn: truncate parsed actions to the limit
             if len(actions_result) > self.max_tool_calls_per_turn:
                 colorful_print(
-                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Truncating {len(actions_result)} "
-                    f"parsed tool calls to max_tool_calls_per_turn={self.max_tool_calls_per_turn}.",
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Truncating {len(actions_result)} " f"parsed tool calls to max_tool_calls_per_turn={self.max_tool_calls_per_turn}.",
                     "yellow",
                 )
-                actions_result = actions_result[:self.max_tool_calls_per_turn]
+                actions_result = actions_result[: self.max_tool_calls_per_turn]
 
             # --- Loop detection: check for repetitive actions ---
             # Serialize all actions into one string for multi-action comparison
             action_str = "|".join(str(a.action).strip() for a in actions_result if a.action)
             if action_str:
                 recent_actions.append(action_str)
-                if len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]:
+                # Exact-string streak (legacy fast path).
+                exact_repeat = len(recent_actions) >= 2 and recent_actions[-1] == recent_actions[-2]
+                # Soft-repeat: same intent expressed in different syntactic
+                # forms (e.g. ``grep -oP`` vs ``grep -o`` against the same
+                # file/output). Bound the look-back to the last 5 entries —
+                # past that, a streak is large enough that the exact match
+                # path will already have fired.
+                norm_window = [_normalize_action_str(a) for a in recent_actions[-5:]]
+                soft_streak = _soft_repeat_count(norm_window, threshold=0.55)
+
+                if exact_repeat or soft_streak >= 2:
                     consecutive_repeat_count += 1
                     # Detect whether the repeated action is a tool-crash (env-setup failure)
                     # or a file_editor/tool-UX failure the model can't recover from. Both
@@ -696,9 +765,13 @@ class AgentExecutionEngine:
                     loop_warning_injected = False
                     _last_loop_action_is_tool_error = False
 
-                if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD:
-                    termination_reason = "ABNORMAL_ACTION_LOOP"
-                    exception_message = f"Action loop detected: {consecutive_repeat_count + 1} identical consecutive actions - {action_str[:200]}"
+                # Trigger on either the exact-streak threshold OR the soft
+                # streak hitting the same length (soft streak is independent
+                # of consecutive_repeat_count and lets us catch alternating
+                # near-duplicates the exact path misses entirely).
+                if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD or soft_streak >= LOOP_TERMINATE_THRESHOLD:
+                    termination_reason = "ABNORMAL_REPEATED_QUERY" if (soft_streak >= LOOP_TERMINATE_THRESHOLD and not exact_repeat) else "ABNORMAL_ACTION_LOOP"
+                    exception_message = f"Action loop detected: {max(consecutive_repeat_count + 1, soft_streak)} " f"near-duplicate actions (soft_streak={soft_streak}, exact_streak={consecutive_repeat_count + 1}) " f"- {action_str[:200]}"
                     reward = 0.0
                     done = True
                     cur_step = agent.get_current_state()
@@ -711,19 +784,19 @@ class AgentExecutionEngine:
                             cur_step.reward = reward
                         cur_step.done = done
                     colorful_print(
-                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop "
-                        f"({consecutive_repeat_count + 1} identical consecutive actions"
-                        f"{', env-error-driven — masking from loss' if _last_loop_action_is_tool_error else ''}).",
+                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop " f"({consecutive_repeat_count + 1} identical consecutive actions" f"{', env-error-driven — masking from loss' if _last_loop_action_is_tool_error else ''}).",
                         "red",
                     )
-                    self._trajectory_logs.append({
-                        "type": "action_loop_terminated",
-                        "trajectory": idx,
-                        "step": step_idx,
-                        "repeated_action": action_str[:200],
-                        "repeat_count": consecutive_repeat_count + 1,
-                        "env_error_driven": _last_loop_action_is_tool_error,
-                    })
+                    self._trajectory_logs.append(
+                        {
+                            "type": "action_loop_terminated",
+                            "trajectory": idx,
+                            "step": step_idx,
+                            "repeated_action": action_str[:200],
+                            "repeat_count": consecutive_repeat_count + 1,
+                            "env_error_driven": _last_loop_action_is_tool_error,
+                        }
+                    )
                     break
 
             # --- Execute all tool calls from this model turn ---
@@ -731,10 +804,7 @@ class AgentExecutionEngine:
             next_observation = None
             step_terminated = False
 
-            use_parallel_step = (
-                getattr(env, 'supports_parallel_step', False)
-                and len(actions_result) > 1
-            )
+            use_parallel_step = getattr(env, "supports_parallel_step", False) and len(actions_result) > 1
 
             if use_parallel_step:
                 # Fire all env.step calls concurrently for independent tool calls
@@ -753,7 +823,7 @@ class AgentExecutionEngine:
                 total_time += delta_time
 
                 for action_idx, result in enumerate(step_results):
-                    is_last_action = (action_idx == len(actions_result) - 1)
+                    is_last_action = action_idx == len(actions_result) - 1
 
                     if isinstance(result, asyncio.TimeoutError):
                         termination_reason = "ENV_TIMEOUT"
@@ -779,7 +849,10 @@ class AgentExecutionEngine:
                         break
                     else:
                         agent.update_from_env_intermediate(
-                            observation=obs, reward=rew, done=d, info=inf,
+                            observation=obs,
+                            reward=rew,
+                            done=d,
+                            info=inf,
                         )
                         num_intermediate += 1
 
@@ -787,7 +860,7 @@ class AgentExecutionEngine:
                 # Sequential execution (default for SWE/Docker or single-action turns)
                 for action_idx, act in enumerate(actions_result):
                     action = act.action
-                    is_last_action = (action_idx == len(actions_result) - 1)
+                    is_last_action = action_idx == len(actions_result) - 1
 
                     start_time = time.time()
                     try:
@@ -818,7 +891,10 @@ class AgentExecutionEngine:
                     else:
                         # Intermediate action: append tool_response to agent messages
                         agent.update_from_env_intermediate(
-                            observation=obs, reward=rew, done=d, info=inf,
+                            observation=obs,
+                            reward=rew,
+                            done=d,
+                            info=inf,
                         )
                         num_intermediate += 1
 
@@ -868,32 +944,13 @@ class AgentExecutionEngine:
                 _obs_for_hint = str(next_observation)
                 _is_tool_crash = any(sig in _obs_for_hint for sig in _ENV_TOOL_ERROR_SIGS)
                 if _is_tool_crash:
-                    loop_warning = (
-                        "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — "
-                        "this is an environment setup failure, NOT a logic error in your code. "
-                        "The tool binary is broken. Switch strategy immediately:\n"
-                        "- Use execute_bash with `sed -i` or `python3 -c` to edit files directly\n"
-                        "- Use `python3 -c 'open(\"path\").read()'` to view file contents\n"
-                        "- Do NOT call the broken tool again.\n"
-                        "DO NOT repeat the same action again."
-                    )
+                    loop_warning = "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — " "this is an environment setup failure, NOT a logic error in your code. " "The tool binary is broken. Switch strategy immediately:\n" "- Use execute_bash with `sed -i` or `python3 -c` to edit files directly\n" "- Use `python3 -c 'open(\"path\").read()'` to view file contents\n" "- Do NOT call the broken tool again.\n" "DO NOT repeat the same action again."
                 else:
-                    loop_warning = (
-                        "\n\n[LOOP DETECTED] You have repeated the same action "
-                        f"{consecutive_repeat_count + 1} times consecutively. "
-                        "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n"
-                        "- If an edit keeps failing, view the file first to check the current content\n"
-                        "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n"
-                        "- If you're stuck, step back and reconsider the root cause\n"
-                        "- Try a completely different approach to solve the problem\n"
-                        "DO NOT repeat the same action again."
-                    )
+                    loop_warning = "\n\n[LOOP DETECTED] You have repeated the same action " f"{consecutive_repeat_count + 1} times consecutively. " "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n" "- If an edit keeps failing, view the file first to check the current content\n" "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n" "- If you're stuck, step back and reconsider the root cause\n" "- Try a completely different approach to solve the problem\n" "DO NOT repeat the same action again."
                 next_observation = str(next_observation) + loop_warning
                 loop_warning_injected = True
                 colorful_print(
-                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected "
-                    f"({consecutive_repeat_count + 1} identical consecutive actions"
-                    f"{', tool-crash hint' if _is_tool_crash else ''}).",
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected " f"({consecutive_repeat_count + 1} identical consecutive actions" f"{', tool-crash hint' if _is_tool_crash else ''}).",
                     "yellow",
                 )
 
@@ -934,16 +991,17 @@ class AgentExecutionEngine:
                 cur_step.done = done
                 cur_step.reward = None  # mask from loss
                 colorful_print(
-                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to protocol-error loop "
-                    f"({consecutive_protocol_errors} consecutive malformed tool calls — masking from loss).",
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to protocol-error loop " f"({consecutive_protocol_errors} consecutive malformed tool calls — masking from loss).",
                     "red",
                 )
-                self._trajectory_logs.append({
-                    "type": "protocol_error_terminated",
-                    "trajectory": idx,
-                    "step": step_idx,
-                    "consecutive_errors": consecutive_protocol_errors,
-                })
+                self._trajectory_logs.append(
+                    {
+                        "type": "protocol_error_terminated",
+                        "trajectory": idx,
+                        "step": step_idx,
+                        "consecutive_errors": consecutive_protocol_errors,
+                    }
+                )
                 break
 
             # --- Incremental tokenization: include intermediate tool responses ---
@@ -956,7 +1014,7 @@ class AgentExecutionEngine:
                 # the assistant message and the final update_from_env user message.
                 # They are at positions: -(num_intermediate + 1) to -2 in chat_completions
                 # (the last message is from update_from_env, the ones before it are intermediates)
-                intermediate_messages = agent.chat_completions[-(num_intermediate + 1):-1]
+                intermediate_messages = agent.chat_completions[-(num_intermediate + 1) : -1]
                 for msg in intermediate_messages:
                     msg_text = self.chat_parser.parse([msg], is_first_msg=False, add_generation_prompt=False)
                     msg_ids = self.tokenizer.encode(msg_text, add_special_tokens=False)
@@ -1076,16 +1134,18 @@ class AgentExecutionEngine:
                 "chat_completions": agent.chat_completions,
                 "steps": episode_steps,
             }
-            self._trajectory_logs.append({
-                "type": "trajectory",
-                "idx": env.idx,
-                "task_label": task_label,
-                "dropped": True,
-                "termination_reason": termination_reason,
-                "reward": 0.0,
-                "num_steps": len(episode_steps),
-                "chat_completions": agent.chat_completions,
-            })
+            self._trajectory_logs.append(
+                {
+                    "type": "trajectory",
+                    "idx": env.idx,
+                    "task_label": task_label,
+                    "dropped": True,
+                    "termination_reason": termination_reason,
+                    "reward": 0.0,
+                    "num_steps": len(episode_steps),
+                    "chat_completions": agent.chat_completions,
+                }
+            )
             return dropped_result
 
         masked_out = False
@@ -1120,7 +1180,7 @@ class AgentExecutionEngine:
                 color = "green"
             else:
                 color = "yellow"
-            n_steps = len(agent.trajectory.steps) if hasattr(agent, 'trajectory') else step_idx + 1
+            n_steps = len(agent.trajectory.steps) if hasattr(agent, "trajectory") else step_idx + 1
             colorful_print(
                 f"Trajectory {idx} ({task_label}: {n_steps} steps) completed due to: {termination_reason}. Reward is {reward}.",
                 color,
@@ -1134,16 +1194,18 @@ class AgentExecutionEngine:
         compute_mc_return(trajectory, gamma=self.gamma)
 
         # Log the completed trajectory
-        self._trajectory_logs.append({
-            "type": "trajectory",
-            "idx": env.idx,
-            "task_label": task_label,
-            "dropped": False,
-            "termination_reason": termination_reason,
-            "reward": trajectory.reward,
-            "num_steps": len(trajectory.steps),
-            "chat_completions": agent.chat_completions,
-        })
+        self._trajectory_logs.append(
+            {
+                "type": "trajectory",
+                "idx": env.idx,
+                "task_label": task_label,
+                "dropped": False,
+                "termination_reason": termination_reason,
+                "reward": trajectory.reward,
+                "num_steps": len(trajectory.steps),
+                "chat_completions": agent.chat_completions,
+            }
+        )
 
         if mode == "Text":
             return trajectory
@@ -1201,7 +1263,8 @@ class AgentExecutionEngine:
                     except (ValueError, TypeError):
                         # error_code can be a string like "Error: Exit code 2" from Docker runtime
                         import re
-                        match = re.search(r'(\d+)\s*$', str(raw_error_code))
+
+                        match = re.search(r"(\d+)\s*$", str(raw_error_code))
                         reward_metrics["rewards/pytest_error_code"] = float(match.group(1)) if match else -1.0
                 reward_metrics["rewards/verifier_missing"] = 0.0
                 reward_metrics["rewards/verifier_error"] = 1.0 if reward_metadata.get("verifier_error") else 0.0
@@ -1212,11 +1275,7 @@ class AgentExecutionEngine:
             # trainer's aggregator produces `traj/steps/{mcp,search,cli}_mean|min|max`
             # averaged over only the trajectories that actually had that task type.
             _label_to_steps_key = {"cli": "steps/cli", "mcp": "steps/mcp", "web search": "steps/search"}
-            per_type_step_metrics = (
-                {_label_to_steps_key[task_label]: len(trajectory.steps)}
-                if task_label in _label_to_steps_key
-                else {}
-            )
+            per_type_step_metrics = {_label_to_steps_key[task_label]: len(trajectory.steps)} if task_label in _label_to_steps_key else {}
 
             token_result = {
                 "prompt_tokens": prompt_tokens,
@@ -1344,15 +1403,17 @@ class AgentExecutionEngine:
             # Fast-fail if Docker daemon has been detected as down by another trajectory
             if self._docker_healthy is not None and not self._docker_healthy.is_set():
                 colorful_print(f"Trajectory {idx} ({task_label}) skipped: Docker daemon is unreachable (detected by another trajectory).", "red")
-                self._trajectory_logs.append({
-                    "type": "trajectory",
-                    "idx": idx,
-                    "dropped": True,
-                    "termination_reason": "DOCKER_UNHEALTHY",
-                    "reward": 0.0,
-                    "num_steps": 0,
-                    "chat_completions": [],
-                })
+                self._trajectory_logs.append(
+                    {
+                        "type": "trajectory",
+                        "idx": idx,
+                        "dropped": True,
+                        "termination_reason": "DOCKER_UNHEALTHY",
+                        "reward": 0.0,
+                        "num_steps": 0,
+                        "chat_completions": [],
+                    }
+                )
                 return None
 
             try:
@@ -1365,15 +1426,17 @@ class AgentExecutionEngine:
                     continue
                 else:
                     colorful_print(f"Trajectory {idx} ({task_label}) failed due to INVALID_REACT_STRUCTURE after {attempt} retries.", "pink")
-                    self._trajectory_logs.append({
-                        "type": "trajectory",
-                        "idx": idx,
-                        "dropped": True,
-                        "termination_reason": "INVALID_REACT_STRUCTURE",
-                        "reward": 0.0,
-                        "num_steps": 0,
-                        "chat_completions": [],
-                    })
+                    self._trajectory_logs.append(
+                        {
+                            "type": "trajectory",
+                            "idx": idx,
+                            "dropped": True,
+                            "termination_reason": "INVALID_REACT_STRUCTURE",
+                            "reward": 0.0,
+                            "num_steps": 0,
+                            "chat_completions": [],
+                        }
+                    )
                     return None
             except Exception as _:
                 # Detect Docker connection errors and signal all trajectories to stop
@@ -1381,15 +1444,17 @@ class AgentExecutionEngine:
                     if self._docker_healthy is not None:
                         self._docker_healthy.clear()  # Signal all trajectories
                     colorful_print(f"Trajectory {idx} ({task_label}) failed due to Docker connection error: {_}. Signaling all trajectories to stop.", "red")
-                    self._trajectory_logs.append({
-                        "type": "trajectory",
-                        "idx": idx,
-                        "dropped": True,
-                        "termination_reason": "DOCKER_CONNECTION_ERROR",
-                        "reward": 0.0,
-                        "num_steps": 0,
-                        "chat_completions": [],
-                    })
+                    self._trajectory_logs.append(
+                        {
+                            "type": "trajectory",
+                            "idx": idx,
+                            "dropped": True,
+                            "termination_reason": "DOCKER_CONNECTION_ERROR",
+                            "reward": 0.0,
+                            "num_steps": 0,
+                            "chat_completions": [],
+                        }
+                    )
                     return None
                 # For other exceptions, respect self.retry_limit (total self.retry_limit attempts)
                 if attempt < max_attempts - 1:
@@ -1399,15 +1464,17 @@ class AgentExecutionEngine:
                 else:
                     traceback.print_exc()
                     colorful_print(f"Trajectory {idx} ({task_label}) cannot complete after {self.retry_limit} retries. Skipping this trajectory.", "red")
-                    self._trajectory_logs.append({
-                        "type": "trajectory",
-                        "idx": idx,
-                        "dropped": True,
-                        "termination_reason": f"EXCEPTION: {type(_).__name__}: {_}",
-                        "reward": 0.0,
-                        "num_steps": 0,
-                        "chat_completions": [],
-                    })
+                    self._trajectory_logs.append(
+                        {
+                            "type": "trajectory",
+                            "idx": idx,
+                            "dropped": True,
+                            "termination_reason": f"EXCEPTION: {type(_).__name__}: {_}",
+                            "reward": 0.0,
+                            "num_steps": 0,
+                            "chat_completions": [],
+                        }
+                    )
                     return None
         return None
 
@@ -1436,7 +1503,7 @@ class AgentExecutionEngine:
         max_concurrency = self.n_parallel_agents
 
         # Shut down previous executor before creating a new one to avoid FD leaks
-        if hasattr(self, 'executor') and self.executor is not None:
+        if hasattr(self, "executor") and self.executor is not None:
             try:
                 self.executor.shutdown(wait=False, cancel_futures=True)
             except Exception:
