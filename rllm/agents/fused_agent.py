@@ -8,7 +8,16 @@ from rllm.agents.cli_agent import (
     generate_tool_schemas,
     parse_r2egym_tool_docstring,
 )
-from rllm.agents.system_prompts import FUSED_AGENT_SYSTEM_PROMPT, FUSED_SEARCH_SYSTEM_PROMPT, FUSED_SEARCH_USER_PROMPT, FUSED_MCP_SYSTEM_PROMPT, FUSED_MCP_USER_PROMPT, FUSED_ET_SYSTEM_PROMPT, FUSED_ET_USER_PROMPT
+from rllm.agents.system_prompts import (
+    FUSED_AGENT_SYSTEM_PROMPT,
+    FUSED_ET_SYSTEM_PROMPT,
+    FUSED_ET_USER_PROMPT,
+    FUSED_MCP_SYSTEM_PROMPT,
+    FUSED_MCP_USER_PROMPT,
+    FUSED_SEARCH_SYSTEM_PROMPT,
+    FUSED_SEARCH_USER_PROMPT,
+    FUSED_UNIFIED_SYSTEM_PROMPT,
+)
 from rllm.parser.tool_parser import QwenToolParser
 
 logger = logging.getLogger(__name__)
@@ -23,7 +32,22 @@ WEB_SEARCH_TOOL_FILE = os.path.join(
 )
 
 
-def _build_fused_tools_system_prompt(scaffold: str = "r2egym") -> str:
+def _coerce_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
+def _format_system_prompt(base_prompt: str, schemas: list[dict]) -> str:
+    tool_parser = QwenToolParser()
+    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
+    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
+    return base_prompt.strip() + "\n" + tools_prompt
+
+
+def _build_fused_tools_system_prompt(scaffold: str = "r2egym", unified_system_prompt: bool = False) -> str:
     """Build the full system prompt with r2egym tools + web_search tool.
 
     Returns:
@@ -33,13 +57,11 @@ def _build_fused_tools_system_prompt(scaffold: str = "r2egym") -> str:
     web_search_schema = parse_r2egym_tool_docstring(WEB_SEARCH_TOOL_FILE)
     schemas.append(web_search_schema)
 
-    tool_parser = QwenToolParser()
-    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
-    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_AGENT_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    base_prompt = FUSED_UNIFIED_SYSTEM_PROMPT if unified_system_prompt else FUSED_AGENT_SYSTEM_PROMPT
+    return _format_system_prompt(base_prompt, schemas)
 
 
-def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
+def _build_fused_search_system_prompt(scaffold: str = "r2egym", unified_system_prompt: bool = False) -> str:
     """Build a search-only system prompt with only web_search + finish tools.
 
     Search tasks should NOT see SWE tools (file_editor, execute_bash, search)
@@ -54,13 +76,11 @@ def _build_fused_search_system_prompt(scaffold: str = "r2egym") -> str:
         schemas.append(parse_r2egym_tool_docstring(f))
     schemas.append(web_search_schema)
 
-    tool_parser = QwenToolParser()
-    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
-    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_SEARCH_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    base_prompt = FUSED_UNIFIED_SYSTEM_PROMPT if unified_system_prompt else FUSED_SEARCH_SYSTEM_PROMPT
+    return _format_system_prompt(base_prompt, schemas)
 
 
-def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2egym") -> str:
+def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2egym", unified_system_prompt: bool = False) -> str:
     """Build MCP-mode system prompt with dynamically discovered tool schemas.
 
     Includes the MCP tools from the environment plus the standard finish tool.
@@ -78,10 +98,8 @@ def _build_fused_mcp_system_prompt(tools_json: list[dict], scaffold: str = "r2eg
         except Exception:
             pass
 
-    tool_parser = QwenToolParser()
-    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
-    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_MCP_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    base_prompt = FUSED_UNIFIED_SYSTEM_PROMPT if unified_system_prompt else FUSED_MCP_SYSTEM_PROMPT
+    return _format_system_prompt(base_prompt, schemas)
 
 
 def _build_fused_et_system_prompt(scaffold: str = "r2egym") -> str:
@@ -104,10 +122,7 @@ def _build_fused_et_system_prompt(scaffold: str = "r2egym") -> str:
         except Exception:
             pass
 
-    tool_parser = QwenToolParser()
-    schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
-    tools_prompt = tool_parser.get_tool_prompt(schemas_str)
-    return FUSED_ET_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
+    return _format_system_prompt(FUSED_ET_SYSTEM_PROMPT, schemas)
 
 
 class FusedAgent(CLIAgent):
@@ -127,15 +142,16 @@ class FusedAgent(CLIAgent):
     _VALID_TOOLS_FUSED_SEARCH = {"web_search", "finish"}
     _VALID_TOOLS_FUSED_ET = {"execute_bash", "str_replace_editor", "file_editor", "finish", "submit"}
 
-    def __init__(self, scaffold: str = "r2egym"):
+    def __init__(self, scaffold: str = "r2egym", unified_system_prompt: bool = False):
         # Call CLIAgent.__init__ — it sets up tool_parser, system_prompt, etc.
         super().__init__(scaffold=scaffold)
+        self.unified_system_prompt = _coerce_bool(unified_system_prompt)
         # Expand parser's valid_tools to include web_search (SWE default)
         self.tool_parser.valid_tools = self._VALID_TOOLS_FUSED_SWE
         # Override the system prompt with the fused version that includes web_search
-        self.system_prompt = _build_fused_tools_system_prompt(scaffold)
+        self.system_prompt = _build_fused_tools_system_prompt(scaffold, self.unified_system_prompt)
         # Pre-build the search-only system prompt (lightweight, reusable)
-        self._search_system_prompt = _build_fused_search_system_prompt(scaffold)
+        self._search_system_prompt = _build_fused_search_system_prompt(scaffold, self.unified_system_prompt)
         # Pre-build the ET system prompt (lightweight, reusable)
         self._et_system_prompt = _build_fused_et_system_prompt(scaffold)
         # Re-initialize messages with the new system prompt
@@ -178,7 +194,11 @@ class FusedAgent(CLIAgent):
                 self.user_prompt_template = FUSED_MCP_USER_PROMPT
                 # Build dynamic system prompt from MCP tool schemas
                 tools_json = info.get("tools_json", [])
-                mcp_system_prompt = _build_fused_mcp_system_prompt(tools_json)
+                mcp_system_prompt = _build_fused_mcp_system_prompt(
+                    tools_json,
+                    scaffold=self.scaffold,
+                    unified_system_prompt=self.unified_system_prompt,
+                )
                 self.messages[0] = {
                     "role": "system",
                     "content": mcp_system_prompt,
