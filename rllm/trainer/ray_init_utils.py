@@ -31,7 +31,15 @@ def should_attach_to_existing_ray_cluster() -> bool:
     # Heuristic: if a Ray head has been started on this filesystem namespace,
     # Ray writes the address here.
     try:
-        return _ray_current_cluster_path().exists()
+        cluster_path = _ray_current_cluster_path()
+        if not cluster_path.exists():
+            return False
+
+        # On shared machines, `/tmp/ray/ray_current_cluster` is often left
+        # behind by another user. Attaching to that cluster by default can
+        # strand training on an unreachable GCS endpoint. Only auto-attach to
+        # filesystem-discovered clusters we appear to own.
+        return cluster_path.stat().st_uid == os.getuid()
     except Exception:
         return False
 

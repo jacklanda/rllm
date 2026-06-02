@@ -44,6 +44,28 @@ def test_get_ray_init_settings_attaches_when_ray_current_cluster_file_exists(mon
     assert settings["address"] == "auto"
 
 
+def test_get_ray_init_settings_ignores_other_users_ray_current_cluster(monkeypatch, tmp_path):
+    monkeypatch.delenv("RAY_ADDRESS", raising=False)
+
+    ray_init_utils = _load_ray_init_utils()
+
+    class _Stat:
+        st_uid = 999999
+
+    class _FakePath:
+        def exists(self):
+            return True
+
+        def stat(self):
+            return _Stat()
+
+    monkeypatch.setattr(ray_init_utils, "_ray_current_cluster_path", lambda: _FakePath())
+    monkeypatch.setattr(ray_init_utils.os, "getuid", lambda: 123456)
+
+    settings = ray_init_utils.get_ray_init_settings(config=None)
+    assert "address" not in settings
+
+
 def test_config_address_overrides(monkeypatch, tmp_path):
     monkeypatch.setenv("RAY_ADDRESS", "ray://dummy")
 
