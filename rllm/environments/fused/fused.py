@@ -95,14 +95,7 @@ class FusedEnv(CLIEnv):
 
         # Detect task mode: ET (checked before CLI since ET rows also carry a
         # docker_image), CLI, MCP, or Web Search.
-        if _is_et_entry(self.entry):
-            self._task_mode = "et"
-        elif self.entry.get("docker_image"):
-            self._task_mode = "cli"
-        elif self.entry.get("tools_py"):
-            self._task_mode = "mcp"
-        else:
-            self._task_mode = "web search"
+        self._task_mode = self._resolve_task_mode(self.entry)
 
         # Web search mode state
         self._search_answer = ""  # Agent's submitted answer for reward computation
@@ -144,11 +137,28 @@ class FusedEnv(CLIEnv):
     def supports_parallel_step(self) -> bool:
         return self._task_mode in ("web search", "mcp")
 
+    def _resolve_task_mode(self, entry: dict | None) -> str:
+        entry = entry or {}
+        if _is_et_entry(entry):
+            return "et"
+        if entry.get("docker_image"):
+            return "cli"
+        if entry.get("tools_py"):
+            return "mcp"
+        return "web search"
+
     # ------------------------------------------------------------------
     # reset
     # ------------------------------------------------------------------
 
-    def reset(self) -> tuple[str, dict]:
+    def reset(self, task: dict | str | None = None) -> tuple[str, dict]:
+        next_task = self._normalize_entry(task)
+        if next_task is not None and next_task != self.entry:
+            self.close()
+            self.env = None
+        self._bind_task(next_task)
+        self._task_mode = self._resolve_task_mode(self.entry)
+
         if self._task_mode == "et":
             return self._reset_et()
         if self._task_mode == "mcp":

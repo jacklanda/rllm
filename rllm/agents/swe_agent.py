@@ -145,10 +145,11 @@ class SWEAgent(BaseAgent):
 
         if self._trajectory.steps:
             prior_step = self._trajectory.steps[-1]
-            prior_step.next_observation = observation
             prior_step.reward = reward
             prior_step.done = done
-            prior_step.info = info
+            step_info = dict(info or {})
+            step_info["next_observation"] = observation
+            prior_step.info = step_info
 
         self.messages.append({"role": "user", "content": observation})
         self.cur_step = Step(observation=observation)

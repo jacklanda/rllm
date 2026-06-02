@@ -322,10 +322,11 @@ class CLIAgent(BaseAgent):
         # Update the prior step with environment feedback
         if self._trajectory.steps:
             prior_step = self._trajectory.steps[-1]
-            prior_step.next_observation = observation
             prior_step.reward = reward
             prior_step.done = done
-            prior_step.info = info
+            step_info = dict(info or {})
+            step_info["next_observation"] = observation
+            prior_step.info = step_info
 
         # Compose user message
         if self._trajectory.steps:

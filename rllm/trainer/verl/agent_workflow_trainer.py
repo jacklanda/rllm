@@ -476,7 +476,6 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 if new_batch is not None:
                     batch_data_sources = new_batch.non_tensor_batch.get("data_source")
                     if batch_data_sources is not None:
-                        from collections import defaultdict
                         traj_rewards = new_batch.batch["traj_rewards"].sum(-1).cpu()
                         episode_ids = new_batch.non_tensor_batch["episode_ids"]
                         source_rewards = defaultdict(list)

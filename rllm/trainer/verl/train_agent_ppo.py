@@ -17,6 +17,7 @@ from verl.utils.config import validate_config
 from verl.utils.device import is_cuda_available
 
 from rllm.trainer.verl.agent_workflow_trainer import AgentWorkflowPPOTrainer
+from rllm.trainer.verl.dataset_compat import patch_rlhf_dataset_answer_norm
 from rllm.trainer.verl.ray_runtime_env import get_ppo_ray_runtime_env
 
 
@@ -26,6 +27,8 @@ def main(config):
 
 
 def run_ppo_agent(config):
+    patch_rlhf_dataset_answer_norm()
+
     # Check if Ray is not initialized
     if not ray.is_initialized():
         from rllm.trainer.ray_init_utils import get_ray_init_settings
@@ -193,6 +196,8 @@ class TaskRunner:
             config: Training configuration object containing all parameters needed
                    for setting up and running the PPO training process.
         """
+        patch_rlhf_dataset_answer_norm()
+
         # Print the initial configuration. `resolve=True` will evaluate symbolic values.
         from pprint import pprint
 

@@ -19,8 +19,8 @@ class CLIEnv(SWEEnv):
         super().__init__(**kwargs)
         self.context_file = context_file
 
-    def reset(self) -> tuple[str, dict]:
-        obs, info = super().reset()
+    def reset(self, task=None) -> tuple[str, dict]:
+        obs, info = super().reset(task=task)
         if self.context_file:
             self._inject_context_file()
         return obs, info

@@ -12,6 +12,7 @@ from rllm.trainer.env_agent_mappings import WORKFLOW_CLASS_MAPPING
 from rllm.trainer.verl.agent_workflow_trainer_fireworks import (
     FireworksAgentWorkflowPPOTrainer,
 )
+from rllm.trainer.verl.dataset_compat import patch_rlhf_dataset_answer_norm
 
 
 @hydra.main(config_path="../config", config_name="agent_ppo_trainer", version_base=None)
@@ -20,6 +21,8 @@ def main(config):
 
 
 def run_workflow_pipeline(config):
+    patch_rlhf_dataset_answer_norm()
+
     # Check if Ray is not initialized
     if not ray.is_initialized():
         # Initialize Ray with a local cluster configuration
@@ -65,6 +68,8 @@ class PipelineTaskRunner:
             config: Training configuration object containing all parameters needed
                    for setting up and running the PPO training process.
         """
+        patch_rlhf_dataset_answer_norm()
+
         # Print the initial configuration. `resolve=True` will evaluate symbolic values.
         from pprint import pprint
 

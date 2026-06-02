@@ -6,7 +6,7 @@ import tempfile
 import warnings
 
 import numpy as np
-from datasets import Dataset, load_dataset
+from datasets import Dataset, load_dataset, load_dataset_builder
 
 # Suppress gym deprecation warnings from r2egym dependency
 # r2egym uses deprecated gym package, but rLLM uses gymnasium
@@ -80,6 +80,30 @@ _UNAPPLICABLE_PATCH_SIGS = (
     "malformed patch",
     "fatal: corrupt patch",
 )
+
+
+def _resolve_default_r2e_split(dataset_id: str) -> str:
+    builder = load_dataset_builder(dataset_id)
+    split_names = list(builder.info.splits.keys())
+    if "test" in split_names:
+        return "test"
+    for preferred in (
+        "dev_100pr_v7",
+        "dev_200pr_v1",
+        "dev_100pr_v6",
+        "dev_100pr_v5",
+        "dev_100pr_v4",
+        "dev_100pr_v3",
+        "dev_100pr_v2",
+        "dev_100pr_v1",
+        "dev_10pr_v1",
+        "train",
+    ):
+        if preferred in split_names:
+            return preferred
+    if not split_names:
+        raise ValueError(f"Dataset {dataset_id!r} has no available splits")
+    return split_names[0]
 
 
 def _parse_pytest_summary(log: str) -> dict | None:
@@ -263,20 +287,11 @@ class SWEEnv(BaseEnv):
             idx: Index of the task to use. If None, selects a random task.
             timeout: Timeout for each step in seconds.
         """
-        if entry is not None:
-            self.entry = entry
-            self.dataset = None
-            self.idx = None
-        else:
-            if dataset is None:
-                dataset = load_dataset(DEFAULT_R2E_ENV_ID, split="test")
-            self.dataset = dataset
-
-            if idx is None:
-                idx = np.random.randint(0, len(self.dataset))
-            assert 0 <= idx < len(self.dataset), "Selected index out of range"
-            self.idx = idx
-            self.entry = self.dataset[idx]
+        self.entry = self._normalize_entry(entry)
+        self.dataset = dataset
+        self.idx = idx
+        if self.entry is None and self.dataset is not None:
+            self._select_dataset_entry()
         self.step_timeout = step_timeout
         self.reward_timeout = reward_timeout
         self.total_steps = 0
@@ -284,17 +299,57 @@ class SWEEnv(BaseEnv):
         self.env = None
         self.verbose = verbose
         self.scaffold = scaffold
-        docker_image = self.entry.get("docker_image") or ""
-        self._is_gemcli = "gemcli" in docker_image or "gemswe" in docker_image
+        self._refresh_entry_metadata()
         self._reward_debug: dict = {}
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
 
-    def reset(self) -> tuple[str, dict]:
+    @staticmethod
+    def _normalize_entry(entry: dict | str | None) -> dict | None:
+        if isinstance(entry, str):
+            return json.loads(entry)
+        return entry
+
+    def _refresh_entry_metadata(self) -> None:
+        docker_image = (self.entry or {}).get("docker_image") or ""
+        self._is_gemcli = "gemcli" in docker_image or "gemswe" in docker_image
+
+    def _select_dataset_entry(self) -> None:
+        if self.dataset is None:
+            raise ValueError("Dataset is not initialized")
+        if self.idx is None:
+            self.idx = int(np.random.randint(0, len(self.dataset)))
+        assert 0 <= self.idx < len(self.dataset), "Selected index out of range"
+        self.entry = self.dataset[self.idx]
+
+    def _bind_task(self, task: dict | str | None = None) -> None:
+        task = self._normalize_entry(task)
+        if task is not None:
+            self.entry = task
+            self.dataset = None
+            self.idx = None
+            self._refresh_entry_metadata()
+            return
+        if self.entry is not None:
+            return
+        if self.dataset is None:
+            split = _resolve_default_r2e_split(DEFAULT_R2E_ENV_ID)
+            self.dataset = load_dataset(DEFAULT_R2E_ENV_ID, split=split)
+        self._select_dataset_entry()
+        self._refresh_entry_metadata()
+
+    def reset(self, task: dict | str | None = None) -> tuple[str, dict]:
         """Reset the environment to initial state.
 
         Returns:
             Tuple containing task instruction and additional info.
         """
+        next_task = self._normalize_entry(task)
+        if next_task is not None and next_task != self.entry and self.env is not None:
+            self.close()
+            self.env = None
+
+        self._bind_task(next_task)
+
         # Reset environment and docker runtime.
         if not self.env:
             env_args = EnvArgs(ds=self.entry)
@@ -775,6 +830,7 @@ class SWEEnv(BaseEnv):
         """Close the environment and clean up resources."""
         if self.env is not None:
             self.env.close()
+            self.env = None
 
     @staticmethod
     def from_dict(extra_info: dict | str) -> "SWEEnv":
