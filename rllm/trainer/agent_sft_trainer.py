@@ -3,6 +3,7 @@ import logging
 from torch.distributed.device_mesh import init_device_mesh
 
 from rllm.agents.agent import Trajectory
+from rllm.trainer.sft_metrics import normalize_sft_lr_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,17 @@ class AgentSFTTrainer:
             self._train_tinker()
 
     def _train_verl(self):
-        from verl.trainer.fsdp_sft_trainer import FSDPSFTTrainer
+        from verl.trainer.fsdp_sft_trainer import FSDPSFTTrainer as VerlFSDPSFTTrainer
         from verl.utils import hf_tokenizer
         from verl.utils.device import get_device_name
         from verl.utils.distributed import destroy_global_process_group, initialize_global_process_group
         from verl.utils.fs import copy_to_local
 
         from rllm.trainer.verl.sft_dataset import RLLMSFTDataset
+
+        class FSDPSFTTrainer(VerlFSDPSFTTrainer):
+            def training_step(self, batch):
+                return normalize_sft_lr_metrics(super().training_step(batch))
 
         config = self.config
         device_name = get_device_name()
