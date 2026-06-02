@@ -173,6 +173,38 @@ class TestMCPEnvironment:
         assert "Tool already exists" not in result.stdout
         assert "Tool already exists" not in result.stderr
 
+    def test_ensure_server_script_preserves_mcp_instance_after_bare_import(self, tmp_path):
+        """Generated tools.py files may accidentally re-import mcp after creating the server."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='before')\n"
+            "def before_import():\n"
+            "    return 'before'\n"
+            "import mcp\n"
+            "@mcp.tool(description='after')\n"
+            "def after_import():\n"
+            "    return 'after'\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "before_import,after_import"
+        assert "AttributeError" not in result.stderr
+
     @patch.object(MCPConnectionManager, "start")
     @patch.object(MCPConnectionManager, "__init__", return_value=None)
     def test_init_with_custom_parameters(self, mock_init, mock_start):
