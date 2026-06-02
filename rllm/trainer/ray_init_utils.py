@@ -21,27 +21,27 @@ def _ray_current_cluster_path() -> Path:
     return Path("/tmp/ray/ray_current_cluster")
 
 
-def should_attach_to_existing_ray_cluster() -> bool:
-    """Whether we should attempt to attach to an existing Ray cluster."""
+def get_default_ray_address() -> str | None:
+    """Choose the safest implicit Ray address for the current machine."""
 
-    # Explicitly configured by the user or environment.
     if os.getenv("RAY_ADDRESS"):
-        return True
+        return "auto"
 
-    # Heuristic: if a Ray head has been started on this filesystem namespace,
-    # Ray writes the address here.
     try:
         cluster_path = _ray_current_cluster_path()
         if not cluster_path.exists():
-            return False
+            return None
 
         # On shared machines, `/tmp/ray/ray_current_cluster` is often left
-        # behind by another user. Attaching to that cluster by default can
-        # strand training on an unreachable GCS endpoint. Only auto-attach to
-        # filesystem-discovered clusters we appear to own.
-        return cluster_path.stat().st_uid == os.getuid()
+        # behind by another user. Ray itself may auto-attach to that marker
+        # even if we omit `address`, so explicitly force a local cluster when
+        # the marker does not belong to the current user.
+        if cluster_path.stat().st_uid != os.getuid():
+            return "local"
+
+        return "auto"
     except Exception:
-        return False
+        return None
 
 
 def get_ray_init_settings(config: Any | None = None) -> dict[str, Any]:
@@ -49,8 +49,10 @@ def get_ray_init_settings(config: Any | None = None) -> dict[str, Any]:
 
     Notes:
     - If `config.ray_init.address` is set, we pass it through verbatim.
-    - Otherwise, if we detect a running cluster (or RAY_ADDRESS is set), we use
-      `address="auto"` to attach.
+    - Otherwise, if we detect a running cluster owned by the current user (or
+      `RAY_ADDRESS` is set), we use `address="auto"` to attach.
+    - If we only detect another user's stale cluster marker, we explicitly set
+      `address="local"` to avoid Ray's own implicit auto-attach heuristic.
     - If none of the above applies, we return no `address`, so Ray will start a
       local cluster.
     """
@@ -66,7 +68,8 @@ def get_ray_init_settings(config: Any | None = None) -> dict[str, Any]:
     if "address" in settings:
         return settings
 
-    if should_attach_to_existing_ray_cluster():
-        settings["address"] = "auto"
+    default_address = get_default_ray_address()
+    if default_address is not None:
+        settings["address"] = default_address
 
     return settings

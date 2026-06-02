@@ -63,7 +63,7 @@ def test_get_ray_init_settings_ignores_other_users_ray_current_cluster(monkeypat
     monkeypatch.setattr(ray_init_utils.os, "getuid", lambda: 123456)
 
     settings = ray_init_utils.get_ray_init_settings(config=None)
-    assert "address" not in settings
+    assert settings["address"] == "local"
 
 
 def test_config_address_overrides(monkeypatch, tmp_path):
