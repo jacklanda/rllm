@@ -247,6 +247,25 @@ class TaskRunner:
 
         resource_pool_manager = self.init_resource_pool_mgr(config)
 
+        if workflow_class is None:
+            from rllm.trainer.env_agent_mappings import WORKFLOW_CLASS_MAPPING
+
+            workflow_name = config.rllm.workflow.get("name", "single_turn_workflow")
+            workflow_class = WORKFLOW_CLASS_MAPPING[workflow_name]
+            workflow_args = workflow_args or {}
+
+            if not config.rllm.workflow.get("use_workflow", False):
+                workflow_args.setdefault("agent_cls", config.rllm.agent.name)
+                workflow_args.setdefault("env_cls", config.rllm.env.name)
+                workflow_args.setdefault(
+                    "agent_args",
+                    OmegaConf.to_container(config.rllm.agent.get("agent_args", {}), resolve=True) or {},
+                )
+                workflow_args.setdefault(
+                    "env_args",
+                    OmegaConf.to_container(config.rllm.env.get("env_args", {}), resolve=True) or {},
+                )
+
         if workflow_class is not None:
             workflow_args = workflow_args or {}
             if config.rllm.workflow.get("workflow_args") is not None:
@@ -269,9 +288,8 @@ class TaskRunner:
                 workflow_class=workflow_class,
                 workflow_args=workflow_args,
             )
-
         else:
-            raise ValueError("TaskRunner.run requires workflow_class. The legacy agent_class + env_class and agent_run_func paths have been removed; port your agent to a Workflow or AgentFlow.")
+            raise ValueError(f"Unknown workflow class: {config.rllm.workflow.get('name')}")
 
         # Apply NCCL dynamic batch sync patch (fixes verl#5750)
         from rllm.experimental.verl.patch import patch_verl_dynamic_batch_sync
