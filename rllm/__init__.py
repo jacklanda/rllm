@@ -1,33 +1,13 @@
-"""rLLM: Reinforcement Learning with Language Models
+"""rLLM: Reinforcement Learning with Language Models."""
 
-Main package for the rLLM framework.
-"""
-
-# ============================================================================
-# Suppress gym deprecation warnings from dependencies
-# ============================================================================
-# rLLM uses the modern 'gymnasium' package for RL environments.
-# However, some dependencies (e.g., r2e-gym) still use the deprecated 'gym'
-# package, which triggers warnings about being unmaintained.
-#
-# Since we cannot control third-party dependencies, we suppress these warnings
-# at the package level. This is safe because:
-# 1. rLLM's own code uses gymnasium, not gym
-# 2. The warnings are about maintainability, not functionality
-# 3. The dependency packages still work correctly with gym
-#
-# If you need to see these warnings for debugging, comment out the filters below.
-# ============================================================================
+import sys
 import warnings
+
+from rllm.utils.logging import configure_logging_from_env
 
 warnings.filterwarnings("ignore", message=".*Gym has been unmaintained.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym")
 
-# The "Gym has been unmaintained..." banner is NOT a warnings.warn() call —
-# gym/__init__.py does `print(notice, file=sys.stderr)` directly, reading from
-# the `gym_notices` package. warnings.filterwarnings cannot suppress raw prints,
-# so we neutralize the source by emptying gym_notices.notices before gym is
-# imported by any downstream dependency (e.g. r2egym).
 try:
     import gym_notices.notices as _gym_notices
 
@@ -35,13 +15,42 @@ try:
 except ImportError:
     pass
 
-# Import commonly used classes
-from .agents import Action, BaseAgent, Episode, Step, Trajectory
+__all__ = ["BaseAgent", "Action", "Step", "Trajectory", "Episode", "rollout", "evaluator", "Task"]
 
-__all__ = [
-    "BaseAgent",
-    "Action",
-    "Step",
-    "Trajectory",
-    "Episode",
-]
+configure_logging_from_env()
+
+
+def __getattr__(name: str):
+    if name in ("rollout", "evaluator"):
+        from rllm.eval.rollout_decorator import evaluator, rollout
+
+        _mod = sys.modules[__name__]
+        _mod.rollout = rollout
+        _mod.evaluator = evaluator
+        return rollout if name == "rollout" else evaluator
+
+    if name == "Task":
+        from rllm.types import Task
+
+        _mod = sys.modules[__name__]
+        _mod.Task = Task
+        return Task
+
+    agent_exports = {"BaseAgent", "Action", "Step", "Trajectory", "Episode"}
+    if name in agent_exports:
+        from rllm.agents.agent import BaseAgent
+        from rllm.types import Action, Episode, Step, Trajectory
+
+        exports = {
+            "BaseAgent": BaseAgent,
+            "Action": Action,
+            "Step": Step,
+            "Trajectory": Trajectory,
+            "Episode": Episode,
+        }
+        _mod = sys.modules[__name__]
+        for key, value in exports.items():
+            setattr(_mod, key, value)
+        return exports[name]
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

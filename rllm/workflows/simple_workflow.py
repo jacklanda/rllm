@@ -1,6 +1,7 @@
-from rllm.agents.agent import Action, BaseAgent, Episode, Step, Trajectory
+from rllm.agents.agent import BaseAgent
 from rllm.engine import ModelOutput, RolloutEngine
 from rllm.rewards.reward_fn import RewardFunction
+from rllm.types import Action, Episode, Step, Trajectory
 from rllm.workflows.workflow import TerminationEvent, TerminationReason, Workflow
 
 
@@ -45,7 +46,7 @@ class SimpleWorkflow(Workflow):
             raise ValueError("No question, problem, messages, or prompt key found in task")
 
         output: ModelOutput = await self.rollout_engine.get_model_response(messages, application_id=uid, **kwargs)
-        action = Action(output.content)
+        action = Action(action=output.content)
         reward_result = self.reward_function(task, action)
 
         trajectory = self.agent.trajectory

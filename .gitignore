@@ -197,6 +197,7 @@ rllm/registry/
 # Coding assistant local rules ignore
 .cursor/rules/*
 CLAUDE.md
+.claude/
 
 # Strands outputs ignore
 examples/strands_outputs/*
@@ -214,10 +215,20 @@ examples/deepresearch/HLE_OUTPUT_EVOLUTION.md
 uv.lock
 
 # Legacy issue: we will ignore the "verl" folder, which was installed by many as submodule before
-#verl/
+/verl/
 
 # Experimental artifacts
 .last_training_commit
 experiments/**
 rllm/data/datasets/**
 .claude/**
+
+# GCP service account keys
+gcp-key.json
+
+# litellm proxy auto-generated config (may contain API keys)
+**/litellm_proxy_config_autogen.yaml
+**/.litellm_proxy/
+
+# IDE
+.vscode/

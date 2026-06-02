@@ -91,9 +91,9 @@ class MCPConnectionManager:
         """Internal stop that doesn't acquire locks — used during retry."""
         self.running = False
         self.request_queue.put(("stop", None, None))
-        if self.worker_thread:
-            self.worker_thread.join(timeout=5)
-            self.worker_thread = None
+        worker_thread = getattr(self, "worker_thread", None)
+        if worker_thread:
+            worker_thread.join(timeout=5)
         # Clear any leftover state for a clean retry
         self.session = None
         self.tool_map = {}
@@ -106,14 +106,14 @@ class MCPConnectionManager:
 
     def stop(self):
         """Stop the connection manager thread."""
-        if not self.running:
+        if not getattr(self, "running", False):
             return
 
         self.running = False
         self.request_queue.put(("stop", None, None))
-        if self.worker_thread:
-            self.worker_thread.join(timeout=10)
-            self.worker_thread = None
+        worker_thread = getattr(self, "worker_thread", None)
+        if worker_thread:
+            worker_thread.join(timeout=5)
         self.session = None
         self.tool_map = {}
 
@@ -248,6 +248,7 @@ class MCPEnvironment(BaseEnv):
     """
 
     # Class-level pool to share managers across instances with the same server config.
+    _connection_manager: MCPConnectionManager | None = None
     _connection_managers: dict[tuple[Any, ...], MCPConnectionManager] = {}
     _manager_lock = threading.Lock()
 
@@ -301,6 +302,7 @@ class MCPEnvironment(BaseEnv):
                     manager.start()
                     MCPEnvironment._connection_managers[manager_key] = manager
                 self._connection_manager = manager
+                MCPEnvironment._connection_manager = manager
                 self._manager_key = manager_key
 
     @staticmethod
@@ -330,16 +332,34 @@ class MCPEnvironment(BaseEnv):
             return base_key
         return ("isolated", uuid.uuid4().hex, base_key)
 
+    def _get_connection_manager(self) -> MCPConnectionManager | None:
+        manager = self._connection_manager
+        class_manager = MCPEnvironment._connection_manager
+        if class_manager is not None and class_manager is not manager:
+            return class_manager
+        return manager
+
+    @staticmethod
+    def _safe_stop_manager(manager: MCPConnectionManager | None) -> None:
+        if manager is None:
+            return
+        try:
+            manager.stop()
+        except Exception:
+            pass
+
     def reset(self):
         """Reset the environment and return initial observations."""
         self.step_count = 0
         self._non_submit_tool_calls = 0
         self._submit_without_tool_retries = 0
         obs = dict(self.task) if isinstance(self.task, dict) else {}
-        if self._connection_manager and self._connection_manager.tool_map:
+        manager = self._get_connection_manager()
+        tool_map = getattr(manager, "tool_map", None)
+        if manager and tool_map:
             tools_json = []
             seen = set()
-            for tool in self._connection_manager.tool_map.values():
+            for tool in tool_map.values():
                 name = getattr(tool, "name", None)
                 if not name or name in seen:
                     continue
@@ -428,8 +448,9 @@ class MCPEnvironment(BaseEnv):
             if submit_result_tool_call is not None:
                 try:
                     # Execute the submit_result tool call to ensure it completes
-                    if self._connection_manager is not None:
-                        tool_outputs = self._connection_manager.execute_tool_calls([submit_result_tool_call])
+                    manager = self._get_connection_manager()
+                    if manager is not None:
+                        tool_outputs = manager.execute_tool_calls([submit_result_tool_call])
                     else:
                         tool_outputs = {}
 
@@ -512,8 +533,9 @@ class MCPEnvironment(BaseEnv):
         # Execute tool calls using the connection manager
         tool_calls = action
         try:
-            if self._connection_manager is not None:
-                tool_outputs = self._connection_manager.execute_tool_calls(tool_calls)
+            manager = self._get_connection_manager()
+            if manager is not None:
+                tool_outputs = manager.execute_tool_calls(tool_calls)
                 next_obs = {"tool_outputs": tool_outputs}
             else:
                 next_obs = {"tool_outputs": {}}
@@ -532,7 +554,9 @@ class MCPEnvironment(BaseEnv):
         with MCPEnvironment._manager_lock:
             if self._manager_key in MCPEnvironment._connection_managers:
                 MCPEnvironment._connection_managers.pop(self._manager_key, None)
-        self._connection_manager.stop()
+        MCPEnvironment._safe_stop_manager(self._connection_manager)
+        if MCPEnvironment._connection_manager is self._connection_manager:
+            MCPEnvironment._connection_manager = None
         self._connection_manager = None
 
     @staticmethod
@@ -540,8 +564,10 @@ class MCPEnvironment(BaseEnv):
         """Clean up global connection manager."""
         with MCPEnvironment._manager_lock:
             for manager in MCPEnvironment._connection_managers.values():
-                manager.stop()
+                MCPEnvironment._safe_stop_manager(manager)
             MCPEnvironment._connection_managers = {}
+            MCPEnvironment._safe_stop_manager(MCPEnvironment._connection_manager)
+            MCPEnvironment._connection_manager = None
 
     @staticmethod
     def from_dict(env_args: dict[str, Any]) -> "MCPEnvironment":

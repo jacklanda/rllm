@@ -1,28 +1,32 @@
-from rllm.agents.agent import Action, BaseAgent, Episode, Step, Trajectory
-from rllm.agents.math_agent import MathAgent
-from rllm.agents.tool_agent import ToolAgent
+"""Backward-compatible re-export shim for legacy agent classes and trajectory types."""
 
-__all__ = ["BaseAgent", "Action", "Step", "Trajectory", "Episode", "MathAgent", "ToolAgent"]
+from rllm.agents.agent import BaseAgent
+from rllm.types import Action, Episode, Step, Trajectory
 
 
 def safe_import(module_path, class_name):
     try:
         module = __import__(module_path, fromlist=[class_name])
         return getattr(module, class_name)
-    except ImportError:
+    except (ImportError, AttributeError, ModuleNotFoundError):
         return None
 
 
-# Define all agent imports
 AGENT_IMPORTS = [
-    ("rllm.agents.miniwob_agent", "MiniWobAgent"),
-    ("rllm.agents.frozenlake_agent", "FrozenLakeAgent"),
+    ("rllm.agents.math_agent", "MathAgent"),
+    ("rllm.agents.tool_agent", "ToolAgent"),
+    ("rllm.agents.tool_agent", "MCPToolAgent"),
     ("rllm.agents.swe_agent", "SWEAgent"),
     ("rllm.agents.cli_agent", "CLIAgent"),
+    ("rllm.agents.fused_agent", "FusedAgent"),
+    ("rllm.agents.et_agent", "ETAgent"),
+    ("rllm.agents.miniwob_agent", "MiniWobAgent"),
+    ("rllm.agents.frozenlake_agent", "FrozenLakeAgent"),
     ("rllm.agents.code_agent", "CompetitionCodingAgent"),
     ("rllm.agents.webarena_agent", "WebArenaAgent"),
-    ("rllm.agents.tool_agent", "MCPToolAgent"),
 ]
+
+__all__ = ["BaseAgent", "Action", "Step", "Trajectory", "Episode"]
 
 for module_path, class_name in AGENT_IMPORTS:
     imported_class = safe_import(module_path, class_name)

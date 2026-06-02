@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "math-tool-agent"
+version = "0.1.0"
+description = "Multi-turn math agent with calculator tool plugin for rLLM (AgentFlow protocol)"
+requires-python = ">=3.10"
+dependencies = ["rllm", "openai"]
+
+[tool.setuptools]
+# Top-level py-modules must be unique across installed cookbooks.
+py-modules = ["math_tool_agent", "math_tool_eval"]
+
+# Plugin discovery: rllm CLI finds these by name
+[project.entry-points."rllm.agents"]
+math_tool_agent = "math_tool_agent:math_tool_agent"
+
+[project.entry-points."rllm.evaluators"]
+math_tool = "math_tool_eval:math_tool_evaluator"

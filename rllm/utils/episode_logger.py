@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from rllm.agents.agent import Episode
+from rllm.types import Episode
 
 
 class EpisodeLogger:
@@ -85,7 +85,20 @@ class EpisodeLogger:
             mode: Mode identifier ('train' or 'val'), defaults to 'train'
             epoch: Current epoch number, defaults to 0
         """
-        episode_data = {"training_step": step, "epoch": epoch, "episode_id": episode.id, "task": episode.task, "task_hash": self.compute_task_hash(episode.task), "is_correct": episode.is_correct, "termination_reason": episode.termination_reason.value if episode.termination_reason else None, "metrics": episode.metrics, "timing": episode.info.get("timing", {}), "trajectories": []}
+        episode_data = {
+            "training_step": step,
+            "epoch": epoch,
+            "episode_id": episode.id,
+            "session_id": episode.session_id,
+            "task": episode.task,
+            "task_hash": self.compute_task_hash(episode.task),
+            "is_correct": episode.is_correct,
+            "termination_reason": (episode.termination_reason.value if episode.termination_reason else None),
+            "metrics": episode.metrics,
+            "metadata": episode.metadata,
+            "timing": episode.info.get("timing", {}),
+            "trajectories": [],
+        }
 
         for traj in episode.trajectories:
             traj_data = {

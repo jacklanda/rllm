@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rllm"
-version = "0.2.1"
+version = "0.3.0.pre"
 description = "Reinforcement Learning for Language Agents"
 authors = [
     {name = "rLLM Team"}
@@ -18,72 +18,80 @@ classifiers = [
 ]
 license = {file = "LICENSE"}
 dependencies = [
+    "rllm-model-gateway",
+    # CLI
+    "click>=8.0",
+    "rich>=13.9.4",
+    "simple-term-menu>=1.6",
+    # Core
+    "pydantic",
+    "PyYAML",
+    "openai",
+    "tqdm",
+    "requests",
+    # Data
     # Core ML/AI packages
     "torch",
     "torchvision",
     "transformers>=4.57.3",
-
-    # Data processing
     "datasets>=2.20.0",
+    "pillow",
     "pandas",
     "polars",
-    "pillow",
+    "pyarrow",
+    "litellm[proxy]>=1.83.0",
+    "aiosqlite",
+    "hydra-core",
+    "codetiming",
+    "tinker ; python_version >= '3.11'",
+    "tinker-cookbook @ git+https://github.com/thinking-machines-lab/tinker-cookbook.git#egg=tinker-cookbook ; python_version >= '3.11'",
+]
 
-    # Infrastructure
-    "ray",
+[project.scripts]
+rllm = "rllm.cli.main:cli"
 
-    # Math and science
-    "numpy",
+[project.optional-dependencies]
+
+rewards = [
     "sympy",
     "pylatexenc",
     "antlr4-python3-runtime==4.9.3",
-
-    # Tools
-    "mcp",
-
-    # Integration with Eval Protocol
-    "eval-protocol",
-
-    # Utilities
-    "hydra-core",
-    "openai",
-    "fastapi",
-    "uvicorn",
-    "tqdm",
-    "PyYAML",
-    "pydantic",
-    "wrapt",
-    "asgiref>=3.7.0",
-    "wandb",
 ]
 
-[project.optional-dependencies]
+tools = [
+    "mcp",
+]
+
+eval-protocol = [
+    "eval-protocol",
+]
+
+all = [
+    "rllm[train,rewards,tools,eval-protocol]",
+]
+
+ui = [
+    "httpx>=0.26.0",
+    "python-multipart>=0.0.6",
+]
 
 dev = [
     "pytest",
     "pre-commit",
     "ruff",
     "mypy",
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.24.0",
-    "mkdocs-autorefs>=0.5.0",
-    "pymdown-extensions>=10.0.0",
 ]
 
 verl = [
     "verl==0.6.1",
+    "ray",
+    "numpy",
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "transformers>=4.57.3",
     "vllm==0.10.0",
     #"flash-attn==2.6.3",
     "qwen-vl-utils",
-]
-
-sdk = [
-    "litellm[proxy]",
-    "aiosqlite",
-    "asgiref",
 ]
 
 tinker = [
@@ -103,6 +111,11 @@ strands = [
     "strands-agents",
 ]
 
+langgraph = [
+    "langgraph>=0.2.0",
+    "langchain-openai>=0.2.0",
+]
+
 swe = [
     "docker",
     "kubernetes",
@@ -111,9 +124,12 @@ swe = [
 
 web = [
     "selenium",
-    "browsergym",
     "firecrawl",
     "gymnasium",
+]
+
+agentcore = [
+    "agentcore-rl-toolkit>=0.1.2",
 ]
 
 code-tools = [
@@ -121,10 +137,18 @@ code-tools = [
     "together>=1.4",
 ]
 
+harbor = [
+    "harbor==0.3.0 ; python_version >= '3.12'",
+]
+
+[tool.uv.sources]
+rllm-model-gateway = { path = "./rllm-model-gateway", editable = true }
+
 [tool.uv]
 override-dependencies = [
-    "litellm[proxy]>=1.80.0",
-    "rich>=13.9.4",
+    "litellm[proxy]==1.83.0",
+    "numpy>=1.26.0",
+    "rich>=14.1.0",
 ]
 
 [tool.uv.extra-build-dependencies]
@@ -133,7 +157,7 @@ flash-attn = [
 ]
 
 [tool.ruff]
-line-length = 5000 # TODO: Reduce this to a more reasonable value
+line-length = 200  # slightly conservative value, turn this on later.
 
 [tool.ruff.lint]
 isort = {known-first-party = ["rllm"], known-third-party = ["verl"]}
@@ -163,18 +187,37 @@ ignore = [
     # `.log()` statement uses f-string
     "G004",
     # equality check using x == True
-    "E712", 
+    "E712",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "rllm/rewards/code_utils/**" = ["ALL"]
+# Prompt / string-heavy files where long lines are intentional
+"rllm/agents/system_prompts.py" = ["E501"]
+"rllm/system_prompts.py" = ["E501"]
+"rllm/agents/code_agent.py" = ["E501"]
+"examples/archive/deepresearch/deepresearch_agent.py" = ["E501"]
+"examples/fully_async/deepresearch/refine_agent.py" = ["E501"]
+"examples/fully_async/deepresearch/search_agent.py" = ["E501"]
+"examples/countdown/prepare_countdown_data.py" = ["E501"]
+"examples/eval_protocol/prepare_frozen_lake_data.py" = ["E501"]
+"cookbooks/solver_judge_flow/solver_judge_flow.py" = ["E501"]
+"rllm/cli/main.py" = ["E501"]
+"rllm/eval/visualizer.py" = ["E501"]
+"rllm/experimental/rllm_telemetry/examples/experiment_comparison.py" = ["E501"]
+"rllm/experimental/test_examples/opsd/math_opsd_workflow.py" = ["E501"]
+"rllm/harnesses/tools/file_editor_tool.py" = ["E501"]
+"rllm/rewards/math_reward.py" = ["E501"]
+"tests/integration/test_agentcore_runtime.py" = ["E501"]
+"tests/integration/test_remote_engine.py" = ["E501"]
+"tests/rewards/test_code_reward.py" = ["E501"]
 
 [tool.setuptools.packages.find]
 where   = ["."]
 include = ["rllm", "rllm.*"]
 
 [tool.setuptools.package-data]
-rllm = ["trainer/config/*.yaml"]
+rllm = ["trainer/config/*.yaml", "registry/*.json", "experimental/config/**/*.yaml"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
