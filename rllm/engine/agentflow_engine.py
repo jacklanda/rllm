@@ -33,7 +33,7 @@ from tqdm import tqdm
 from rllm.eval.types import EvalOutput
 from rllm.experimental.engine.trace_converter import compute_step_metrics, trace_record_to_step
 from rllm.types import AgentConfig, Episode, Step, Task, Trajectory, run_agent_flow
-from rllm.utils import colorful_print
+from rllm.utils import colorful_print, format_progress_reward
 from rllm.workflows.workflow import TerminationReason
 
 if TYPE_CHECKING:
@@ -490,9 +490,9 @@ class AgentFlowEngine:
                     for traj in episode.trajectories:
                         reward = "N/A"
                         if traj.reward is not None:
-                            reward = f"{traj.reward:.1f}"
+                            reward = format_progress_reward(traj.reward)
                         elif len(traj.steps) > 0:
-                            reward = f"{traj.steps[-1].reward:.1f}"
+                            reward = format_progress_reward(traj.steps[-1].reward)
                         reward_strs.append(f"{traj.name}: {reward}")
 
                     timing_str = _format_timing_breakdown(episode.metrics)

@@ -241,28 +241,43 @@ class SearchAgent:
             content = response.get("content", "") or ""
             final_answer = extract_boxed_answer(content)
 
+        total_parse_tool_args_error = sum(m.get("parse_tool_args_error", 0) for m in metrics)
+        total_tool_return_error = sum(m.get("tool_return_error", 0) for m in metrics)
+        total_tool_calls = sum(m.get("tool_calls", 0) for m in metrics)
+        total_successful_tool_calls = max(total_tool_calls - total_parse_tool_args_error - total_tool_return_error, 0)
+
         # Aggregate metrics across all tool calls
         aggregated_metrics = {
             "num_turns": num_turns,
-            "total_parse_tool_args_error": sum(m.get("parse_tool_args_error", 0) for m in metrics),
-            "total_tool_return_error": sum(m.get("tool_return_error", 0) for m in metrics),
-            "total_tool_calls": sum(m.get("tool_calls", 0) for m in metrics),
+            "total_parse_tool_args_error": total_parse_tool_args_error,
+            "total_tool_return_error": total_tool_return_error,
+            "total_tool_calls": total_tool_calls,
             "total_tool_wait_time": sum(m.get("tool_wait_time", 0) for m in metrics),
             "total_refine_time": sum(m.get("refine_time", 0) for m in metrics),
-            "avg_refine_time": sum(m.get("refine_time", 0) for m in metrics) / max(sum(m.get("tool_calls", 0) for m in metrics), 1),
+            "avg_refine_time": sum(m.get("refine_time", 0) for m in metrics) / max(total_tool_calls, 1),
             "total_query_length": sum(m.get("query_length", 0) for m in metrics),
-            "avg_query_length": sum(m.get("query_length", 0) for m in metrics) / max(sum(m.get("tool_calls", 0) for m in metrics), 1),
+            "avg_query_length": sum(m.get("query_length", 0) for m in metrics) / max(total_tool_calls, 1),
             "total_generation_time": total_generation_time,
             "total_completion_tokens": total_completion_tokens,
             "total_tool_tokens": sum(m.get("tool_tokens", 0) for m in metrics),
             "avg_completion_tokens_per_turn": total_completion_tokens / max(num_turns, 1),
-            "avg_tool_tokens_per_call": sum(m.get("tool_tokens", 0) for m in metrics) / max(sum(m.get("tool_calls", 0) for m in metrics), 1),
+            "avg_tool_tokens_per_call": sum(m.get("tool_tokens", 0) for m in metrics) / max(total_tool_calls, 1),
             "duplicate_search_detected": duplicate_search_detected,
             "excessive_parallel_calls": excessive_parallel_calls,
             "tool_error_detected": tool_error_detected,
             "refine_error_detected": refine_error_detected,
             "overlong": overlong,
             "merged_step": len(trajectory.merge()),
+            "tool_call_counts": len(metrics),
+            "all_call_tool_counts": total_tool_calls,
+            "all_call_tool_success_counts": total_successful_tool_calls,
+            "searched_query_count": int(duplicate_search_detected),
+            "too_many_tool_call_count": int(excessive_parallel_calls),
+            "tool_parser_error_count": total_parse_tool_args_error,
+            "too_many_turn_count": 0,
+            "too_long_seq_truncated_count": int(overlong),
+            "response_truncated_count": 0,
+            "duplicate_search_result_count": 0,
         }
 
         if OVERLONG_FILTER and overlong:

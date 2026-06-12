@@ -5,6 +5,7 @@ import pytest
 
 import rllm
 from rllm.utils.logging import configure_logging_from_env, get_log_level_from_env
+from rllm.utils.tracking import _suppress_http_client_info_logs
 
 
 @pytest.fixture(autouse=True)
@@ -72,3 +73,21 @@ def test_import_configures_rllm_logger_from_env(monkeypatch):
     importlib.reload(rllm)
 
     assert logger.level == logging.CRITICAL
+
+
+def test_suppress_http_client_info_logs():
+    httpx_logger = logging.getLogger("httpx")
+    httpcore_logger = logging.getLogger("httpcore")
+    httpx_level = httpx_logger.level
+    httpcore_level = httpcore_logger.level
+    try:
+        httpx_logger.setLevel(logging.INFO)
+        httpcore_logger.setLevel(logging.INFO)
+
+        _suppress_http_client_info_logs()
+
+        assert httpx_logger.level == logging.WARNING
+        assert httpcore_logger.level == logging.WARNING
+    finally:
+        httpx_logger.setLevel(httpx_level)
+        httpcore_logger.setLevel(httpcore_level)

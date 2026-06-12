@@ -9,6 +9,10 @@ defaults:
   - ppo_megatron_trainer  # Load base ppo_megatron_trainer which has proper megatron configs
   - _self_
 
+ray_init:
+  address: null
+  timeline_json_file: null
+
 actor_rollout_ref:
   rollout:
     mode: async # only async is supported
@@ -16,12 +20,12 @@ actor_rollout_ref:
       num_workers: 0 # we bypass the agent loop
     val_kwargs:
       do_sample: True # if do_sample is False, temperature is overridden to 0.0
-      #max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
 
 data:
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}
 
 rllm:
+  max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
   agent:
     name: math_agent
     max_steps: 20

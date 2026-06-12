@@ -36,6 +36,31 @@ except ImportError:
     ETEnv = None
 
 
+_ANSWER_SCHEMA_MARKERS = (
+    "answer submission format requirement",
+    "answer format requirement",
+    "submission format requirement",
+)
+
+_EVIDENCE_STOPWORDS = {
+    "and",
+    "are",
+    "but",
+    "for",
+    "from",
+    "has",
+    "have",
+    "into",
+    "not",
+    "that",
+    "the",
+    "their",
+    "this",
+    "with",
+    "within",
+}
+
+
 def _is_et_entry(entry: dict) -> bool:
     """Heuristic detector for Endless Terminals rows.
 
@@ -51,6 +76,268 @@ def _is_et_entry(entry: dict) -> bool:
     if entry.get("docker_image") and entry.get("final_state_test") and entry.get("instruction") and not entry.get("repo_name") and not entry.get("commit_hash"):
         return True
     return False
+
+
+def _extract_balanced_json(text: str, start_idx: int = 0) -> object | None:
+    """Return the first balanced JSON object/array in ``text`` after ``start_idx``."""
+    if not isinstance(text, str) or not text:
+        return None
+    opener_idx = -1
+    for i in range(max(0, start_idx), len(text)):
+        if text[i] in "{[":
+            opener_idx = i
+            break
+    if opener_idx < 0:
+        return None
+
+    stack: list[str] = []
+    in_string = False
+    escaped = False
+    pairs = {"{": "}", "[": "]"}
+    for i in range(opener_idx, len(text)):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+            continue
+        if ch in pairs:
+            stack.append(pairs[ch])
+            continue
+        if ch in "}]":
+            if not stack or ch != stack[-1]:
+                return None
+            stack.pop()
+            if not stack:
+                candidate = text[opener_idx : i + 1]
+                try:
+                    return json.loads(candidate)
+                except (json.JSONDecodeError, ValueError):
+                    return None
+    return None
+
+
+def _extract_answer_schema(question: str) -> dict | None:
+    """Extract the task's answer JSON schema from the prompt when present."""
+    if not isinstance(question, str) or not question:
+        return None
+    low = question.lower()
+    marker_idx = -1
+    for marker in _ANSWER_SCHEMA_MARKERS:
+        marker_idx = low.find(marker)
+        if marker_idx >= 0:
+            break
+    parsed = _extract_balanced_json(question, marker_idx if marker_idx >= 0 else 0)
+    return parsed if isinstance(parsed, dict) and isinstance(parsed.get("type"), str) else None
+
+
+def _json_type_name(value: object) -> str:
+    if isinstance(value, dict):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return "number"
+    if value is None:
+        return "null"
+    return type(value).__name__
+
+
+def _schema_expected_types(schema: dict) -> set[str]:
+    expected = schema.get("type")
+    if isinstance(expected, str):
+        return {expected}
+    if isinstance(expected, list):
+        return {x for x in expected if isinstance(x, str)}
+    return set()
+
+
+def _validate_submission_schema(payload: object, schema: dict | None, *, max_errors: int = 8) -> dict:
+    """Lightweight local submit self-check for top-level type/required/non-empty.
+
+    This intentionally implements a small JSON-Schema subset. The task verifier
+    remains authoritative; this pre-check catches the common submit-contract
+    errors early enough for the policy to repair them within the rollout.
+    """
+    if not schema:
+        return {"passed": True, "errors": [], "schema_found": False}
+
+    errors: list[str] = []
+
+    def add(message: str) -> None:
+        if len(errors) < max_errors:
+            errors.append(message)
+
+    def validate_node(value: object, node_schema: dict, path: str) -> None:
+        if len(errors) >= max_errors or not isinstance(node_schema, dict):
+            return
+
+        expected = _schema_expected_types(node_schema)
+        actual = _json_type_name(value)
+        if expected and actual not in expected:
+            add(f"{path}: expected {sorted(expected)}, got {actual}")
+            return
+
+        if isinstance(value, dict):
+            if path == "$" and not value:
+                add("$: object submission must not be empty")
+            required = node_schema.get("required", [])
+            properties = node_schema.get("properties", {})
+            if not isinstance(required, list):
+                required = []
+            if not isinstance(properties, dict):
+                properties = {}
+            for key in required:
+                if not isinstance(key, str):
+                    continue
+                child_path = f"{path}.{key}" if path != "$" else f"$.{key}"
+                if key not in value:
+                    add(f"{child_path}: missing required key")
+                    continue
+                child = value[key]
+                if child == [] or child == {}:
+                    add(f"{child_path}: required value must not be empty")
+                validate_node(child, properties.get(key, {}), child_path)
+        elif isinstance(value, list):
+            if not value:
+                add(f"{path}: array submission must not be empty")
+                return
+            item_schema = node_schema.get("items")
+            if isinstance(item_schema, dict):
+                for idx, item in enumerate(value[:20]):
+                    validate_node(item, item_schema, f"{path}[{idx}]")
+
+    validate_node(payload, schema, "$")
+    return {"passed": not errors, "errors": errors, "schema_found": True}
+
+
+def _submission_self_check_observation(check: dict) -> str:
+    errors = check.get("errors") or []
+    details = "\n".join(f"- {err}" for err in errors)
+    return (
+        "Schema self-check failed; your answer was not submitted.\n"
+        "Fix the JSON value and submit again. Minimum checks: top-level type, "
+        "required keys, and non-empty required arrays/objects.\n"
+        f"{details}"
+    ).strip()
+
+
+def _tokenize_for_evidence(text: object) -> set[str]:
+    raw = str(text or "").lower()
+    tokens = set(re.findall(r"[a-z0-9][a-z0-9_-]{2,}", raw))
+    return {t for t in tokens if t not in _EVIDENCE_STOPWORDS}
+
+
+def _flatten_answer_fields(value: object, path: str = "$", *, limit: int = 80) -> list[dict]:
+    fields: list[dict] = []
+
+    def walk(node: object, node_path: str) -> None:
+        if len(fields) >= limit:
+            return
+        if isinstance(node, dict):
+            for key, child in node.items():
+                child_path = f"{node_path}.{key}" if node_path != "$" else f"$.{key}"
+                walk(child, child_path)
+        elif isinstance(node, list):
+            if all(not isinstance(x, (dict, list)) for x in node):
+                fields.append({"path": node_path, "value": node})
+                return
+            for idx, child in enumerate(node[:20]):
+                walk(child, f"{node_path}[{idx}]")
+        elif node not in (None, ""):
+            fields.append({"path": node_path, "value": node})
+
+    walk(value, path)
+    return fields
+
+
+def _extract_source_heading(output: str) -> str:
+    patterns = (
+        r'"heading"\s*:\s*"([^"]+)"',
+        r'"title"\s*:\s*"([^"]+)"',
+        r"^heading\s*:\s*(.+)$",
+        r"^title\s*:\s*(.+)$",
+    )
+    for pattern in patterns:
+        m = re.search(pattern, output or "", flags=re.IGNORECASE | re.MULTILINE)
+        if m:
+            return m.group(1).strip()[:160]
+    return ""
+
+
+def _evidence_snippet(output: str, value: object, tokens: set[str], *, max_chars: int = 320) -> str:
+    output = output or ""
+    value_text = " ".join(str(v) for v in value) if isinstance(value, list) else str(value or "")
+    value_text = value_text.strip()
+    low_output = output.lower()
+    if len(value_text) >= 8:
+        idx = low_output.find(value_text.lower()[:120])
+        if idx >= 0:
+            start = max(0, idx - max_chars // 3)
+            return output[start : start + max_chars].strip()
+    best_line = ""
+    best_overlap = 0
+    for line in output.splitlines():
+        overlap = len(tokens & _tokenize_for_evidence(line))
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_line = line
+    return best_line.strip()[:max_chars]
+
+
+def _build_evidence_to_field_trace(answer: object, tool_evidence: list[dict], *, max_fields: int = 40) -> dict:
+    """Map submitted answer fields to the strongest matching tool output."""
+    fields = _flatten_answer_fields(answer, limit=max_fields)
+    mappings: list[dict] = []
+    missing = 0
+    for field in fields:
+        tokens = _tokenize_for_evidence(field["value"])
+        if not tokens:
+            continue
+        best: tuple[float, dict | None] = (0.0, None)
+        for evidence in tool_evidence:
+            output = evidence.get("output", "")
+            evidence_tokens = _tokenize_for_evidence(output)
+            if not evidence_tokens:
+                continue
+            score = len(tokens & evidence_tokens) / max(1, len(tokens))
+            if score > best[0]:
+                best = (score, evidence)
+        score, evidence = best
+        if evidence is None or score <= 0.0:
+            missing += 1
+            mappings.append({"path": field["path"], "value_preview": str(field["value"])[:160], "matched": False, "score": 0.0})
+            continue
+        output = evidence.get("output", "")
+        mappings.append(
+            {
+                "path": field["path"],
+                "value_preview": str(field["value"])[:160],
+                "matched": score >= 0.35,
+                "score": round(float(score), 4),
+                "source_tool": evidence.get("tool", ""),
+                "source_heading": _extract_source_heading(output),
+                "snippet": _evidence_snippet(output, field["value"], tokens),
+            }
+        )
+        if score < 0.35:
+            missing += 1
+    return {
+        "field_count": len(fields),
+        "mapped_count": sum(1 for m in mappings if m.get("matched")),
+        "missing_or_weak_count": missing,
+        "mappings": mappings,
+    }
 
 
 class FusedEnv(CLIEnv):
@@ -83,15 +370,45 @@ class FusedEnv(CLIEnv):
     _shared_retrieval_tool = None
     _retrieval_lock = threading.Lock()
 
+    # Refcounted pool of MCP connection managers keyed by tools_py path.
+    # A GRPO batch runs ``rollout_n`` (here 8) rollouts of the SAME task
+    # concurrently, all pointing at the same ``tools.py`` — and the MCP tools
+    # are read-only file queries with no server-side mutable state. Without
+    # pooling, each rollout spawned its own MCP subprocess (1024 servers for a
+    # 128x8 batch), and the serialized ~1s startup left every GPU idle for
+    # >10 min before the first token. Pooling collapses that to one server per
+    # distinct tools_py (<=128), refcounted so the server is stopped only when
+    # the last rollout sharing it closes.
+    _mcp_pool: dict[str, "MCPConnectionManager"] = {}
+    _mcp_pool_refcount: dict[str, int] = {}
+    _mcp_pool_lock = threading.Lock()
+    _mcp_pool_failure_logged: set[str] = set()
+    # Per-key "a start is in flight" event. The first rollout for a tools_py
+    # registers an Event under the lock and starts the server; concurrent
+    # same-task rollouts (e.g. the other rollout_n-1 of step 1's burst) find
+    # the event and wait on it instead of each spawning their own server only
+    # to lose the race and stop it. This collapses step-1 server starts from
+    # train_batch_size*rollout_n (1024) down to distinct-tools_py (<=128).
+    _mcp_pool_starting: dict[str, "threading.Event"] = {}
+    # Max seconds a same-task rollout waits on an in-flight server start before
+    # giving up and starting its own.  <=0 means wait until the designated
+    # starter succeeds/fails.  That is the fused-training default: with an
+    # active-server cap, the starter may legitimately queue for a slot, and
+    # timing out here would multiply duplicate starts for the same tools.py.
+    _MCP_START_WAIT_TIMEOUT = float(os.environ.get("RLLM_MCP_START_WAIT_TIMEOUT", "0"))
+
     def __init__(
         self,
         retrieval_server_url: str | None = None,
         retrieval_max_results: int = 3,
+        harness: str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.retrieval_server_url = retrieval_server_url or os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:65432")
         self.retrieval_max_results = retrieval_max_results
+        self.harness = str(harness or self.entry.get("harness") or "").strip().lower().replace("-", "_")
+        self._record_parser_unknown_metrics = self.harness not in {"cot", "bare"}
 
         # Detect task mode: ET (checked before CLI since ET rows also carry a
         # docker_image), CLI, MCP, or Web Search.
@@ -99,10 +416,13 @@ class FusedEnv(CLIEnv):
 
         # Web search mode state
         self._search_answer = ""  # Agent's submitted answer for reward computation
+        self._search_answer_is_verbatim_submission = True
+        self._search_last_raw_action = ""
         self._search_reward_debug = {}
 
         # MCP mode state
         self._mcp_connection_manager: "MCPConnectionManager | None" = None
+        self._mcp_pool_key: str | None = None  # tools_py key into FusedEnv._mcp_pool, if pooled
         self._mcp_tool_schemas: list[dict] = []
         self._mcp_answer = ""
         self._mcp_reward_debug: dict = {}
@@ -110,6 +430,10 @@ class FusedEnv(CLIEnv):
         self._mcp_consecutive_unknown = 0
         self._mcp_unknown_total = 0
         self._mcp_distinct_tools: set[str] = set()
+        self._mcp_answer_schema: dict | None = None
+        self._mcp_schema_self_check_failures = 0
+        self._mcp_last_schema_self_check: dict = {}
+        self._mcp_tool_evidence: list[dict] = []
 
         # ET mode state — built lazily in _reset_et so failures during ETEnv
         # construction surface in reset() (which the engine wraps in retry
@@ -118,6 +442,16 @@ class FusedEnv(CLIEnv):
         self._et_reward_debug: dict = {}
         self._et_consecutive_unknown = 0
         self._et_unknown_total = 0
+
+    def _parser_unknown_metadata(self, consecutive_unknown: int | None = None, unknown_total: int | None = None) -> dict:
+        if not self._record_parser_unknown_metrics:
+            return {}
+        meta = {}
+        if consecutive_unknown is not None:
+            meta["parser/consecutive_unknown"] = consecutive_unknown
+        if unknown_total is not None:
+            meta["parser/unknown_total"] = unknown_total
+        return meta
 
     def _get_retrieval_tool(self):
         """Return the class-level shared retrieval tool (lazy-initialized, thread-safe)."""
@@ -181,6 +515,8 @@ class FusedEnv(CLIEnv):
         """Reset for web-search-mode tasks (no Docker)."""
         self.total_steps = 0
         self._search_answer = ""
+        self._search_answer_is_verbatim_submission = True
+        self._search_last_raw_action = ""
         self._search_reward_debug = {}
         # Fix #2/#5: per-rollout parser-health + bypass counters.
         self._search_web_search_calls = 0
@@ -205,6 +541,123 @@ class FusedEnv(CLIEnv):
         info["task_type"] = "cli"
         return obs, info
 
+    @classmethod
+    def _acquire_mcp_manager(cls, pool_key: str, mcp_server_command: str, mcp_server_args: list[str]) -> "MCPConnectionManager":
+        """Return a shared, started MCPConnectionManager for ``pool_key``.
+
+        Reuses an existing manager (incrementing its refcount) when one is
+        already running for this tools_py; otherwise starts a new one. The
+        manager is started OUTSIDE the pool lock so concurrent first-time
+        starts for *different* tasks proceed in parallel (the ~1s handshake is
+        no longer serialized by ``_spawn_lock`` either). Same-task racers wait
+        on a per-key start Event rather than each spawning their own server.
+        """
+        # Decide our role under the lock: reuse a live manager, wait for an
+        # in-flight start, or become the starter ourselves.
+        while True:
+            with cls._mcp_pool_lock:
+                manager = cls._mcp_pool.get(pool_key)
+                if manager is not None and getattr(manager, "running", False):
+                    cls._mcp_pool_refcount[pool_key] = cls._mcp_pool_refcount.get(pool_key, 0) + 1
+                    return manager
+                starting = cls._mcp_pool_starting.get(pool_key)
+                if starting is None:
+                    # We are the first: register intent and start below.
+                    starting = threading.Event()
+                    cls._mcp_pool_starting[pool_key] = starting
+                    is_starter = True
+                else:
+                    is_starter = False
+
+            if is_starter:
+                break
+            # Another rollout is starting this server; wait for it, then retry
+            # the fast path (it will either be pooled-and-live or failed).  By
+            # default we wait indefinitely because the designated starter may be
+            # queued behind RLLM_MCP_MAX_ACTIVE_SERVERS; spawning duplicate
+            # same-task servers under load recreates the step-1 burst failures.
+            timeout = cls._MCP_START_WAIT_TIMEOUT if cls._MCP_START_WAIT_TIMEOUT > 0 else None
+            completed = starting.wait(timeout=timeout)
+            with cls._mcp_pool_lock:
+                manager = cls._mcp_pool.get(pool_key)
+                if manager is not None and getattr(manager, "running", False):
+                    cls._mcp_pool_refcount[pool_key] = cls._mcp_pool_refcount.get(pool_key, 0) + 1
+                    return manager
+                # Start failed and the starter cleared its event: loop again —
+                # we may now become the starter.
+                if cls._mcp_pool_starting.get(pool_key) is None:
+                    continue
+                # Optional legacy escape hatch for a truly wedged starter.  The
+                # training script leaves this disabled; users can set a positive
+                # RLLM_MCP_START_WAIT_TIMEOUT if they prefer duplicate fallback.
+                if not completed and cls._MCP_START_WAIT_TIMEOUT > 0 and cls._mcp_pool_starting.get(pool_key) is starting:
+                    cls._mcp_pool_starting[pool_key] = threading.Event()
+                    starting = cls._mcp_pool_starting[pool_key]
+                    is_starter = True
+                    break
+
+        # We are the designated starter: start a fresh manager without holding
+        # the pool lock so different-task starts run concurrently.
+        new_manager = None
+        try:
+            new_manager = MCPConnectionManager(mcp_server_command, mcp_server_args)
+            new_manager.start()
+        except Exception:
+            # Starting failed: clear our intent and wake waiters so one of
+            # them can retry, then propagate.
+            with cls._mcp_pool_lock:
+                if cls._mcp_pool_starting.get(pool_key) is starting:
+                    cls._mcp_pool_starting.pop(pool_key, None)
+            starting.set()
+            if new_manager is not None:
+                try:
+                    new_manager.stop()
+                except Exception:
+                    pass
+            raise
+
+        with cls._mcp_pool_lock:
+            existing = cls._mcp_pool.get(pool_key)
+            if existing is not None and getattr(existing, "running", False):
+                # Lost a race (independent starter after a wait timeout):
+                # keep theirs, drop ours (stop outside the lock below).
+                cls._mcp_pool_refcount[pool_key] = cls._mcp_pool_refcount.get(pool_key, 0) + 1
+                loser = new_manager
+                manager = existing
+            else:
+                cls._mcp_pool[pool_key] = new_manager
+                cls._mcp_pool_refcount[pool_key] = 1
+                loser = None
+                manager = new_manager
+            if cls._mcp_pool_starting.get(pool_key) is starting:
+                cls._mcp_pool_starting.pop(pool_key, None)
+        starting.set()
+
+        if loser is not None:
+            try:
+                loser.stop()
+            except Exception:
+                pass
+        return manager
+
+    @classmethod
+    def _release_mcp_manager(cls, pool_key: str) -> None:
+        """Decrement the refcount for ``pool_key`` and stop the manager when it
+        reaches zero (last rollout sharing this tools_py has closed)."""
+        manager_to_stop = None
+        with cls._mcp_pool_lock:
+            count = cls._mcp_pool_refcount.get(pool_key, 0) - 1
+            if count <= 0:
+                cls._mcp_pool_refcount.pop(pool_key, None)
+                manager_to_stop = cls._mcp_pool.pop(pool_key, None)
+            else:
+                cls._mcp_pool_refcount[pool_key] = count
+        if manager_to_stop is not None:
+            try:
+                manager_to_stop.stop()
+            except Exception:
+                pass
+
     def _reset_mcp(self) -> tuple[str, dict]:
         """Reset for MCP-mode tasks (tool-based tasks via MCP server)."""
         self.total_steps = 0
@@ -214,6 +667,24 @@ class FusedEnv(CLIEnv):
         self._mcp_consecutive_unknown = 0
         self._mcp_unknown_total = 0
         self._mcp_distinct_tools: set[str] = set()
+        question = self.entry.get("question", self.entry.get("problem_statement", ""))
+        self._mcp_answer_schema = _extract_answer_schema(question)
+        self._mcp_schema_self_check_failures = 0
+        self._mcp_last_schema_self_check = {}
+        self._mcp_tool_evidence = []
+
+        # Release any manager held from a prior reset on this instance so the
+        # pool refcount stays balanced (reset() only auto-closes on task change).
+        if self._mcp_connection_manager is not None:
+            if self._mcp_pool_key is not None:
+                self._release_mcp_manager(self._mcp_pool_key)
+            else:
+                try:
+                    self._mcp_connection_manager.stop()
+                except Exception:
+                    pass
+            self._mcp_connection_manager = None
+            self._mcp_pool_key = None
 
         # Resolve tools_py path
         tools_py = self.entry.get("tools_py", "")
@@ -237,8 +708,13 @@ class FusedEnv(CLIEnv):
                     server_script = MCPEnvironment._ensure_server_script(tools_path.parent)
                     mcp_server_command = sys.executable
                     mcp_server_args = [str(server_script)]
-                    self._mcp_connection_manager = MCPConnectionManager(mcp_server_command, mcp_server_args)
-                    self._mcp_connection_manager.start()
+                    # Share one MCP server across all rollouts of this task
+                    # (same tools_py) via a refcounted pool. The tools are
+                    # read-only file queries, so a shared server is safe and
+                    # avoids spawning rollout_n identical subprocesses.
+                    pool_key = str(server_script)
+                    self._mcp_connection_manager = self._acquire_mcp_manager(pool_key, mcp_server_command, mcp_server_args)
+                    self._mcp_pool_key = pool_key
                     # Extract tool schemas from discovered tools (deduplicate by name)
                     seen = set()
                     self._mcp_tool_schemas = []
@@ -252,13 +728,23 @@ class FusedEnv(CLIEnv):
                     logger.error("tools_py not found: %s", tools_py_abs)
                     self._mcp_tool_schemas = []
             except Exception as e:
-                logger.error("Failed to start MCP server for %s: %s", tools_py_abs, e)
+                log_error = True
+                try:
+                    pool_key = str(MCPEnvironment._ensure_server_script(Path(tools_py_abs).parent))
+                    with FusedEnv._mcp_pool_lock:
+                        if pool_key in FusedEnv._mcp_pool_failure_logged:
+                            log_error = False
+                        else:
+                            FusedEnv._mcp_pool_failure_logged.add(pool_key)
+                except Exception:
+                    pass
+                if log_error:
+                    logger.error("Failed to start MCP server for %s: %s", tools_py_abs, e)
                 self._mcp_tool_schemas = []
         else:
             logger.warning("MCP dependencies not available — MCP task will have no tools")
             self._mcp_tool_schemas = []
 
-        question = self.entry.get("question", self.entry.get("problem_statement", ""))
         return question, {
             "task_type": "mcp",
             "tools_json": self._mcp_tool_schemas,
@@ -356,19 +842,42 @@ class FusedEnv(CLIEnv):
     # 488,222 characters of pure token repetition (e.g. ``"Jennifer"`` × 10k)
     # yet terminated normally with reward 0. With no truncation, no
     # repetition check, and no abnormal-termination flag, the signal was
-    # invisible to training. The thresholds below are generous (32k chars,
-    # 100 consecutive repeats of the same whitespace-separated token) and
-    # intentionally conservative so normal long answers are never flagged.
-    _MAX_TURN_CHARS = 32_000
+    # invisible to training.
+    #
+    # The char threshold is deliberately set ABOVE the per-step token soft cap
+    # (rllm.agent.per_step_max_tokens) expressed in chars, so a normal long
+    # turn that merely hits the soft cap is NOT misflagged as runaway purely
+    # for length — only genuine repetition (the 100-consecutive-token signal,
+    # which fires regardless of length) terminates such a turn. At ~3.5
+    # chars/token a 16k-token cap is ~56k chars, so 64k keeps a safety margin.
+    _MAX_TURN_CHARS = 64_000
     _MAX_CONSECUTIVE_TOKEN_REPEATS = 100
+    _MAX_REPEATED_NGRAM_TOKENS = 40
+    _RUNAWAY_SYMBOL_RE = re.compile(r"([{}<>\[\]()/])\1{80,}")
+    _RUNAWAY_PHRASES = (
+        "the tool call is a function",
+        "the tool response is a",
+        "valid json schema",
+        "the user message is",
+        "the user is a person",
+    )
 
     @classmethod
     def _detect_runaway(cls, raw: str) -> tuple[bool, str]:
         """Return (is_runaway, reason) for pathological assistant output."""
         if not raw:
             return False, ""
+        raw = str(raw)
         if len(raw) > cls._MAX_TURN_CHARS:
             return True, f"assistant turn exceeded {cls._MAX_TURN_CHARS} chars (got {len(raw)})"
+        lowered = raw.lower()
+        for phrase in cls._RUNAWAY_PHRASES:
+            count = lowered.count(phrase)
+            if count >= 8:
+                return True, f"phrase {phrase!r} repeated {count} times"
+        symbol_match = cls._RUNAWAY_SYMBOL_RE.search(raw)
+        if symbol_match:
+            return True, f"symbol {symbol_match.group(1)!r} repeated excessively"
         tokens = raw.split()
         if len(tokens) >= cls._MAX_CONSECUTIVE_TOKEN_REPEATS:
             run, prev = 1, None
@@ -379,6 +888,24 @@ class FusedEnv(CLIEnv):
                         return True, f"same token {tok!r} repeated {run}× consecutively"
                 else:
                     run, prev = 1, tok
+        lowered_tokens = [tok.lower() for tok in tokens]
+        for n in (3, 4, 5, 8, 12, 16):
+            min_runs = 10 if n <= 4 else 6
+            if len(lowered_tokens) < n * min_runs:
+                continue
+            for offset in range(n):
+                run = 1
+                prev_ngram = None
+                for i in range(offset, len(lowered_tokens) - n + 1, n):
+                    ngram = tuple(lowered_tokens[i : i + n])
+                    if ngram == prev_ngram:
+                        run += 1
+                        if run >= min_runs and run * n >= cls._MAX_REPEATED_NGRAM_TOKENS:
+                            preview = " ".join(ngram[:8])
+                            return True, f"{n}-gram loop repeated {run} times: {preview!r}"
+                    else:
+                        run = 1
+                        prev_ngram = ngram
         return False, ""
 
     def step(self, action):
@@ -386,8 +913,26 @@ class FusedEnv(CLIEnv):
         if not raw_text and isinstance(action, list) and action:
             first = action[0]
             raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+        if not raw_text and action is not None:
+            raw_text = getattr(action, "action", "") or getattr(action, "model_response", "")
+        if raw_text and not isinstance(raw_text, str):
+            raw_text = str(raw_text)
         bad, reason = self._detect_runaway(raw_text)
-        if bad:
+        # The runaway guard exists to abort pathological multi-turn generation
+        # (e.g. a 488k-char ``"Jennifer" x thousands`` loop) before it wastes
+        # decode budget. For prompt-only harnesses (cot/bare) the *entire* turn
+        # is the answer and is already fully generated by the time we see it:
+        # thinking-mode COT legitimately runs 64k-220k chars, so the length
+        # check (``_MAX_TURN_CHARS``) is a false positive that discards a valid
+        # final answer with reward 0 before ``_step_search`` can extract it.
+        # This is the dominant rollout-time false negative on GPQA/cot — every
+        # >64k-char response was being zeroed even though ``\boxed{...}`` /
+        # ``<answer>X</answer>`` sat at the end. Skip the hard runaway
+        # termination for cot/bare and let normal extraction score the turn;
+        # genuinely degenerate output simply yields no extractable answer (and
+        # still incurs the repetition/length penalties), so it scores ~0 anyway
+        # — matching what the post-hoc ``merge_eval_json`` rescore recovers.
+        if bad and self.harness not in {"cot", "bare"}:
             self.total_steps += 1
             info = {
                 "termination_reason": "TRUNCATION",
@@ -469,8 +1014,7 @@ class FusedEnv(CLIEnv):
                     if self._et_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
                         info = {
                             "termination_reason": "ABNORMAL_PARSE_ERROR",
-                            "parser/consecutive_unknown": self._et_consecutive_unknown,
-                            "parser/unknown_total": self._et_unknown_total,
+                            **self._parser_unknown_metadata(self._et_consecutive_unknown, self._et_unknown_total),
                         }
                         return (
                             "Error: could not parse any actions; terminating rollout.",
@@ -499,21 +1043,30 @@ class FusedEnv(CLIEnv):
     _MAX_CONSECUTIVE_UNKNOWN = 3
 
     @staticmethod
-    def _extract_boxed_from_raw(raw: str) -> str | None:
-        """Regex-rescue a ``\\boxed{…}`` payload from a raw assistant turn.
-
-        Used when the tool-call parser cannot recover a tool name — in the
-        eval dump the 64-step MAX_STEPS trajectory was exactly this loop:
-        the model answered ``\\boxed{B}`` as free text and the env replied
-        ``Error: The tool '' is not available`` 62 turns in a row.
-        """
+    def _answer_marker_search_text(raw: str) -> str:
         if not raw:
-            return None
+            return ""
+        think_end = raw.rfind("</think>")
+        if think_end == -1:
+            return raw
+        post_think = raw[think_end + len("</think>") :].strip()
+        if not post_think:
+            return raw
+        if re.search(r"<answer\b|(?:\\boxed|boxed|oxed|\x08oxed)\{", post_think, flags=re.IGNORECASE):
+            return post_think
+        return raw
+
+    @classmethod
+    def _extract_boxed_span_from_raw(cls, raw: str) -> tuple[int, str] | None:
+        raw = cls._answer_marker_search_text(raw)
+        matches: list[tuple[int, int]] = []
         for tok in ("\\boxed{", "boxed{", "oxed{", "\x08oxed{"):
-            i = raw.find(tok)
-            if i < 0:
-                continue
-            i += len(tok)
+            start = raw.find(tok)
+            while start != -1:
+                matches.append((start, len(tok)))
+                start = raw.find(tok, start + 1)
+        for start, tok_len in sorted(matches, reverse=True):
+            i = start + tok_len
             depth = 1
             j = i
             while depth and j < len(raw):
@@ -523,8 +1076,62 @@ class FusedEnv(CLIEnv):
                     depth -= 1
                 j += 1
             if depth == 0:
-                return raw[i : j - 1]
+                return start, raw[i : j - 1]
         return None
+
+    @classmethod
+    def _extract_boxed_from_raw(cls, raw: str) -> str | None:
+        """Rescue the final ``\\boxed{…}`` payload from a raw assistant turn.
+
+        Prefer text after the last ``</think>`` when present, and take the last
+        balanced boxed span. If nothing follows ``</think>``, search the full
+        turn so Qwen-style outputs that keep the final answer inside the think
+        block still score correctly.
+        """
+        if not raw:
+            return None
+        span = cls._extract_boxed_span_from_raw(raw)
+        return span[1] if span is not None else None
+
+    @classmethod
+    def _extract_answer_tag_span_from_raw(cls, raw: str) -> tuple[int, str] | None:
+        if not raw:
+            return None
+        raw = cls._answer_marker_search_text(raw)
+        matches = list(re.finditer(r"<answer>\s*((?:(?!<answer>).)*?)\s*</answer>", raw, flags=re.DOTALL | re.IGNORECASE))
+        if not matches:
+            return None
+        match = matches[-1]
+        return match.start(), match.group(1).strip()
+
+    @classmethod
+    def _extract_answer_tag_from_raw(cls, raw: str) -> str | None:
+        """Rescue the final <answer>...</answer> payload from prompt-only turns."""
+        span = cls._extract_answer_tag_span_from_raw(raw)
+        return span[1] if span is not None else None
+
+    @classmethod
+    def _extract_final_answer_marker_from_raw(cls, raw: str) -> str | None:
+        box_span = cls._extract_boxed_span_from_raw(raw)
+        ans_span = cls._extract_answer_tag_span_from_raw(raw)
+        candidates = [span for span in (box_span, ans_span) if span is not None and not cls._is_placeholder_answer_marker(span[1])]
+        if not candidates:
+            return None
+        # A bare-letter ``<answer>LETTER</answer>`` is the MCQ final-answer line
+        # mandated by the cot/bare prompt and is authoritative over a trailing
+        # ``\boxed{value}`` artifact (e.g. ``<answer>D</answer>\n\boxed{33.4}``).
+        if ans_span is not None and re.fullmatch(r"\(?\s*[A-Fa-f]\s*\)?", ans_span[1].strip()):
+            return ans_span[1].strip().strip("()").strip().upper()
+        return max(candidates, key=lambda item: item[0])[1].strip()
+
+    @staticmethod
+    def _is_placeholder_answer_marker(value: str) -> bool:
+        normalized = re.sub(r"[\W_]+", "", str(value or "")).lower()
+        return normalized in {"", "answer", "finalanswer", "letter", "option", "choice"}
+
+    @staticmethod
+    def _has_tool_call_markup(raw: str) -> bool:
+        return bool(re.search(r"<\s*/?\s*(?:tool_call|function_call)\b|<function=", raw or ""))
 
     def _step_search(self, action):
         """Web-search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
@@ -539,8 +1146,26 @@ class FusedEnv(CLIEnv):
         if not raw_text and isinstance(action, list) and action:
             first = action[0]
             raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+        if not raw_text and action is not None:
+            raw_text = getattr(action, "action", "") or getattr(action, "model_response", "")
+        if raw_text and raw_text.strip():
+            self._search_last_raw_action = raw_text.strip()
+
+        if self.harness in {"cot", "bare"} and raw_text and raw_text.strip() and not self._has_tool_call_markup(raw_text):
+            final_marker = self._extract_final_answer_marker_from_raw(raw_text)
+            if final_marker is not None:
+                self._search_answer = final_marker.strip()
+                self._search_answer_is_verbatim_submission = True
+            else:
+                self._search_answer = raw_text.strip()
+                self._search_answer_is_verbatim_submission = False
+            self.total_steps += 1
+            self._search_consecutive_unknown = 0
+            return "Your answer has been submitted.", 0.0, True, {}
 
         action_objs = self._unwrap_actions(action)
+        if raw_text and action_objs and all(not getattr(obj, "function_name", "") for obj in action_objs):
+            action_objs = []
         if not action_objs:
             # Last-resort: try QwenToolParser directly on the raw string
             if raw_text:
@@ -552,9 +1177,15 @@ class FusedEnv(CLIEnv):
                     action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
             if not action_objs:
                 # Parser exhausted: try \boxed{...} as implicit finish.
-                boxed = self._extract_boxed_from_raw(raw_text)
-                if boxed is not None:
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": boxed})]
+                final_marker = self._extract_final_answer_marker_from_raw(raw_text)
+                if final_marker is not None:
+                    action_objs = [SWEAction(function_name="finish", parameters={"result": final_marker})]
+                elif self.harness in {"cot", "bare"} and raw_text and raw_text.strip():
+                    self._search_answer = raw_text.strip()
+                    self._search_answer_is_verbatim_submission = False
+                    self.total_steps += 1
+                    self._search_consecutive_unknown = 0
+                    return "Your answer has been submitted.", 0.0, True, {}
                 else:
                     self.total_steps += 1
                     self._search_consecutive_unknown += 1
@@ -562,8 +1193,7 @@ class FusedEnv(CLIEnv):
                     if self._search_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
                         info = {
                             "termination_reason": "ABNORMAL_PARSE_ERROR",
-                            "parser/consecutive_unknown": self._search_consecutive_unknown,
-                            "parser/unknown_total": self._search_unknown_total,
+                            **self._parser_unknown_metadata(self._search_consecutive_unknown, self._search_unknown_total),
                         }
                         return (
                             "Error: could not parse any actions; terminating rollout.",
@@ -597,8 +1227,7 @@ class FusedEnv(CLIEnv):
             if self._search_consecutive_unknown >= self._MAX_CONSECUTIVE_UNKNOWN:
                 info = {
                     "termination_reason": "ABNORMAL_PARSE_ERROR",
-                    "parser/consecutive_unknown": self._search_consecutive_unknown,
-                    "parser/unknown_total": self._search_unknown_total,
+                    **self._parser_unknown_metadata(self._search_consecutive_unknown, self._search_unknown_total),
                 }
                 return (
                     f"Error: tool '{fn}' is not available; terminating after {self._search_consecutive_unknown} consecutive parse failures.",
@@ -695,8 +1324,7 @@ class FusedEnv(CLIEnv):
                         info = {
                             "termination_reason": "ABNORMAL_PARSE_ERROR",
                             "termination_message": (f"MCP: {self._mcp_consecutive_unknown} consecutive turns " "without a parseable <tool_call>"),
-                            "parser/consecutive_unknown": self._mcp_consecutive_unknown,
-                            "parser/unknown_total": self._mcp_unknown_total,
+                            **self._parser_unknown_metadata(self._mcp_consecutive_unknown, self._mcp_unknown_total),
                         }
                         return (
                             "Error: could not parse any actions; terminating rollout.",
@@ -705,10 +1333,12 @@ class FusedEnv(CLIEnv):
                             info,
                         )
                     return (
-                        "Error: could not parse any actions from model output. " 'Emit exactly one <tool_call>{"name": ..., "arguments": {...}}</tool_call> ' "block; use finish/submit to end the task.",
+                        "Error: could not parse any actions from model output. "
+                        'Emit exactly one <tool_call>{"name": ..., "arguments": {...}}</tool_call> '
+                        "block; use finish/submit to end the task.",
                         0.0,
                         False,
-                        {"parser/unknown_total": self._mcp_unknown_total},
+                        self._parser_unknown_metadata(unknown_total=self._mcp_unknown_total),
                     )
 
         observations: list[str] = []
@@ -739,8 +1369,7 @@ class FusedEnv(CLIEnv):
                     info = {
                         "termination_reason": "INVALID_REACT_STRUCTURE",
                         "termination_message": (f"MCP: {self._mcp_consecutive_unknown} consecutive " "tool_calls with empty/unparseable `name` field"),
-                        "parser/consecutive_unknown": self._mcp_consecutive_unknown,
-                        "parser/unknown_total": self._mcp_unknown_total,
+                        **self._parser_unknown_metadata(self._mcp_consecutive_unknown, self._mcp_unknown_total),
                     }
                     return (
                         "Error: could not parse a tool `name` from the <tool_call> " "block; terminating rollout.",
@@ -794,6 +1423,13 @@ class FusedEnv(CLIEnv):
                 # as "successful" only if the output doesn't start with the
                 # MCP server's "Error:" prefix.
                 if not str(output_str).lstrip().lower().startswith("error"):
+                    self._mcp_tool_evidence.append(
+                        {
+                            "tool": fn,
+                            "arguments": restored_params,
+                            "output": str(output_str)[:8000],
+                        }
+                    )
                     self._mcp_distinct_tools.add(fn)
             except Exception as e:
                 logger.error("MCP tool execution failed for %s: %s", fn, e)
@@ -865,6 +1501,7 @@ class FusedEnv(CLIEnv):
         params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
         result = params.get("result", "")
         self._search_answer = result
+        self._search_answer_is_verbatim_submission = True
         return "Your answer has been submitted.", 0.0, True, {}
 
     def _handle_mcp_finish(self, action_obj) -> tuple[str, float, bool, dict]:
@@ -885,12 +1522,9 @@ class FusedEnv(CLIEnv):
             except (json.JSONDecodeError, ValueError):
                 parsed = result
 
-        if isinstance(parsed, (dict, list)):
-            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
-        elif isinstance(parsed, str) and parsed.strip():
-            self._mcp_answer = parsed
-        else:
-            self._mcp_answer = str(result) if result else ""
+        accepted, observation, info = self._accept_mcp_submission(parsed, result)
+        if not accepted:
+            return observation, 0.0, False, info
         return "Your answer has been submitted.", 0.0, True, {}
 
     def _handle_mcp_submit_result(self, action_obj) -> tuple[str, float, bool, dict]:
@@ -907,12 +1541,9 @@ class FusedEnv(CLIEnv):
             except (json.JSONDecodeError, ValueError):
                 parsed = result
 
-        if isinstance(parsed, (dict, list)):
-            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
-        elif isinstance(parsed, str) and parsed.strip():
-            self._mcp_answer = parsed
-        else:
-            self._mcp_answer = str(result) if result else ""
+        accepted, observation, info = self._accept_mcp_submission(parsed, result)
+        if not accepted:
+            return observation, 0.0, False, info
 
         # Also execute on the MCP server if available (for side effects)
         if self._mcp_connection_manager is not None:
@@ -943,6 +1574,29 @@ class FusedEnv(CLIEnv):
                 pass
 
         return "Your answer has been submitted.", 0.0, True, {}
+
+    def _accept_mcp_submission(self, parsed: object, raw_result: object) -> tuple[bool, str, dict]:
+        """Store a submission only if it passes the local schema self-check."""
+        check = _validate_submission_schema(parsed, getattr(self, "_mcp_answer_schema", None))
+        self._mcp_last_schema_self_check = check
+        if not check.get("passed", True):
+            self._mcp_schema_self_check_failures += 1
+            return (
+                False,
+                _submission_self_check_observation(check),
+                {
+                    "mcp/schema_self_check_failed": 1,
+                    "mcp/schema_self_check_errors": check.get("errors", []),
+                },
+            )
+
+        if isinstance(parsed, (dict, list)):
+            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
+        elif isinstance(parsed, str) and parsed.strip():
+            self._mcp_answer = parsed
+        else:
+            self._mcp_answer = str(raw_result) if raw_result else ""
+        return True, "", {}
 
     # ------------------------------------------------------------------
     # reward
@@ -998,7 +1652,8 @@ class FusedEnv(CLIEnv):
             }
         meta.setdefault("type", "endless_terminals")
         meta.setdefault("reward_mode", "binary")
-        meta.setdefault("parser/unknown_total", self._et_unknown_total)
+        if self._record_parser_unknown_metrics:
+            meta.setdefault("parser/unknown_total", self._et_unknown_total)
         reward = float(meta.get("reward", 0.0))
         meta["reward"] = reward
         meta.setdefault("resolved", reward >= 1.0)
@@ -1013,6 +1668,19 @@ class FusedEnv(CLIEnv):
 
         ground_truth = self.entry.get("ground_truth") or self.entry.get("answer") or self.entry.get("gt_answer") or self.entry.get("ground_truth_answer", "")
         answer = self._search_answer
+        is_verbatim_submission = bool(getattr(self, "_search_answer_is_verbatim_submission", True))
+        if self.harness in {"cot", "bare"} and not str(answer or "").strip():
+            raw_answer = str(getattr(self, "_search_last_raw_action", "") or "").strip()
+            if raw_answer and not self._has_tool_call_markup(raw_answer):
+                final_marker = self._extract_final_answer_marker_from_raw(raw_answer)
+                if final_marker is not None:
+                    answer = final_marker.strip()
+                    is_verbatim_submission = True
+                else:
+                    answer = raw_answer
+                    is_verbatim_submission = False
+                self._search_answer = answer
+                self._search_answer_is_verbatim_submission = is_verbatim_submission
 
         config = RewardConfig(
             toolcall_bonus=0.0,
@@ -1030,6 +1698,11 @@ class FusedEnv(CLIEnv):
                 "step_count": self.total_steps,
                 "question": question_text,
                 "data_source": self.entry.get("data_source"),
+                # Explicit finish/submit and boxed rescue produce canonical
+                # answer strings, so the verifier skips the prose-scavenging
+                # cascade. Prompt-only COT text still needs the cascade to pull
+                # the final answer out of natural language.
+                "is_submitted": is_verbatim_submission,
             },
             action=answer,
         )
@@ -1040,7 +1713,7 @@ class FusedEnv(CLIEnv):
         dup_hits = getattr(self, "_search_retrieval_duplicate_hits", 0)
 
         # Penalize finish-without-search (bypass penalty).
-        bypass_penalty = -0.5 if ws_calls == 0 else 0.0
+        bypass_penalty = -0.5 if ws_calls == 0 and self.harness not in {"cot", "bare"} else 0.0
 
         # P0-2: punish "early finish on junk" — if the rollout made <=2
         # searches AND the majority of them returned low-content
@@ -1053,7 +1726,45 @@ class FusedEnv(CLIEnv):
             early_junk_penalty = -0.1
 
         final_reward = max(0.0, min(1.0, float(reward_output.reward) + bypass_penalty + early_junk_penalty))
+        if self.harness in {"cot", "bare"} and reward_output.is_correct:
+            final_reward = 1.0
 
+        # --- Rollout-time answer rescue (mirrors experiments/fused/merge_eval_json.py) ---
+        # For cot/bare, the verbatim/marker submission above can miss the model's
+        # real final answer: long COT responses frequently contain stray
+        # tool-call markup (or emit an empty ``finish``), so ``_step_search``
+        # routes the turn through the tool-call parser and submits an empty
+        # verbatim answer even though ``<answer>X</answer>`` / ``\boxed{...}`` /
+        # a committed prose choice sits at the end. ``_search_last_raw_action``
+        # is captured before any branching, so it reliably holds the full final
+        # assistant text. Re-evaluate it with the prose cascade + MCQ commitment
+        # scan (``is_submitted=False``) and union the exact-match decision, so the
+        # rollout-time reward/pass@1 logged to the console already reflects every
+        # answer the post-hoc JSON rescore would recover. Union only (never
+        # downgrades a submission that already scored correct).
+        rollout_rescue_applied = False
+        if self.harness in {"cot", "bare"} and not bool(reward_output.is_correct):
+            raw_final = str(getattr(self, "_search_last_raw_action", "") or "").strip()
+            if raw_final:
+                rescue_output = reward_fn(
+                    RewardInput(
+                        task_info={
+                            "ground_truth": ground_truth,
+                            "step_count": self.total_steps,
+                            "question": question_text,
+                            "data_source": self.entry.get("data_source"),
+                            "is_submitted": False,
+                        },
+                        action=raw_final,
+                    )
+                )
+                if rescue_output.is_correct:
+                    reward_before_rescue = final_reward
+                    reward_output = rescue_output
+                    final_reward = 1.0
+                    rollout_rescue_applied = True
+
+        parser_unknown_metadata = self._parser_unknown_metadata(unknown_total=getattr(self, "_search_unknown_total", 0))
         self._search_reward_debug = {
             "type": "web search",
             "reward": final_reward,
@@ -1067,7 +1778,10 @@ class FusedEnv(CLIEnv):
             "reward/web_search_calls": ws_calls,
             "reward/low_content_responses": low_content,
             "reward/duplicate_passage_hits": dup_hits,
-            "parser/unknown_total": getattr(self, "_search_unknown_total", 0),
+            "implicit_text_submission": not is_verbatim_submission,
+            "rollout_rescue/applied": rollout_rescue_applied,
+            **({"rollout_rescue/previous_reward": reward_before_rescue} if rollout_rescue_applied else {}),
+            **parser_unknown_metadata,
             **reward_output.metadata,
         }
         self._reward_debug = self._search_reward_debug
@@ -1088,6 +1802,12 @@ class FusedEnv(CLIEnv):
             },
         }
         answer = self._mcp_answer
+        parsed_answer: object = answer
+        if isinstance(answer, str):
+            try:
+                parsed_answer = json.loads(answer)
+            except (json.JSONDecodeError, ValueError):
+                parsed_answer = answer
 
         try:
             reward_output = verifier_reward_fn(task_info=task_info, action=answer)
@@ -1095,18 +1815,59 @@ class FusedEnv(CLIEnv):
             logger.error("MCP reward computation failed: %s", e)
             reward_output = RewardOutput(reward=0.0, metadata={"verifier_error": str(e)})
 
+        verifier_reward = float(reward_output.reward)
+        answer_text = str(answer or "").strip()
+        non_submit_tool_calls = self.total_steps - (1 if self._mcp_answer else 0)
+        distinct_successful_tools = len(self._mcp_distinct_tools)
+
+        placeholder_markers = (
+            '"key": "val"',
+            '"key":"val"',
+            "val2",
+            "brush stroke",
+            '"name": "finish"',
+            '"name":"finish"',
+        )
+        is_placeholder = any(marker in answer_text for marker in placeholder_markers)
+        nontrivial_submit = bool(answer_text) and len(answer_text) >= 100 and not is_placeholder
+
+        shaped_reward = verifier_reward
+        shaping_components = {
+            "reward/mcp_submit_bonus": 0.0,
+            "reward/mcp_tool_evidence_bonus": 0.0,
+            "reward/mcp_answer_length_bonus": 0.0,
+        }
+        if verifier_reward < 1.0 and nontrivial_submit and non_submit_tool_calls > 0 and distinct_successful_tools > 0:
+            shaping_components["reward/mcp_submit_bonus"] = 0.12
+            shaping_components["reward/mcp_tool_evidence_bonus"] = min(distinct_successful_tools, 4) * 0.05
+            shaping_components["reward/mcp_answer_length_bonus"] = min(len(answer_text) / 3000.0, 1.0) * 0.06
+            shaped_reward = min(0.40, verifier_reward + sum(shaping_components.values()))
+
         self._mcp_reward_debug = {
             "type": "mcp",
-            "reward": float(reward_output.reward),
-            "resolved": reward_output.reward >= 1.0,
-            "reward_mode": "verifier",
-            "reward_source": "verifier_reward_fn",
+            "reward": shaped_reward,
+            "base_reward": verifier_reward,
+            "resolved": verifier_reward >= 1.0,
+            "reward_mode": "verifier_with_shaping",
+            "reward_source": "verifier_reward_fn+mcp_shaping",
             "is_correct": bool(reward_output.is_correct) if reward_output.is_correct is not None else False,
             "verifier_error": reward_output.metadata.get("error", ""),
+            "submit_called": bool(self._mcp_answer),
+            "non_submit_tool_calls": non_submit_tool_calls,
+            "distinct_successful_tools": distinct_successful_tools,
+            "nontrivial_submit": nontrivial_submit,
+            "placeholder_submit": is_placeholder,
+            "schema_self_check": getattr(self, "_mcp_last_schema_self_check", {}),
+            "schema_self_check_failures": getattr(self, "_mcp_schema_self_check_failures", 0),
+            "mcp_tool_evidence_count": len(getattr(self, "_mcp_tool_evidence", [])),
+            "evidence_to_field": _build_evidence_to_field_trace(parsed_answer, getattr(self, "_mcp_tool_evidence", []))
+            if isinstance(parsed_answer, (dict, list))
+            else {"field_count": 0, "mapped_count": 0, "missing_or_weak_count": 0, "mappings": []},
+            **shaping_components,
             **reward_output.metadata,
         }
         self._reward_debug = self._mcp_reward_debug
-        return float(reward_output.reward)
+        return shaped_reward
 
     @property
     def reward_debug(self) -> dict:
@@ -1124,13 +1885,19 @@ class FusedEnv(CLIEnv):
 
     def close(self):
         """Clean up resources."""
-        # Stop MCP connection manager if running
+        # Release the MCP connection manager. Pooled managers (shared across a
+        # task's rollouts) are refcounted — only the last release stops the
+        # server. A non-pooled manager (no pool key) is stopped directly.
         if self._mcp_connection_manager is not None:
-            try:
-                self._mcp_connection_manager.stop()
-            except Exception:
-                pass
+            if self._mcp_pool_key is not None:
+                self._release_mcp_manager(self._mcp_pool_key)
+            else:
+                try:
+                    self._mcp_connection_manager.stop()
+                except Exception:
+                    pass
             self._mcp_connection_manager = None
+            self._mcp_pool_key = None
         # Do NOT close _shared_retrieval_tool — it is shared across all FusedEnv instances
         # ET mode owns its own ETEnv instance — close it (best-effort, gated
         # internally by RLLM_ET_KEEP_CONTAINER for debugging).

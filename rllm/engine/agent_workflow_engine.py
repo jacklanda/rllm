@@ -2,23 +2,76 @@ import asyncio
 import logging
 import uuid
 from collections import defaultdict
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from rllm.agents.agent import Episode, Trajectory
 from rllm.engine.rollout import ModelOutput, RolloutEngine
-from rllm.utils import colorful_print
-from rllm.workflows.workflow import TerminationReason, Workflow
+from rllm.utils import colorful_print, format_progress_reward
+from rllm.workflows.workflow import TerminationReason, Workflow, infer_task_source
 
 # Avoid hard dependency on verl at import time; only for typing
 if TYPE_CHECKING:
     from verl import DataProto
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_task_type_for_logging(task: object) -> str:
+    """Infer the broad task type used in rollout progress logs.
+
+    Thin wrapper around the canonical :func:`infer_task_source` so the engine's
+    progress logs and the per-channel rollout metrics agree on task sources.
+    """
+    return infer_task_source(task)
+
+
+def _get_nested_config(config: object, path: tuple[str, ...], default=None):
+    value = config
+    for key in path:
+        if value is None:
+            return default
+        if isinstance(value, Mapping):
+            value = value.get(key, default)
+        else:
+            value = getattr(value, key, default)
+    return value
+
+
+def _coerce_bool(value: object, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "y", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "n", "off"}:
+            return False
+        return default
+    return bool(value)
+
+
+def _verl_sleep_mode_enabled(config: object) -> bool:
+    value = _get_nested_config(config, ("rllm", "rollout_enable_sleep_mode"), True)
+    return _coerce_bool(value, default=True)
+
+
+def _coerce_timeout(value: object) -> float | None:
+    if value is None:
+        return None
+    try:
+        timeout = float(value)
+    except (TypeError, ValueError):
+        return None
+    if timeout <= 0:
+        return None
+    return timeout
 
 
 def _count_tool_calls_in_message(message_content: str) -> int:
@@ -319,7 +372,18 @@ def _compute_token_count(trajectory: Trajectory) -> int:
 
 
 class AgentWorkflowEngine:
-    def __init__(self, workflow_cls: type[Workflow], workflow_args: dict, rollout_engine: RolloutEngine, config=None, n_parallel_tasks: int = 128, retry_limit: int = 3, raise_on_error: bool = True, episode_logger=None, **kwargs):
+    def __init__(
+        self,
+        workflow_cls: type[Workflow],
+        workflow_args: dict,
+        rollout_engine: RolloutEngine,
+        config=None,
+        n_parallel_tasks: int = 128,
+        retry_limit: int = 3,
+        raise_on_error: bool = True,
+        episode_logger=None,
+        **kwargs,
+    ):
         """Initialize the AgentWorkflowEngine.
 
         Args:
@@ -346,6 +410,8 @@ class AgentWorkflowEngine:
         self.n_parallel_tasks = n_parallel_tasks
         self.executor = ThreadPoolExecutor(max_workers=self.n_parallel_tasks)
         self.workflow_queue = None
+        self.trajectory_timeout = _coerce_timeout(_get_nested_config(config, ("rllm", "agent", "trajectory_timeout")))
+        self.eval_trajectory_timeout = _coerce_timeout(_get_nested_config(config, ("rllm", "agent", "eval_trajectory_timeout"))) or self.trajectory_timeout
 
         # Episode logging support
         self.episode_logger = episode_logger
@@ -365,6 +431,9 @@ class AgentWorkflowEngine:
         self.current_mode = mode
         self.current_epoch = epoch
 
+    def _progress_safe_print(self, string: str, *args, **kwargs) -> None:
+        colorful_print(string, *args, **kwargs)
+
     async def initialize_pool(self):
         """Initialize the workflow pool with parallel workflow instances.
 
@@ -376,9 +445,16 @@ class AgentWorkflowEngine:
             return
         self.workflow_queue = asyncio.Queue(maxsize=self.n_parallel_tasks)
         for i in range(self.n_parallel_tasks):
-            workflow = self.workflow_cls(rollout_engine=self.rollout_engine, executor=self.executor, **self.workflow_args)
-            assert workflow.is_multithread_safe(), "Workflows must contain only thread-save environments"
-            self.workflow_queue.put_nowait(workflow)
+            self.workflow_queue.put_nowait(self._create_workflow())
+
+    def _create_workflow(self) -> Workflow:
+        workflow = self.workflow_cls(rollout_engine=self.rollout_engine, executor=self.executor, **self.workflow_args)
+        assert workflow.is_multithread_safe(), "Workflows must contain only thread-save environments"
+        return workflow
+
+    def _effective_timeout(self) -> float | None:
+        is_validation = bool(getattr(self.rollout_engine, "validate", False)) or self.current_mode == "val"
+        return self.eval_trajectory_timeout if is_validation else self.trajectory_timeout
 
     async def process_task_with_retry(self, task: dict, task_id: str, rollout_idx: int, **kwargs) -> tuple[str, int, Episode]:
         """Process a single task rollout with retry logic based on termination reasons.
@@ -396,35 +472,47 @@ class AgentWorkflowEngine:
             Exception: If task fails permanently after retry_limit attempts and raise_on_error is True.
         """
         workflow = await self.workflow_queue.get()
+        replace_workflow = False
         try:
             for retry_attempt in range(1, self.retry_limit + 1):
                 uid = f"{task_id}:{rollout_idx}"
-                episode = await workflow.run_with_termination_handling(task=task, uid=uid, **kwargs)
+                task_type = _extract_task_type_for_logging(task)
+                timeout = self._effective_timeout()
+                run_kwargs = dict(kwargs)
+                if timeout is not None:
+                    run_kwargs["timeout"] = timeout
+                episode = await workflow.run_with_termination_handling(task=task, uid=uid, **run_kwargs)
 
-                # Display rewards for all trajectories
-                rewards_str = ", ".join([f"{traj.name}: {traj.reward:.1f}" for traj in episode.trajectories])
-                colorful_print(f"[{uid}] Rollout completed. Rewards: {rewards_str}, Termination: {episode.termination_reason}", fg="green" if episode.is_correct else "yellow")
+                if episode.termination_reason == TerminationReason.TIMEOUT:
+                    replace_workflow = True
+                    timeout_str = f"{timeout:.0f}s" if timeout is not None else "workflow timeout"
+                    self._progress_safe_print(f"[{uid}][{task_type}] Rollout timed out after {timeout_str}; dropping this episode and replacing the workflow slot.", fg="red")
+                    return task_id, rollout_idx, episode
 
                 if episode.termination_reason != TerminationReason.ERROR:
                     return task_id, rollout_idx, episode
 
                 error_tb = episode.info.get("error", {}).get("traceback")
                 if error_tb:
-                    print(error_tb)
+                    self._progress_safe_print(error_tb)
 
                 if retry_attempt < self.retry_limit:
-                    print(f"[{uid}] Rollout failed on attempt {retry_attempt}/{self.retry_limit}, retrying...")
+                    self._progress_safe_print(f"[{uid}] Rollout failed on attempt {retry_attempt}/{self.retry_limit}, retrying...", fg="yellow")
                     continue
 
             if not self.raise_on_error:
-                print(f"[{uid}] Rollout failed permanently after {self.retry_limit} attempts.")
+                self._progress_safe_print(f"[{uid}] Rollout failed permanently after {self.retry_limit} attempts.", fg="red")
             else:
                 raise Exception(f"[{uid}] Rollout failed permanently after {self.retry_limit} attempts.")
 
             return task_id, rollout_idx, episode
 
         finally:
-            await self.workflow_queue.put(workflow)
+            try:
+                workflow.close()
+            except Exception as e:
+                logger.warning("Failed to close workflow resources for %s:%s: %s", task_id, rollout_idx, e)
+            await self.workflow_queue.put(self._create_workflow() if replace_workflow else workflow)
 
     async def execute_tasks(self, tasks: list[dict], task_ids: list[str] | None = None, **kwargs) -> list[Episode]:
         """Run asynchronous workflow execution with retry logic for multiple tasks.
@@ -457,14 +545,23 @@ class AgentWorkflowEngine:
             futures.append(self.process_task_with_retry(task, task_id, rollout_idx, **kwargs))
             state["total_rollouts"] += 1
 
-        with tqdm(total=len(tasks), desc="Generating trajectories") as pbar:
-            for future in asyncio.as_completed(futures):
-                task_id, rollout_idx, episode = await future
+        total_trajectories = len(futures)
+        completed_trajectories = 0
+        for future in asyncio.as_completed(futures):
+            task_id, rollout_idx, episode = await future
 
-                state = task_states[task_id]
-                state["episodes"].append(episode)
-                state["completed"] += 1
-                pbar.update(1)
+            state = task_states[task_id]
+            state["episodes"].append(episode)
+            state["completed"] += 1
+            completed_trajectories += 1
+
+            uid = f"{task_id}:{rollout_idx}"
+            task_type = _extract_task_type_for_logging(state["task"])
+            rewards_str = ", ".join([format_progress_reward(traj.reward) for traj in episode.trajectories])
+            self._progress_safe_print(
+                f"[{uid}][{task_type}] {completed_trajectories}/{total_trajectories}. Reward: {rewards_str}. {str(episode.termination_reason).rsplit('.')[-1]}",
+                fg="green" if episode.is_correct else "yellow",
+            )
 
         results = []
         sorted_tasks = sorted(task_states.keys(), key=lambda task_id: task_states[task_id]["idx"])
@@ -494,22 +591,30 @@ class AgentWorkflowEngine:
         Returns:
             DataProto: Transformed results compatible with Verl training.
         """
-        await self.rollout_engine.wake_up()
-
-        is_validation = batch.meta_info.get("validate", False)
-        if is_validation:
-            self.rollout_engine.validate = True
-            self.current_mode = "val"
-        else:
-            self.current_mode = "train"
-        tasks = batch.non_tensor_batch["extra_info"].tolist()
+        sleep_mode_enabled = _verl_sleep_mode_enabled(self.config)
+        woke_rollout_engine = False
+        results = None
         task_ids = batch.non_tensor_batch["task_ids"].tolist()
-        results = await self.execute_tasks(tasks, task_ids, **kwargs)  # list of Episodes
-        self.rollout_engine.validate = False
 
-        await self.rollout_engine.sleep()
+        try:
+            if sleep_mode_enabled:
+                await self.rollout_engine.wake_up()
+                woke_rollout_engine = True
 
-        self.current_mode = "train"
+            is_validation = batch.meta_info.get("validate", False)
+            if is_validation:
+                self.rollout_engine.validate = True
+                self.current_mode = "val"
+            else:
+                self.current_mode = "train"
+            tasks = batch.non_tensor_batch["extra_info"].tolist()
+            results = await self.execute_tasks(tasks, task_ids, **kwargs)  # list of Episodes
+        finally:
+            self.rollout_engine.validate = False
+            self.current_mode = "train"
+            if woke_rollout_engine:
+                await self.rollout_engine.sleep()
+
         return self.transform_results_for_verl(results, task_ids)
 
     def transform_results_for_verl(self, episodes: list[Episode], task_ids: np.ndarray) -> "DataProto":
@@ -543,6 +648,7 @@ class AgentWorkflowEngine:
         multi_modal_inputs_list = []
         chat_completions_list = []
         rollout_log_probs_list = []
+        dropped_episodes = []
         # no_grad_flags = []  # 5.4.4: Track trajectories that should not participate in gradient updates
 
         for i, episode in enumerate(episodes):
@@ -550,6 +656,7 @@ class AgentWorkflowEngine:
 
             if episode is None:
                 print(f"Episode {i} is None (failed task), dropping it from the batch")
+                dropped_episodes.append({"index": i, "task_id": str(task_ids[i]) if i < len(task_ids) else None, "reason": "none_episode"})
                 repeat_counts.append(0)
                 continue
 
@@ -558,6 +665,8 @@ class AgentWorkflowEngine:
                 # (e.g., the initial prompt exceeds max_prompt_length or a timeout occurs)
                 # we delete the episode from the batch by setting repeat_counts to 0
                 print(f"Episode {episode.id} has no valid trajectories, dropping it from the batch")
+                reason = episode.termination_reason.value if getattr(episode.termination_reason, "value", None) is not None else str(episode.termination_reason)
+                dropped_episodes.append({"index": i, "task_id": str(task_ids[i]) if i < len(task_ids) else None, "episode_id": episode.id, "reason": reason})
                 repeat_counts.append(0)
                 continue
 
@@ -605,15 +714,25 @@ class AgentWorkflowEngine:
                 if not self.config.rllm.stepwise_advantage.enable:
                     if len(trajectory.steps) > 1:
                         if not trajectory.is_cumulative():
-                            logger.warning(f"Warning: Multi-step trajectory {trajectory_id} is not cumulative, but stepwise mode is not enabled. There could be a token mismatch during trajectory generation.")
+                            logger.warning(
+                                f"Warning: Multi-step trajectory {trajectory_id} is not cumulative, but stepwise mode is not enabled. There could be a token mismatch during trajectory generation."
+                            )
 
                         chat_completions = trajectory.steps[-1].chat_completions
+
+                        # Check if chat_completions has at least one assistant message
+                        has_assistant = any(msg.get("role") == "assistant" for msg in chat_completions) if chat_completions else False
+                        if not has_assistant:
+                            logger.warning(f"Skipping trajectory {trajectory_id}: no assistant message found in chat_completions")
+                            continue
+
                         chat_completions_list.append(chat_completions)
                         prompt, response, mask = self.rollout_engine.chat_parser.tokenize_and_mask_cumulative(chat_completions)
                         prompts.append(prompt)
                         responses.append(response)
                         traj_mask.append(mask)
                         multi_modal_inputs_list.append({})  # empty dict
+                        rollout_log_probs_list.append(None)
 
                     elif isinstance(trajectory.steps[0].model_output, ModelOutput):
                         step = trajectory.steps[0]
@@ -630,17 +749,27 @@ class AgentWorkflowEngine:
                         traj_mask.append(mask)
                         multi_modal_inputs_list.append(step.model_output.multi_modal_inputs or {})
 
-                        logprobs = torch.tensor(step.model_output.logprobs, dtype=torch.float32)
-                        rollout_log_probs_list.append(logprobs)
+                        if step.model_output.logprobs is not None and len(step.model_output.logprobs) == len(response_ids):
+                            rollout_log_probs_list.append(torch.tensor(step.model_output.logprobs, dtype=torch.float32))
+                        else:
+                            rollout_log_probs_list.append(None)
 
                     else:
                         chat_completions = trajectory.steps[0].chat_completions
+
+                        # Check if chat_completions has at least one assistant message
+                        has_assistant = any(msg.get("role") == "assistant" for msg in chat_completions) if chat_completions else False
+                        if not has_assistant:
+                            logger.warning(f"Skipping trajectory {trajectory_id}: no assistant message found in chat_completions (single-step case)")
+                            continue
+
                         chat_completions_list.append(chat_completions)
                         prompt, response, mask = self.rollout_engine.chat_parser.tokenize_and_mask(chat_completions)
                         prompts.append(prompt)
                         responses.append(response)
                         traj_mask.append(mask)
                         multi_modal_inputs_list.append({})  # empty dict
+                        rollout_log_probs_list.append(None)
 
                     step_rewards.append(trajectory.reward)
                     step_ids.append(trajectory_id)
@@ -661,8 +790,10 @@ class AgentWorkflowEngine:
                             traj_mask.append(mask)
                             multi_modal_inputs_list.append(step.model_output.multi_modal_inputs or {})
 
-                            logprobs = torch.tensor(step.model_output.logprobs, dtype=torch.float32)
-                            rollout_log_probs_list.append(logprobs)
+                            if step.model_output.logprobs is not None and len(step.model_output.logprobs) == len(response_ids):
+                                rollout_log_probs_list.append(torch.tensor(step.model_output.logprobs, dtype=torch.float32))
+                            else:
+                                rollout_log_probs_list.append(None)
 
                         else:
                             chat_completions = step.chat_completions
@@ -672,6 +803,7 @@ class AgentWorkflowEngine:
                             responses.append(response)
                             traj_mask.append(mask)
                             multi_modal_inputs_list.append({})  # empty dict
+                            rollout_log_probs_list.append(None)
 
                         step_rewards.append(step.reward)
                         step_ids.append(f"{trajectory_id}_step{step_idx}")  # unique step identifier e.g., 1234567890_solver_step0
@@ -691,6 +823,42 @@ class AgentWorkflowEngine:
             termination_reasons.extend([episode.termination_reason if episode.termination_reason is not None else TerminationReason.UNKNOWN] * total_steps)
             metrics.extend([episode.metrics] * total_steps)
             repeat_counts.append(total_steps)
+
+        if not prompts:
+            max_prompt_length = int(_get_nested_config(self.config, ("data", "max_prompt_length"), 0) or 0)
+            max_response_length = int(_get_nested_config(self.config, ("data", "max_response_length"), 0) or 0)
+            tensors = {
+                "input_ids": torch.empty((0, max_prompt_length + max_response_length), dtype=torch.long),
+                "attention_mask": torch.empty((0, max_prompt_length + max_response_length), dtype=torch.long),
+                "position_ids": torch.empty((0, max_prompt_length + max_response_length), dtype=torch.long),
+                "prompts": torch.empty((0, max_prompt_length), dtype=torch.long),
+                "responses": torch.empty((0, max_response_length), dtype=torch.long),
+                "response_mask": torch.empty((0, max_response_length), dtype=torch.long),
+                "traj_rewards": torch.empty((0, max_response_length), dtype=torch.float32),
+                "step_rewards": torch.empty((0, max_response_length), dtype=torch.float32),
+            }
+            non_tensors = {
+                "episode_ids": np.array([], dtype=object),
+                "trajectory_ids": np.array([], dtype=object),
+                "step_ids": np.array([], dtype=object),
+                "batch_ids": np.array([], dtype=object),
+                "step_nums": np.array([], dtype=np.int64),
+                "is_correct": np.array([], dtype=bool),
+                "termination_reasons": np.array([], dtype=object),
+                "metrics": np.array([], dtype=object),
+                "is_valid": np.array([], dtype=bool),
+                "is_last_step": np.array([], dtype=bool),
+                "is_pad_step": np.array([], dtype=bool),
+                "chat_completions": np.array([], dtype=object),
+            }
+            return DataProto.from_dict(
+                tensors=tensors,
+                non_tensors=non_tensors,
+                meta_info={
+                    "repeat_counts": repeat_counts,
+                    "dropped_episodes": dropped_episodes,
+                },
+            )
 
         prompts_batch = torch.nn.utils.rnn.pad_sequence(
             [torch.flip(i, dims=[0]) for i in prompts],
@@ -747,7 +915,7 @@ class AgentWorkflowEngine:
                 step_rewards_batch[i, resp_len - 1] = step_reward
 
         rollout_log_probs_batch = None
-        if rollout_log_probs_list:
+        if rollout_log_probs_list and all(logprobs is not None for logprobs in rollout_log_probs_list):
             rollout_log_probs_batch = torch.nn.utils.rnn.pad_sequence(
                 rollout_log_probs_list,
                 batch_first=True,
@@ -762,7 +930,15 @@ class AgentWorkflowEngine:
         if cf.enable:
             for i in range(len(episode_ids)):
                 termination_reason = termination_reasons[i]
-                if (cf.mask_max_prompt_length_exceeded and termination_reason == TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED) or (cf.mask_max_response_length_exceeded and termination_reason == TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED) or (cf.mask_env_done and termination_reason == TerminationReason.ENV_DONE) or (cf.mask_max_turns_exceeded and termination_reason == TerminationReason.MAX_TURNS_EXCEEDED) or (cf.mask_timeout and termination_reason == TerminationReason.TIMEOUT) or (cf.mask_unknown and termination_reason == TerminationReason.UNKNOWN) or (cf.mask_error and termination_reason == TerminationReason.ERROR):
+                if (
+                    (cf.mask_max_prompt_length_exceeded and termination_reason == TerminationReason.MAX_PROMPT_LENGTH_EXCEEDED)
+                    or (cf.mask_max_response_length_exceeded and termination_reason == TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED)
+                    or (cf.mask_env_done and termination_reason == TerminationReason.ENV_DONE)
+                    or (cf.mask_max_turns_exceeded and termination_reason == TerminationReason.MAX_TURNS_EXCEEDED)
+                    or (cf.mask_timeout and termination_reason == TerminationReason.TIMEOUT)
+                    or (cf.mask_unknown and termination_reason == TerminationReason.UNKNOWN)
+                    or (cf.mask_error and termination_reason == TerminationReason.ERROR)
+                ):
                     is_valid[i] = False  # set flag to filter out the episode later (after advantages are computed)
 
         non_tensors = {
@@ -803,6 +979,7 @@ class AgentWorkflowEngine:
             non_tensors=non_tensors,
             meta_info={
                 "repeat_counts": repeat_counts,
+                "dropped_episodes": dropped_episodes,
             },
         )
 
@@ -843,6 +1020,16 @@ class AgentWorkflowEngine:
 
     def shutdown(self):
         """Shutdown the workflow engine and cleanup resources."""
+        if getattr(self, "workflow_queue", None) is not None:
+            while True:
+                try:
+                    workflow = self.workflow_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                try:
+                    workflow.close()
+                except Exception as e:
+                    logger.warning("Failed to close workflow during shutdown: %s", e)
         if hasattr(self, "executor") and self.executor is not None:
             self.executor.shutdown(wait=False, cancel_futures=True)
             self.executor = None

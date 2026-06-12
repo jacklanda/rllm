@@ -350,6 +350,10 @@ def compute_data_metrics(batch, use_critic=True):
                 rewards_tensor = torch.tensor(rewards)
                 metrics[f"critic/rewards/{channel}"] = torch.mean(rewards_tensor).item()
 
+    from rllm.experimental.verl.metrics import compute_search_agent_metrics
+
+    metrics.update(compute_search_agent_metrics(batch))
+
     return metrics
 
 
@@ -659,7 +663,7 @@ class RayPPOTrainer(object):
         # currently, we only support validation using the reward_function.
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate()
-            pprint(f"Initial validation metrics: {val_metrics}")
+            # pprint(f"Initial validation metrics: {val_metrics}")
             logger.log(data=val_metrics, step=self.global_steps)
             if self.config.trainer.get("val_only", False):
                 return

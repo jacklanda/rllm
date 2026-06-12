@@ -255,7 +255,7 @@ class LocalRetrievalTool(Tool):
             # one: a summary fallback that yields chunked passages should
             # get the 2048-word chunked budget, not the 256-word summary
             # budget (which would truncate most of the evidence).
-            word_budget = 256 if summary_used else 2048
+            word_budget = 512 if summary_used else 512
             words = content.split()
             if len(words) >= word_budget:
                 content = " ".join(words[:word_budget]) + "..."

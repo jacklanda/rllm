@@ -32,6 +32,7 @@ def _make_episode(
     logprobs: list[float] | None = None,
     reward: float = 1.0,
     episode_id: str = "task_0:0",
+    trajectory_metadata: dict | None = None,
 ) -> Episode:
     """Create a single-step episode with optional logprobs."""
     model_output = ModelOutput(
@@ -45,7 +46,7 @@ def _make_episode(
         model_output=model_output,
         reward=reward,
     )
-    trajectory = Trajectory(steps=[step], reward=reward)
+    trajectory = Trajectory(steps=[step], reward=reward, metadata=trajectory_metadata)
     return Episode(id=episode_id, trajectories=[trajectory], is_correct=reward > 0)
 
 
@@ -65,6 +66,34 @@ def test_transform_metrics_handle_all_filtered_groups():
     assert metrics["groups/avg_group_size"] == 0.0
     assert metrics["groups/max_group_size"] == 0
     assert metrics["groups/min_group_size"] == 0
+
+
+def test_transform_carries_search_agent_metric_counters_to_non_tensors():
+    episode = _make_episode(
+        prompt_ids=[1, 2],
+        completion_ids=[3, 4],
+        reward=1.0,
+        trajectory_metadata={
+            "tool_call_counts": 2,
+            "all_call_tool_counts": 3,
+            "all_call_tool_success_counts": 2,
+            "searched_query_count": 1,
+            "too_many_tool_call_count": 0,
+            "tool_parser_error_count": 0,
+            "response_truncated_count": 1,
+            "too_many_turn_count": 0,
+            "too_long_seq_truncated_count": 0,
+            "duplicate_search_result_count": 1,
+        },
+    )
+    engine = _make_mock_rollout_engine()
+
+    batch = transform_episodes_to_dataproto([episode], engine, max_prompt_length=8, max_response_length=8)
+
+    assert batch.non_tensor_batch["tool_call_counts"].tolist() == [2]
+    assert batch.non_tensor_batch["all_call_tool_counts"].tolist() == [3]
+    assert batch.non_tensor_batch["all_call_tool_success_counts"].tolist() == [2]
+    assert batch.non_tensor_batch["duplicate_search_result_count"].tolist() == [1]
 
 
 class TestRolloutLogProbsPropagation:

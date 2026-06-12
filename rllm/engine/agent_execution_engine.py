@@ -173,7 +173,12 @@ class DockerConnectionError(Exception):
 def _is_docker_connection_error(exc: Exception) -> bool:
     """Check if an exception indicates Docker daemon connectivity failure."""
     msg = str(exc).lower()
-    return "error while fetching server api version" in msg or ("connection refused" in msg and ("docker" in msg or "/version" in msg or "/containers" in msg)) or ("connection aborted" in msg and "permission denied" in msg) or ("max retries exceeded" in msg and ("/version" in msg or "/containers" in msg))
+    return (
+        "error while fetching server api version" in msg
+        or ("connection refused" in msg and ("docker" in msg or "/version" in msg or "/containers" in msg))
+        or ("connection aborted" in msg and "permission denied" in msg)
+        or ("max retries exceeded" in msg and ("/version" in msg or "/containers" in msg))
+    )
 
 
 class AgentExecutionEngine:
@@ -229,6 +234,16 @@ class AgentExecutionEngine:
         self.max_response_length = max_response_length
         self.max_prompt_length = max_prompt_length
         self.enforce_max_prompt_length = enforce_max_prompt_length
+        # Per-step generation soft cap. The whole-trajectory budget stays
+        # max_response_length (and the max_steps cap is unchanged), but no
+        # single model turn is allowed to decode more than this many tokens.
+        # Without it, step 1's max_tokens == max_response_length, so a
+        # pathological "thinking" trajectory can decode the full 64k in one
+        # turn before _detect_runaway (which only fires between steps) can
+        # stop it — hogging a decode slot and stalling the whole batch. None
+        # (or <=0) disables the cap for backward compatibility.
+        _per_step = _agent_cfg.get("per_step_max_tokens", None) if self.config is not None else None
+        self.per_step_max_tokens = int(_per_step) if _per_step and int(_per_step) > 0 else None
         self.disable_thinking = self.config.get("rllm", {}).get("disable_thinking", False) if self.config is not None else False
 
         # Trajectory filtering toggles (read from config, default to True for backward compat)
@@ -440,7 +455,9 @@ class AgentExecutionEngine:
             color = "green" if reward > 0 else "yellow"
             verr = (reward_debug or {}).get("verifier_error", "")
             colorful_print(
-                f"Trajectory {idx} ({task_label}) [gold_patch_sanity]: " f"reward={reward} applied={reward_debug.get('gold_patch_applied') if isinstance(reward_debug, dict) else None} " f"verifier_error={verr!r} reward_time={reward_time:.2f}s",
+                f"Trajectory {idx} ({task_label}) [gold_patch_sanity]: "
+                f"reward={reward} applied={reward_debug.get('gold_patch_applied') if isinstance(reward_debug, dict) else None} "
+                f"verifier_error={verr!r} reward_time={reward_time:.2f}s",
                 color,
             )
             self._trajectory_logs.append(
@@ -524,6 +541,14 @@ class AgentExecutionEngine:
                     exception_message = f"Prompt length {prompt_len} exceeded max_prompt_length {self.max_prompt_length}"
                     break
 
+            # Apply the per-step soft cap (if configured). The trajectory-wide
+            # budget above is unchanged; this only bounds a single turn so a
+            # runaway "thinking" turn can't decode the entire remaining budget
+            # at once. The agent simply takes more (shorter) turns, and
+            # _detect_runaway gets a chance to fire between them.
+            if self.per_step_max_tokens is not None:
+                max_tokens = min(max_tokens, self.per_step_max_tokens)
+
             kwargs["max_tokens"] = max_tokens
 
             # Build precomputed prompt IDs incrementally to avoid BPE retokenization mismatch
@@ -600,7 +625,8 @@ class AgentExecutionEngine:
                             }
                         )
                         colorful_print(
-                            f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output after {max_step_retries} retries. " f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
+                            f"Trajectory {idx} ({task_label}), Step {step_idx}: Invalid output after {max_step_retries} retries. "
+                            f"No tool calls and no \\boxed{{}} found. Treat as ABNORMAL_PARSE_ERROR.",
                             "yellow",
                         )
                         # Handled outside loop
@@ -771,7 +797,11 @@ class AgentExecutionEngine:
                 # near-duplicates the exact path misses entirely).
                 if consecutive_repeat_count >= LOOP_TERMINATE_THRESHOLD or soft_streak >= LOOP_TERMINATE_THRESHOLD:
                     termination_reason = "ABNORMAL_REPEATED_QUERY" if (soft_streak >= LOOP_TERMINATE_THRESHOLD and not exact_repeat) else "ABNORMAL_ACTION_LOOP"
-                    exception_message = f"Action loop detected: {max(consecutive_repeat_count + 1, soft_streak)} " f"near-duplicate actions (soft_streak={soft_streak}, exact_streak={consecutive_repeat_count + 1}) " f"- {action_str[:200]}"
+                    exception_message = (
+                        f"Action loop detected: {max(consecutive_repeat_count + 1, soft_streak)} "
+                        f"near-duplicate actions (soft_streak={soft_streak}, exact_streak={consecutive_repeat_count + 1}) "
+                        f"- {action_str[:200]}"
+                    )
                     reward = 0.0
                     done = True
                     cur_step = agent.get_current_state()
@@ -784,7 +814,9 @@ class AgentExecutionEngine:
                             cur_step.reward = reward
                         cur_step.done = done
                     colorful_print(
-                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop " f"({consecutive_repeat_count + 1} identical consecutive actions" f"{', env-error-driven — masking from loss' if _last_loop_action_is_tool_error else ''}).",
+                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to action loop "
+                        f"({consecutive_repeat_count + 1} identical consecutive actions"
+                        f"{', env-error-driven — masking from loss' if _last_loop_action_is_tool_error else ''}).",
                         "red",
                     )
                     self._trajectory_logs.append(
@@ -944,13 +976,32 @@ class AgentExecutionEngine:
                 _obs_for_hint = str(next_observation)
                 _is_tool_crash = any(sig in _obs_for_hint for sig in _ENV_TOOL_ERROR_SIGS)
                 if _is_tool_crash:
-                    loop_warning = "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — " "this is an environment setup failure, NOT a logic error in your code. " "The tool binary is broken. Switch strategy immediately:\n" "- Use execute_bash with `sed -i` or `python3 -c` to edit files directly\n" "- Use `python3 -c 'open(\"path\").read()'` to view file contents\n" "- Do NOT call the broken tool again.\n" "DO NOT repeat the same action again."
+                    loop_warning = (
+                        "\n\n[LOOP DETECTED] The tool is crashing with a runtime error — "
+                        "this is an environment setup failure, NOT a logic error in your code. "
+                        "The tool binary is broken. Switch strategy immediately:\n"
+                        "- Use execute_bash with `sed -i` or `python3 -c` to edit files directly\n"
+                        "- Use `python3 -c 'open(\"path\").read()'` to view file contents\n"
+                        "- Do NOT call the broken tool again.\n"
+                        "DO NOT repeat the same action again."
+                    )
                 else:
-                    loop_warning = "\n\n[LOOP DETECTED] You have repeated the same action " f"{consecutive_repeat_count + 1} times consecutively. " "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n" "- If an edit keeps failing, view the file first to check the current content\n" "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n" "- If you're stuck, step back and reconsider the root cause\n" "- Try a completely different approach to solve the problem\n" "DO NOT repeat the same action again."
+                    loop_warning = (
+                        "\n\n[LOOP DETECTED] You have repeated the same action "
+                        f"{consecutive_repeat_count + 1} times consecutively. "
+                        "This approach is NOT working. You MUST try a DIFFERENT strategy immediately:\n"
+                        "- If an edit keeps failing, view the file first to check the current content\n"
+                        "- If a command keeps erroring, investigate why (check paths, syntax, dependencies)\n"
+                        "- If you're stuck, step back and reconsider the root cause\n"
+                        "- Try a completely different approach to solve the problem\n"
+                        "DO NOT repeat the same action again."
+                    )
                 next_observation = str(next_observation) + loop_warning
                 loop_warning_injected = True
                 colorful_print(
-                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected " f"({consecutive_repeat_count + 1} identical consecutive actions" f"{', tool-crash hint' if _is_tool_crash else ''}).",
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Loop warning injected "
+                    f"({consecutive_repeat_count + 1} identical consecutive actions"
+                    f"{', tool-crash hint' if _is_tool_crash else ''}).",
                     "yellow",
                 )
 
@@ -991,7 +1042,8 @@ class AgentExecutionEngine:
                 cur_step.done = done
                 cur_step.reward = None  # mask from loss
                 colorful_print(
-                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to protocol-error loop " f"({consecutive_protocol_errors} consecutive malformed tool calls — masking from loss).",
+                    f"Trajectory {idx} ({task_label}), Step {step_idx}: Terminated due to protocol-error loop "
+                    f"({consecutive_protocol_errors} consecutive malformed tool calls — masking from loss).",
                     "red",
                 )
                 self._trajectory_logs.append(
@@ -1032,9 +1084,13 @@ class AgentExecutionEngine:
             assistant_msg_tokens, assistant_msg_masks = [], []
             env_msg_tokens, env_msg_masks = [], []
             if assistant_message:
-                assistant_msg_tokens, assistant_msg_masks = convert_messages_to_tokens_and_masks([assistant_message], tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=False)
+                assistant_msg_tokens, assistant_msg_masks = convert_messages_to_tokens_and_masks(
+                    [assistant_message], tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=False
+                )
             if env_messages:
-                env_msg_tokens, env_msg_masks = convert_messages_to_tokens_and_masks(env_messages, tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=True)
+                env_msg_tokens, env_msg_masks = convert_messages_to_tokens_and_masks(
+                    env_messages, tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=True
+                )
 
             # Update response token length
             response_token_len += len(assistant_msg_tokens) + len(env_msg_tokens)
@@ -1189,6 +1245,12 @@ class AgentExecutionEngine:
                 colorful_print(f"Trajectory {idx} ({task_label}) is masked out due to overlong filter.", "red")
 
         trajectory: Trajectory = agent.trajectory
+        if final_reward_computed and trajectory.steps:
+            trajectory.steps[-1].reward = reward
+            if reward_metadata:
+                trajectory.steps[-1].info["metadata"] = reward_metadata
+            if reward_debug:
+                trajectory.steps[-1].info["reward_debug"] = reward_debug
         # Aggregate final trajectory statistics
         compute_trajectory_reward(trajectory)
         compute_mc_return(trajectory, gamma=self.gamma)
@@ -1370,7 +1432,9 @@ class AgentExecutionEngine:
                             break
 
                     if diff_pos is not None:
-                        logger.warning(f"When assemble steps, detect the trajectory not accumulative at position {diff_pos}. Expected: {accumulated_sequence[diff_pos : diff_pos + 5]}, Got: {prefix[diff_pos : diff_pos + 5]}. Setting response_masks to all 0s. This is likely due to retokenization.")
+                        logger.warning(
+                            f"When assemble steps, detect the trajectory not accumulative at position {diff_pos}. Expected: {accumulated_sequence[diff_pos : diff_pos + 5]}, Got: {prefix[diff_pos : diff_pos + 5]}. Setting response_masks to all 0s. This is likely due to retokenization."
+                        )
                     else:
                         logger.warning(f"When assemble steps, detect length mismatch. Expected length: {len(accumulated_sequence)}, Got length: {len(prefix)}. Setting response_masks to all 0s.")
 

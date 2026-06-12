@@ -431,9 +431,9 @@ class FullyAsyncTrainer(SeparateRayPPOTrainer):
                 }
             )
 
-            # Collect all fully_async, timing, custom, and rejection_sample metrics from batch.meta_info
+            # Collect all fully_async, timing, custom, rejection_sample, and SearchAgent metrics from batch.meta_info
             for key, value in batch.meta_info.items():
-                if key.startswith(("fully_async", "timing_s", "custom/", "rejection_sample")):
+                if key.startswith(("fully_async", "timing_s", "custom/", "rejection_sample", "turn/", "abnormal_trajectory/")):
                     metrics[key] = value
 
     def _get_samples_from_queue(self) -> tuple[None, None] | tuple[int, Any]:

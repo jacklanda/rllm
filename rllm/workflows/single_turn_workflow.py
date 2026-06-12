@@ -41,11 +41,17 @@ class SingleTurnWorkflow(TimingTrackingMixin, Workflow):
 
         action = self.agent.update_from_model(response)
 
+        if output.finish_reason == "length":
+            self.mark_abnormal_generation(response, "model response hit max_response_length")
+            raise TerminationEvent(TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED)
+
+        bad_generation, guard_reason = self.detect_abnormal_generation(response)
+        if bad_generation:
+            self.mark_abnormal_generation(response, guard_reason)
+            raise TerminationEvent(TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED)
+
         _, reward, done, info = await self.timed_env_call(self.env.step, action)
         self.agent.update_from_env({}, reward, done, info)
-
-        if output.finish_reason == "length":
-            raise TerminationEvent(TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED)
 
         if done:
             raise TerminationEvent(TerminationReason.ENV_DONE)

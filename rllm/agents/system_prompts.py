@@ -652,7 +652,41 @@ WEB SEARCH QA RULES:
 - Put the final answer in the finish tool's result. Use \\boxed{} when the task asks for a boxed answer or when the prompt requests that format.
 """
 
+REACT_SYSTEM_PROMPT = """You are a helpful AI assistant that answers questions by reasoning and searching for relevant information.
+
+Follow the ReAct format strictly:
+- Thought: reason about what you know and what you need to find next
+- Action: call a tool with appropriate arguments
+- Observation: the tool result (provided by the environment)
+
+Repeat Thought/Action/Observation until you have enough information to answer. Then call the finish tool with your final answer clearly stated in \\boxed{} format inside the result parameter.
+"""
+
+# COT_SYSTEM_PROMPT = """Please reason step by step.
+
+# You must end every response with exactly one final answer line.
+
+# For multiple-choice questions, the final line must be:
+# <answer>LETTER</answer>
+# where LETTER is one of A, B, C, D, E, F.
+
+# For non-multiple-choice questions, the final line must be:
+# \\boxed{FINAL_ANSWER}
+
+# Do not put <answer> or \\boxed{} anywhere except the final line.
+# Do not put intermediate calculations or candidate answers in <answer> or \\boxed{}.
+# Do not write anything after the final answer line."""
+
+COT_SYSTEM_PROMPT = """Please reason step by step, and put your final answer within \\boxed{}."""
+
 FUSED_AGENT_USER_PROMPT = CLI_AGENT_USER_PROMPT
+
+REACT_USER_PROMPT = """Task:
+{problem_statement}
+
+Use the ReAct loop: reason about the next step, call an available tool with <tool_call>, observe the result, and repeat until ready to submit."""
+
+COT_USER_PROMPT = "{problem_statement}"
 
 FUSED_SEARCH_USER_PROMPT = """Answer the following question by searching for relevant information.
 

@@ -21,6 +21,24 @@ def _ray_current_cluster_path() -> Path:
     return Path("/tmp/ray/ray_current_cluster")
 
 
+def _ray_compat_sitecustomize_dir() -> Path:
+    return Path(__file__).resolve().parent / "_ray_compat"
+
+
+def _prepend_pythonpath(path: Path) -> None:
+    path_str = str(path)
+    pythonpath = os.environ.get("PYTHONPATH", "")
+    entries = [entry for entry in pythonpath.split(os.pathsep) if entry]
+    if path_str not in entries:
+        os.environ["PYTHONPATH"] = os.pathsep.join([path_str, *entries])
+
+
+def enable_ray_subprocess_compat_shims() -> None:
+    """Expose small compatibility patches to Python subprocesses Ray starts."""
+
+    _prepend_pythonpath(_ray_compat_sitecustomize_dir())
+
+
 def get_default_ray_address() -> str | None:
     """Choose the safest implicit Ray address for the current machine."""
 
@@ -49,6 +67,9 @@ def get_ray_init_settings(config: Any | None = None) -> dict[str, Any]:
 
     Notes:
     - If `config.ray_init.address` is set, we pass it through verbatim.
+    - Ray's dashboard is optional for training and can fail on unrelated
+      observability dependency mismatches, so it is disabled by default. Set
+      `ray_init.include_dashboard=true` to opt in.
     - Otherwise, if we detect a running cluster owned by the current user (or
       `RAY_ADDRESS` is set), we use `address="auto"` to attach.
     - If we only detect another user's stale cluster marker, we explicitly set
@@ -57,12 +78,16 @@ def get_ray_init_settings(config: Any | None = None) -> dict[str, Any]:
       local cluster.
     """
 
+    enable_ray_subprocess_compat_shims()
+
     settings: dict[str, Any] = {}
 
     if config is not None and hasattr(config, "ray_init"):
         for k, v in config.ray_init.items():
             if v is not None:
                 settings[k] = v
+
+    settings.setdefault("include_dashboard", False)
 
     # Prefer explicit address from config.
     if "address" in settings:

@@ -6,14 +6,30 @@ defaults:
   - ppo_trainer
   - _self_
 
+ray_init:
+  address: null
+  timeline_json_file: null
+
 actor_rollout_ref:
   rollout:
     mode: async
+    # GRPO repeats each prompt rollout.n times, so the n rollouts of one task
+    # share a long (~16k token) common prefix. With enable_prefix_caching=True
+    # vLLM V1 heuristically switches those decode steps to *cascade attention*
+    # (triggered when common_prefix_len>256 across several queries — see the
+    # `num_common_prefix_blocks=[1005]` line in the crash dump). The cascade
+    # FLASH_ATTN kernel has a known illegal-memory-access bug on long shared
+    # prefixes; when EngineCore dies it corrupts the CUDA context shared by the
+    # FSDP actor (hybrid engine), which then surfaces as the unrelated
+    # `mem_get_info`/`compute_log_prob` "illegal memory access" crash. Disabling
+    # cascade attention keeps normal FlashDecoding (prefix caching still works).
+    engine_kwargs:
+      vllm:
+        disable_cascade_attn: True
     agent:
       num_workers: 0
     val_kwargs:
       do_sample: True
-      #max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
 
 data:
   shuffle_data: True
@@ -22,12 +38,14 @@ data:
   max_response_length: 32768
 
 rllm:
+  max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
   agent:
     name: math_agent
     max_steps: 32
     cli_max_steps: 80        # CLI tasks get a larger step budget; null = use max_steps for all
     apply_gold_patch: False  # Sanity check: for CLI tasks, bypass the agent and apply `entry.gold_patch` via git, then run eval_script. Ablates verifier/container correctness.
     trajectory_timeout: null
+    per_step_max_tokens: 4096  # Soft cap on tokens generated per single model turn (null/<=0 = unbounded). Trajectory-wide budget stays data.max_response_length; this only stops one turn from decoding the whole remaining budget at once.
     overlong_filter: False
     agent_args: {}
     engine_args: {}
@@ -36,7 +54,7 @@ rllm:
     env_args: {}
   workflow:
     use_workflow: False
-    name: single_turn_workflow
+    name: multi_turn_workflow
     workflow_args:
       agent_cls: null
       agent_args: {}
@@ -52,6 +70,7 @@ rllm:
   mask_truncated_samples: True
   filter_token_mismatch: True
   incremental_tokenization: False
+  rollout_enable_sleep_mode: True
   stepwise_advantage:
     enable: False
     mode: broadcast # [broadcast, per_step]

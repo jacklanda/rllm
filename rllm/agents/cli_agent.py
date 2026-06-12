@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -19,7 +20,7 @@ except (ImportError, Exception):
 
 from rllm.agents.agent import Action, BaseAgent, Step, Trajectory
 from rllm.agents.system_prompts import CLI_AGENT_SYSTEM_PROMPT, CLI_AGENT_USER_PROMPT
-from rllm.parser.tool_parser import QwenToolParser
+from rllm.parser.tool_parser import Qwen3CoderToolParser, QwenToolParser
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,16 @@ SWEAGENT_TOOL_FILES = [
     os.path.join(R2EGYM_PATH, "agenthub/tools/execute_bash.py"),
     os.path.join(R2EGYM_PATH, "agenthub/tools/submit.py"),
 ]
+
+
+def _is_qwen3_coder_model(model_name: str | None) -> bool:
+    model_name = (model_name or "").lower()
+    return any(x in model_name for x in ("qwen3.5", "qwen3-coder", "qwen3coder"))
+
+
+def make_qwen_tool_parser(model_name: str | None = None, valid_tools: set[str] | None = None) -> QwenToolParser:
+    parser_cls = Qwen3CoderToolParser if _is_qwen3_coder_model(model_name) else QwenToolParser
+    return parser_cls(valid_tools=valid_tools)
 
 
 def parse_r2egym_tool_docstring(tool_file_path: str) -> dict:
@@ -181,14 +192,14 @@ def generate_tool_schemas(scaffold: str = "r2egym") -> list[dict]:
     return schemas
 
 
-def _build_tools_system_prompt(scaffold: str = "r2egym") -> str:
+def _build_tools_system_prompt(scaffold: str = "r2egym", model_name: str | None = None) -> str:
     """Build the full system prompt including tool schemas.
 
     Returns:
         The system prompt string with tool schemas formatted by QwenToolParser.
     """
     schemas = generate_tool_schemas(scaffold)
-    tool_parser = QwenToolParser()
+    tool_parser = make_qwen_tool_parser(model_name)
     schemas_str = "\n".join(json.dumps(s, indent=0, ensure_ascii=False) for s in schemas)
     tools_prompt = tool_parser.get_tool_prompt(schemas_str)
     return CLI_AGENT_SYSTEM_PROMPT.strip() + "\n" + tools_prompt
@@ -238,12 +249,13 @@ class CLIAgent(BaseAgent):
     _VALID_TOOLS_R2EGYM = {"file_editor", "search", "execute_bash", "finish"}
     _VALID_TOOLS_SWEAGENT = {"str_replace_editor", "execute_bash", "submit"}
 
-    def __init__(self, scaffold: str = "r2egym"):
+    def __init__(self, scaffold: str = "r2egym", model_name: str | None = None):
         assert scaffold in ["r2egym", "sweagent"], f"Invalid scaffold: {scaffold}, must be one of ['r2egym', 'sweagent']"
         self.scaffold = scaffold
+        self.model_name = model_name
         valid_tools = self._VALID_TOOLS_R2EGYM if scaffold == "r2egym" else self._VALID_TOOLS_SWEAGENT
-        self.tool_parser = QwenToolParser(valid_tools=valid_tools)
-        self.system_prompt = _build_tools_system_prompt(scaffold)
+        self.tool_parser = make_qwen_tool_parser(model_name, valid_tools=valid_tools)
+        self.system_prompt = _build_tools_system_prompt(scaffold, model_name=model_name)
         self.user_prompt_template = CLI_AGENT_USER_PROMPT
 
         self._trajectory = Trajectory()
@@ -435,6 +447,7 @@ class CLIAgent(BaseAgent):
 
         # Append assistant message (raw response preserves <tool_call> tags)
         self.messages.append({"role": "assistant", "content": response})
+        cur_step.chat_completions = copy.deepcopy(self.messages)
 
         self.step += 1
         return actions

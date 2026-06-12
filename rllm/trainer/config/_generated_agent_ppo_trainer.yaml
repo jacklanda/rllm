@@ -367,6 +367,7 @@ ray_init:
   num_cpus: null
   timeline_json_file: null
 rllm:
+  max_val_num: -1
   agent:
     name: miniwobagent
     max_steps: 20

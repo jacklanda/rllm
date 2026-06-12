@@ -50,6 +50,7 @@ class AccumulatedData:
     is_correct: list[bool] = field(default_factory=list)  # whether the episode was correct
     termination_reasons: list = field(default_factory=list)  # termination reason for each episode (TerminationReason enum)
     metrics: list[dict] = field(default_factory=list)  # episode-level metrics
+    search_agent_metrics: list[dict[str, int]] = field(default_factory=list)
 
     # Multimodal data (parallel to tensor lists)
     multi_modal_inputs: list[dict] = field(default_factory=list)  # Optional multimodal inputs per step
@@ -78,6 +79,7 @@ class AccumulatedData:
         step_num: int,
         is_last: bool,
         group_role: str = "",
+        search_agent_metrics: dict[str, int] | None = None,
     ):
         """Add a single processed step to all accumulator lists.
 
@@ -98,6 +100,7 @@ class AccumulatedData:
         self.is_last_step.append(is_last)
         self.multi_modal_inputs.append(step_data.multi_modal_inputs)
         self.group_roles.append(group_role)
+        self.search_agent_metrics.append(search_agent_metrics or {})
 
         if step_data.logprobs is not None and len(step_data.logprobs) > 0:
             self.rollout_logprobs.append(torch.tensor(step_data.logprobs, dtype=torch.float32))

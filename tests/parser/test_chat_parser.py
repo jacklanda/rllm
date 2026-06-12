@@ -73,7 +73,8 @@ def test_parser_with_disable_thinking():
     parser = QwenChatTemplateParser(tokenizer, disable_thinking=True)
 
     # Verify that thinking is disabled in the generation prompt
-    assert "<think>\n\n</think>\n\n" in parser.assistant_token
+    assert parser.assistant_token == "<|im_start|>assistant\n"
+    assert parser.generation_prompt.endswith("<think>\n\n</think>\n\n")
 
     # Test equivalence check
     assert parser.verify_equivalence(PARSER_TEST_MESSAGES)
@@ -114,4 +115,14 @@ def test_qwen3_5_chat_template_parser():
     parser = ChatTemplateParser.get_parser(tokenizer)
     assert isinstance(parser, QwenChatTemplateParser)
     assert parser.generation_prompt
+    assert parser.generation_prompt.endswith("<think>\n")
     assert parser.verify_equivalence(PARSER_TEST_MESSAGES)
+
+    messages = [{"role": "system", "content": "You are helpful."}, {"role": "user", "content": "hi"}]
+    expected_enabled = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=True)
+    expected_disabled = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    rendered_enabled = parser.parse(messages, add_generation_prompt=True, is_first_msg=True)
+    rendered_disabled = QwenChatTemplateParser(tokenizer, disable_thinking=True).parse(messages, add_generation_prompt=True, is_first_msg=True)
+
+    assert rendered_enabled == expected_enabled
+    assert rendered_disabled == expected_disabled

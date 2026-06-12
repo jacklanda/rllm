@@ -2,14 +2,16 @@
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
+from rllm.globals import THOUGHT_DELIMITER_END, THOUGHT_DELIMITER_START
 from rllm.types import Episode
 
 
 class EpisodeLogger:
-    """Logger to save episodes to individual JSON files with step and data hash."""
+    """Logger to save each rollout batch to a single JSON file."""
 
     def __init__(self, base_dir: str, subdirectory: str = "episodes"):
         """Initialize the episode logger.
@@ -43,22 +45,43 @@ class EpisodeLogger:
         return hash_obj.hexdigest()[:length]
 
     def get_step_dir(self, step: int, mode: str = "train", epoch: int = 0) -> Path:
-        """Get the directory path for a specific training or validation step.
+        """Get the legacy directory path for a specific training or validation step.
 
-        Args:
-            step: Current training/validation step
-            mode: Mode identifier ('train' or 'val'), defaults to 'train'
-            epoch: Current epoch number, defaults to 0
-
-        Returns:
-            Path object for the step directory
+        The current logger writes batch files directly under ``self.log_dir`` via
+        :meth:`get_batch_file`; this helper is kept for callers that still need
+        to reason about the old ``{mode}_step_{step}_epoch_{epoch}`` layout.
         """
-        step_dir = self.log_dir / f"{mode}_step_{step}_epoch_{epoch}"
-        step_dir.mkdir(parents=True, exist_ok=True)
-        return step_dir
+        return self.log_dir / f"{mode}_step_{step}_epoch_{epoch}"
+
+    def get_batch_file(self, step: int, mode: str = "train", epoch: int = 0) -> Path:
+        """Get the merged JSON file path for a rollout batch."""
+        if mode == "train":
+            filename = f"global_steps_{step}.json"
+        else:
+            filename = f"{mode}_global_steps_{step}_epoch_{epoch}.json"
+        return self.log_dir / filename
+
+    def _cleanup_legacy_step_dir(self, step: int, mode: str = "train", epoch: int = 0) -> None:
+        """Remove legacy per-step directory output if it exists."""
+        legacy_step_dir = self.get_step_dir(step, mode, epoch)
+        if legacy_step_dir.exists():
+            shutil.rmtree(legacy_step_dir)
+
+    @staticmethod
+    def _format_thought_for_dump(thought: Any) -> str:
+        """Return a complete think block for the dumped thought field."""
+        thought_text = "" if thought is None else str(thought)
+        stripped = thought_text.strip()
+        if stripped.startswith(THOUGHT_DELIMITER_START) and stripped.endswith(THOUGHT_DELIMITER_END):
+            return stripped
+        if stripped.startswith(THOUGHT_DELIMITER_START):
+            stripped = stripped[len(THOUGHT_DELIMITER_START) :].lstrip()
+        if stripped.endswith(THOUGHT_DELIMITER_END):
+            stripped = stripped[: -len(THOUGHT_DELIMITER_END)].rstrip()
+        return f"{THOUGHT_DELIMITER_START}{stripped}{THOUGHT_DELIMITER_END}"
 
     def get_episode_filename(self, episode: Episode, step: int) -> str:
-        """Generate filename for an episode.
+        """Generate legacy filename for an episode.
 
         Format: episode_hash{task_hash}_id{episode_id}.json
 
@@ -76,18 +99,11 @@ class EpisodeLogger:
         filename = f"episode_hash{task_hash}_id{episode_id_safe}.json"
         return filename
 
-    def log_episode(self, episode: Episode, step: int, mode: str = "train", epoch: int = 0):
-        """Log a single episode to its own JSON file in a step-specific directory.
-
-        Args:
-            episode: The episode to log
-            step: Current training/validation step
-            mode: Mode identifier ('train' or 'val'), defaults to 'train'
-            epoch: Current epoch number, defaults to 0
-        """
+    def _episode_to_dict(self, episode: Episode, step: int, mode: str = "train", epoch: int = 0) -> dict:
         episode_data = {
             "training_step": step,
             "epoch": epoch,
+            "mode": mode,
             "episode_id": episode.id,
             "session_id": episode.session_id,
             "task": episode.task,
@@ -110,38 +126,34 @@ class EpisodeLogger:
                 "steps": [
                     {
                         "observation": step.observation,
-                        "thought": step.thought,
+                        "thought": self._format_thought_for_dump(step.thought),
                         "action": step.action,
                         "reward": step.reward,
                         "done": step.done,
                         "model_response": step.model_response,
                         "chat_completions": step.chat_completions,
-                        "timing": step.info.get("timing", {}),  # Add step-level timing
+                        "timing": step.info.get("timing", {}),
                     }
                     for step in traj.steps
                 ],
             }
             episode_data["trajectories"].append(traj_data)
 
-        # Write to individual file in step-specific directory
-        step_dir = self.get_step_dir(step, mode, epoch)
-        filename = self.get_episode_filename(episode, step)
-        filepath = step_dir / filename
+        return episode_data
 
-        try:
-            with open(filepath, "w") as f:
-                json_str = json.dumps(episode_data, indent=4, default=str)
-                f.write(json_str + "\n")
-                f.flush()  # Ensure data is written to disk
-        except Exception as e:
-            print(f"Error writing episode to {filepath}: {e}")
-            import traceback
+    def log_episode(self, episode: Episode, step: int, mode: str = "train", epoch: int = 0):
+        """Log a single episode to the merged batch JSON file.
 
-            traceback.print_exc()
-            raise
+        Args:
+            episode: The episode to log
+            step: Current training/validation step
+            mode: Mode identifier ('train' or 'val'), defaults to 'train'
+            epoch: Current epoch number, defaults to 0
+        """
+        self.log_episodes([episode], step, mode, epoch)
 
     def log_episodes(self, episodes: list[Episode], step: int, mode: str = "train", epoch: int = 0):
-        """Log multiple episodes, each to its own file.
+        """Log multiple episodes to one step-level JSON file.
 
         Args:
             episodes: List of episodes to log
@@ -150,44 +162,38 @@ class EpisodeLogger:
             epoch: Current epoch number, defaults to 0
         """
         print(f"[EpisodeLogger] Logging {len(episodes)} episodes for step={step}, mode={mode}, epoch={epoch}")
-        for i, episode in enumerate(episodes):
-            try:
-                self.log_episode(episode, step, mode, epoch)
-                print(f"[EpisodeLogger] Successfully logged episode {i + 1}/{len(episodes)}: {episode.id}")
-            except Exception as e:
-                print(f"[EpisodeLogger] Failed to log episode {i + 1}/{len(episodes)}: {e}")
-                raise
+        batch_data = {
+            "training_step": step,
+            "epoch": epoch,
+            "mode": mode,
+            "num_episodes": len(episodes),
+            "trajectories": [self._episode_to_dict(episode, step, mode, epoch) for episode in episodes],
+        }
+
+        filepath = self.get_batch_file(step, mode, epoch)
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(batch_data, f, indent=4, ensure_ascii=False, default=str)
+                f.write("\n")
+                f.flush()  # Ensure data is written to disk
+            self._cleanup_legacy_step_dir(step, mode, epoch)
+            print(f"[EpisodeLogger] Successfully logged {len(episodes)} episodes to {filepath}")
+        except Exception as e:
+            print(f"Error writing episodes to {filepath}: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise
 
     def log_episodes_batch(self, episodes: list[Episode], step: int, mode: str = "train", epoch: int = 0, batch_summary: bool = True):
-        """Log multiple episodes and optionally create a batch summary in step-specific directory.
+        """Log multiple episodes to one merged JSON file.
 
         Args:
             episodes: List of episodes to log
             step: Current training/validation step
             mode: Mode identifier ('train' or 'val'), defaults to 'train'
             epoch: Current epoch number, defaults to 0
-            batch_summary: Whether to create a summary file for the batch
+            batch_summary: Kept for API compatibility. Batch summaries are no
+                longer written because the merged JSON file is the only output.
         """
-        # Log individual episodes
         self.log_episodes(episodes, step, mode, epoch)
-
-        # Optionally create batch summary in step-specific directory
-        if batch_summary and episodes:
-            summary_data = {
-                "training_step": step,
-                "epoch": epoch,
-                "mode": mode,
-                "num_episodes": len(episodes),
-                "episode_files": [self.get_episode_filename(ep, step) for ep in episodes],
-                "summary_stats": {
-                    "total_correct": sum(1 for ep in episodes if ep.is_correct),
-                    "total_incorrect": sum(1 for ep in episodes if not ep.is_correct),
-                    "accuracy": sum(1 for ep in episodes if ep.is_correct) / len(episodes) if episodes else 0,
-                    "avg_trajectories_per_episode": sum(len(ep.trajectories) for ep in episodes) / len(episodes) if episodes else 0,
-                },
-            }
-
-            step_dir = self.get_step_dir(step, mode, epoch)
-            summary_file = step_dir / "batch_summary.json"
-            with open(summary_file, "w") as f:
-                json.dump(summary_data, f, indent=4, ensure_ascii=False)

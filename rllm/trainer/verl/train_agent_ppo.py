@@ -49,7 +49,7 @@ def run_ppo_agent(config):
 
     # [Optional] get the path of the timeline trace file from the configuration, default to None
     # This file is used for performance analysis
-    timeline_json_file = config.ray_init.get("timeline_json_file", None)
+    timeline_json_file = OmegaConf.select(config, "ray_init.timeline_json_file", default=None)
     if timeline_json_file:
         ray.timeline(filename=timeline_json_file)
 
@@ -270,6 +270,8 @@ class TaskRunner:
                     "env_args",
                     OmegaConf.to_container(config.rllm.env.get("env_args", {}), resolve=True) or {},
                 )
+                # Pass max_steps from config to workflow for multi-turn workflows
+                workflow_args.setdefault("max_steps", config.rllm.agent.get("max_steps", 32))
 
         if workflow_class is not None:
             workflow_args = workflow_args or {}

@@ -1,4 +1,4 @@
-from rllm.parser.tool_parser import QwenToolParser, R1ToolParser, ToolParser
+from rllm.parser.tool_parser import Qwen3CoderToolParser, QwenToolParser, R1ToolParser, ToolParser
 
 __all__ = [
     "ChatTemplateParser",
@@ -8,6 +8,7 @@ __all__ = [
     "ToolParser",
     "R1ToolParser",
     "QwenToolParser",
+    "Qwen3CoderToolParser",
 ]
 
 
@@ -29,6 +30,7 @@ def __getattr__(name):
 PARSER_REGISTRY = {
     "r1": R1ToolParser,
     "qwen": QwenToolParser,
+    "qwen3_coder": Qwen3CoderToolParser,
 }
 
 

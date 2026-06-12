@@ -14,11 +14,61 @@ assert _SPEC is not None and _SPEC.loader is not None
 _METRICS_MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_METRICS_MODULE)
 calculate_debug_metrics_compat = _METRICS_MODULE.calculate_debug_metrics_compat
+canonicalize_search_agent_metric_metadata = _METRICS_MODULE.canonicalize_search_agent_metric_metadata
+compute_search_agent_metrics = _METRICS_MODULE.compute_search_agent_metrics
 
 
 class _DummyData:
-    def __init__(self, batch: dict[str, object]) -> None:
+    def __init__(self, batch: dict[str, object], non_tensor_batch: dict[str, object] | None = None) -> None:
         self.batch = batch
+        self.non_tensor_batch = non_tensor_batch or {}
+
+
+def test_compute_search_agent_metrics_matches_reference_reductions() -> None:
+    batch = _DummyData(
+        {},
+        {
+            "tool_call_counts": [1, 3],
+            "all_call_tool_counts": [2, 4],
+            "all_call_tool_success_counts": [1, 3],
+            "searched_query_count": [0, 1],
+            "too_many_tool_call_count": [1, 0],
+            "tool_parser_error_count": [0, 2],
+            "response_truncated_count": [0, 0],
+            "too_many_turn_count": [0, 1],
+            "too_long_seq_truncated_count": [1, 0],
+            "duplicate_search_result_count": [0, 1],
+        },
+    )
+
+    metrics = compute_search_agent_metrics(batch)
+
+    assert metrics["turn/tool_call_turn/mean"] == pytest.approx(2.0)
+    assert metrics["turn/all_call_tool_counts/mean"] == pytest.approx(3.0)
+    assert metrics["turn/tool_call_success_counts/mean"] == pytest.approx(2.0)
+    assert metrics["turn/tool_call_success_rate/mean"] == pytest.approx(4 / 6)
+    assert metrics["abnormal_trajectory/tool_parser_error_count_percentage"] == pytest.approx(1.0)
+    assert metrics["abnormal_trajectory/duplicate_search_result_count_percentage"] == pytest.approx(0.5)
+
+
+def test_canonicalize_search_agent_metric_metadata_maps_existing_recipe_aliases() -> None:
+    metrics = canonicalize_search_agent_metric_metadata(
+        {
+            "total_tool_calls": 4,
+            "total_tool_return_error": 1,
+            "total_parse_tool_args_error": 1,
+            "duplicate_search_detected": True,
+            "excessive_parallel_calls": False,
+            "overlong": True,
+        }
+    )
+
+    assert metrics["all_call_tool_counts"] == 4
+    assert metrics["all_call_tool_success_counts"] == 2
+    assert metrics["searched_query_count"] == 1
+    assert metrics["too_many_tool_call_count"] == 0
+    assert metrics["tool_parser_error_count"] == 1
+    assert metrics["too_long_seq_truncated_count"] == 1
 
 
 def test_calculate_debug_metrics_compat_passes_through_upstream_metrics(monkeypatch: pytest.MonkeyPatch) -> None:

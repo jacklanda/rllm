@@ -344,8 +344,8 @@ class TinkerAgentTrainer:
         episodes_ls = []
         self.agent_execution_engine.rollout_engine.set_sampling_client(sampling_client)
 
-        # Get max_val_num from config (-1 means use all batches)
-        max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
+        # Get max_val_num from rLLM config (-1 means use all batches).
+        max_val_num = self.config.rllm.get("max_val_num", -1)
 
         for batch_idx, batch in enumerate(dataloader):
             # Break if we've reached the maximum number of validation batches

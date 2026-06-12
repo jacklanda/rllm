@@ -38,7 +38,7 @@ from rllm.experimental.common import (
 from rllm.experimental.protocol import BackendProtocol
 from rllm.experimental.rollout import RolloutEngine, VerlEngine
 from rllm.experimental.verl import transform_episodes_to_dataproto, update_dataproto_with_advantages
-from rllm.experimental.verl.metrics import calculate_debug_metrics_compat
+from rllm.experimental.verl.metrics import calculate_debug_metrics_compat, compute_search_agent_metrics
 from rllm.experimental.verl.utils import (
     balance_batch,
     build_wg_kwargs,
@@ -708,6 +708,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
             metrics = trainer_state.metrics
             metrics.update({"training/global_step": trainer_state.global_step, "training/epoch": trainer_state.epoch})
             metrics.update(compute_data_metrics(batch=batch, use_critic=False))
+            metrics.update(compute_search_agent_metrics(batch))
             metrics.update(compute_timing_metrics(batch=batch, timing_raw=trainer_state.timing_dict))
 
             n_gpus = self.resource_pool_manager.get_n_gpus()

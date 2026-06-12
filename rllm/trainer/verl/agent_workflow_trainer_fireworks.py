@@ -145,7 +145,7 @@ class FireworksAgentWorkflowPPOTrainer(AgentWorkflowPPOTrainer):
         start_time = time.time()
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate_agent()
-            pprint(f"Initial validation metrics: {val_metrics}")
+            # pprint(f"Initial validation metrics: {val_metrics}")
             logger.log(data=val_metrics, step=self.global_steps)
             if self.config.trainer.get("val_only", False):
                 return

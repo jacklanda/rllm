@@ -1,9 +1,13 @@
+import ast
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
 from typing import Any
 
 from rllm.tools.tool_base import ToolCall
+
+logger = logging.getLogger(__name__)
 
 
 class ToolParser(ABC):
@@ -38,6 +42,9 @@ class ToolParser(ABC):
             if any(x in model_name for x in ("deepseek", "deepscaler", "deepcoder")) and "llama" in tokenizer_cls:
                 print(f"Using R1ToolParser for {tokenizer.name_or_path}")
                 return R1ToolParser()
+            elif any(x in model_name for x in ("qwen3.5", "qwen3-coder", "qwen3coder")):
+                print(f"Using Qwen3CoderToolParser for {tokenizer.name_or_path}")
+                return Qwen3CoderToolParser()
             elif "qwen" in model_name or "r2e" in model_name or "deepswe" in model_name or "qwen" in tokenizer_cls:
                 print(f"Using QwenToolParser for {tokenizer.name_or_path}")
                 return QwenToolParser()
@@ -252,6 +259,19 @@ class QwenToolParser(ToolParser):
                 tc["name"] = self._normalize_tool_name(tc["name"], self.valid_tools)
         tool_calls = [ToolCall(name=tc["name"], arguments=tc["arguments"]) for tc in tool_calls_dicts]
         return tool_calls
+
+    def format_tool_call(self, tool_call_dict: dict[str, Any]) -> str:
+        arguments_obj = tool_call_dict.get("arguments")
+        if isinstance(arguments_obj, str):
+            try:
+                arguments_obj = json.loads(arguments_obj)
+            except json.JSONDecodeError:
+                pass
+
+        tool_call_for_dump = dict(tool_call_dict)
+        if arguments_obj is not None:
+            tool_call_for_dump["arguments"] = arguments_obj
+        return f"{self.tool_call_begin}\n{json.dumps(tool_call_for_dump, indent=0, ensure_ascii=False)}\n{self.tool_call_end}"
 
     @classmethod
     def _normalize_tool_name(cls, name: str, valid_tools: set[str]) -> str:
@@ -499,7 +519,46 @@ class QwenToolParser(ToolParser):
     # \boxed{} fallback: detect direct answers and wrap as finish call
     # ------------------------------------------------------------------
 
-    _BOXED_RE = re.compile(r"\\boxed\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}")
+    @staticmethod
+    def _last_balanced_span(text: str, anchors: tuple[str, ...]) -> str | None:
+        """Return the content of the last complete braced span after anchors."""
+        matches: list[tuple[int, int]] = []
+        for anchor in anchors:
+            start = text.find(anchor)
+            while start != -1:
+                matches.append((start, len(anchor)))
+                start = text.find(anchor, start + 1)
+
+        for start, anchor_len in sorted(matches, reverse=True):
+            i = start + anchor_len
+            depth = 1
+            j = i
+            while depth and j < len(text):
+                if text[j] == "{":
+                    depth += 1
+                elif text[j] == "}":
+                    depth -= 1
+                j += 1
+            if depth == 0:
+                return text[i : j - 1]
+        return None
+
+    @classmethod
+    def _extract_answer_tag(cls, text: str) -> list[dict[str, Any]]:
+        """Treat the last <answer>...</answer> after reasoning as a finish."""
+        think_end = text.rfind("</think>")
+        if think_end == -1:
+            if len(text) > 2000:
+                return []
+            search_text = text
+        else:
+            search_text = text[think_end + len("</think>"):]
+
+        matches = re.findall(r"<answer>\s*(.*?)\s*</answer>", search_text, flags=re.IGNORECASE | re.DOTALL)
+        if matches:
+            answer = matches[-1].strip()
+            return [{"name": "finish", "arguments": {"command": "submit", "result": answer}}]
+        return []
 
     @classmethod
     def _extract_boxed_answer(cls, text: str) -> list[dict[str, Any]]:
@@ -521,9 +580,9 @@ class QwenToolParser(ToolParser):
         else:
             search_text = text[think_end + len("</think>"):]
 
-        match = cls._BOXED_RE.search(search_text)
-        if match:
-            answer = match.group(1).strip()
+        answer = cls._last_balanced_span(search_text, ("\\boxed{", "boxed{", "oxed{", "\x08oxed{"))
+        if answer is not None:
+            answer = answer.strip()
             return [{"name": "finish", "arguments": {"command": "submit", "result": answer}}]
         return []
 
@@ -541,7 +600,8 @@ class QwenToolParser(ToolParser):
         4. Incomplete JSON (missing closing braces, trailing commas)
         5. Missing closing tags
         6. Bare JSON after ``</think>`` (no XML tags)
-        7. ``\\boxed{answer}`` treated as implicit ``finish`` call
+        7. ``<answer>answer</answer>`` treated as implicit ``finish`` call
+        8. ``\\boxed{answer}`` treated as implicit ``finish`` call
         """
         # 1. Primary: <tool_call> tags
         tool_calls = self._extract_from_tags(text, self.tool_call_begin, self.tool_call_end)
@@ -558,7 +618,12 @@ class QwenToolParser(ToolParser):
         if not tool_calls:
             tool_calls = self._extract_bare_json(text)
 
-        # 4. \boxed{} fallback: treat as finish(result=...) for search tasks
+        # 4. <answer> fallback: task-local answer tags outrank generic boxed
+        # output when both appear after the reasoning block.
+        if not tool_calls:
+            tool_calls = self._extract_answer_tag(text)
+
+        # 5. \boxed{} fallback: treat as finish(result=...) for search tasks
         if not tool_calls:
             tool_calls = self._extract_boxed_answer(text)
 
@@ -639,4 +704,241 @@ For each function call, return a valid json object with function name and argume
 </tool_call>
 
 Make sure all curly braces and XML tags are correctly balanced and closed strictly.
+""".rstrip()
+
+
+class Qwen3CoderToolParser(QwenToolParser):
+    """Parser for Qwen3-Coder/Qwen3.5 XML-like tool calls.
+
+    Qwen3 uses JSON inside ``<tool_call>`` tags. Qwen3.5/Qwen3-Coder emits
+    function and parameter blocks instead:
+
+    ``<tool_call><function=name><parameter=arg>value</parameter></function></tool_call>``
+    """
+
+    _TOOL_CALL_RE = re.compile(r"<tool_call>(.*?)</tool_call>|<tool_call>(.*?)$", re.DOTALL)
+    _FUNCTION_RE = re.compile(r"<function=([^>\n]+)>(.*?)(?:</function>|$)", re.DOTALL)
+    _PARAMETER_RE = re.compile(r"<parameter=([^>\n]+)>(.*?)(?:</parameter>|(?=<parameter=)|(?=</function>)|$)", re.DOTALL)
+
+    def __init__(self, valid_tools: set[str] | None = None):
+        super().__init__(valid_tools=valid_tools)
+        self.tool_call_prefix = "<function="
+        self._tool_parameter_config: dict[str, dict[str, dict[str, Any]]] = {}
+
+    def parse(self, model_response: str) -> list[ToolCall]:
+        tool_calls_dicts = self.parse_qwen3_coder_tool_calls(model_response)
+        if self.valid_tools:
+            for tc in tool_calls_dicts:
+                tc["name"] = self._normalize_tool_name(tc["name"], self.valid_tools)
+        return [ToolCall(name=tc["name"], arguments=tc["arguments"]) for tc in tool_calls_dicts]
+
+    @staticmethod
+    def _strip_outer_newline(value: str) -> str:
+        if value.startswith("\n"):
+            value = value[1:]
+        if value.endswith("\n"):
+            value = value[:-1]
+        return value
+
+    @staticmethod
+    def _iter_tool_schemas(tools_schema: str) -> list[dict[str, Any]]:
+        tools_schema = tools_schema.strip()
+        if not tools_schema:
+            return []
+
+        try:
+            loaded = json.loads(tools_schema)
+            if isinstance(loaded, list):
+                return [item for item in loaded if isinstance(item, dict)]
+            if isinstance(loaded, dict):
+                return [loaded]
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        decoder = json.JSONDecoder()
+        schemas: list[dict[str, Any]] = []
+        idx = 0
+        while idx < len(tools_schema):
+            while idx < len(tools_schema) and tools_schema[idx].isspace():
+                idx += 1
+            if idx >= len(tools_schema):
+                break
+            try:
+                obj, next_idx = decoder.raw_decode(tools_schema, idx)
+            except json.JSONDecodeError:
+                idx += 1
+                continue
+            if isinstance(obj, dict):
+                schemas.append(obj)
+            elif isinstance(obj, list):
+                schemas.extend(item for item in obj if isinstance(item, dict))
+            idx = next_idx
+        return schemas
+
+    @classmethod
+    def _extract_parameter_config(cls, tools_schema: str) -> dict[str, dict[str, dict[str, Any]]]:
+        config: dict[str, dict[str, dict[str, Any]]] = {}
+        for schema in cls._iter_tool_schemas(tools_schema):
+            function_schema = schema.get("function", schema)
+            if not isinstance(function_schema, dict):
+                continue
+            name = function_schema.get("name")
+            parameters = function_schema.get("parameters", {})
+            if not isinstance(name, str) or not isinstance(parameters, dict):
+                continue
+            properties = parameters.get("properties", {})
+            if isinstance(properties, dict):
+                config[name] = {str(k): v for k, v in properties.items() if isinstance(v, dict)}
+        return config
+
+    @staticmethod
+    def _convert_param_value(param_value: str, param_name: str, param_config: dict[str, dict[str, Any]], func_name: str) -> Any:
+        if param_value.lower() == "null":
+            return None
+
+        if param_name not in param_config:
+            if param_config:
+                logger.warning(
+                    "Parsed parameter '%s' is not defined in the tool parameters for tool '%s'; returning string value.",
+                    param_name,
+                    func_name,
+                )
+            return param_value
+
+        param_schema = param_config[param_name]
+        param_type = str(param_schema.get("type", "string")).strip().lower()
+
+        if param_type in ["string", "str", "text", "varchar", "char", "enum"]:
+            return param_value
+        if (
+            param_type.startswith("int")
+            or param_type.startswith("uint")
+            or param_type.startswith("long")
+            or param_type.startswith("short")
+            or param_type.startswith("unsigned")
+        ):
+            try:
+                return int(param_value)
+            except Exception:
+                logger.warning(
+                    "Parsed value '%s' of parameter '%s' is not an integer in tool '%s'; returning string value.",
+                    param_value,
+                    param_name,
+                    func_name,
+                )
+                return param_value
+        if param_type.startswith("num") or param_type.startswith("float"):
+            try:
+                float_value = float(param_value)
+                return float_value if float_value - int(float_value) != 0 else int(float_value)
+            except Exception:
+                logger.warning(
+                    "Parsed value '%s' of parameter '%s' is not a float in tool '%s'; returning string value.",
+                    param_value,
+                    param_name,
+                    func_name,
+                )
+                return param_value
+        if param_type in ["boolean", "bool", "binary"]:
+            bool_value = param_value.lower()
+            if bool_value not in ["true", "false"]:
+                logger.warning(
+                    "Parsed value '%s' of parameter '%s' is not a boolean in tool '%s'; degenerating to false.",
+                    param_value,
+                    param_name,
+                    func_name,
+                )
+            return bool_value == "true"
+
+        if param_type in ["object", "array"] or param_type.startswith("dict") or param_type.startswith("list"):
+            try:
+                return json.loads(param_value)
+            except Exception:
+                logger.warning(
+                    "Parsed value '%s' of parameter '%s' is not valid JSON in tool '%s'; trying ast.literal_eval().",
+                    param_value,
+                    param_name,
+                    func_name,
+                )
+
+        try:
+            return ast.literal_eval(param_value)
+        except Exception:
+            logger.warning(
+                "Parsed value '%s' of parameter '%s' cannot be converted via ast.literal_eval() in tool '%s'; returning string value.",
+                param_value,
+                param_name,
+                func_name,
+            )
+            return param_value
+
+    def _parse_xml_function_call(self, function_name: str, parameters: str) -> dict[str, Any]:
+        param_config = self._tool_parameter_config.get(function_name, {})
+        arguments: dict[str, Any] = {}
+
+        for param_name, param_value in self._PARAMETER_RE.findall(parameters):
+            param_name = param_name.strip()
+            param_value = self._strip_outer_newline(str(param_value))
+            arguments[param_name] = self._convert_param_value(param_value, param_name, param_config, function_name)
+
+        return {"name": function_name.strip(), "arguments": arguments}
+
+    def parse_qwen3_coder_tool_calls(self, text: str) -> list[dict[str, Any]]:
+        raw_tool_calls = [match[0] if match[0] else match[1] for match in self._TOOL_CALL_RE.findall(text)]
+        if not raw_tool_calls and self.tool_call_prefix in text:
+            raw_tool_calls = [text]
+
+        tool_calls: list[dict[str, Any]] = []
+        for raw_tool_call in raw_tool_calls:
+            for function_name, parameters in self._FUNCTION_RE.findall(raw_tool_call):
+                function_name = function_name.strip()
+                if function_name:
+                    tool_calls.append(self._parse_xml_function_call(function_name, parameters))
+        return tool_calls
+
+    def format_tool_call(self, tool_call_dict: dict[str, Any]) -> str:
+        name = str(tool_call_dict.get("name", ""))
+        arguments_obj = tool_call_dict.get("arguments") or {}
+        if isinstance(arguments_obj, str):
+            try:
+                arguments_obj = json.loads(arguments_obj)
+            except json.JSONDecodeError:
+                arguments_obj = {}
+        if not isinstance(arguments_obj, dict):
+            arguments_obj = {}
+
+        lines = [self.tool_call_begin, f"<function={name}>"]
+        for param_name, param_value in arguments_obj.items():
+            if isinstance(param_value, str):
+                param_text = param_value
+            else:
+                param_text = json.dumps(param_value, ensure_ascii=False)
+            lines.extend([f"<parameter={param_name}>", param_text, "</parameter>"])
+        lines.extend(["</function>", self.tool_call_end])
+        return "\n".join(lines)
+
+    def get_tool_prompt(self, tools_schema: str) -> str:
+        self._tool_parameter_config = self._extract_parameter_config(tools_schema)
+        return f"""
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{tools_schema}
+</tools>
+
+For each function call, return the function name and parameters within a pairwise <tool_call></tool_call> XML block:
+<tool_call>
+<function=FUNCTION_NAME>
+<parameter=PARAMETER_NAME>
+PARAMETER_VALUE
+</parameter>
+</function>
+</tool_call>
+
+For multiple parameters, emit one <parameter=...></parameter> block per parameter inside the same function block.
+For multiple tool calls, emit multiple <tool_call></tool_call> blocks.
+Do not put JSON tool-call objects inside <tool_call> for this model family.
 """.rstrip()

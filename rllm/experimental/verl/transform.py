@@ -10,6 +10,7 @@ from verl.utils.torch_functional import pad_sequence_to_length
 
 from rllm.experimental.rollout import VerlEngine
 from rllm.experimental.verl.dataclass import AccumulatedData, ProcessedStepData
+from rllm.experimental.verl.metrics import SEARCH_AGENT_RAW_METRIC_KEYS, canonicalize_search_agent_metric_metadata
 from rllm.types import Episode, Trajectory, TrajectoryGroup
 from rllm.workflows.workflow import TerminationReason
 
@@ -191,6 +192,10 @@ def _batch_tensors_and_build_data_proto(accumulated: AccumulatedData, pad_token_
     if any(mm_inputs for mm_inputs in accumulated.multi_modal_inputs):
         non_tensors["multi_modal_inputs"] = np.array(accumulated.multi_modal_inputs, dtype=object)
 
+    if any(accumulated.search_agent_metrics):
+        for key in SEARCH_AGENT_RAW_METRIC_KEYS:
+            non_tensors[key] = np.array([metrics.get(key, 0) for metrics in accumulated.search_agent_metrics], dtype=np.int32)
+
     tensors = {
         "input_ids": input_ids,
         "attention_mask": attention_mask,
@@ -298,6 +303,8 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
     if not valid_steps:
         return 0
 
+    search_agent_metrics = canonicalize_search_agent_metric_metadata(trajectory.metadata or {})
+
     # ------------------------------------------------------------------
     # Walk steps and merge prefix-extending steps into segments.
     # ------------------------------------------------------------------
@@ -366,6 +373,7 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
             step_num=1,
             is_last=True,
             group_role=name,
+            search_agent_metrics=search_agent_metrics,
         )
 
     seg = _new_segment(valid_steps[0])

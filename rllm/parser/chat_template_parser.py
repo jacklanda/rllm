@@ -381,17 +381,27 @@ class QwenChatTemplateParser(ChatTemplateParser):
         self.system_token = "<|im_start|>system\n"
         self.user_token = "<|im_start|>user\n"
         self.assistant_token = "<|im_start|>assistant\n"
+        self.enable_thinking = not disable_thinking
+        chat_template = str(getattr(tokenizer, "chat_template", "") or "")
+        model_name = str(getattr(tokenizer, "name_or_path", "")).lower()
+        self.uses_qwen_thinking_prompt = "enable_thinking" in chat_template or any(x in model_name for x in ("qwen3.5", "qwen3-coder", "qwen3coder"))
         if disable_thinking:
-            self.assistant_token += "<think>\n\n</think>\n\n"
-        self.generation_prompt = self.assistant_token
+            self.generation_prompt = self.assistant_token + "<think>\n\n</think>\n\n"
+        elif self.uses_qwen_thinking_prompt:
+            self.generation_prompt = self.assistant_token + "<think>\n"
+        else:
+            self.generation_prompt = self.assistant_token
         self.image_token = "<|image_pad|>"
         self.vision_start_token = "<|vision_start|>"
         self.vision_end_token = "<|vision_end|>"
         self.stop_sequences = [151645]
 
-        from rllm.parser.tool_parser import QwenToolParser
+        from rllm.parser.tool_parser import Qwen3CoderToolParser, QwenToolParser
 
-        self.tool_parser = QwenToolParser()
+        if any(x in model_name for x in ("qwen3.5", "qwen3-coder", "qwen3coder")):
+            self.tool_parser = Qwen3CoderToolParser()
+        else:
+            self.tool_parser = QwenToolParser()
 
     def parse(self, messages: list[dict], add_generation_prompt: bool = False, is_first_msg: bool = False, tools: list[Tool] = None, accumulate_reasoning: bool = False, **kwargs) -> str:
         tools = tools or []
@@ -484,16 +494,7 @@ class QwenChatTemplateParser(ChatTemplateParser):
                             tool_call_dict = tool_call["function"]
                         else:
                             tool_call_dict = tool_call
-                        arguments_obj = tool_call_dict.get("arguments")
-                        if isinstance(arguments_obj, str):
-                            try:
-                                arguments_obj = json.loads(arguments_obj)
-                            except json.JSONDecodeError:
-                                pass
-                        tool_call_for_dump = dict(tool_call_dict)
-                        if arguments_obj is not None:
-                            tool_call_for_dump["arguments"] = arguments_obj
-                        tool_call_str = f"{self.tool_parser.tool_call_begin}\n{json.dumps(tool_call_for_dump, indent=0, ensure_ascii=False)}\n{self.tool_parser.tool_call_end}"
+                        tool_call_str = self.tool_parser.format_tool_call(tool_call_dict)
                         tool_calls_strs.append(tool_call_str)
                     tool_calls_str = "\n".join(tool_calls_strs)
                 except Exception as e:
@@ -545,7 +546,7 @@ class QwenChatTemplateParser(ChatTemplateParser):
             # Two cases where the model didn't output </think>:
             # 1. Started <think> but no </think> -> thinking model, treat rest as reasoning, content=""
             # 2. No <think> at all -> non-thinking model (e.g. instruct), treat full text as content
-            if "<think>" in completion_text:
+            if self.generation_prompt.endswith("<think>\n") or "<think>" in completion_text:
                 reasoning = completion_text
                 if reasoning.startswith("<think>"):
                     reasoning = reasoning[len("<think>") :]

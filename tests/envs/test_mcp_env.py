@@ -1,5 +1,7 @@
+import asyncio
 import subprocess
 import sys
+import threading
 from unittest.mock import Mock, patch
 
 import pytest
@@ -138,6 +140,133 @@ class TestMCPConnectionManager:
         with pytest.raises(Exception, match="Tool execution failed"):
             manager.execute_tool_calls(tool_calls)
 
+    @patch("threading.Thread")
+    def test_start_retries_transient_connection_closed(self, mock_thread):
+        """Transient stdio startup closures should be retried before failing rollout reset."""
+        manager = MCPConnectionManager("test_command")
+
+        first_response = Mock()
+        first_response.get.return_value = ("error", "Connection closed")
+        second_response = Mock()
+        second_response.get.return_value = ("success", {"tool1": "mock_tool"})
+        thread_instance = Mock()
+        thread_instance.is_alive.return_value = False
+        mock_thread.return_value = thread_instance
+
+        with patch("queue.Queue", side_effect=[first_response, second_response]):
+            manager.start()
+
+        assert manager.running is True
+        assert mock_thread.call_count == 2
+        assert thread_instance.start.call_count == 2
+
+    def test_start_initialization_cancelled(self, monkeypatch):
+        """Cancelled MCP initialization should be reported to the starter thread."""
+
+        async def raise_cancelled(self):
+            raise asyncio.CancelledError("cancel scope closed")
+
+        monkeypatch.setattr(MCPConnectionManager, "_initialize_connection", raise_cancelled)
+
+        manager = MCPConnectionManager("test_command")
+        with pytest.raises(Exception, match="MCP initialization cancelled"):
+            manager.start()
+
+        assert manager.running is False
+
+    def test_start_initialization_error_cleans_partial_resources(self, monkeypatch):
+        """Failed initialization should close resources opened before session setup."""
+        cleaned = False
+
+        class FakeExitStack:
+            async def aclose(self):
+                nonlocal cleaned
+                cleaned = True
+
+        async def fail_after_partial_init(self):
+            self.exit_stack = FakeExitStack()
+            self.tool_map = {"stale": object()}
+            raise RuntimeError("partial init failed")
+
+        monkeypatch.setattr(MCPConnectionManager, "_initialize_connection", fail_after_partial_init)
+
+        manager = MCPConnectionManager("test_command")
+        with pytest.raises(Exception, match="partial init failed"):
+            manager.start()
+
+        assert cleaned is True
+        assert manager.running is False
+        assert manager.tool_map == {}
+
+    def test_active_server_limit_blocks_until_slot_released(self, monkeypatch):
+        """The MCP active-server cap should apply backpressure instead of over-opening FDs."""
+        monkeypatch.setenv("RLLM_MCP_MAX_ACTIVE_SERVERS", "1")
+        MCPConnectionManager._active_server_semaphore = None
+        MCPConnectionManager._active_server_limit = None
+
+        first = MCPConnectionManager("test_command")
+        second = MCPConnectionManager("test_command")
+        acquired = threading.Event()
+
+        try:
+            first._acquire_server_slot()
+
+            thread = threading.Thread(target=lambda: (second._acquire_server_slot(), acquired.set()))
+            thread.start()
+
+            assert acquired.wait(timeout=0.1) is False
+            first._release_server_slot()
+            assert acquired.wait(timeout=1.0) is True
+            thread.join(timeout=1)
+        finally:
+            first._release_server_slot()
+            second._release_server_slot()
+            MCPConnectionManager._active_server_semaphore = None
+            MCPConnectionManager._active_server_limit = None
+
+    def test_active_server_limit_derived_from_fd_budget(self, monkeypatch):
+        monkeypatch.delenv("RLLM_MCP_MAX_ACTIVE_SERVERS", raising=False)
+        monkeypatch.setenv("RLLM_MCP_MAX_ACTIVE_FDS", "18")
+        monkeypatch.setenv("RLLM_MCP_FDS_PER_SERVER", "6")
+        MCPConnectionManager._active_server_semaphore = None
+        MCPConnectionManager._active_server_limit = None
+
+        try:
+            assert MCPConnectionManager._get_active_server_semaphore() is not None
+            assert MCPConnectionManager._active_server_limit == 3
+        finally:
+            MCPConnectionManager._active_server_semaphore = None
+            MCPConnectionManager._active_server_limit = None
+
+    def test_active_server_limit_disabled_by_default(self, monkeypatch):
+        monkeypatch.delenv("RLLM_MCP_MAX_ACTIVE_SERVERS", raising=False)
+        monkeypatch.delenv("RLLM_MCP_MAX_ACTIVE_FDS", raising=False)
+        MCPConnectionManager._active_server_semaphore = None
+        MCPConnectionManager._active_server_limit = None
+
+        assert MCPConnectionManager._get_active_server_semaphore() is None
+        assert MCPConnectionManager._active_server_limit is None
+
+    def test_fd_throttle_waits_only_at_threshold(self, monkeypatch):
+        monkeypatch.setenv("RLLM_MCP_FD_THROTTLE_THRESHOLD", "10")
+        fd_state = {"count": 9}
+
+        monkeypatch.setattr(MCPConnectionManager, "_current_fd_count", staticmethod(lambda: fd_state["count"]))
+
+        MCPConnectionManager._wait_for_fd_headroom()
+
+        fd_state["count"] = 10
+        passed = threading.Event()
+
+        thread = threading.Thread(target=lambda: (MCPConnectionManager._wait_for_fd_headroom(), passed.set()))
+        thread.start()
+
+        assert passed.wait(timeout=0.1) is False
+        fd_state["count"] = 9
+        MCPConnectionManager._notify_fd_headroom()
+        assert passed.wait(timeout=1.0) is True
+        thread.join(timeout=1)
+
 
 class TestMCPEnvironment:
     """Test suite for MCPEnvironment class."""
@@ -204,6 +333,38 @@ class TestMCPEnvironment:
         assert result.returncode == 0
         assert result.stdout.strip() == "before_import,after_import"
         assert "AttributeError" not in result.stderr
+
+    def test_ensure_server_script_skips_relative_self_import_mcp(self, tmp_path):
+        """Generated tools.py files can contain package-style self imports."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='before')\n"
+            "def before_relative_import():\n"
+            "    return 'before'\n"
+            "from .tools import mcp\n"
+            "@mcp.tool(description='after')\n"
+            "def after_relative_import():\n"
+            "    return 'after'\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "before_relative_import,after_relative_import"
+        assert "ImportError" not in result.stderr
 
     @patch.object(MCPConnectionManager, "start")
     @patch.object(MCPConnectionManager, "__init__", return_value=None)
@@ -450,7 +611,14 @@ class TestMCPEnvironment:
 
     def test_from_dict(self):
         """Test creating environment from dictionary."""
-        env_args = {"question": "Test question", "mcp_server_command": "test_command", "mcp_server_args": ["--arg1"], "mcp_server_env": {"VAR": "value"}, "max_steps": 15, "reward_fn": MockRewardFunction()}
+        env_args = {
+            "question": "Test question",
+            "mcp_server_command": "test_command",
+            "mcp_server_args": ["--arg1"],
+            "mcp_server_env": {"VAR": "value"},
+            "max_steps": 15,
+            "reward_fn": MockRewardFunction(),
+        }
 
         with patch.object(MCPConnectionManager, "start"), patch.object(MCPConnectionManager, "__init__", return_value=None):
             # Clear any existing manager

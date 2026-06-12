@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
+import math
 from typing import TYPE_CHECKING, Any
 
 import click
@@ -64,6 +65,22 @@ def colorful_print(string: str, *args, **kwargs) -> None:
 
 def colorful_warning(string: str, *args, **kwargs) -> None:
     warnings.warn(click.style(string, *args, **kwargs), stacklevel=2)
+
+
+def format_progress_reward(reward: object) -> str:
+    """Format rollout rewards without hiding small non-zero shaping rewards."""
+    if reward is None:
+        return "N/A"
+    try:
+        reward_float = float(reward)
+    except (TypeError, ValueError):
+        return str(reward)
+
+    if not math.isfinite(reward_float):
+        return str(reward_float)
+    if reward_float != 0.0 and round(reward_float, 1) == 0.0:
+        return f"{reward_float:.3g}"
+    return f"{reward_float:.1f}"
 
 
 def visualize_trajectories(

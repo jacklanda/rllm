@@ -16,7 +16,9 @@ class TimingTrackingMixin:
             "reward_time": 0.0,
             "total_time": 0.0,
             "start_time": None,
+            "start_timestamp": None,
             "end_time": None,
+            "end_timestamp": None,
         }
         # Track per-step timing
         self._step_timings = []
@@ -123,8 +125,8 @@ class TimingTrackingMixin:
             self._timing_data["total_time"] = self._timing_data["end_time"] - self._timing_data["start_time"]
 
         return {
-            "start_timestamp": self._timing_data["start_timestamp"],  # ISO 8601 timestamp string
-            "end_timestamp": self._timing_data["end_timestamp"],  # ISO 8601 timestamp string
+            "start_timestamp": self._timing_data.get("start_timestamp"),  # ISO 8601 timestamp string
+            "end_timestamp": self._timing_data.get("end_timestamp"),  # ISO 8601 timestamp string
             "llm_time": self._timing_data["llm_time"],
             "env_time": self._timing_data["env_time"],
             "reward_time": self._timing_data["reward_time"],

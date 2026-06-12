@@ -14,6 +14,12 @@ from torch.nn.utils.rnn import pad_sequence
 from verl import DataProto
 from verl.utils.torch_functional import pad_sequence_to_length
 
+from rllm.experimental.verl.metrics import (
+    SEARCH_AGENT_RAW_METRIC_KEYS,
+    canonicalize_search_agent_metric_metadata,
+    compute_search_agent_metrics,
+)
+
 from .protocol import TrajectoryGroup
 
 _client: httpx.AsyncClient | None = None
@@ -520,7 +526,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
     trajectory_group_ls = filtered_groups
 
     # Pre-collect all data in single pass
-    all_data = []  # List of (uid, trajectory_uid, seq)
+    all_data = []  # List of (uid, trajectory_uid, seq, search_agent_metrics)
     trajectory_uuid2reward = {}
 
     # Collect metadata for statistics (initialize with None to track which trajectories have metadata)
@@ -541,6 +547,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
             # Extract metadata if available, use defaults if not provided
             # This ensures all lists have consistent length matching the number of trajectories
             metadata = trajectory.metadata or {}
+            search_agent_metrics = canonicalize_search_agent_metric_metadata(metadata)
             processing_times.append(metadata.get("processing_time", 0.0))
             tool_calls_times.append(metadata.get("tool_calls_time", 0.0))
             param_versions.append(metadata.get("param_version", 0))
@@ -549,7 +556,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
 
             # Collect user-defined custom metrics
             # Built-in keys are handled separately above, so we skip them here
-            builtin_keys = {"processing_time", "tool_calls_time", "param_version", "param_version_start", "param_version_end"}
+            builtin_keys = {"processing_time", "tool_calls_time", "param_version", "param_version_start", "param_version_end", *SEARCH_AGENT_RAW_METRIC_KEYS}
             for key, value in metadata.items():
                 if key not in builtin_keys:
                     # Add custom/ prefix if not already present
@@ -558,7 +565,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
 
             for seq in trajectory.merge():
                 seq = seq.resize_prompt_length(max_prompt_length)
-                all_data.append((uid, trajectory_uid, seq))
+                all_data.append((uid, trajectory_uid, seq, search_agent_metrics))
 
     num_sequences = len(all_data)
     print(f"[BatchUtils] Assembling batch from {num_sequences} sequences")
@@ -566,7 +573,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
     # Find max lengths in single pass
     max_prompt_len = 0
     max_response_len = 0
-    for _, _, seq in all_data:
+    for _, _, seq, _ in all_data:
         max_prompt_len = max(max_prompt_len, len(seq.prompt_ids))
         max_response_len = max(max_response_len, len(seq.response_ids))
     max_response_len = min(max_response_len, max_response_length)
@@ -586,9 +593,11 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
     response_lens = []
 
     # Fill tensors in single pass (left-pad prompts, right-pad responses)
-    for i, (uid, traj_uid, seq) in enumerate(all_data):
+    search_agent_rows = []
+    for i, (uid, traj_uid, seq, search_agent_metrics) in enumerate(all_data):
         uids.append(uid)
         trajectory_uuids.append(traj_uid)
+        search_agent_rows.append(search_agent_metrics)
 
         p_ids = seq.prompt_ids
         r_ids = seq.response_ids
@@ -655,18 +664,23 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
     # Each sequence length = number of non-padded tokens (sum of attention mask for that row)
     batch_seqlens = attention_masks_t.sum(dim=1).tolist()
 
+    non_tensors = {
+        "uids": np.array(uids),
+        "trajectory_uuids": np.array(trajectory_uuids),
+        "response_clipped": np.array([response_len > max_response_length for response_len in response_lens]),
+        "ignore_in_loss": np.array([False] * num_sequences),
+        "trajectory_rewards": np.array([trajectory_uuid2reward[traj_uid] for traj_uid in trajectory_uuids]),
+        # NOTE: processing_times, tool_calls_times, param_version_start/end are NOT included here
+        # because they are per-trajectory (1024) while batch is per-sequence (1076).
+        # They are used only for statistics in meta_info below.
+    }
+    if any(search_agent_rows):
+        for key in SEARCH_AGENT_RAW_METRIC_KEYS:
+            non_tensors[key] = np.array([metrics.get(key, 0) for metrics in search_agent_rows], dtype=np.int32)
+
     batch = DataProto.from_dict(
         tensors=tensor_dict,
-        non_tensors={
-            "uids": np.array(uids),
-            "trajectory_uuids": np.array(trajectory_uuids),
-            "response_clipped": np.array([response_len > max_response_length for response_len in response_lens]),
-            "ignore_in_loss": np.array([False] * num_sequences),
-            "trajectory_rewards": np.array([trajectory_uuid2reward[traj_uid] for traj_uid in trajectory_uuids]),
-            # NOTE: processing_times, tool_calls_times, param_version_start/end are NOT included here
-            # because they are per-trajectory (1024) while batch is per-sequence (1076).
-            # They are used only for statistics in meta_info below.
-        },
+        non_tensors=non_tensors,
     )
 
     # Pad batch to actor_world_size for distributed training
@@ -742,6 +756,7 @@ def assemble_batch_from_trajectory_group_ls(trajectory_group_ls: list[Trajectory
 
     # Add rejection sampling stats to meta_info for logging
     batch.meta_info.update(rejection_stats)
+    batch.meta_info.update(compute_search_agent_metrics(batch))
 
     print(f"[BatchUtils] Batch assembly completed in {time.time() - start_time:.2f}s")
 

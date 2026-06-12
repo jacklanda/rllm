@@ -4,6 +4,7 @@ import logging
 import os
 import queue
 import sys
+import tempfile
 import threading
 import uuid
 import warnings
@@ -20,6 +21,8 @@ from rllm.environments.base.base_env import BaseEnv
 from rllm.rewards.reward_fn import RewardFunction, zero_reward
 from rllm.tools.mcp_tool import MCPTool
 
+logger = logging.getLogger(__name__)
+
 
 class MCPConnectionManager:
     """Manages MCP connections in a dedicated thread to avoid asyncio context issues."""
@@ -32,6 +35,10 @@ class MCPConnectionManager:
     # "Racing with another loop to spawn a process".  Holding a lock
     # around the critical ``_initialize_connection`` section prevents this.
     _spawn_lock = threading.Lock()
+    _active_server_lock = threading.Lock()
+    _active_server_semaphore: threading.BoundedSemaphore | None = None
+    _active_server_limit: int | None = None
+    _fd_throttle_condition = threading.Condition()
 
     def __init__(self, mcp_server_command: str, mcp_server_args: list[str] | None = None, mcp_server_env: dict[str, str] | None = None):
         self.mcp_server_command = mcp_server_command
@@ -46,67 +53,218 @@ class MCPConnectionManager:
         self.stdio_transport: Any = None
         self.tool_map: dict[str, MCPTool] = {}
         self.running = False
+        self.exit_stack: AsyncExitStack | None = None
+        self._mcp_errlog: Any = None
+        self._mcp_errlog_path: str | None = None
+        self._startup_response_queue: queue.Queue[tuple[str, Any]] | None = None
+        self._server_slot_semaphore: threading.BoundedSemaphore | None = None
+        self._server_slot_acquired = False
+        self.startup_timeout = float(os.environ.get("RLLM_MCP_INIT_TIMEOUT", "55"))
+        self.tool_timeout = float(os.environ.get("RLLM_MCP_TOOL_TIMEOUT", "30"))
+
+    @classmethod
+    def _get_active_server_semaphore(cls) -> threading.BoundedSemaphore | None:
+        raw_limit = os.environ.get("RLLM_MCP_MAX_ACTIVE_SERVERS")
+        if raw_limit is not None:
+            try:
+                limit = int(raw_limit)
+            except (TypeError, ValueError):
+                limit = 0
+        else:
+            raw_fd_budget = os.environ.get("RLLM_MCP_MAX_ACTIVE_FDS")
+            if raw_fd_budget is None:
+                return None
+            try:
+                fd_budget = int(raw_fd_budget)
+            except (TypeError, ValueError):
+                fd_budget = 0
+            try:
+                fds_per_server = max(1, int(os.environ.get("RLLM_MCP_FDS_PER_SERVER", "6")))
+            except (TypeError, ValueError):
+                fds_per_server = 6
+            limit = fd_budget // fds_per_server
+        if limit <= 0:
+            return None
+
+        with cls._active_server_lock:
+            if cls._active_server_semaphore is None or cls._active_server_limit != limit:
+                cls._active_server_semaphore = threading.BoundedSemaphore(limit)
+                cls._active_server_limit = limit
+            return cls._active_server_semaphore
+
+    @staticmethod
+    def _ensure_nofile_limit() -> None:
+        try:
+            min_nofile = int(os.environ.get("RLLM_MCP_MIN_NOFILE", "4096"))
+        except (TypeError, ValueError):
+            min_nofile = 4096
+        if min_nofile <= 0:
+            return
+
+        try:
+            import resource
+
+            soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+            if soft >= min_nofile:
+                return
+            target = min_nofile if hard == resource.RLIM_INFINITY else min(min_nofile, hard)
+            if target > soft:
+                resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+        except Exception as e:
+            logger.debug("Could not raise RLIMIT_NOFILE to %s: %s", min_nofile, e)
+
+    @staticmethod
+    def _current_fd_count() -> int:
+        try:
+            return len(os.listdir("/proc/self/fd"))
+        except Exception:
+            return 0
+
+    @classmethod
+    def _wait_for_fd_headroom(cls) -> None:
+        try:
+            threshold = int(os.environ.get("RLLM_MCP_FD_THROTTLE_THRESHOLD", "4096"))
+        except (TypeError, ValueError):
+            threshold = 4096
+        if threshold <= 0:
+            return
+
+        with cls._fd_throttle_condition:
+            while cls._current_fd_count() >= threshold:
+                cls._fd_throttle_condition.wait(timeout=1.0)
+
+    @classmethod
+    def _notify_fd_headroom(cls) -> None:
+        with cls._fd_throttle_condition:
+            cls._fd_throttle_condition.notify_all()
+
+    def _acquire_server_slot(self) -> None:
+        if self._server_slot_acquired:
+            return
+        semaphore = self._get_active_server_semaphore()
+        if semaphore is None:
+            return
+        semaphore.acquire()
+        self._server_slot_semaphore = semaphore
+        self._server_slot_acquired = True
+
+    def _release_server_slot(self) -> None:
+        if not self._server_slot_acquired:
+            return
+        semaphore = self._server_slot_semaphore
+        self._server_slot_semaphore = None
+        self._server_slot_acquired = False
+        if semaphore is not None:
+            try:
+                semaphore.release()
+            except ValueError:
+                pass
 
     def start(self):
         """Start the connection manager thread.
 
-        Uses the class-level ``_spawn_lock`` to serialise MCP subprocess
-        spawning across all instances, preventing the *anyio* "Racing with
-        another loop to spawn a process" error.
+        Subprocess spawning is serialized by the class-level ``_spawn_lock``,
+        held inside ``_initialize_connection`` around only the ``stdio_client``
+        spawn (preventing the *anyio* "Racing with another loop to spawn a
+        process" error). The rest of the handshake — ``session.initialize()``
+        and ``list_tools()`` — runs concurrently across managers, so N startups
+        no longer serialize end-to-end.
         """
         if self.running:
             return
 
-        max_retries = 3
+        self._ensure_nofile_limit()
+        self._wait_for_fd_headroom()
+        self._acquire_server_slot()
+        try:
+            max_retries = max(1, int(os.environ.get("RLLM_MCP_START_RETRIES", "3")))
+        except (TypeError, ValueError):
+            max_retries = 3
         last_error = None
-        for attempt in range(max_retries):
-            with MCPConnectionManager._spawn_lock:
+        try:
+            for attempt in range(max_retries):
                 self.running = True
+                response_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
+                self._startup_response_queue = response_queue
                 self.worker_thread = threading.Thread(target=self._run_worker, daemon=True)
                 self.worker_thread.start()
 
                 # Wait for initialization
-                response_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
                 self.request_queue.put(("init", None, response_queue))
                 try:
-                    result = response_queue.get(timeout=60)
+                    result = response_queue.get(timeout=self.startup_timeout + 10)
                 except queue.Empty:
                     last_error = "Timed out waiting for MCP server initialization"
-                    self._stop_no_lock()
-                    continue
+                    stopped = self._stop_no_lock()
+                    if stopped:
+                        continue
+                    break
                 if result[0] == "error":
                     last_error = result[1]
-                    self._stop_no_lock()
-                    if "Racing" in str(last_error):
+                    stopped = self._stop_no_lock()
+                    if stopped and attempt < max_retries - 1 and self._is_retryable_startup_error(last_error):
                         import time
 
+                        # Step-1 fused rollouts can start many distinct MCP
+                        # assets at once.  A subset of otherwise-healthy stdio
+                        # servers sometimes exits with a transient "Connection
+                        # closed"/cancelled/timeout while Python imports are
+                        # contending.  Back off and retry the same asset instead
+                        # of handing the rollout an empty tool set immediately.
                         time.sleep(0.5 * (attempt + 1))
                         continue
+                    if not stopped:
+                        break
                     raise Exception(f"Failed to initialize MCP connection: {last_error}")
+                self._startup_response_queue = None
                 return  # Success
 
-        raise Exception(f"Failed to initialize MCP connection after {max_retries} retries: {last_error}")
+            raise Exception(f"Failed to initialize MCP connection after {max_retries} retries: {last_error}")
+        except Exception:
+            self._release_server_slot()
+            self._notify_fd_headroom()
+            raise
 
-    def _stop_no_lock(self):
+    @staticmethod
+    def _is_retryable_startup_error(error: Any) -> bool:
+        message = str(error).lower()
+        return any(
+            marker in message
+            for marker in (
+                "connection closed",
+                "initialization cancelled",
+                "timed out waiting for mcp server initialization",
+                "racing with another loop",
+            )
+        )
+
+    def _stop_no_lock(self) -> bool:
         """Internal stop that doesn't acquire locks — used during retry."""
         self.running = False
         self.request_queue.put(("stop", None, None))
         worker_thread = getattr(self, "worker_thread", None)
         if worker_thread:
             worker_thread.join(timeout=5)
+            if worker_thread.is_alive():
+                logger.warning("MCP worker thread did not stop within timeout for %s %s", self.mcp_server_command, self.mcp_server_args)
+                return False
         # Clear any leftover state for a clean retry
         self.session = None
         self.tool_map = {}
+        self._startup_response_queue = None
         # Drain leftover items from queue
         while not self.request_queue.empty():
             try:
                 self.request_queue.get_nowait()
             except queue.Empty:
                 break
+        return True
 
     def stop(self):
         """Stop the connection manager thread."""
         if not getattr(self, "running", False):
+            self._release_server_slot()
+            self._notify_fd_headroom()
             return
 
         self.running = False
@@ -114,8 +272,13 @@ class MCPConnectionManager:
         worker_thread = getattr(self, "worker_thread", None)
         if worker_thread:
             worker_thread.join(timeout=5)
+            if worker_thread.is_alive():
+                logger.warning("MCP worker thread did not stop within timeout for %s %s", self.mcp_server_command, self.mcp_server_args)
         self.session = None
         self.tool_map = {}
+        self._startup_response_queue = None
+        self._release_server_slot()
+        self._notify_fd_headroom()
 
     def __del__(self):
         try:
@@ -130,26 +293,61 @@ class MCPConnectionManager:
 
         response_queue: queue.Queue[tuple[str, Any]] = queue.Queue()
         self.request_queue.put(("execute", tool_calls, response_queue))
-        result = response_queue.get(timeout=30)
+        try:
+            result = response_queue.get(timeout=self.tool_timeout + 5)
+        except queue.Empty as e:
+            self.stop()
+            raise Exception(f"Tool execution timed out after {self.tool_timeout:.1f}s") from e
         if result[0] == "error":
             raise Exception(f"Tool execution failed: {result[1]}")
         return result[1]  # type: ignore
 
     def _run_worker(self):
         """Worker thread that runs the asyncio event loop."""
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
         try:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
             self.loop.run_until_complete(self._worker_loop())
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            self.running = False
+            self._notify_startup_error(e)
         finally:
-            if self.session:
+            if self.loop and not self.loop.is_closed():
                 try:
                     self.loop.run_until_complete(self._cleanup())
                 except Exception:
                     pass
-            if self.loop:
                 self.loop.close()
+            self.loop = None
+
+    def _notify_startup_error(self, error: BaseException | str) -> None:
+        response_queue = getattr(self, "_startup_response_queue", None)
+        if response_queue is None:
+            return
+        try:
+            response_queue.put(("error", self._format_error_with_stderr(error)))
+        except Exception:
+            pass
+        finally:
+            self._startup_response_queue = None
+
+    def _format_error_with_stderr(self, error: BaseException | str) -> str:
+        message = str(error)
+        errlog_path = getattr(self, "_mcp_errlog_path", None)
+        if not errlog_path:
+            return message
+        try:
+            with open(errlog_path, "r", encoding="utf-8", errors="replace") as fh:
+                stderr = fh.read().strip()
+        except Exception:
+            return message
+        if not stderr:
+            return message
+        if len(stderr) > 4000:
+            stderr = stderr[-4000:]
+        return f"{message}\nMCP server stderr:\n{stderr}"
 
     async def _worker_loop(self):
         """Main worker loop that processes requests."""
@@ -165,18 +363,46 @@ class MCPConnectionManager:
 
                 if command == "init":
                     try:
-                        await self._initialize_connection()
+                        await asyncio.wait_for(self._initialize_connection(), timeout=self.startup_timeout)
                         if response_queue:
                             response_queue.put(("success", self.tool_map))
-                    except Exception as e:
+                        self._startup_response_queue = None
+                    except asyncio.CancelledError as e:
+                        self.running = False
+                        await self._cleanup_suppressing()
                         if response_queue:
-                            response_queue.put(("error", str(e)))
+                            response_queue.put(("error", self._format_error_with_stderr(f"MCP initialization cancelled: {e}")))
+                        break
+                    except asyncio.TimeoutError:
+                        self.running = False
+                        await self._cleanup_suppressing()
+                        if response_queue:
+                            response_queue.put(("error", self._format_error_with_stderr(f"Timed out waiting for MCP server initialization after {self.startup_timeout:.1f}s")))
+                        break
+                    except Exception as e:
+                        self.running = False
+                        await self._cleanup_suppressing()
+                        if response_queue:
+                            response_queue.put(("error", self._format_error_with_stderr(e)))
+                        break
 
                 elif command == "execute":
                     try:
-                        result = await self._execute_tools(data)
+                        result = await asyncio.wait_for(self._execute_tools(data), timeout=self.tool_timeout)
                         if response_queue:
                             response_queue.put(("success", result))
+                    except asyncio.CancelledError as e:
+                        self.running = False
+                        await self._cleanup_suppressing()
+                        if response_queue:
+                            response_queue.put(("error", f"MCP tool execution cancelled: {e}"))
+                        break
+                    except asyncio.TimeoutError:
+                        self.running = False
+                        await self._cleanup_suppressing()
+                        if response_queue:
+                            response_queue.put(("error", f"MCP tool execution timed out after {self.tool_timeout:.1f}s"))
+                        break
                     except Exception as e:
                         if response_queue:
                             response_queue.put(("error", str(e)))
@@ -193,12 +419,24 @@ class MCPConnectionManager:
 
         # Use AsyncExitStack properly within this event loop
         self.exit_stack = AsyncExitStack()
-        # Route subprocess stderr to /dev/null: stdio_client forwards it to
-        # the parent's stderr by default, leaking MCP server warnings (e.g.
-        # "Tool already exists" from duplicate @mcp.tool defs in tools.py)
-        # into Ray worker logs.
-        self._mcp_errlog = self.exit_stack.enter_context(open(os.devnull, "w"))
-        self.stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params, errlog=self._mcp_errlog))
+        # Capture subprocess stderr in a temp file. Passing /dev/null hides the
+        # generated tools.py traceback and turns every startup failure into a
+        # useless "Connection closed".
+        errlog = tempfile.NamedTemporaryFile(prefix="rllm_mcp_", suffix=".stderr", mode="w+", encoding="utf-8", delete=False)
+        self._mcp_errlog_path = errlog.name
+        self._mcp_errlog = self.exit_stack.enter_context(errlog)
+        # Serialize ONLY the subprocess spawn. anyio's ``open_process`` (used
+        # by ``stdio_client``) installs a child-process watcher on the running
+        # event loop; when many managers spawn concurrently from their own
+        # worker-thread loops the watchers race and throw "Racing with another
+        # loop to spawn a process". Holding ``_spawn_lock`` around just the
+        # spawn (~ms) prevents that race while letting the expensive part of
+        # the handshake — ``session.initialize()`` + ``list_tools()`` — run
+        # fully concurrently across managers. (Previously the lock wrapped the
+        # entire ~1s start() handshake, serializing all startups and leaving
+        # the GPUs idle for >10 min while 1024 MCP servers booted one-by-one.)
+        with MCPConnectionManager._spawn_lock:
+            self.stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params, errlog=self._mcp_errlog))
         stdio, write = self.stdio_transport
         self.session = await self.exit_stack.enter_async_context(ClientSession(stdio, write))
 
@@ -237,8 +475,19 @@ class MCPConnectionManager:
 
     async def _cleanup(self) -> None:
         """Clean up the connection."""
-        if hasattr(self, "exit_stack") and self.exit_stack:
-            await self.exit_stack.aclose()
+        exit_stack = getattr(self, "exit_stack", None)
+        if exit_stack:
+            self.exit_stack = None
+            await exit_stack.aclose()
+        self.session = None
+        self.stdio_transport = None
+        self.tool_map = {}
+
+    async def _cleanup_suppressing(self) -> None:
+        try:
+            await self._cleanup()
+        except Exception as e:
+            logger.debug("MCP cleanup failed for %s %s: %s", self.mcp_server_command, self.mcp_server_args, e)
 
 
 class MCPEnvironment(BaseEnv):
@@ -335,6 +584,8 @@ class MCPEnvironment(BaseEnv):
             "        _saw_fastmcp_instance = True\n"
             "    if _saw_fastmcp_instance and _stripped == 'import mcp':\n"
             "        _rewritten.append('import mcp as _rllm_mcp_package\\n')\n"
+            "    elif _saw_fastmcp_instance and _stripped == 'from .tools import mcp':\n"
+            "        _rewritten.append('\\n')\n"
             "    else:\n"
             "        _rewritten.append(_line)\n"
             "_source = ''.join(_rewritten)\n"

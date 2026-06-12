@@ -183,7 +183,7 @@ class AgentSdkTrainer(RayPPOTrainer):
         start_time = time.time()
         if self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate_agent()
-            pprint(f"Initial validation metrics: {val_metrics}")
+            # pprint(f"Initial validation metrics: {val_metrics}")
             logger.log(data=val_metrics, step=self.global_steps)
             if self.config.trainer.get("val_only", False):
                 return
@@ -564,8 +564,8 @@ class AgentSdkTrainer(RayPPOTrainer):
         uid_lst = []
         workflow_metrics_by_source = defaultdict(lambda: defaultdict(list))
 
-        # Get max_val_num from config (-1 means use all batches)
-        max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
+        # Get max_val_num from rLLM config (-1 means use all batches).
+        max_val_num = self.config.rllm.get("max_val_num", -1)
 
         for batch_idx, test_data in enumerate(self.val_dataloader):
             # Break if we've reached the maximum number of validation batches

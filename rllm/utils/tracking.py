@@ -19,6 +19,7 @@ A unified tracking interface that supports logging data to different backend
 
 import dataclasses
 import json
+import logging
 import numbers
 import os
 import pprint
@@ -28,6 +29,12 @@ from enum import Enum
 from functools import partial
 from pathlib import Path
 from typing import Any
+
+
+def _suppress_http_client_info_logs() -> None:
+    """Keep successful UI HTTP requests from flooding training logs."""
+    for logger_name in ("httpx", "httpcore"):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
 def concat_dict_to_str(dict: dict, step):
@@ -295,9 +302,9 @@ class TeeStream:
     def _send_buffer(self):
         if not self._log_buffer:
             return
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         logs = [{"session_id": self._session_id, "timestamp": now, "stream": self._stream_name, "message": line} for line in self._log_buffer]
         self._log_buffer = []
         self._last_flush = time.time()
@@ -323,9 +330,10 @@ class UILogger:
     """
 
     def __init__(self, project_name: str, experiment_name: str, config, source_metadata=None, session_type: str = "training"):
-        import logging
         import queue
         import threading
+
+        _suppress_http_client_info_logs()
 
         import httpx
 

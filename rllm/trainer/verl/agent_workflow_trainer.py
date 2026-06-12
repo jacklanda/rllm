@@ -54,7 +54,16 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         workflow_class=None,
         workflow_args=None,
     ):
-        super().__init__(config=config, tokenizer=tokenizer, processor=processor, role_worker_mapping=role_worker_mapping, resource_pool_manager=resource_pool_manager, ray_worker_group_cls=ray_worker_group_cls, reward_fn=reward_fn, val_reward_fn=val_reward_fn)
+        super().__init__(
+            config=config,
+            tokenizer=tokenizer,
+            processor=processor,
+            role_worker_mapping=role_worker_mapping,
+            resource_pool_manager=resource_pool_manager,
+            ray_worker_group_cls=ray_worker_group_cls,
+            reward_fn=reward_fn,
+            val_reward_fn=val_reward_fn,
+        )
         validate_dr_grpo_config(config)
 
         self.workflow_class = workflow_class
@@ -150,15 +159,16 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         # perform validation before training
         import time
 
-        start_time = time.time()
+        start_time = time.perf_counter()
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             self.agent_execution_engine.set_training_step(self.global_steps, mode="val", epoch=0)
             val_metrics = self._validate_agent()
-            pprint(f"Initial validation metrics: {val_metrics}")
+            val_metrics["elapsed_time"] = time.perf_counter() - start_time
+            # pprint(f"Initial validation metrics: {val_metrics}")
             logger.log(data=val_metrics, step=self.global_steps)
             if self.config.trainer.get("val_only", False):
                 return
-        print(f"Time taken to validate agent: {time.time() - start_time}")
+        print(f"Time taken to validate agent: {time.perf_counter() - start_time}")
         # we start from step 1
         self.global_steps += 1
 
@@ -167,6 +177,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         solve_all = 0
         solve_partial = 0
         num_tasks = 0
+        num_dropped_episodes = 0
         termination_counts = Counter()
         workflow_metrics = defaultdict(list)
         metrics = {}
@@ -199,6 +210,19 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                     new_batch = new_batch.sample_level_repeat(repeat_counts)
                     final_gen_batch_output.meta_info.pop("repeat_counts", None)  # no longer needed after this
                     new_batch = new_batch.union(final_gen_batch_output)
+
+                    # `dropped_episodes` is per-rollout-batch logging metadata, not training
+                    # tensors. Pop it before any DataProto.concat below, otherwise concat asserts
+                    # that meta_info keys match across accumulated batches and crashes.
+                    batch_dropped = new_batch.meta_info.pop("dropped_episodes", None)
+                    final_gen_batch_output.meta_info.pop("dropped_episodes", None)
+                    num_batch_dropped = len(batch_dropped) if batch_dropped is not None else 0
+                    num_dropped_episodes += num_batch_dropped
+
+                    if self._dataproto_batch_size(new_batch) == 0:
+                        print(f"No valid trajectories generated for this rollout batch (dropped={num_batch_dropped}); skipping policy update")
+                        batch = None
+                        continue
 
                     # rejection sampling
                     # we do rejection sampling at the episode level instead of the traj/step level
@@ -261,10 +285,17 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                             # TODO: add heuristic for selecting train_batch_size uids
                             uids = batch.non_tensor_batch["task_ids"]
                             unique_uids = np.unique(uids)
-                            assert len(unique_uids) >= self.config.data.train_batch_size, "Not enough unique uids to sample from"
+                            if len(unique_uids) < self.config.data.train_batch_size:
+                                print(f"Only {len(unique_uids)} trainable task uids available after filtering; collecting another rollout batch")
+                                continue
                             selected_uids = np.random.choice(unique_uids, size=self.config.data.train_batch_size, replace=False)
                             selected_mask = np.isin(uids, selected_uids)
                             batch = batch[selected_mask]
+
+                    if self._dataproto_batch_size(batch) == 0:
+                        print("No trainable rows remain after filtering; skipping policy update")
+                        batch = None
+                        continue
 
                     if self.config.rllm.stepwise_advantage.enable and self.config.rllm.stepwise_advantage.mode == "broadcast":
                         # need to make sure both number of last steps (number of uids) and number of total steps in the batch
@@ -274,6 +305,10 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                         is_last_step = batch.non_tensor_batch["is_last_step"]
                         valid_last_step_indices = np.where(is_last_step == True)[0]
                         not_last_step_indices = np.where(is_last_step == False)[0]
+                        if len(valid_last_step_indices) == 0:
+                            print("No valid last-step rows remain after filtering; skipping policy update")
+                            batch = None
+                            continue
                         last_step_batch = batch.select_idxs(valid_last_step_indices)  # This batch only has valid last steps
                         non_last_step_batch = batch.select_idxs(not_last_step_indices)
 
@@ -293,6 +328,10 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
 
                         # concatenate then pad
                         batch = DataProto.concat([last_step_batch, non_last_step_batch])
+                        if self._dataproto_batch_size(batch) == 0:
+                            print("No rows remain after stepwise broadcast filtering; skipping policy update")
+                            batch = None
+                            continue
                         batch = self._pad_dataproto_to_world_size(batch)
 
                     else:
@@ -387,11 +426,19 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                     is_valid = batch.non_tensor_batch["is_valid"]
                     valid_idxs = np.where(is_valid == True)[0]
                     batch = batch.select_idxs(valid_idxs)
+                    if self._dataproto_batch_size(batch) == 0:
+                        print("No valid rows remain after compact filtering; skipping policy update")
+                        batch = None
+                        continue
 
                     # for backward compatibility
                     if self.config.rllm.mask_truncated_samples:
                         mask = batch.batch["attention_mask"][:, -1] == 1
                         batch = batch[~mask]
+                        if self._dataproto_batch_size(batch) == 0:
+                            print("No valid rows remain after truncated-sample filtering; skipping policy update")
+                            batch = None
+                            continue
 
                     # re-pad batch size to world size for gradient update
                     batch = self._pad_dataproto_to_world_size(batch=batch)
@@ -465,12 +512,22 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 metrics["batch/solve_partial"] = solve_partial / num_tasks
 
                 for key, value in workflow_metrics.items():
-                    metrics[f"batch/{key}"] = np.mean(value)
+                    # Preserve already-namespaced metric keys (e.g. "traj/steps",
+                    # "turn/tool_call_turn", "traj/steps/mcp") emitted by the
+                    # workflow so they land in their own channels; everything else
+                    # gets the default per-batch prefix. Per-source keys are only
+                    # present on episodes of that source, so the mean is taken over
+                    # just those episodes.
+                    if key.startswith(("traj/", "turn/", "timing/")):
+                        metrics[key] = np.mean(value)
+                    else:
+                        metrics[f"batch/{key}"] = np.mean(value)
 
                 for r in TerminationReason:
                     metrics[f"batch/{r.value}"] = termination_counts[r.value] / len(set(new_batch.non_tensor_batch["episode_ids"]))
 
                 metrics["batch/num_tasks"] = num_tasks
+                metrics["batch/num_dropped_episodes"] = num_dropped_episodes
 
                 # Per-data-source reward metrics
                 if new_batch is not None:
@@ -495,6 +552,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 solve_all = 0
                 solve_partial = 0
                 num_tasks = 0
+                num_dropped_episodes = 0
                 termination_counts = Counter()
                 workflow_metrics = defaultdict(list)
                 metrics = {}
@@ -524,8 +582,8 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         workflow_metrics_by_source = defaultdict(lambda: defaultdict(list))
         batches_for_distill = []
 
-        # Get max_val_num from config (-1 means use all batches)
-        max_val_num = self.config.actor_rollout_ref.rollout.val_kwargs.get("max_val_num", -1)
+        # Get max_val_num from rLLM config (-1 means use all batches).
+        max_val_num = self.config.rllm.get("max_val_num", -1)
 
         for batch_idx, test_data in enumerate(self.val_dataloader):
             # Break if we've reached the maximum number of validation batches
@@ -849,7 +907,9 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             traj_ep_to_scalar_adv[(traj_id, eps_id)] = scalar
 
         # Create new tensor for non_last_step_batch with per-token assignment
-        scalar_rows = torch.stack([torch.full_like(tgt_mask[i], fill_value=traj_ep_to_scalar_adv[(traj_id, eps_id)], dtype=torch.float32) for i, (traj_id, eps_id) in enumerate(zip(tgt_traj_ids, tgt_eps_ids, strict=False))])  # shape: (N2, T)
+        scalar_rows = torch.stack(
+            [torch.full_like(tgt_mask[i], fill_value=traj_ep_to_scalar_adv[(traj_id, eps_id)], dtype=torch.float32) for i, (traj_id, eps_id) in enumerate(zip(tgt_traj_ids, tgt_eps_ids, strict=False))]
+        )  # shape: (N2, T)
 
         # Apply the response mask of the target batch
         final_advantage = scalar_rows * tgt_mask
@@ -892,6 +952,14 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
 
         return batch
 
+    def _dataproto_batch_size(self, batch):
+        if batch is None or batch.batch is None:
+            return 0
+        batch_size = getattr(batch.batch, "batch_size", None)
+        if batch_size is not None and len(batch_size) > 0:
+            return int(batch_size[0])
+        return len(batch.batch)
+
     def _remove_padding(self, batch):
         """Removes padded steps from the batch"""
         is_pad_step = batch.non_tensor_batch["is_pad_step"]
@@ -902,6 +970,12 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
     def shutdown(self):
         """A cleanup method to gracefully stop the background event loop."""
         if hasattr(self, "agent_execution_engine") and self.agent_execution_engine is not None:
+            rollout_engine = getattr(self.agent_execution_engine, "rollout_engine", None)
+            if rollout_engine is not None and hasattr(rollout_engine, "shutdown"):
+                try:
+                    asyncio.run_coroutine_threadsafe(rollout_engine.shutdown(), self._loop).result()
+                except Exception as e:
+                    print(f"Warning: rollout engine shutdown failed: {e}")
             self.agent_execution_engine.shutdown()
             self.agent_execution_engine = None
         if hasattr(self, "_loop") and self._loop is not None and self._loop.is_running():
