@@ -153,6 +153,32 @@ def test_cot_answer_tag_submission_avoids_repetition_penalty_on_full_reasoning()
     assert env.reward_debug["repetition_penalty_reward"] == 0.0
 
 
+def test_gem_search_reward_does_not_penalize_finish_without_search():
+    env = FusedEnv.from_dict({"question": "What is 2+2?", "answer": "4", "harness": "gem"})
+    env._reset_search()
+    env._search_answer = "4"
+    env._search_answer_is_verbatim_submission = True
+    env._search_web_search_calls = 0
+
+    final_reward = env._compute_search_reward()
+
+    assert final_reward == 1.0
+    assert env.reward_debug["reward/bypass_penalty"] == 0.0
+
+
+def test_fused_search_reward_disables_repetition_and_length_penalties():
+    env = FusedEnv.from_dict({"question": "Name the capital of France.", "answer": "Paris", "harness": "cot"})
+    env._reset_search()
+    env._search_answer = " ".join(["London"] * 500)
+    env._search_answer_is_verbatim_submission = True
+
+    final_reward = env._compute_search_reward()
+
+    assert final_reward == 0.0
+    assert env.reward_debug["repetition_penalty_reward"] == 0.0
+    assert env.reward_debug["length_penalty_reward"] == 0.0
+
+
 def test_cot_placeholder_answer_marker_can_still_score_full_reward():
     env = FusedEnv.from_dict(
         {
@@ -187,6 +213,34 @@ def test_gem_plain_text_still_requires_tool_call():
     assert reward == 0.0
     assert done is False
     assert info == {}
+
+
+def test_gem_finish_without_search_terminates_as_credit_assigned_bypass():
+    env = FusedEnv.from_dict({"question": "What is 2+2?", "answer": "4", "harness": "gem"})
+    env._reset_search()
+
+    obs, reward, done, info = env._step_search('<tool_call>{"name":"finish","arguments":{"result":"4"}}</tool_call>')
+
+    assert done is True
+    assert reward == 0.0
+    assert "before web_search" in obs
+    assert info["termination_reason"] == "ABNORMAL_SEARCH_BYPASS"
+    assert info["credit_assignment"] == "reasoning_step_only"
+    assert env._search_answer == "4"
+
+
+def test_gem_explicit_answer_without_search_terminates_as_credit_assigned_bypass():
+    env = FusedEnv.from_dict({"question": "What is 2+2?", "answer": "4", "harness": "gem"})
+    env._reset_search()
+
+    obs, reward, done, info = env._step_search("Reasoning complete.\n<answer>4</answer>")
+
+    assert done is True
+    assert reward == 0.0
+    assert "explicit answer marker before web_search" in obs
+    assert info["termination_reason"] == "ABNORMAL_SEARCH_BYPASS"
+    assert info["credit_assignment"] == "reasoning_step_only"
+    assert env._search_answer == "4"
 
 
 def test_tool_harness_keeps_parser_unknown_reward_metadata():

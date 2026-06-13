@@ -430,9 +430,9 @@ class Workflow(ABC):
         reward_source = str(debug.get("reward_source") or "").lower()
         reward_mode = str(debug.get("reward_mode") or "").lower()
         debug_type = str(debug.get("type") or "").lower()
-        is_search_f1_task = reward_source == "search_reward_fn" or reward_mode == "f1" or debug_type in {"web search", "search", "web_search"}
+        is_search_reward_task = reward_source == "search_reward_fn" or reward_mode in {"em", "f1"} or debug_type in {"web search", "search", "web_search"}
 
-        if is_search_f1_task and ("exact_match" in debug or "f1_score" in debug):
+        if is_search_reward_task and ("exact_match" in debug or "f1_score" in debug):
             if "exact_match" in debug:
                 return bool(debug.get("exact_match"))
             try:

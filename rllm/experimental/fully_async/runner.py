@@ -104,7 +104,7 @@ class FullyAsyncTaskRunner:
         self.tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
 
         # Used for multimodal LLM, could be None
-        self.processor = hf_processor(local_path, trust_remote_code=trust_remote_code, use_fast=True)
+        self.processor = hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
 
         self.config = config
 

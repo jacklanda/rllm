@@ -1,4 +1,8 @@
+import json
 import os
+from pathlib import Path
+
+from ray._private.runtime_env.constants import RAY_JOB_CONFIG_JSON_ENV_VAR
 
 PPO_RAY_RUNTIME_ENV = {
     "env_vars": {
@@ -14,7 +18,7 @@ PPO_RAY_RUNTIME_ENV = {
         # https://github.com/vllm-project/vllm/blob/c6b0a7d3ba03ca414be1174e9bd86a97191b7090/vllm/worker/worker_base.py#L445
         "NCCL_CUMEM_ENABLE": "0",
     },
-    "worker_process_setup_hook": "rllm.patches.verl_patch_hook.setup",
+    "worker_process_setup_hook": "rllm.experimental.verl.patch.apply_all_verl_patches",
 }
 
 FORWARD_PREFIXES = [
@@ -35,7 +39,14 @@ FORWARD_PREFIXES = [
     "NV_",
     "NVIDIA_",
     "DOCKER_",
+    "RAY_",
+    "RLLM_",
 ]
+
+DEFAULT_EXCLUDE_VARS = {
+    "CUDA_VISIBLE_DEVICES",
+    "RLLM_EXCLUDE",
+}
 
 
 def _get_forwarded_env_vars():
@@ -52,16 +63,18 @@ def _get_forwarded_env_vars():
     By default, all environment variables with prefix in `FORWARD_PREFIXES` are forwarded.
     """
     if os.environ.get("RLLM_EXCLUDE", None) is not None:
-        rllm_exclude = str(os.environ.get("RLLM_EXCLUDE")).split(",")
+        rllm_exclude = [name.strip() for name in str(os.environ.get("RLLM_EXCLUDE")).split(",") if name.strip()]
     else:
         rllm_exclude = []
 
     forward_prefix = FORWARD_PREFIXES.copy()
 
-    exclude_vars = set()
+    exclude_vars = set(DEFAULT_EXCLUDE_VARS)
     for name in rllm_exclude:
         if "*" in name:  # denote a prefix match, e.g. "VLLM*"
-            forward_prefix.remove(name.replace("*", "_"))
+            prefix = name.replace("*", "_")
+            if prefix in forward_prefix:
+                forward_prefix.remove(prefix)
         else:
             exclude_vars.add(name)
 
@@ -69,10 +82,36 @@ def _get_forwarded_env_vars():
     return forwarded
 
 
+def _get_repo_root() -> str:
+    return str(Path(__file__).resolve().parents[3])
+
+
+def _prepend_pythonpath(env: dict[str, str], path: str) -> None:
+    entries = [entry for entry in env.get("PYTHONPATH", os.environ.get("PYTHONPATH", "")).split(os.pathsep) if entry]
+    if path in entries:
+        entries.remove(path)
+    env["PYTHONPATH"] = os.pathsep.join([path, *entries])
+
+
 def get_ppo_ray_runtime_env():
     env = PPO_RAY_RUNTIME_ENV["env_vars"].copy()
     env.update(_get_forwarded_env_vars())
-    return {
-        "env_vars": env,
-        # "worker_process_setup_hook": PPO_RAY_RUNTIME_ENV["worker_process_setup_hook"],
-    }
+    _prepend_pythonpath(env, _get_repo_root())
+
+    job_runtime_env = {}
+    job_config_str = os.environ.get(RAY_JOB_CONFIG_JSON_ENV_VAR)
+    if job_config_str:
+        try:
+            job_runtime_env = json.loads(job_config_str).get("runtime_env", {}) or {}
+        except json.JSONDecodeError:
+            job_runtime_env = {}
+
+    for key in (job_runtime_env.get("env_vars") or {}):
+        env.pop(key, None)
+
+    runtime_env = {"env_vars": env}
+    if "worker_process_setup_hook" not in job_runtime_env:
+        runtime_env["worker_process_setup_hook"] = PPO_RAY_RUNTIME_ENV["worker_process_setup_hook"]
+    if "working_dir" not in job_runtime_env:
+        runtime_env["working_dir"] = None
+    return runtime_env

@@ -6,8 +6,12 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from rllm.globals import THOUGHT_DELIMITER_END, THOUGHT_DELIMITER_START
 from rllm.types import Episode
+from rllm.utils.think_tags import (
+    format_assistant_content_for_dump,
+    format_think_block,
+    sanitize_messages_for_dump,
+)
 
 
 class EpisodeLogger:
@@ -70,15 +74,7 @@ class EpisodeLogger:
     @staticmethod
     def _format_thought_for_dump(thought: Any) -> str:
         """Return a complete think block for the dumped thought field."""
-        thought_text = "" if thought is None else str(thought)
-        stripped = thought_text.strip()
-        if stripped.startswith(THOUGHT_DELIMITER_START) and stripped.endswith(THOUGHT_DELIMITER_END):
-            return stripped
-        if stripped.startswith(THOUGHT_DELIMITER_START):
-            stripped = stripped[len(THOUGHT_DELIMITER_START) :].lstrip()
-        if stripped.endswith(THOUGHT_DELIMITER_END):
-            stripped = stripped[: -len(THOUGHT_DELIMITER_END)].rstrip()
-        return f"{THOUGHT_DELIMITER_START}{stripped}{THOUGHT_DELIMITER_END}"
+        return format_think_block(thought)
 
     def get_episode_filename(self, episode: Episode, step: int) -> str:
         """Generate legacy filename for an episode.
@@ -130,8 +126,8 @@ class EpisodeLogger:
                         "action": step.action,
                         "reward": step.reward,
                         "done": step.done,
-                        "model_response": step.model_response,
-                        "chat_completions": step.chat_completions,
+                        "model_response": format_assistant_content_for_dump(step.model_response),
+                        "chat_completions": sanitize_messages_for_dump(step.chat_completions),
                         "timing": step.info.get("timing", {}),
                     }
                     for step in traj.steps

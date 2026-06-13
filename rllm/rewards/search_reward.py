@@ -1072,19 +1072,21 @@ class RewardSearchFn:
         if is_submitted and not max_em:
             metadata["submitted_verbatim_evaluation"] = True
 
-        # Determine if answer is "correct" based on threshold
-        # Use lower threshold for F1 score (0.3) as it's more lenient than exact match
-        f1_threshold = 0.3
+        # Web Search QA uses strict exact-match correctness. F1/partial-match
+        # checks are retained only as diagnostic metadata for near-miss
+        # analysis; they must not produce correctness or reward credit.
+        f1_threshold = 1.0
         partial_match_accepted = False
         partial_match_reject_reason = ""
-        if not max_em and max_f1 >= f1_threshold:
-            partial_match_accepted, partial_match_reject_reason = self._partial_match_acceptance(
+        if not max_em and max_f1 > 0.0:
+            _, diagnostic_reject_reason = self._partial_match_acceptance(
                 extracted_answer,
                 best_match,
                 best_precision,
                 best_recall,
             )
-        is_correct = max_em or partial_match_accepted
+            partial_match_reject_reason = diagnostic_reject_reason or "exact_match_required"
+        is_correct = max_em
 
         metadata.update(
             {
@@ -1120,47 +1122,15 @@ class RewardSearchFn:
             is_submitted=bool(input.task_info.get("is_submitted", False)),
         )
 
-        if is_correct:
-            # For exact matches, give full reward
-            # For F1 matches, scale reward by F1 score
-            if metadata.get("exact_match", False):
-                reward = self.config.correct_reward
-            else:
-                # Scale reward by F1 score for partial matches
-                reward = self.config.correct_reward * score
+        if metadata.get("exact_match", False):
+            reward = self.config.correct_reward
         else:
-            # Fix #10: keep a continuous near-miss credit below the
-            # f1_threshold instead of the binary cliff. The eval dump at
-            # step-10 had 20+ zero-reward cases with f1 ∈ (0, 0.3) whose
-            # gradient signal was being discarded entirely. We award half
-            # the scaled reward in that band, still dominated by any
-            # threshold-passing rollout, so ranking order is preserved.
-            if score > 0.0:
-                reward = self.config.correct_reward * score * 0.5
-            else:
-                reward = self.config.incorrect_reward
+            reward = self.config.incorrect_reward
 
-        # Apply step-based bonus for correct answers
+        # Web Search QA reward is intentionally binary. Ignore step bonuses and
+        # shaping penalties here so the output remains exactly incorrect_reward
+        # or correct_reward regardless of caller config.
         step_bonus = 0.0
-        if self.config.enable_step_bonus and is_correct and reward > 0:
-            step_count = input.task_info.get("step_count", 0)
-            if step_count >= self.config.min_steps_for_bonus:
-                # Calculate bonus scaling factor
-                # Linear scaling from min_steps to max_steps
-                steps_above_min = step_count - self.config.min_steps_for_bonus
-                steps_range = self.config.max_steps_for_bonus - self.config.min_steps_for_bonus
-
-                if steps_range > 0:
-                    # Normalize to [0, 1] range, capped at 1.0
-                    bonus_factor = min(1.0, steps_above_min / steps_range)
-                    # Apply bonus rate
-                    step_bonus = reward * self.config.step_bonus_rate * bonus_factor
-                else:
-                    # If min and max are the same, give full bonus if qualified
-                    step_bonus = reward * self.config.step_bonus_rate
-
-                metadata["step_bonus_factor"] = bonus_factor if steps_range > 0 else 1.0
-                metadata["step_count"] = step_count
 
         """
         # Apply tool call bonus/penalty based on new strategy:
@@ -1192,9 +1162,6 @@ class RewardSearchFn:
             metadata["tool_call_status"] = "no_tool_call"
         """
 
-        # Store base reward before adjustments
-        base_reward = reward
-
         """
         if self.config.toolcall_bonus > 0.0:
             reward += tool_call_adjustment
@@ -1207,42 +1174,14 @@ class RewardSearchFn:
         # block was commented out, leaving `repetition_penalty_reward`
         # identically 0 for all 1250 rollouts. Opt-in via
         # RewardConfig.apply_repetition_penalty so MCP paths are unaffected.
-        repetition_penalty = 0.0
-        if self.config.apply_repetition_penalty:
-            try:
-                repetition_penalty = repetition_penalty_reward(
-                    model_response,
-                    max_n=self.config.repetition_max_n,
-                )
-            except Exception as _e:
-                logger.debug("repetition_penalty_reward failed: %s", _e)
-                repetition_penalty = 0.0
-            repetition_penalty_weighted = repetition_penalty * self.config.repetition_penalty_weight
-            reward += repetition_penalty_weighted
-        else:
-            repetition_penalty_weighted = 0.0
+        repetition_penalty_weighted = 0.0
 
         # P1-3: length / self-restart penalty. Step-0 evals showed
         # 53-99% of rollouts with single-message >8k chars and heavy
         # "Wait," restart cycles. This signal is orthogonal to the
         # n-gram repetition penalty above and catches long "rambling
         # but not literally repeating" traces.
-        length_penalty_raw = 0.0
         length_penalty_weighted = 0.0
-        if getattr(self.config, "apply_length_penalty", False):
-            try:
-                length_penalty_raw = length_restart_penalty(
-                    model_response,
-                    char_threshold=self.config.length_penalty_char_threshold,
-                    char_saturation=self.config.length_penalty_char_saturation,
-                    wait_threshold=self.config.length_penalty_wait_threshold,
-                    wait_saturation=self.config.length_penalty_wait_saturation,
-                )
-            except Exception as _e:
-                logger.debug("length_restart_penalty failed: %s", _e)
-                length_penalty_raw = 0.0
-            length_penalty_weighted = length_penalty_raw * self.config.length_penalty_weight
-            reward += length_penalty_weighted
 
         # Add tool call information and other reward components to metadata
         metadata.update(
@@ -1254,14 +1193,5 @@ class RewardSearchFn:
                 "step_bonus": step_bonus,
             }
         )
-
-        # Apply step bonus to final reward
-        reward += step_bonus
-
-        # Upper-clamp the web-search reward to correct_reward (1.0 by default).
-        # Step bonus + partial-match scaling could otherwise push the total
-        # above the nominal ceiling, which skews training/eval aggregates.
-        if reward > self.config.correct_reward:
-            reward = self.config.correct_reward
 
         return RewardOutput(reward=reward, is_correct=is_correct, metadata=metadata)

@@ -40,6 +40,17 @@ from rllm.utils.episode_logger import EpisodeLogger
 from rllm.workflows.workflow import TerminationReason
 
 
+def _make_dataproto_tensors_contiguous(batch: DataProto) -> DataProto:
+    """Materialize TensorDict views before sending tensors to distributed workers."""
+    if batch is None or batch.batch is None:
+        return batch
+
+    for key, tensor in list(batch.batch.items()):
+        if hasattr(tensor, "is_contiguous") and not tensor.is_contiguous():
+            batch.batch[key] = tensor.contiguous()
+    return batch
+
+
 class AgentWorkflowPPOTrainer(RayPPOTrainer):
     def __init__(
         self,
@@ -935,7 +946,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             if hasattr(self, "rollout_wg") and self.rollout_wg.world_size != 0:
                 world_sizes.append(self.rollout_wg.world_size)
         if not world_sizes:
-            return batch
+            return _make_dataproto_tensors_contiguous(batch)
 
         world_size = reduce(math.lcm, world_sizes)
 
@@ -950,7 +961,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             batch.non_tensor_batch["is_pad_step"][idx] = True
             batch.non_tensor_batch["is_valid"][idx] = False
 
-        return batch
+        return _make_dataproto_tensors_contiguous(batch)
 
     def _dataproto_batch_size(self, batch):
         if batch is None or batch.batch is None:

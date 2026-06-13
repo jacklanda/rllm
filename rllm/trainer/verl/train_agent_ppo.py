@@ -21,6 +21,35 @@ from rllm.trainer.verl.dataset_compat import patch_rlhf_dataset_answer_norm
 from rllm.trainer.verl.ray_runtime_env import get_ppo_ray_runtime_env
 
 
+def _disable_incompatible_qwen35_fused_logprob(config):
+    """Avoid verl fused logprob path for Liger-patched Qwen3.5 models."""
+    model_cfg = config.actor_rollout_ref.model
+    if not model_cfg.get("use_fused_kernels", False):
+        return
+    if not model_cfg.get("use_liger", False):
+        return
+
+    model_path = str(model_cfg.get("path", "")).lower()
+    model_name = os.path.basename(model_path)
+    is_qwen35 = any(marker in model_path or marker in model_name for marker in ("qwen3.5", "qwen3_5"))
+    if not is_qwen35:
+        return
+
+    print(
+        "Disabling actor_rollout_ref.model.use_fused_kernels for Qwen3.5 + Liger: "
+        "verl expects output.log_probs from the fused logprob forward, but the "
+        "Liger Qwen3.5 output object does not provide that field."
+    )
+    OmegaConf.update(config, "actor_rollout_ref.model.use_fused_kernels", False, merge=False)
+    for path in (
+        "actor_rollout_ref.actor.use_fused_kernels",
+        "actor_rollout_ref.ref.use_fused_kernels",
+        "reward_model.use_fused_kernels",
+    ):
+        if OmegaConf.select(config, path, default=None) is not None:
+            OmegaConf.update(config, path, False, merge=False)
+
+
 @hydra.main(config_path="../config", config_name="agent_ppo_trainer", version_base=None)
 def main(config):
     run_ppo_agent(config)
@@ -208,6 +237,7 @@ class TaskRunner:
         pprint(OmegaConf.to_container(config))
         OmegaConf.register_new_resolver("mul", lambda x, y: int(x) * int(y))
         OmegaConf.resolve(config)
+        _disable_incompatible_qwen35_fused_logprob(config)
 
         actor_rollout_cls, ray_worker_group_cls = self.add_actor_rollout_worker(config)
         self.add_critic_worker(config)
@@ -234,7 +264,7 @@ class TaskRunner:
         trust_remote_code = config.data.get("trust_remote_code", False)
         tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
         # Used for multimodal LLM, could be None
-        processor = hf_processor(local_path, trust_remote_code=trust_remote_code, use_fast=True)
+        processor = hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
 
         # Load the reward manager for training and validation.
         reward_fn = load_reward_manager(
@@ -298,9 +328,10 @@ class TaskRunner:
         else:
             raise ValueError(f"Unknown workflow class: {config.rllm.workflow.get('name')}")
 
-        # Apply NCCL dynamic batch sync patch (fixes verl#5750)
-        from rllm.experimental.verl.patch import patch_verl_dynamic_batch_sync
+        # Apply Verl patches that must run before Ray workers are created.
+        from rllm.experimental.verl.patch import patch_verl_dynamic_batch_sync, patch_verl_ray_worker_local_rank_env
 
+        patch_verl_ray_worker_local_rank_env()
         patch_verl_dynamic_batch_sync()
 
         trainer.init_workers()

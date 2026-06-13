@@ -25,6 +25,20 @@ def _suppress_vllm_fla_short_sequence_format_warning() -> None:
     )
 
 
+def _suppress_torch_inductor_online_softmax_warning() -> None:
+    """Suppress a PyTorch Inductor performance warning emitted from worker codegen."""
+
+    warnings.filterwarnings(
+        "ignore",
+        message=(
+            r"Online softmax is disabled on the fly since Inductor decides to\n"
+            r"split the reduction\..*"
+        ),
+        category=UserWarning,
+        module=r"torch\._inductor\.lowering",
+    )
+
+
 def _patch_opentelemetry_prometheus_env_var() -> None:
     try:
         from opentelemetry.sdk import environment_variables
@@ -36,5 +50,26 @@ def _patch_opentelemetry_prometheus_env_var() -> None:
         setattr(environment_variables, name, name)
 
 
+def _patch_transformers_use_return_dict() -> None:
+    try:
+        from transformers.configuration_utils import PreTrainedConfig
+    except Exception:
+        return
+
+    use_return_dict = getattr(PreTrainedConfig, "use_return_dict", None)
+    if not isinstance(use_return_dict, property):
+        return
+
+    def _get_return_dict(self):
+        return self.return_dict
+
+    def _set_return_dict(self, value):
+        self.return_dict = value
+
+    PreTrainedConfig.use_return_dict = property(_get_return_dict, _set_return_dict)
+
+
 _suppress_vllm_fla_short_sequence_format_warning()
+_suppress_torch_inductor_online_softmax_warning()
 _patch_opentelemetry_prometheus_env_var()
+_patch_transformers_use_return_dict()

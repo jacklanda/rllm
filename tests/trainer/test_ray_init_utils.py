@@ -1,10 +1,20 @@
 import importlib.util
+import warnings
 from pathlib import Path
 
 
 def _load_ray_init_utils():
     module_path = Path(__file__).resolve().parents[2] / "rllm" / "trainer" / "ray_init_utils.py"
     spec = importlib.util.spec_from_file_location("rllm_ray_init_utils_test", module_path)
+    mod = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _load_ray_sitecustomize():
+    module_path = Path(__file__).resolve().parents[2] / "rllm" / "trainer" / "_ray_compat" / "sitecustomize.py"
+    spec = importlib.util.spec_from_file_location("rllm_ray_sitecustomize_test", module_path)
     mod = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
     spec.loader.exec_module(mod)
@@ -112,3 +122,40 @@ def test_get_ray_init_settings_adds_ray_subprocess_compat_path(monkeypatch, tmp_
     assert entries[0] == compat_path
     assert entries.count(compat_path) == 1
     assert "/existing" in entries
+
+
+def test_ray_subprocess_compat_silences_transformers_use_return_dict_warning(caplog):
+    try:
+        from transformers import PretrainedConfig
+    except Exception:
+        return
+
+    _load_ray_sitecustomize()
+    config = PretrainedConfig(return_dict=False)
+
+    caplog.set_level("WARNING", logger="transformers")
+    caplog.clear()
+
+    assert config.use_return_dict is False
+    assert not [record for record in caplog.records if "use_return_dict" in record.getMessage()]
+
+
+def test_ray_subprocess_compat_suppresses_torch_inductor_online_softmax_warning():
+    _load_ray_sitecustomize()
+    message = (
+        "Online softmax is disabled on the fly since Inductor decides to\n"
+        "split the reduction. Cut an issue to PyTorch if this is an\n"
+        "important use case and you want to speed it up with online\n"
+        "softmax."
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.warn_explicit(
+            message,
+            UserWarning,
+            "/tmp/torch/_inductor/lowering.py",
+            7627,
+            module="torch._inductor.lowering",
+        )
+
+    assert caught == []

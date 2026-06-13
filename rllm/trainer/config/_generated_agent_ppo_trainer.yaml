@@ -401,6 +401,12 @@ rllm:
     mask_max_response_length_exceeded: true
     mask_max_turns_exceeded: true
     mask_timeout: true
+  credit_assignment:
+    enable: false
+    tool_parser_error: false
+    repeated_search_query: false
+    too_many_tool_calls: false
+    search_bypass: false
   rejection_sample:
     enable: false
     multiplier: 1

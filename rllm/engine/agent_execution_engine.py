@@ -131,6 +131,67 @@ def _extract_tool_name(act) -> str:
     return "unknown"
 
 
+def _mask_only_reasoning_step(response_masks: list[int], assistant_msg_masks: list[int], env_msg_masks: list[int] | None = None) -> list[int]:
+    """Keep loss only on the current reasoning/action step.
+
+    Used for model-induced abnormal terminations where previous actions may be
+    valid context, but the final action should be trained down with reward 0.
+    """
+    env_len = len(env_msg_masks or [])
+    assistant_len = len(assistant_msg_masks or [])
+    previous_len = len(response_masks) - assistant_len - env_len
+    if assistant_len <= 0 or previous_len < 0:
+        return [0] * len(response_masks)
+    return [0] * previous_len + list(assistant_msg_masks) + [0] * env_len
+
+
+def _record_credit_assignment_event(agent, reason: str, event: str) -> None:
+    """Record which model turn caused an abnormal trajectory.
+
+    The verl transform uses these fields to keep only the current abnormal
+    turn in response_mask when the corresponding credit-assignment switch is
+    enabled.
+    """
+    trajectory = agent.trajectory
+    step_index = max(len(trajectory.steps) - 1, 0)
+    trajectory.info["termination_reason"] = reason
+    trajectory.info["credit_assignment_event"] = event
+    trajectory.info["credit_assignment_error_step_index"] = step_index
+    cur_step = agent.get_current_state()
+    if cur_step is not None:
+        cur_step.info["termination_reason"] = reason
+        cur_step.info["credit_assignment_event"] = event
+
+
+def _append_credit_assignment_step(agent, response: str, model_output, reason: str, event: str) -> None:
+    """Ensure the abnormal model turn exists in the trajectory with token ids."""
+    before = len(agent.trajectory.steps)
+    try:
+        agent.update_from_model(response)
+    except Exception:
+        logger.warning("Failed to update agent from abnormal model output; appending token step directly.", exc_info=True)
+
+    if len(agent.trajectory.steps) == before:
+        from rllm.agents.agent import Step
+
+        step = Step(
+            prompt_ids=model_output.prompt_ids or [],
+            response_ids=model_output.completion_ids or [],
+            logprobs=model_output.logprobs or [],
+            model_output=model_output,
+            model_response=response,
+        )
+        agent.trajectory.steps.append(step)
+
+    cur_step = agent.get_current_state()
+    if cur_step is not None:
+        cur_step.model_output = model_output
+        cur_step.prompt_ids = model_output.prompt_ids or []
+        cur_step.response_ids = model_output.completion_ids or []
+        cur_step.logprobs = model_output.logprobs or []
+    _record_credit_assignment_event(agent, reason, event)
+
+
 import torch
 
 from rllm.agents.agent import Action, BaseAgent, Trajectory
@@ -251,6 +312,9 @@ class AgentExecutionEngine:
         self.validate_boxed_per_step = _tf.get("validate_boxed_per_step", False)  # Per-step \boxed{} / tool_call validation + retry
         self.enforce_react_structure = _tf.get("enforce_react_structure", False)  # Min 5 steps + final \boxed{} check
         self.max_tool_calls_per_turn = _tf.get("max_tool_calls_per_turn", 10)  # Max tool calls per single model turn
+
+        _ca = self.config.get("rllm", {}).get("credit_assignment", {}) if self.config is not None else {}
+        self.credit_assignment_search_bypass = bool(_ca.get("enable", False) and _ca.get("search_bypass", False))
 
         self.incremental_tokenization = self.config.get("rllm", {}).get("incremental_tokenization", False) if self.config is not None else False
 
@@ -513,7 +577,8 @@ class AgentExecutionEngine:
         # Incremental tokenization: avoid BPE retokenization mismatch by building
         # prompt_ids from the previous step's accumulated IDs + new observation tokens
         accumulated_prompt_ids = None  # Will be set after step 0's model call
-        if self.incremental_tokenization:
+        use_incremental_tokenization = self.incremental_tokenization
+        if use_incremental_tokenization:
             eos_token_id = self.tokenizer.eos_token_id
             newline_token_ids = self.tokenizer.encode("\n", add_special_tokens=False)  # [198] for Qwen
             generation_prompt_ids = self.tokenizer.encode(self.chat_parser.generation_prompt, add_special_tokens=False)
@@ -552,7 +617,7 @@ class AgentExecutionEngine:
             kwargs["max_tokens"] = max_tokens
 
             # Build precomputed prompt IDs incrementally to avoid BPE retokenization mismatch
-            if self.incremental_tokenization and accumulated_prompt_ids is not None:
+            if use_incremental_tokenization and accumulated_prompt_ids is not None:
                 # Tokenize only the new user/tool message appended after the last step
                 new_msg = agent.chat_completions[-1]
                 new_text = self.chat_parser.parse([new_msg], is_first_msg=False, add_generation_prompt=False)
@@ -672,6 +737,12 @@ class AgentExecutionEngine:
                 exception_message = f"Failed to parse valid output after {retry_count} retries. No tool calls and no \\boxed{{}} found."
                 reward = 0.0
                 done = True
+                if final_model_output is None and model_output is not None:
+                    final_model_output = model_output
+                if final_response is None:
+                    final_response = response
+                if final_response is not None and final_model_output is not None:
+                    _append_credit_assignment_step(agent, final_response, final_model_output, termination_reason, "tool_parser_error")
                 cur_step = agent.get_current_state()
                 if cur_step is not None:
                     cur_step.reward = reward
@@ -690,6 +761,7 @@ class AgentExecutionEngine:
                 exception_message = f"Tool burst detected: {len(tool_calls)} tool calls in a single step (max {self.max_tool_calls_per_turn} allowed)"
                 reward = 0.0
                 done = True
+                _append_credit_assignment_step(agent, response, model_output, termination_reason, "too_many_tool_calls")
                 cur_step = agent.get_current_state()
                 if cur_step is not None:
                     cur_step.reward = reward
@@ -729,6 +801,7 @@ class AgentExecutionEngine:
                 exception_message = f"Repeated query detected: Agent generated the same query multiple times"
                 reward = 0.0
                 done = True
+                _append_credit_assignment_step(agent, response, model_output, termination_reason, "repeated_search_query")
                 cur_step = agent.get_current_state()
                 if cur_step is not None:
                     cur_step.reward = reward
@@ -736,17 +809,20 @@ class AgentExecutionEngine:
                 break
 
             # Update steps
-            prompt_response_pair = {
-                "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
-                "response": response,
-                "prompt_ids": model_output.prompt_ids,
-                "completion_ids": model_output.completion_ids,
-                "logprobs": model_output.logprobs,
-            }
+            if mode == "Raw":
+                prompt_response_pair = {"response": response}
+            else:
+                prompt_response_pair = {
+                    "prompt": self.chat_parser.parse(prompt_messages, add_generation_prompt=True, is_first_msg=True),
+                    "response": response,
+                    "prompt_ids": model_output.prompt_ids,
+                    "completion_ids": model_output.completion_ids,
+                    "logprobs": model_output.logprobs,
+                }
             episode_steps.append(prompt_response_pair)
 
             # Update accumulated prompt IDs for incremental tokenization
-            if self.incremental_tokenization:
+            if use_incremental_tokenization:
                 accumulated_prompt_ids = list(model_output.prompt_ids) + list(model_output.completion_ids)
 
             # Update agent with model response — may return multiple actions
@@ -1061,7 +1137,7 @@ class AgentExecutionEngine:
             # messages were appended by update_from_env_intermediate(). We must
             # include them in accumulated_prompt_ids so the next iteration's
             # incremental build (which only tokenizes chat_completions[-1]) works.
-            if self.incremental_tokenization and num_intermediate > 0 and accumulated_prompt_ids is not None:
+            if use_incremental_tokenization and num_intermediate > 0 and accumulated_prompt_ids is not None:
                 # Tokenize all intermediate messages that were inserted between
                 # the assistant message and the final update_from_env user message.
                 # They are at positions: -(num_intermediate + 1) to -2 in chat_completions
@@ -1075,25 +1151,37 @@ class AgentExecutionEngine:
                     else:
                         accumulated_prompt_ids = accumulated_prompt_ids + [eos_token_id] + newline_token_ids + msg_ids
 
-            chat_completions_messages = agent.chat_completions
-            assistant_message, env_messages = get_recent_assistant_user_messages(chat_completions_messages)
+            if mode == "Raw":
+                if prompt_token_len <= 0:
+                    prompt_token_len = len(model_output.prompt_ids)
+                raw_response_token_len = max(0, len(model_output.prompt_ids) - prompt_token_len) + len(model_output.completion_ids)
+                assistant_msg_tokens = list(model_output.completion_ids)
+                assistant_msg_masks = [1] * len(assistant_msg_tokens)
+                env_msg_tokens, env_msg_masks = [], []
+            else:
+                raw_response_token_len = None
+                chat_completions_messages = agent.chat_completions
+                assistant_message, env_messages = get_recent_assistant_user_messages(chat_completions_messages)
 
-            # Check and convert to tokens if necessary
-            assert assistant_message is not None or mode != "Token", "Assistant messages is none when accumulating token trajectories which should be conversations. This should not happen."
-            assert env_messages is not None or mode != "Token", "Environment messages is none when accumulating token trajectories which should be conversations. This should not happen."
-            assistant_msg_tokens, assistant_msg_masks = [], []
-            env_msg_tokens, env_msg_masks = [], []
-            if assistant_message:
-                assistant_msg_tokens, assistant_msg_masks = convert_messages_to_tokens_and_masks(
-                    [assistant_message], tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=False
-                )
-            if env_messages:
-                env_msg_tokens, env_msg_masks = convert_messages_to_tokens_and_masks(
-                    env_messages, tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=True
-                )
+                # Check and convert to tokens if necessary
+                assert assistant_message is not None or mode != "Token", "Assistant messages is none when accumulating token trajectories which should be conversations. This should not happen."
+                assert env_messages is not None or mode != "Token", "Environment messages is none when accumulating token trajectories which should be conversations. This should not happen."
+                assistant_msg_tokens, assistant_msg_masks = [], []
+                env_msg_tokens, env_msg_masks = [], []
+                if assistant_message:
+                    assistant_msg_tokens, assistant_msg_masks = convert_messages_to_tokens_and_masks(
+                        [assistant_message], tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=False
+                    )
+                if env_messages:
+                    env_msg_tokens, env_msg_masks = convert_messages_to_tokens_and_masks(
+                        env_messages, tokenizer=self.tokenizer, parser=self.chat_parser, contains_first_msg=False, contains_generation_msg=True
+                    )
 
             # Update response token length
-            response_token_len += len(assistant_msg_tokens) + len(env_msg_tokens)
+            if mode == "Raw":
+                response_token_len = max(response_token_len, raw_response_token_len or 0)
+            else:
+                response_token_len += len(assistant_msg_tokens) + len(env_msg_tokens)
             # Reached maximum number of tokens for the trajectory
             if not self.enforce_max_prompt_length and response_token_len >= self.max_response_length:
                 truncation_length = self.max_response_length - response_token_len
@@ -1144,6 +1232,28 @@ class AgentExecutionEngine:
                         exception_message = str(info.get("termination_message", "") or f"Env signalled {termination_reason}")
                 else:
                     termination_reason = "ENV_DONE"
+                if (
+                    isinstance(info, dict)
+                    and (
+                        info.get("credit_assignment") == "reasoning_step_only"
+                    )
+                    and termination_reason != "ABNORMAL_SEARCH_BYPASS"
+                ):
+                    response_masks = _mask_only_reasoning_step(
+                        response_masks=response_masks,
+                        assistant_msg_masks=assistant_msg_masks,
+                        env_msg_masks=[],
+                    )
+                    reward = 0.0
+                if termination_reason == "ABNORMAL_SEARCH_BYPASS" and self.credit_assignment_search_bypass:
+                    reward = 0.0
+                    _record_credit_assignment_event(agent, termination_reason, "search_bypass")
+                elif termination_reason in {"ABNORMAL_PARSE_ERROR", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}:
+                    _record_credit_assignment_event(agent, termination_reason, "tool_parser_error")
+                elif termination_reason == "ABNORMAL_TOOL_BURST":
+                    _record_credit_assignment_event(agent, termination_reason, "too_many_tool_calls")
+                elif termination_reason == "ABNORMAL_REPEATED_QUERY":
+                    _record_credit_assignment_event(agent, termination_reason, "repeated_search_query")
                 break
 
             response_tokens.extend(env_msg_tokens)
@@ -1212,14 +1322,15 @@ class AgentExecutionEngine:
                 masked_out = True
 
         # Calculate final reward if not stopped abnormally
-        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "ABNORMAL_ACTION_LOOP", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
+        abnormal_reasons = {"ABNORMAL_PARSE_ERROR", "ABNORMAL_TOOL_BURST", "ABNORMAL_REPEATED_QUERY", "ABNORMAL_ACTION_LOOP", "ABNORMAL_SEARCH_BYPASS", "INVALID_REACT_STRUCTURE", "INVALID_FINAL_STEP"}
         reward_debug = {}
         reward_metadata = {}
         reward_time = 0.0
         final_reward_computed = False
         # Envs with a verifier always compute reward — the agent may have submitted a fix before termination.
         has_verifier = hasattr(env, "compute_final_reward_metadata")
-        skip_reward = not has_verifier and (masked_out or termination_reason in abnormal_reasons)
+        forced_zero_reward = termination_reason == "ABNORMAL_SEARCH_BYPASS" and self.credit_assignment_search_bypass
+        skip_reward = forced_zero_reward or (not has_verifier and (masked_out or termination_reason in abnormal_reasons))
         if hasattr(env, "compute_final_reward") and not skip_reward:
             cur_step = agent.get_current_state()
             start_time = time.time()
@@ -1245,6 +1356,10 @@ class AgentExecutionEngine:
                 colorful_print(f"Trajectory {idx} ({task_label}) is masked out due to overlong filter.", "red")
 
         trajectory: Trajectory = agent.trajectory
+        if forced_zero_reward:
+            reward = 0.0
+            for step in trajectory.steps:
+                step.reward = 0.0
         if final_reward_computed and trajectory.steps:
             trajectory.steps[-1].reward = reward
             if reward_metadata:
@@ -1269,7 +1384,56 @@ class AgentExecutionEngine:
             }
         )
 
-        if mode == "Text":
+        if mode == "Raw":
+            reward_metrics = {}
+            if reward_metadata:
+                if "tests_passed" in reward_metadata:
+                    reward_metrics["rewards/tests_passed"] = reward_metadata["tests_passed"]
+                if "tests_failed" in reward_metadata:
+                    reward_metrics["rewards/tests_failed"] = reward_metadata["tests_failed"]
+                if "tests_total" in reward_metadata:
+                    reward_metrics["rewards/tests_total"] = reward_metadata["tests_total"]
+                if "pass_rate" in reward_metadata:
+                    reward_metrics["rewards/pass_rate"] = reward_metadata["pass_rate"]
+                if "resolved" in reward_metadata:
+                    reward_metrics["rewards/resolved"] = 1.0 if reward_metadata["resolved"] else 0.0
+                if "pytest_error_code" in reward_metadata and reward_metadata["pytest_error_code"] is not None:
+                    raw_error_code = reward_metadata["pytest_error_code"]
+                    try:
+                        reward_metrics["rewards/pytest_error_code"] = float(raw_error_code)
+                    except (ValueError, TypeError):
+                        match = re.search(r"(\d+)\s*$", str(raw_error_code))
+                        reward_metrics["rewards/pytest_error_code"] = float(match.group(1)) if match else -1.0
+                reward_metrics["rewards/verifier_missing"] = 0.0
+                reward_metrics["rewards/verifier_error"] = 1.0 if reward_metadata.get("verifier_error") else 0.0
+            else:
+                reward_metrics["rewards/verifier_missing"] = 1.0
+
+            _label_to_steps_key = {"cli": "steps/cli", "mcp": "steps/mcp", "web search": "steps/search"}
+            per_type_step_metrics = {_label_to_steps_key[task_label]: len(trajectory.steps)} if task_label in _label_to_steps_key else {}
+            return {
+                "trajectory_reward": trajectory.reward,
+                "reward_metadata": reward_metadata,
+                "reward_debug": reward_debug,
+                "idx": env.idx,
+                "termination_reason": termination_reason,
+                "exception": exception_message,
+                "chat_completions": agent.chat_completions,
+                "metrics": {
+                    "task_label": task_label,
+                    "steps": len(trajectory.steps),
+                    **per_type_step_metrics,
+                    "reward_time": reward_time,
+                    "env_time": env_time,
+                    "llm_time": llm_time,
+                    "total_time": total_time,
+                    "reward_computed": 1.0 if final_reward_computed else 0.0,
+                    **{f"tool_calls/{t}": float(c) for t, c in tool_call_counts.items()},
+                    **{f"tool_error_rate/{t}": float(tool_error_counts.get(t, 0)) / float(c) for t, c in tool_call_counts.items() if c > 0},
+                    **reward_metrics,
+                },
+            }
+        elif mode == "Text":
             return trajectory
         elif mode == "Token":
             prompt_tokens, response_tokens, response_masks, is_valid_trajectory = self.assemble_steps(episode_steps)

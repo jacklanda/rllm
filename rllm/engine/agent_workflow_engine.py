@@ -556,10 +556,11 @@ class AgentWorkflowEngine:
             completed_trajectories += 1
 
             uid = f"{task_id}:{rollout_idx}"
+            uid4log = f"{task_id.rsplit('-', 1)[-1]}:{rollout_idx}"
             task_type = _extract_task_type_for_logging(state["task"])
             rewards_str = ", ".join([format_progress_reward(traj.reward) for traj in episode.trajectories])
             self._progress_safe_print(
-                f"[{uid}][{task_type}] {completed_trajectories}/{total_trajectories}. Reward: {rewards_str}. {str(episode.termination_reason).rsplit('.')[-1]}",
+                f"[{uid4log}][{task_type}] {completed_trajectories}/{total_trajectories}. Reward: {rewards_str}. {str(episode.termination_reason).rsplit('.')[-1]}",
                 fg="green" if episode.is_correct else "yellow",
             )
 

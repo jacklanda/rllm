@@ -17,6 +17,7 @@ import pytest
 from rllm.engine.agent_execution_engine import (
     PROTOCOL_ERROR_TERMINATE_THRESHOLD,
     _ENV_PROTOCOL_ERROR_SIGS,
+    _mask_only_reasoning_step,
 )
 
 
@@ -58,3 +59,10 @@ def test_threshold_is_strict_enough_to_catch_real_failures() -> None:
     run showed ~3 protocol errors per failing trajectory in the first 5 steps,
     so 3 is the natural cut-off."""
     assert 2 <= PROTOCOL_ERROR_TERMINATE_THRESHOLD <= 5
+
+
+def test_credit_assignment_mask_keeps_only_reasoning_step() -> None:
+    response_masks = [1, 1, 0, 0, 1, 1, 1]
+    assistant_msg_masks = [1, 1, 1]
+
+    assert _mask_only_reasoning_step(response_masks, assistant_msg_masks) == [0, 0, 0, 0, 1, 1, 1]

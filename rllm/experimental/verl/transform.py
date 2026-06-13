@@ -9,12 +9,130 @@ from verl.protocol import DataProto
 from verl.utils.torch_functional import pad_sequence_to_length
 
 from rllm.experimental.rollout import VerlEngine
+from rllm.experimental.common.config import CreditAssignmentConfig
 from rllm.experimental.verl.dataclass import AccumulatedData, ProcessedStepData
 from rllm.experimental.verl.metrics import SEARCH_AGENT_RAW_METRIC_KEYS, canonicalize_search_agent_metric_metadata
 from rllm.types import Episode, Trajectory, TrajectoryGroup
 from rllm.workflows.workflow import TerminationReason
 
 logger = logging.getLogger(__name__)
+
+_TOOL_PARSER_ERROR_REASONS = {
+    "ABNORMAL_PARSE_ERROR",
+    "INVALID_REACT_STRUCTURE",
+    "INVALID_FINAL_STEP",
+    "tool_parse_error",
+    "tool_call_parse_exception",
+}
+_REPEATED_SEARCH_QUERY_REASONS = {
+    "ABNORMAL_REPEATED_QUERY",
+    "repeated_query",
+}
+_TOO_MANY_TOOL_CALL_REASONS = {
+    "ABNORMAL_TOOL_BURST",
+}
+_SEARCH_BYPASS_REASONS = {
+    "ABNORMAL_SEARCH_BYPASS",
+}
+
+
+def _metadata_flag(metadata: dict | None, *keys: str) -> bool:
+    if not metadata:
+        return False
+    return any(bool(metadata.get(key)) for key in keys)
+
+
+def _metadata_int(metadata: dict | None, *keys: str) -> int | None:
+    if not metadata:
+        return None
+    for key in keys:
+        value = metadata.get(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _reason_matches(metadata: dict | None, reasons: set[str]) -> bool:
+    if not metadata:
+        return False
+    candidates = (
+        metadata.get("termination_reason"),
+        metadata.get("filter_reason"),
+        metadata.get("abnormal_reason"),
+        metadata.get("credit_assignment_reason"),
+    )
+    return any(str(candidate) in reasons for candidate in candidates if candidate is not None)
+
+
+def _enabled_credit_assignment_event(metadata: dict | None, config: CreditAssignmentConfig | None) -> str | None:
+    if not config or not config.enable:
+        return None
+
+    if config.tool_parser_error and (
+        _metadata_flag(metadata, "tool_call_parse_error", "parse_error", "tool_parser_error", "parse_tool_args_error")
+        or _metadata_int(metadata, "tool_parser_error_count", "total_parse_tool_args_error", "parse_tool_args_error")
+        or _reason_matches(metadata, _TOOL_PARSER_ERROR_REASONS)
+    ):
+        return "tool_parser_error"
+
+    if config.too_many_tool_calls and (
+        _metadata_flag(metadata, "too_many_tool_call", "excessive_parallel_calls")
+        or _metadata_int(metadata, "too_many_tool_call_count", "excessive_parallel_calls")
+        or _reason_matches(metadata, _TOO_MANY_TOOL_CALL_REASONS)
+    ):
+        return "too_many_tool_calls"
+
+    if config.repeated_search_query and (
+        _metadata_flag(metadata, "duplicate_search_detected", "repeated_query", "duplicate_query")
+        or _metadata_int(metadata, "searched_query_count", "duplicate_query_count")
+        or _reason_matches(metadata, _REPEATED_SEARCH_QUERY_REASONS)
+    ):
+        return "repeated_search_query"
+
+    if config.search_bypass and (
+        _metadata_flag(metadata, "search_bypass", "bypass_termination")
+        or _metadata_int(metadata, "reward/bypass_termination")
+        or _reason_matches(metadata, _SEARCH_BYPASS_REASONS)
+    ):
+        return "search_bypass"
+
+    return None
+
+
+def _credit_assignment_step_index(trajectory: Trajectory, config: CreditAssignmentConfig | None) -> tuple[int | None, str | None]:
+    if not config or not config.enable:
+        return None, None
+
+    trajectory_metadata = trajectory.metadata or {}
+    explicit_idx = _metadata_int(
+        trajectory_metadata,
+        "credit_assignment_error_step_index",
+        "abnormal_step_index",
+        "error_step_index",
+    )
+    event = _enabled_credit_assignment_event(trajectory_metadata, config)
+    if explicit_idx is not None and event is not None:
+        return explicit_idx, event
+
+    for idx, step in enumerate(trajectory.steps):
+        step_event = _enabled_credit_assignment_event(step.metadata or {}, config)
+        if step_event is not None:
+            return idx, step_event
+
+    if event is not None:
+        return max(len(trajectory.steps) - 1, 0), event
+
+    return None, None
+
+
+def _mask_only_action_span(mask: list[int], start: int, end: int) -> list[int]:
+    if start < 0 or end <= start or end > len(mask):
+        return [0] * len(mask)
+    return [0] * start + list(mask[start:end]) + [0] * (len(mask) - end)
 
 
 def _pad_sequence_batch(sequences: list[torch.Tensor], pad_token_id: int, max_length: int, left_pad: bool = True) -> torch.Tensor:
@@ -250,7 +368,12 @@ def _decode_routing_matrices(encoded: list[str] | None) -> torch.Tensor | None:
     return torch.from_numpy(arr.copy())
 
 
-def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: AccumulatedData) -> int:
+def _process_trajectory(
+    trajectory: Trajectory,
+    task_id: str,
+    accumulated: AccumulatedData,
+    credit_assignment_config: CreditAssignmentConfig | None = None,
+) -> int:
     """Processes a trajectory and returns an AccumulatedData.
 
     Multi-turn trajectories whose steps form a cumulative-prefix chain
@@ -304,6 +427,7 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
         return 0
 
     search_agent_metrics = canonicalize_search_agent_metric_metadata(trajectory.metadata or {})
+    credit_step_index, credit_event = _credit_assignment_step_index(trajectory, credit_assignment_config)
 
     # ------------------------------------------------------------------
     # Walk steps and merge prefix-extending steps into segments.
@@ -320,7 +444,7 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
     # that segment. ``full_seq`` tracks prompt+all-action-and-obs tokens
     # so we can detect prefix-extension on the next step.
 
-    def _new_segment(step):
+    def _new_segment(step, step_index: int):
         prompt = list(step.model_output.prompt_ids)
         action = list(step.model_output.completion_ids)
         action_lp = list(step.model_output.logprobs or [])
@@ -335,6 +459,7 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
             "mask": [1] * len(action),
             "logprobs": list(action_lp),
             "full_seq": list(prompt) + list(action),
+            "action_spans": [(step_index, 0, len(action))],
             "multi_modal": step.model_output.multi_modal_inputs or {},
             # Hold the latest step that produced routing in this segment. Each step's
             # routing covers (step.prompt + step.action), and the segment is cumulative
@@ -344,9 +469,27 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
         }
 
     def _emit(seg):
+        response = list(seg["response"])
+        mask = list(seg["mask"])
+        if credit_event == "search_bypass":
+            trajectory.info["credit_assignment_applied"] = True
+            trajectory.info["credit_assignment_event"] = credit_event
+            trajectory.info["credit_assignment_error_step_index"] = credit_step_index
+        elif credit_step_index is not None:
+            matched_credit_step = False
+            for step_index, start, end in seg["action_spans"]:
+                if step_index == credit_step_index:
+                    mask = _mask_only_action_span(mask, start, end)
+                    trajectory.info["credit_assignment_applied"] = True
+                    trajectory.info["credit_assignment_event"] = credit_event
+                    trajectory.info["credit_assignment_error_step_index"] = credit_step_index
+                    matched_credit_step = True
+                    break
+            if not matched_credit_step:
+                mask = [0] * len(mask)
         prompt_t = torch.tensor(seg["prompt"], dtype=torch.long)
-        response_t = torch.tensor(seg["response"], dtype=torch.long)
-        mask_t = torch.tensor(seg["mask"], dtype=torch.long)
+        response_t = torch.tensor(response, dtype=torch.long)
+        mask_t = torch.tensor(mask, dtype=torch.long)
         last_routing_step = seg["last_routing_step"]
         routing_t = _decode_routing_matrices(last_routing_step.routing_matrices) if last_routing_step is not None else None
         # step_id is keyed by trajectory.uid (no per-segment suffix). All
@@ -376,9 +519,11 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
             search_agent_metrics=search_agent_metrics,
         )
 
-    seg = _new_segment(valid_steps[0])
+    step_to_index = {id(step): idx for idx, step in enumerate(trajectory.steps)}
+    seg = _new_segment(valid_steps[0], step_to_index.get(id(valid_steps[0]), 0))
     segments_emitted = 0
     for step in valid_steps[1:]:
+        step_index = step_to_index.get(id(step), 0)
         prompt_ids = list(step.model_output.prompt_ids)
         if len(prompt_ids) >= len(seg["full_seq"]) and prompt_ids[: len(seg["full_seq"])] == seg["full_seq"]:
             # Cumulative — extend the current segment.
@@ -389,9 +534,11 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
                 action_lp = list(action_lp) + [0.0] * (len(action) - len(action_lp))
 
             seg["response"].extend(delta_obs)
+            action_start = len(seg["mask"]) + len(delta_obs)
             seg["response"].extend(action)
             seg["mask"].extend([0] * len(delta_obs))
             seg["mask"].extend([1] * len(action))
+            seg["action_spans"].append((step_index, action_start, action_start + len(action)))
             seg["logprobs"].extend([0.0] * len(delta_obs))
             seg["logprobs"].extend(action_lp)
             seg["full_seq"].extend(delta_obs)
@@ -403,14 +550,19 @@ def _process_trajectory(trajectory: Trajectory, task_id: str, accumulated: Accum
             # Non-cumulative — close out current segment, start a new one.
             _emit(seg)
             segments_emitted += 1
-            seg = _new_segment(step)
+            seg = _new_segment(step, step_index)
 
     _emit(seg)
     segments_emitted += 1
     return segments_emitted
 
 
-def _process_episode(episode: Episode, task_id: str, accumulated: AccumulatedData) -> int:
+def _process_episode(
+    episode: Episode,
+    task_id: str,
+    accumulated: AccumulatedData,
+    credit_assignment_config: CreditAssignmentConfig | None = None,
+) -> int:
     """Processes an episode and returns an AccumulatedData.
 
     Args:
@@ -430,7 +582,7 @@ def _process_episode(episode: Episode, task_id: str, accumulated: AccumulatedDat
         return 0
 
     for trajectory in episode.trajectories:
-        n_steps = _process_trajectory(trajectory, task_id, accumulated)
+        n_steps = _process_trajectory(trajectory, task_id, accumulated, credit_assignment_config)
         total_steps += n_steps
 
     # Extend episode-level data for all steps in this episode
@@ -523,6 +675,7 @@ def transform_episodes_to_dataproto(
     rollout_engine: VerlEngine,
     max_prompt_length: int,
     max_response_length: int,
+    credit_assignment_config: CreditAssignmentConfig | None = None,
 ) -> DataProto:
     """
     Transforms a list of episodes (from running a rLLM workflow) into a verl-compatible DataProto.
@@ -547,7 +700,7 @@ def transform_episodes_to_dataproto(
     for episode in episodes:
         task_id = episode.task_id
         total_agent_steps += sum(len(traj.steps) for traj in episode.trajectories)
-        total_steps = _process_episode(episode, task_id, accumulated)
+        total_steps = _process_episode(episode, task_id, accumulated, credit_assignment_config)
         accumulated.repeat_counts.append(total_steps)
 
     assert hasattr(tokenizer, "pad_token_id"), "Tokenizer must have a pad token ID"

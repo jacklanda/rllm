@@ -83,6 +83,7 @@ from verl.utils.metric import reduce_metrics
 
 from rllm.engine.agent_execution_engine import AsyncAgentExecutionEngine
 from rllm.trainer.verl.dataset_compat import patch_rlhf_dataset_answer_norm
+from rllm.utils.think_tags import sanitize_messages_for_dump, sanitize_trajectory_dump_for_think_tags
 
 patch_rlhf_dataset_answer_norm()
 
@@ -162,6 +163,9 @@ class AgentPPOTrainer(RayPPOTrainer):
     def _should_dump_trajectory_files(self) -> bool:
         return _is_truthy(self._rllm_cfg_value("dump_trajectory_files", True), default=True)
 
+    def _offline_rs_fast_path_enabled(self) -> bool:
+        return _is_truthy(self._rllm_cfg_value("offline_rs_fast_path", False), default=False)
+
     def _batch_results_config(self):
         batch_results_dir = self._rllm_cfg_value("batch_results_dir", None)
         if not batch_results_dir:
@@ -181,7 +185,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         from collections import Counter, defaultdict
 
-        rows = merged_data.get("accept_traj", []) + merged_data.get("reject_traj", [])
+        rows = sanitize_trajectory_dump_for_think_tags(merged_data.get("accept_traj", []) + merged_data.get("reject_traj", []))
         accepted_by_uid = defaultdict(list)
         trial_counts = Counter()
         source_counts = Counter()
@@ -210,7 +214,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             if ranked:
                 selected_rewards[uid] = _reward_value(ranked[0])
             for rank, original_row in enumerate(ranked, start=1):
-                row = _rename_task_label_fields(dict(original_row))
+                row = _rename_task_label_fields(sanitize_trajectory_dump_for_think_tags(dict(original_row)))
                 row["sample_trial"] = trial_counts[uid]
                 row["accepted_rank"] = rank
                 selected.append(row)
@@ -613,6 +617,32 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                 with marked_timer("step", timing_raw):
                     self.init_envs_and_agents(batch)
+
+                    if self._offline_rs_fast_path_enabled() and not self.config.rllm.stepwise_advantage.enable:
+                        metrics.update(self.generate_agent_trajectory_raw(timing_raw=timing_raw, meta_info=batch.meta_info, batch=batch))
+                        metrics.pop("_raw_traj_metrics", None)
+                        metrics.update({f"timing_s/{name}": value for name, value in timing_raw.items()})
+
+                        if self.curriculum_sampler is not None:
+                            cw = self.curriculum_sampler.get_current_weights()
+                            metrics["curriculum/phase"] = self.curriculum_sampler.current_phase
+                            metrics["curriculum/weight_easy"] = cw["easy"]
+                            metrics["curriculum/weight_medium"] = cw["medium"]
+                            metrics["curriculum/weight_hard"] = cw["hard"]
+
+                        logger.log(data=metrics, step=self.global_steps)
+
+                        self.global_steps += 1
+                        if self.curriculum_sampler is not None:
+                            self.curriculum_sampler.set_step(self.global_steps)
+
+                        if self.global_steps >= self.total_training_steps:
+                            if self.val_reward_fn is not None:
+                                val_metrics = self._validate_agent()
+                                pprint(f"Final validation metrics: {val_metrics}")
+                                logger.log(data=val_metrics, step=self.global_steps)
+                            return
+                        continue
 
                     if self.config.rllm.stepwise_advantage.enable:
                         final_gen_batch_output = self.generate_agent_steps(timing_raw=timing_raw, meta_info=batch.meta_info, uids=batch.non_tensor_batch["uid"], data_sources=batch.non_tensor_batch.get("data_source"))
@@ -1169,7 +1199,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 else:
                     u_id = "unknown"
 
-                messages = traj.get("chat_completions", [])
+                messages = sanitize_messages_for_dump(traj.get("chat_completions", []))
 
                 # Find the prompt
                 prompt = ""
@@ -1231,6 +1261,162 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         return final_gen_batch_output, metrics
 
+    def _build_dropped_trajectory_dump(self, dropped_trajectories: list[dict], batch: DataProto | None = None) -> list[dict]:
+        dropped_dump = []
+        for traj in dropped_trajectories:
+            idx = traj["idx"]
+            if batch is not None and "uid" in batch.non_tensor_batch:
+                u_id = batch.non_tensor_batch["uid"][idx]
+            else:
+                u_id = "unknown"
+
+            messages = sanitize_messages_for_dump(traj.get("chat_completions", []))
+            prompt = ""
+            for msg in messages:
+                if msg["role"] == "user":
+                    prompt = msg["content"]
+                    break
+
+            dropped_dump.append(
+                {
+                    "uuid": str(u_id),
+                    "prompt": prompt,
+                    "data_source": batch.non_tensor_batch.get("data_source", ["unknown"] * (idx + 1))[idx] if batch is not None else "unknown",
+                    "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
+                    "reward": None,
+                    "termination_reason": traj.get("termination_reason"),
+                    "trajectory": messages,
+                    "debug": {},
+                }
+            )
+        return dropped_dump
+
+    def _aggregate_raw_trajectory_metrics(self, trajectories: list[dict], dropped_dump: list[dict]) -> dict:
+        metrics = {}
+        total_trajectories = len(trajectories) + len(dropped_dump)
+        metrics["traj/accept_rate"] = len(trajectories) / total_trajectories if total_trajectories > 0 else 0.0
+
+        traj_metrics = [traj.get("metrics", {}) for traj in trajectories if isinstance(traj.get("metrics", {}), dict)]
+        all_keys = set()
+        for item in traj_metrics:
+            all_keys.update(item.keys())
+        raw_metrics = {}
+        for key in all_keys:
+            values = [item.get(key) for item in traj_metrics]
+            values = [value for value in values if isinstance(value, (int, float)) and value >= 0]
+            if not values:
+                continue
+            arr = np.array(values)
+            metrics[f"traj/{key}_mean"] = float(arr.mean())
+            metrics[f"traj/{key}_min"] = float(arr.min())
+            metrics[f"traj/{key}_max"] = float(arr.max())
+            raw_metrics[key] = values
+        metrics["_raw_traj_metrics"] = raw_metrics
+        return metrics
+
+    def _raw_trajectories_to_dump(self, trajectories: list[dict], dropped_dump: list[dict], batch: DataProto | None = None) -> dict:
+        traj_dump = []
+        for traj in trajectories:
+            idx = traj["idx"]
+            u_id = batch.non_tensor_batch["uid"][idx] if batch is not None and "uid" in batch.non_tensor_batch else "unknown"
+            messages = sanitize_messages_for_dump(traj.get("chat_completions", []))
+
+            prompt = ""
+            for msg in messages:
+                if msg["role"] == "user":
+                    prompt = msg["content"]
+                    break
+
+            raw_reward = traj.get("trajectory_reward")
+            if raw_reward is None:
+                dump_reward = None
+            elif hasattr(raw_reward, "item"):
+                dump_reward = raw_reward.item()
+            else:
+                dump_reward = float(raw_reward)
+
+            traj_dump.append(
+                {
+                    "uuid": str(u_id),
+                    "prompt": prompt,
+                    "data_source": batch.non_tensor_batch.get("data_source", ["unknown"] * (idx + 1))[idx] if batch is not None else "unknown",
+                    "steps": len([turn for turn in messages if turn["role"] not in ["system", "user"]]),
+                    "reward": dump_reward,
+                    "termination_reason": traj.get("termination_reason"),
+                    "trajectory": messages,
+                    "debug": {
+                        "verification": traj.get("reward_debug", {}),
+                        "reward_metadata": traj.get("reward_metadata", {}),
+                        "ground_truth": self._get_extra_info_field(batch.non_tensor_batch.get("extra_info")[idx], "ground_truth", "") if batch is not None else "",
+                        "metrics": traj.get("metrics", {}),
+                        "exception": traj.get("exception", ""),
+                    },
+                }
+            )
+
+        all_reasons = [
+            "ENV_DONE",
+            "TIMEOUT",
+            "MAX_STEPS",
+            "TRUNCATION",
+            "PROMPT_TRUNCATION",
+            "ABNORMAL_PARSE_ERROR",
+            "ABNORMAL_TOOL_BURST",
+            "ABNORMAL_REPEATED_QUERY",
+            "ABNORMAL_ACTION_LOOP",
+            "ABNORMAL_SEARCH_BYPASS",
+            "INVALID_REACT_STRUCTURE",
+            "INVALID_FINAL_STEP",
+            "ENV_TIMEOUT",
+            "UNKNOWN",
+        ]
+        total_stats = {reason: 0 for reason in all_reasons}
+        for traj in traj_dump + (dropped_dump or []):
+            reason = traj.get("termination_reason") or "UNKNOWN"
+            total_stats[reason] = total_stats.get(reason, 0) + 1
+
+        return {
+            "traj_stats": total_stats,
+            "accept_traj": traj_dump,
+            "reject_traj": dropped_dump or [],
+        }
+
+    def generate_agent_trajectory_raw(self, timing_raw=None, meta_info=None, batch=None, is_eval=False):
+        if timing_raw is None:
+            timing_raw = {}
+
+        dropped_trajectories = []
+        trajectories = []
+        with marked_timer("collect_trajectory", timing_raw):
+            if self.async_rollout_mode:
+                gen_seq_generator = self.generate_agent_trajectories_async(timing_raw=timing_raw, meta_info=meta_info, mode="Raw")
+                for trajectory in gen_seq_generator:
+                    if trajectory is None:
+                        continue
+                    if trajectory.get("dropped", False):
+                        dropped_trajectories.append(trajectory)
+                    else:
+                        trajectories.append(trajectory)
+            else:
+                raise ValueError("Only async rollout mode is supported")
+
+        dropped_dump = self._build_dropped_trajectory_dump(dropped_trajectories, batch=batch)
+        trajectories.sort(key=lambda x: x["idx"])
+        merged_data = self._raw_trajectories_to_dump(trajectories, dropped_dump=dropped_dump, batch=batch)
+        file_stem = f"global_steps_{self.global_steps}"
+        self._dump_offline_rs_batch_results(merged_data, file_stem)
+
+        if self._should_dump_trajectory_files():
+            subdir = "evals_trajectory" if is_eval else "train_trajectory"
+            save_dir = os.path.join(self.config.trainer.default_local_dir, subdir)
+            os.makedirs(save_dir, exist_ok=True)
+            file_path = os.path.join(save_dir, f"{file_stem}.json")
+            with open(file_path, "w") as f:
+                print(f"Saving raw offline RS trajectories and stats to {file_path}")
+                json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+
+        return self._aggregate_raw_trajectory_metrics(trajectories, dropped_dump=dropped_dump)
+
     def generate_agent_steps(self, timing_raw=None, meta_info=None, uids=None, data_sources=None):
         """
         Generates agent trajectories by interacting with the environment. Does not close or reset the environment afterwards.
@@ -1264,7 +1450,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 else:
                     u_id = "unknown"
 
-                messages = traj.get("chat_completions", [])
+                messages = sanitize_messages_for_dump(traj.get("chat_completions", []))
 
                 # Find the prompt
                 prompt = ""
@@ -1402,7 +1588,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             traj_bonus_rewards.append(tool_call_reward + step_bonus)
             reward_metadata_list.append(reward_metadata)
 
-            trajectories_w_metadata = traj["chat_completions"].copy()
+            trajectories_w_metadata = sanitize_messages_for_dump(traj["chat_completions"])
 
             original_idx = traj["idx"]
             valid_indices.append(original_idx)
@@ -1484,7 +1670,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         for traj in trajectories:
             idx = traj["idx"]
             u_id = batch.non_tensor_batch["uid"][idx]
-            messages = traj["chat_completions"]
+            messages = sanitize_messages_for_dump(traj["chat_completions"])
 
             # Find the prompt. Usually the first user message.
             prompt = ""
@@ -1536,6 +1722,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
             "ABNORMAL_ACTION_LOOP",
+            "ABNORMAL_SEARCH_BYPASS",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1552,6 +1739,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
             "ABNORMAL_ACTION_LOOP",
+            "ABNORMAL_SEARCH_BYPASS",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1907,7 +2095,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         for episode in steps:
             idx = episode["idx"]
             u_id = uids[idx]
-            episode_steps = episode["steps"]
+            episode_steps = sanitize_trajectory_dump_for_think_tags(episode["steps"])
 
             # In stepwise mode, episode["steps"] is a list of dicts with "prompt" and "response"
             main_prompt = episode_steps[0]["prompt"] if episode_steps else ""
@@ -1948,6 +2136,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
             "ABNORMAL_ACTION_LOOP",
+            "ABNORMAL_SEARCH_BYPASS",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
@@ -1964,6 +2153,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "ABNORMAL_TOOL_BURST",
             "ABNORMAL_REPEATED_QUERY",
             "ABNORMAL_ACTION_LOOP",
+            "ABNORMAL_SEARCH_BYPASS",
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",

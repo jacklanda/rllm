@@ -13,6 +13,62 @@ logger = logging.getLogger(__name__)
 _VERL_DYNAMIC_BATCH_PATCHED = False
 _VERL_QWEN3_VL_DUMMY_INPLACE_PATCHED = False
 _VERL_TENSORDICT_JAGGED_PATCHED = False
+_VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = False
+_VERL_RAY_LOCAL_RANK_ENV_PATCHED = False
+
+
+# ---------------------------------------------------------------------------
+# Verl Ray worker env: provide LOCAL_RANK / LOCAL_WORLD_SIZE
+# ---------------------------------------------------------------------------
+
+
+def patch_verl_ray_worker_local_rank_env() -> None:
+    """Patch Verl Ray worker creation to export standard local-rank env vars.
+
+    Some Verl versions only set ``RAY_LOCAL_WORLD_SIZE`` when creating
+    RayWorkerGroup actors.  ``verl.single_controller.base.worker.Worker`` reads
+    ``LOCAL_RANK`` and ``LOCAL_WORLD_SIZE`` instead, defaulting both to a
+    single-rank process when they are absent.  With FSDP2 this makes every
+    local rank select cuda:0 and NCCL aborts with "Duplicate GPU detected".
+    """
+    global _VERL_RAY_LOCAL_RANK_ENV_PATCHED
+    if _VERL_RAY_LOCAL_RANK_ENV_PATCHED:
+        return
+
+    from verl.single_controller.ray import RayWorkerGroup
+
+    _original_create_worker = RayWorkerGroup._create_worker
+
+    def _patched_create_worker(
+        self,
+        rank,
+        pg_idx,
+        pg,
+        local_rank,
+        resource_pool,
+        ray_cls_with_init,
+        worker_env,
+        detached,
+    ):
+        local_world_size = resource_pool.store[0]
+        worker_env = dict(worker_env or {})
+        worker_env.setdefault("LOCAL_RANK", str(local_rank))
+        worker_env.setdefault("LOCAL_WORLD_SIZE", str(local_world_size))
+        return _original_create_worker(
+            self,
+            rank,
+            pg_idx,
+            pg,
+            local_rank,
+            resource_pool,
+            ray_cls_with_init,
+            worker_env,
+            detached,
+        )
+
+    RayWorkerGroup._create_worker = _patched_create_worker
+    _VERL_RAY_LOCAL_RANK_ENV_PATCHED = True
+    logger.info("Patched Verl RayWorkerGroup to export LOCAL_RANK and LOCAL_WORLD_SIZE")
 
 
 # ---------------------------------------------------------------------------
@@ -261,13 +317,154 @@ def patch_verl_tensordict_jagged_layout() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Verl vLLM async server: pass typed token inputs to vLLM 0.18+.
+# ---------------------------------------------------------------------------
+
+
+def patch_verl_vllm_typed_token_prompt() -> None:
+    """Avoid vLLM 0.18+ raw-prompt deprecation warnings in verl's HTTP server.
+
+    vLLM now expects the output of its renderer APIs, which are typed
+    ``EngineInput`` dictionaries.  verl 0.7.x passes a legacy ``TokensPrompt``
+    object when using token-in/token-out generation; vLLM still accepts it, but
+    routes it through the deprecated raw-prompt branch and logs on every server
+    process. For text-only prompts we can pass the equivalent typed token input
+    directly. Multimodal requests stay on verl's original path because rendered
+    multimodal inputs require placeholders and hashes that this older verl path
+    does not construct.
+    """
+    global _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED
+    if _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED:
+        return
+
+    try:
+        from vllm.inputs.engine import tokens_input
+        from verl.workers.rollout.vllm_rollout import vllm_async_server as mod
+    except Exception:
+        _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = True
+        logger.info("verl vLLM typed-token prompt patch: required modules unavailable; nothing to patch.")
+        return
+
+    server_cls = getattr(mod, "vLLMHttpServerBase", None)
+    if server_cls is None or not hasattr(server_cls, "generate"):
+        _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = True
+        logger.info("verl vLLM typed-token prompt patch: server class unavailable; nothing to patch.")
+        return
+
+    original_generate = server_cls.generate
+    if getattr(original_generate, "_rllm_typed_token_prompt_patch", False):
+        _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = True
+        return
+
+    async def _patched_generate(
+        self,
+        prompt_ids,
+        sampling_params,
+        request_id,
+        image_data=None,
+        video_data=None,
+    ):
+        if image_data is not None or video_data is not None:
+            return await original_generate(
+                self,
+                prompt_ids=prompt_ids,
+                sampling_params=sampling_params,
+                request_id=request_id,
+                image_data=image_data,
+                video_data=video_data,
+            )
+
+        from typing import Optional
+
+        from vllm.outputs import RequestOutput
+        from vllm.sampling_params import SamplingParams
+        from verl.workers.rollout.replica import TokenOutput
+
+        max_possible_tokens = self.config.max_model_len - len(prompt_ids)
+        if max_possible_tokens < 0:
+            raise ValueError(
+                f"Prompt length ({len(prompt_ids)}) exceeds the model's maximum context length "
+                f"({self.config.max_model_len})."
+            )
+
+        sampling_params = sampling_params.copy()
+        if "max_tokens" in sampling_params:
+            max_tokens = sampling_params.pop("max_tokens")
+        elif "max_new_tokens" in sampling_params:
+            max_tokens = sampling_params.pop("max_new_tokens")
+        else:
+            max_tokens = self.config.response_length + self.config.prompt_length - len(prompt_ids)
+        max_tokens = max(0, min(max_tokens, max_possible_tokens))
+
+        sampling_params["logprobs"] = 0 if sampling_params.pop("logprobs", False) else None
+        sampling_params.setdefault("repetition_penalty", self.config.get("repetition_penalty", 1.0))
+        sampling_params = SamplingParams(max_tokens=max_tokens, **sampling_params)
+        prompt_ids = mod._qwen2_5_vl_dedup_image_tokens(prompt_ids, self.model_config.processor)
+        prompt = tokens_input(prompt_token_ids=prompt_ids)
+
+        lora_request = None
+        if self.model_config.lora_rank > 0:
+            lora_loaded = mod.VLLM_LORA_INT_ID in await self.engine.list_loras()
+            if lora_loaded:
+                lora_request = mod.LoRARequest(
+                    lora_name=mod.VLLM_LORA_NAME,
+                    lora_int_id=mod.VLLM_LORA_INT_ID,
+                    lora_path=mod.VLLM_LORA_PATH,
+                )
+
+        generator = self.engine.generate(
+            prompt=prompt,
+            sampling_params=sampling_params,
+            request_id=request_id,
+            lora_request=lora_request,
+        )
+
+        final_res: Optional[RequestOutput] = None
+        async for output in generator:
+            final_res = output
+        assert final_res is not None
+
+        token_ids = final_res.outputs[0].token_ids
+        log_probs = None
+        if sampling_params.logprobs is not None:
+            log_probs = [logprobs[token_ids[i]].logprob for i, logprobs in enumerate(final_res.outputs[0].logprobs)]
+
+        routed_experts = None
+        if self.config.enable_rollout_routing_replay:
+            routed_experts = final_res.outputs[0].routed_experts
+
+        finish_reason = final_res.outputs[0].finish_reason
+        if finish_reason == "abort":
+            stop_reason = "aborted"
+        elif finish_reason in ("stop", "length"):
+            stop_reason = "completed"
+        else:
+            stop_reason = finish_reason
+
+        return TokenOutput(
+            token_ids=token_ids,
+            log_probs=log_probs,
+            routed_experts=routed_experts,
+            stop_reason=stop_reason,
+        )
+
+    _patched_generate._rllm_typed_token_prompt_patch = True
+    server_cls.generate = _patched_generate
+
+    _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = True
+    logger.info("Patched verl vLLM HTTP server to pass typed token inputs to vLLM for text-only prompts")
+
+
+# ---------------------------------------------------------------------------
 # Worker-side entry point (used as Ray runtime_env worker_process_setup_hook)
 # ---------------------------------------------------------------------------
 
 _ALL_VERL_PATCHES = {
+    "patch_verl_ray_worker_local_rank_env": patch_verl_ray_worker_local_rank_env,
     "patch_verl_dynamic_batch_sync": patch_verl_dynamic_batch_sync,
     "patch_verl_qwen3_vl_dummy_inplace": patch_verl_qwen3_vl_dummy_inplace,
     "patch_verl_tensordict_jagged_layout": patch_verl_tensordict_jagged_layout,
+    "patch_verl_vllm_typed_token_prompt": patch_verl_vllm_typed_token_prompt,
 }
 
 

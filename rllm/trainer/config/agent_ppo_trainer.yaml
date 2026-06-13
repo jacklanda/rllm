@@ -84,6 +84,15 @@ rllm:
     mask_timeout: True
     mask_unknown: True
     mask_error: True
+  credit_assignment:
+    # For model-induced abnormal search/tool trajectories, keep only the
+    # current abnormal turn in response_mask so earlier valid turns are not
+    # trained down by the zero/low trajectory reward.
+    enable: False
+    tool_parser_error: False
+    repeated_search_query: False
+    too_many_tool_calls: False
+    search_bypass: False
   trajectory_filtering:
     # SimpleTIR-style trajectory-level filtering for search agents
     # Filters out individual trajectories from batches before gradient updates

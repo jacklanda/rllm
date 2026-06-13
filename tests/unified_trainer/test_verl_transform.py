@@ -9,9 +9,10 @@ so that downstream importance sampling and bypass mode work.
 from unittest.mock import MagicMock
 
 import torch
+from omegaconf import OmegaConf
 
 from rllm.agents.agent import Episode, Step, Trajectory
-from rllm.experimental.common.config import CompactFilteringConfig, TransformConfig
+from rllm.experimental.common.config import CompactFilteringConfig, CreditAssignmentConfig, TransformConfig
 from rllm.experimental.common.transform import transform_episodes_to_trajectory_groups
 from rllm.experimental.rollout import ModelOutput
 from rllm.experimental.verl.transform import transform_episodes_to_dataproto
@@ -94,6 +95,102 @@ def test_transform_carries_search_agent_metric_counters_to_non_tensors():
     assert batch.non_tensor_batch["all_call_tool_counts"].tolist() == [3]
     assert batch.non_tensor_batch["all_call_tool_success_counts"].tolist() == [2]
     assert batch.non_tensor_batch["duplicate_search_result_count"].tolist() == [1]
+
+
+def test_credit_assignment_config_accepts_dict_and_omegaconf():
+    dict_config = CreditAssignmentConfig.from_config({"enable": True, "search_bypass": True})
+    omega_config = CreditAssignmentConfig.from_config(OmegaConf.create({"enable": True, "repeated_search_query": True}))
+
+    assert dict_config.enable is True
+    assert dict_config.search_bypass is True
+    assert omega_config.enable is True
+    assert omega_config.repeated_search_query is True
+
+
+def test_credit_assignment_masks_previous_turns_only_for_repeated_query():
+    first_output = ModelOutput(
+        prompt_ids=[1, 2],
+        completion_ids=[3, 4],
+    )
+    second_output = ModelOutput(
+        prompt_ids=[1, 2, 3, 4, 9],
+        completion_ids=[5, 6],
+    )
+    steps = [
+        Step(model_output=first_output, reward=0.0),
+        Step(
+            model_output=second_output,
+            reward=0.0,
+            metadata={
+                "termination_reason": "ABNORMAL_REPEATED_QUERY",
+                "credit_assignment_event": "repeated_search_query",
+            },
+        ),
+    ]
+    trajectory = Trajectory(
+        steps=steps,
+        reward=0.0,
+        metadata={
+            "searched_query_count": 1,
+            "credit_assignment_error_step_index": 1,
+            "credit_assignment_event": "repeated_search_query",
+        },
+    )
+    episode = Episode(id="task_0:0", trajectories=[trajectory], is_correct=False)
+    engine = _make_mock_rollout_engine()
+
+    batch = transform_episodes_to_dataproto(
+        [episode],
+        engine,
+        max_prompt_length=8,
+        max_response_length=8,
+        credit_assignment_config=CreditAssignmentConfig(
+            enable=True,
+            repeated_search_query=True,
+        ),
+    )
+
+    assert batch.batch["responses"][0, :5].tolist() == [3, 4, 9, 5, 6]
+    assert batch.batch["response_mask"][0, :5].tolist() == [0, 0, 0, 1, 1]
+
+
+def test_search_bypass_credit_assignment_keeps_full_trajectory_mask():
+    first_output = ModelOutput(
+        prompt_ids=[1, 2],
+        completion_ids=[3, 4],
+    )
+    second_output = ModelOutput(
+        prompt_ids=[1, 2, 3, 4, 9],
+        completion_ids=[5, 6],
+    )
+    trajectory = Trajectory(
+        steps=[
+            Step(model_output=first_output, reward=0.0),
+            Step(model_output=second_output, reward=0.0),
+        ],
+        reward=0.0,
+        metadata={
+            "termination_reason": "ABNORMAL_SEARCH_BYPASS",
+            "credit_assignment_error_step_index": 1,
+            "credit_assignment_event": "search_bypass",
+        },
+    )
+    episode = Episode(id="task_0:0", trajectories=[trajectory], is_correct=False)
+    engine = _make_mock_rollout_engine()
+
+    batch = transform_episodes_to_dataproto(
+        [episode],
+        engine,
+        max_prompt_length=8,
+        max_response_length=8,
+        credit_assignment_config=CreditAssignmentConfig(
+            enable=True,
+            search_bypass=True,
+        ),
+    )
+
+    assert batch.batch["responses"][0, :5].tolist() == [3, 4, 9, 5, 6]
+    assert batch.batch["response_mask"][0, :5].tolist() == [1, 1, 0, 1, 1]
 
 
 class TestRolloutLogProbsPropagation:

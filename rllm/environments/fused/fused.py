@@ -1163,6 +1163,15 @@ class FusedEnv(CLIEnv):
             self._search_consecutive_unknown = 0
             return "Your answer has been submitted.", 0.0, True, {}
 
+        if self.harness not in {"cot", "bare"} and getattr(self, "_search_web_search_calls", 0) == 0 and raw_text:
+            final_marker = self._extract_final_answer_marker_from_raw(raw_text)
+            if final_marker is not None:
+                self._search_answer = final_marker.strip()
+                self._search_answer_is_verbatim_submission = True
+                self.total_steps += 1
+                self._search_consecutive_unknown = 0
+                return self._search_bypass_termination("explicit answer marker before web_search")
+
         action_objs = self._unwrap_actions(action)
         if raw_text and action_objs and all(not getattr(obj, "function_name", "") for obj in action_objs):
             action_objs = []
@@ -1502,7 +1511,24 @@ class FusedEnv(CLIEnv):
         result = params.get("result", "")
         self._search_answer = result
         self._search_answer_is_verbatim_submission = True
+        if self.harness not in {"cot", "bare"} and getattr(self, "_search_web_search_calls", 0) == 0:
+            return self._search_bypass_termination("finish/submit before web_search")
         return "Your answer has been submitted.", 0.0, True, {}
+
+    @staticmethod
+    def _search_bypass_termination(reason: str) -> tuple[str, float, bool, dict]:
+        message = f"{reason} in a tool-use web-search harness"
+        return (
+            f"Error: {message}; terminating rollout.",
+            0.0,
+            True,
+            {
+                "termination_reason": "ABNORMAL_SEARCH_BYPASS",
+                "termination_message": message,
+                "credit_assignment": "reasoning_step_only",
+                "reward/bypass_termination": 1.0,
+            },
+        )
 
     def _handle_mcp_finish(self, action_obj) -> tuple[str, float, bool, dict]:
         """Handle finish/submit tool call in MCP mode.
@@ -1662,7 +1688,7 @@ class FusedEnv(CLIEnv):
         return reward
 
     def _compute_search_reward(self) -> float:
-        """Compute F1-based reward for web search tasks."""
+        """Compute strict EM-based reward for web search tasks."""
         from rllm.rewards.reward_types import RewardConfig, RewardInput
         from rllm.rewards.search_reward import RewardSearchFn
 
@@ -1684,10 +1710,10 @@ class FusedEnv(CLIEnv):
 
         config = RewardConfig(
             toolcall_bonus=0.0,
-            apply_repetition_penalty=True,
-            repetition_penalty_weight=0.2,
-            apply_length_penalty=True,
-            length_penalty_weight=0.15,
+            apply_repetition_penalty=False,
+            repetition_penalty_weight=0.0,
+            apply_length_penalty=False,
+            length_penalty_weight=0.0,
             enable_step_bonus=False,
         )
         reward_fn = RewardSearchFn(config)
@@ -1712,22 +1738,12 @@ class FusedEnv(CLIEnv):
         low_content = getattr(self, "_search_low_content_responses", 0)
         dup_hits = getattr(self, "_search_retrieval_duplicate_hits", 0)
 
-        # Penalize finish-without-search (bypass penalty).
-        bypass_penalty = -0.5 if ws_calls == 0 and self.harness not in {"cot", "bare"} else 0.0
-
-        # P0-2: punish "early finish on junk" — if the rollout made <=2
-        # searches AND the majority of them returned low-content
-        # responses AND we got a wrong answer, the model is exploiting
-        # the old "submit after 2 searches" shortcut. We apply a small
-        # negative nudge on top of the existing 0 reward so the policy
-        # has a clear signal to keep searching when evidence is thin.
+        # Web-search training now uses only answer-match reward. Keep the
+        # historical metric fields for dashboards, but do not apply them.
+        bypass_penalty = 0.0
         early_junk_penalty = 0.0
-        if not reward_output.is_correct and ws_calls > 0 and ws_calls <= 2 and low_content >= ws_calls:
-            early_junk_penalty = -0.1
 
-        final_reward = max(0.0, min(1.0, float(reward_output.reward) + bypass_penalty + early_junk_penalty))
-        if self.harness in {"cot", "bare"} and reward_output.is_correct:
-            final_reward = 1.0
+        final_reward = max(0.0, min(1.0, float(reward_output.reward)))
 
         # --- Rollout-time answer rescue (mirrors experiments/fused/merge_eval_json.py) ---
         # For cot/bare, the verbatim/marker submission above can miss the model's
@@ -1761,7 +1777,7 @@ class FusedEnv(CLIEnv):
                 if rescue_output.is_correct:
                     reward_before_rescue = final_reward
                     reward_output = rescue_output
-                    final_reward = 1.0
+                    final_reward = max(0.0, min(1.0, float(rescue_output.reward)))
                     rollout_rescue_applied = True
 
         parser_unknown_metadata = self._parser_unknown_metadata(unknown_total=getattr(self, "_search_unknown_total", 0))
@@ -1769,7 +1785,7 @@ class FusedEnv(CLIEnv):
             "type": "web search",
             "reward": final_reward,
             "resolved": final_reward >= 1.0,
-            "reward_mode": "f1",
+            "reward_mode": "em",
             "reward_source": "search_reward_fn",
             "is_correct": bool(reward_output.is_correct) if reward_output.is_correct is not None else False,
             "verifier_error": "",

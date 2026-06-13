@@ -75,3 +75,34 @@ def test_episode_logger_dumps_complete_think_blocks():
     assert EpisodeLogger._format_thought_for_dump("<think>reason</think>") == "<think>reason</think>"
     assert EpisodeLogger._format_thought_for_dump("") == "<think></think>"
     assert EpisodeLogger._format_thought_for_dump(None) == "<think></think>"
+
+
+def test_episode_logger_completes_assistant_think_tags_in_dumps(tmp_path):
+    logger = EpisodeLogger(base_dir=str(tmp_path), subdirectory="episodes")
+    episode = Episode(
+        id="task:0",
+        task={"question": "q"},
+        trajectories=[
+            Trajectory(
+                uid="traj-0",
+                name="solver",
+                steps=[
+                    Step(
+                        thought="reason",
+                        model_response="reason</think>\n\nanswer",
+                        chat_completions=[
+                            {"role": "user", "content": "q"},
+                            {"role": "assistant", "content": "reason</think>\n\nanswer"},
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+
+    logger.log_episodes_batch([episode], step=2, mode="train", epoch=0)
+
+    payload = json.loads((tmp_path / "episodes" / "global_steps_2.json").read_text(encoding="utf-8"))
+    step = payload["trajectories"][0]["trajectories"][0]["steps"][0]
+    assert step["model_response"].startswith("<think>reason</think>")
+    assert step["chat_completions"][-1]["content"].startswith("<think>reason</think>")

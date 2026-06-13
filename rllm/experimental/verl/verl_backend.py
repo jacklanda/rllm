@@ -38,6 +38,7 @@ from rllm.experimental.common import (
 from rllm.experimental.protocol import BackendProtocol
 from rllm.experimental.rollout import RolloutEngine, VerlEngine
 from rllm.experimental.verl import transform_episodes_to_dataproto, update_dataproto_with_advantages
+from rllm.experimental.common.config import CreditAssignmentConfig
 from rllm.experimental.verl.metrics import calculate_debug_metrics_compat, compute_search_agent_metrics
 from rllm.experimental.verl.utils import (
     balance_batch,
@@ -344,7 +345,14 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         # and can grow up to the full context window - so using max_total_length to
         # bound the sequence
         max_total_length = self.config.data.max_prompt_length + self.config.data.max_response_length
-        batch = transform_episodes_to_dataproto(episodes, self.rollout_engine, self.config.data.max_prompt_length, max_total_length)
+        credit_assignment_config = CreditAssignmentConfig.from_config(self.config.rllm.get("credit_assignment", None))
+        batch = transform_episodes_to_dataproto(
+            episodes,
+            self.rollout_engine,
+            self.config.data.max_prompt_length,
+            max_total_length,
+            credit_assignment_config=credit_assignment_config,
+        )
         # Lift per-batch merge metrics (batch/steps_per_traj,
         # batch/step_response_length) out of meta_info so they show up in
         # the standard trainer_state.metrics path. Same metric names the

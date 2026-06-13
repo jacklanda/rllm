@@ -63,6 +63,8 @@ def test_all_prefixes_forwarded():
         "CUDNN_TEST": "cudnn",
         "NV_TEST": "nv",
         "NVIDIA_TEST": "nvidia",
+        "RAY_TEST": "ray",
+        "RLLM_TEST": "rllm",
     }
 
     with patch.dict(os.environ, test_env, clear=True):
@@ -116,9 +118,10 @@ def test_exclude_prefix_pattern():
     assert "VLLM_DEBUG" not in forwarded
     assert "VLLM_USE_V1" not in forwarded
 
-    # Other prefixes should still be forwarded
+    # Other prefixes should still be forwarded; CUDA_VISIBLE_DEVICES is
+    # always reserved for Ray's per-actor GPU assignment.
     assert "NCCL_DEBUG" in forwarded
-    assert "CUDA_VISIBLE_DEVICES" in forwarded
+    assert "CUDA_VISIBLE_DEVICES" not in forwarded
 
 
 def test_exclude_multiple_patterns():
@@ -166,10 +169,11 @@ def test_no_rllm_exclude_set():
     with patch.dict(os.environ, test_env, clear=True):
         forwarded = _get_forwarded_env_vars()
 
-    # All matching variables should be forwarded when no exclusions
+    # All matching variables except Ray-owned CUDA_VISIBLE_DEVICES should be
+    # forwarded when no user exclusions are set.
     assert "VLLM_LOGGING_LEVEL" in forwarded
     assert "NCCL_DEBUG" in forwarded
-    assert "CUDA_VISIBLE_DEVICES" in forwarded
+    assert "CUDA_VISIBLE_DEVICES" not in forwarded
 
 
 def test_empty_rllm_exclude():
@@ -203,9 +207,26 @@ def test_exclude_with_spaces():
     # VLLM_DEBUG should be excluded
     assert "VLLM_DEBUG" not in forwarded
 
-    # NCCL_DEBUG might not be excluded if there's a leading space (depends on implementation)
-    # But VLLM_LOGGING_LEVEL should be forwarded
+    assert "NCCL_DEBUG" not in forwarded
     assert "VLLM_LOGGING_LEVEL" in forwarded
+
+
+def test_cuda_visible_devices_is_never_forwarded_by_default():
+    """Ray owns CUDA_VISIBLE_DEVICES for each actor; forwarding it causes duplicate GPU ranks."""
+    test_env = {
+        "CUDA_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7",
+        "CUDA_DEVICE_MAX_CONNECTIONS": "1",
+        "NCCL_DEBUG": "WARN",
+        "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "1",
+    }
+
+    with patch.dict(os.environ, test_env, clear=True):
+        forwarded = _get_forwarded_env_vars()
+
+    assert "CUDA_VISIBLE_DEVICES" not in forwarded
+    assert forwarded["CUDA_DEVICE_MAX_CONNECTIONS"] == "1"
+    assert forwarded["NCCL_DEBUG"] == "WARN"
+    assert forwarded["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] == "1"
 
 
 def test_case_sensitive_prefixes():
@@ -255,7 +276,30 @@ def test_runtime_env_no_job_config():
     assert "env_vars" in runtime_env
     assert runtime_env["env_vars"]["TOKENIZERS_PARALLELISM"] == "true"
     assert runtime_env["env_vars"]["NCCL_DEBUG"] == "WARN"
+    assert runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)[0].endswith("/rllm")
+    assert runtime_env["worker_process_setup_hook"] == "rllm.experimental.verl.patch.apply_all_verl_patches"
     assert runtime_env["working_dir"] is None
+
+
+def test_runtime_env_prepends_repo_root_to_existing_pythonpath():
+    """Ray workers must see the checkout before site-packages during setup-hook import."""
+    with patch.dict(os.environ, {"PYTHONPATH": "/tmp/other:/opt/site"}, clear=True):
+        runtime_env = get_ppo_ray_runtime_env()
+
+    entries = runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)
+    assert entries[0].endswith("/rllm")
+    assert entries[1:] == ["/tmp/other", "/opt/site"]
+
+
+def test_runtime_env_deduplicates_repo_root_in_pythonpath():
+    with patch.dict(os.environ, {}, clear=True):
+        repo_root = get_ppo_ray_runtime_env()["env_vars"]["PYTHONPATH"].split(os.pathsep)[0]
+
+    with patch.dict(os.environ, {"PYTHONPATH": f"/tmp/other:{repo_root}:/opt/site"}, clear=True):
+        runtime_env = get_ppo_ray_runtime_env()
+
+    entries = runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)
+    assert entries == [repo_root, "/tmp/other", "/opt/site"]
 
 
 def test_runtime_env_pops_keys_from_job_config():
@@ -286,6 +330,15 @@ def test_runtime_env_skips_working_dir_when_job_sets_one():
         runtime_env = get_ppo_ray_runtime_env()
 
     assert "working_dir" not in runtime_env
+
+
+def test_runtime_env_skips_worker_hook_when_job_sets_one():
+    """worker_process_setup_hook is only added when the job config does not specify one."""
+    job_config = {"runtime_env": {"worker_process_setup_hook": "custom.module.setup"}}
+    with patch.dict(os.environ, {RAY_JOB_CONFIG_JSON_ENV_VAR: json.dumps(job_config)}, clear=True):
+        runtime_env = get_ppo_ray_runtime_env()
+
+    assert "worker_process_setup_hook" not in runtime_env
 
 
 def test_runtime_env_handles_invalid_job_config_json():

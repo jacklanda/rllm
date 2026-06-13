@@ -99,6 +99,34 @@ class CompactFilteringConfig:
 
 
 @dataclass
+class CreditAssignmentConfig:
+    """Controls abnormal-trajectory credit assignment.
+
+    Most model-induced abnormal events keep only the action tokens from the
+    turn that produced the abnormal event in ``response_mask``. Search-bypass
+    events are intentionally different: the reward is forced to zero and the
+    full action-token mask is kept so GRPO broadcasts the penalty to the whole
+    trajectory.
+    """
+
+    enable: bool = False
+    tool_parser_error: bool = False
+    repeated_search_query: bool = False
+    too_many_tool_calls: bool = False
+    search_bypass: bool = False
+
+    @classmethod
+    def from_config(cls, config: DictConfig | dict | None) -> "CreditAssignmentConfig":
+        if config is None:
+            return cls()
+        if isinstance(config, DictConfig):
+            data = OmegaConf.to_container(config)
+        else:
+            data = dict(config)
+        return cls(**data)  # type: ignore
+
+
+@dataclass
 class TransformConfig:
     """Configuration for the episode-to-group transformation pipeline."""
 
