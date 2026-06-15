@@ -13,6 +13,51 @@ from verl.utils.seqlen_balancing import calculate_workload, get_seqlen_balanced_
 
 logger = logging.getLogger(__name__)
 
+_MULTIMODAL_MODEL_TYPE_MARKERS = ("vl", "vision", "multimodal", "image", "video")
+_MULTIMODAL_ARCHITECTURE_MARKERS = (
+    "VL",
+    "Vision",
+    "MultiModal",
+    "Multimodal",
+    "Image",
+    "Video",
+)
+
+
+def _looks_multimodal_config(config) -> bool:
+    model_type = str(getattr(config, "model_type", "") or "").lower()
+    if any(marker in model_type for marker in _MULTIMODAL_MODEL_TYPE_MARKERS):
+        return True
+
+    architectures = getattr(config, "architectures", None) or []
+    if any(any(marker in str(arch) for marker in _MULTIMODAL_ARCHITECTURE_MARKERS) for arch in architectures):
+        return True
+
+    return any(
+        hasattr(config, attr)
+        for attr in (
+            "vision_config",
+            "visual",
+            "image_token_id",
+            "video_token_id",
+            "vision_start_token_id",
+            "vision_end_token_id",
+        )
+    )
+
+
+def maybe_hf_processor(name_or_path, **kwargs):
+    """Load a multimodal processor only for models whose config needs one."""
+    from transformers import AutoConfig
+    from verl.utils import hf_processor
+
+    config = AutoConfig.from_pretrained(name_or_path, **kwargs)
+    if not _looks_multimodal_config(config):
+        logger.info("Skipping multimodal processor creation for text-only model type %s", config.model_type)
+        return None
+
+    return hf_processor(name_or_path, **kwargs)
+
 
 def _explicit_override_keys(hydra_overrides: list[str] | None = None) -> set[str]:
     """Return the set of dotted paths the user explicitly set on the Hydra CLI.

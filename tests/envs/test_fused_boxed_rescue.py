@@ -1,6 +1,26 @@
 from rllm.environments.fused.fused import FusedEnv
 
 
+class _DummyRetrievalOutput:
+    def __init__(self, text):
+        self.text = text
+
+    def to_string(self):
+        return self.text
+
+
+class _DummyRetrievalTool:
+    def __init__(self, outputs):
+        self.outputs = list(outputs)
+        self.calls = []
+
+    def forward(self, query, top_k=None):
+        self.calls.append((query, top_k))
+        if self.outputs:
+            return _DummyRetrievalOutput(self.outputs.pop(0))
+        return _DummyRetrievalOutput("No relevant documents found.")
+
+
 def test_fused_env_boxed_rescue_uses_last_boxed_after_thinking():
     raw = r"""
 <think>
@@ -62,6 +82,23 @@ def test_cot_plain_text_answer_is_implicit_search_submission():
     assert env.reward_debug["implicit_text_submission"] is True
     assert env.reward_debug["extracted_answer"] == "4"
     assert env.reward_debug["reward/bypass_penalty"] == 0.0
+
+
+def test_search_finish_rejects_literal_final_answer_placeholder():
+    env = FusedEnv.from_dict({"question": "Who?", "answer": "Martin King Whyte"})
+    env._reset_search()
+    env._search_web_search_calls = 1
+
+    class Action:
+        parameters = {"result": r"\boxed{FINAL_ANSWER}"}
+
+    obs, reward, done, info = env._handle_search_finish(Action())
+
+    assert "placeholder" in obs
+    assert reward == 0.0
+    assert done is False
+    assert info == {"search/placeholder_submit_rejected": 1}
+    assert env._search_answer == ""
 
 
 def test_cot_final_reward_rescues_empty_runtime_submission_from_last_action():
@@ -241,6 +278,40 @@ def test_gem_explicit_answer_without_search_terminates_as_credit_assigned_bypass
     assert info["termination_reason"] == "ABNORMAL_SEARCH_BYPASS"
     assert info["credit_assignment"] == "reasoning_step_only"
     assert env._search_answer == "4"
+
+
+def test_search_duplicate_result_requires_query_rewrite_with_unused_precise_clue():
+    env = FusedEnv.from_dict({"question": "Who won the 1998 Example Prize?", "answer": "Ada Lovelace", "harness": "gem"})
+    env._reset_search()
+    original_tool = FusedEnv._shared_retrieval_tool
+    repeated_doc = "[Result 1] Title: Example Prize\nSnippet: Ada Lovelace won the Example Prize in 1998 after a widely reported ceremony with detailed coverage."
+    new_doc = "[Result 1] Title: 1998 Example Prize\nSnippet: The 1998 Example Prize winner was Ada Lovelace, according to the archived ceremony record."
+    fake_tool = _DummyRetrievalTool([repeated_doc, repeated_doc, new_doc])
+    FusedEnv._shared_retrieval_tool = fake_tool
+
+    class Action:
+        def __init__(self, query):
+            self.parameters = {"query": query}
+
+    try:
+        first_obs, _, first_done, _ = env._handle_web_search(Action("Example Prize"))
+        second_obs, _, second_done, _ = env._handle_web_search(Action("Example Prize winner"))
+        rejected_obs, _, rejected_done, rejected_info = env._handle_web_search(Action("Example Prize winner"))
+        rewritten_obs, _, rewritten_done, rewritten_info = env._handle_web_search(Action("1998 Example Prize Ada Lovelace ceremony"))
+    finally:
+        FusedEnv._shared_retrieval_tool = original_tool
+
+    assert "Ada Lovelace won" in first_obs
+    assert first_done is False
+    assert "already surfaced" in second_obs
+    assert second_done is False
+    assert rejected_done is False
+    assert "Search rejected" in rejected_obs
+    assert rejected_info["search/query_rewrite_rejected"] == 1
+    assert "1998 Example Prize winner" in rewritten_obs
+    assert rewritten_done is False
+    assert rewritten_info == {}
+    assert len(fake_tool.calls) == 3
 
 
 def test_tool_harness_keeps_parser_unknown_reward_metadata():

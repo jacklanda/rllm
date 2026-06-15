@@ -2,6 +2,7 @@
 
 import os
 import logging
+import re
 from typing import Any, Optional
 
 import httpx
@@ -100,6 +101,29 @@ class LocalRetrievalTool(Tool):
     _MIN_DOC_WORDS = 25
     _summarize_disabled_reason: str | None = None
 
+    @staticmethod
+    def _normalize_doc_signature(text: str) -> str:
+        normalized = re.sub(r"\s+", " ", str(text or "").strip().lower())
+        normalized = re.sub(r"[^\w\s]", "", normalized)
+        return normalized[:500]
+
+    def _extract_doc_title(self, result: dict[str, Any], content: str | None = None) -> str:
+        for key in ("title", "source", "url"):
+            value = result.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        nested = result.get("content")
+        if isinstance(nested, dict):
+            for key in ("title", "source", "url"):
+                value = nested.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+        if content:
+            first_line = content.strip().splitlines()[0].strip()
+            if first_line and len(first_line.split()) <= 16:
+                return first_line
+        return "Untitled"
+
     def _extract_doc_text(self, result: dict[str, Any]) -> str | None:
         """Pull the longest-available textual field out of a retrieval result."""
         candidates = []
@@ -124,38 +148,54 @@ class LocalRetrievalTool(Tool):
         # tokens which are often 1-3 entity strings.
         return max(candidates, key=lambda s: len(s.split()))
 
-    def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> list[str]:
+    def _format_search_results(self, results: list[dict[str, Any]], query: Optional[str] = None) -> tuple[list[str], dict[str, Any]]:
         """Format search results for LLM consumption."""
         if not results:
-            return ["No relevant documents found."]
+            return ["No relevant documents found."], {"num_unique": 0, "num_duplicates": 0, "num_short_filtered": 0}
 
         documents: list[str] = []
+        seen_signatures: set[str] = set()
+        duplicate_count = 0
         skipped_short = 0
         for result in results:
             content = self._extract_doc_text(result)
             if not content:
                 continue
+            signature_source = " ".join(
+                str(v)
+                for v in (
+                    result.get("title"),
+                    result.get("url"),
+                    content,
+                )
+                if v
+            )
+            signature = self._normalize_doc_signature(signature_source)
+            if signature and signature in seen_signatures:
+                duplicate_count += 1
+                continue
+            if signature:
+                seen_signatures.add(signature)
             if len(content.split()) < self._MIN_DOC_WORDS:
                 skipped_short += 1
                 continue
-            documents.append(content)
+            title = self._extract_doc_title(result, content)
+            documents.append(f"[Result {len(documents) + 1}] Title: {title}\nSnippet: {content.strip()}")
             if len(documents) >= self.max_results:
                 break
 
         if not documents:
-            # Fall back: take top candidate even if short so the model
-            # still sees something, but tag it so the rollout knows.
-            for result in results[: self.max_results]:
-                content = self._extract_doc_text(result)
-                if content:
-                    documents.append(content)
-            if not documents:
-                return ["No relevant documents found. Try a more specific query with named entities, dates, or numbers."]
-            documents.append("[retriever returned only low-content fragments; issue a more specific query with named entities, dates, or numbers]")
-        elif skipped_short:
+            return [
+                "No usable evidence was found for this query. The returned passages were duplicates, too short, or too generic. "
+                "Do not submit an answer from this result. Rewrite the query with a specific title, quoted phrase, named entity, date, number, or one clue from the question, then call web_search again."
+            ], {"num_unique": 0, "num_duplicates": duplicate_count, "num_short_filtered": skipped_short}
+        unique_count = len(documents)
+        if skipped_short:
             documents.append(f"[{skipped_short} short fragments were filtered; narrow the query if you need more detail]")
+        if duplicate_count:
+            documents.append(f"[{duplicate_count} duplicate passages were removed before display]")
 
-        return documents
+        return documents, {"num_unique": unique_count, "num_duplicates": duplicate_count, "num_short_filtered": skipped_short}
 
     @classmethod
     def _disable_summarization(cls, reason: str) -> None:
@@ -214,7 +254,7 @@ class LocalRetrievalTool(Tool):
                 return ToolOutput(name=self.name, output="No relevant documents found for the query.")
 
             # Format results
-            documents = self._format_search_results(results, query)
+            documents, format_metadata = self._format_search_results(results, query)
 
             # Evidence-mode vs summary-mode (fix #4).
             #
@@ -255,14 +295,22 @@ class LocalRetrievalTool(Tool):
             # one: a summary fallback that yields chunked passages should
             # get the 2048-word chunked budget, not the 256-word summary
             # budget (which would truncate most of the evidence).
-            word_budget = 256 if summary_used else 256
+            word_budget = 256 if summary_used else 1200
             words = content.split()
             if len(words) >= word_budget:
                 content = " ".join(words[:word_budget]) + " ..."
             summary = content
 
             # Create metadata for potential downstream use
-            metadata = {"query": query, "num_results": len(results), "retriever_type": "dense", "server_url": self.server_url, "summary": summary}
+            metadata = {
+                "query": query,
+                "num_results": len(results),
+                "retriever_type": "dense",
+                "server_url": self.server_url,
+                "summary": summary,
+                "summary_used": summary_used,
+                **format_metadata,
+            }
 
             return ToolOutput(name=self.name, output=summary, metadata=metadata)
 

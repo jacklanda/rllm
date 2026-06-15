@@ -74,6 +74,13 @@ def _coerce_timeout(value: object) -> float | None:
     return timeout
 
 
+def _is_full_reward(reward: object) -> bool:
+    try:
+        return float(reward) == 1.0
+    except (TypeError, ValueError):
+        return False
+
+
 def _count_tool_calls_in_message(message_content: str) -> int:
     """Count the number of tool calls in a message.
 
@@ -555,13 +562,14 @@ class AgentWorkflowEngine:
             state["completed"] += 1
             completed_trajectories += 1
 
-            uid = f"{task_id}:{rollout_idx}"
-            uid4log = f"{task_id.rsplit('-', 1)[-1]}:{rollout_idx}"
+            uid4log = f"{task_id}:{rollout_idx}" if len(task_id) <= 8 else f"{task_id.rsplit('-', 1)[-1]}:{rollout_idx}"
             task_type = _extract_task_type_for_logging(state["task"])
             rewards_str = ", ".join([format_progress_reward(traj.reward) for traj in episode.trajectories])
+            has_full_reward = any(_is_full_reward(traj.reward) for traj in episode.trajectories)
             self._progress_safe_print(
                 f"[{uid4log}][{task_type}] {completed_trajectories}/{total_trajectories}. Reward: {rewards_str}. {str(episode.termination_reason).rsplit('.')[-1]}",
                 fg="green" if episode.is_correct else "yellow",
+                bold=has_full_reward,
             )
 
         results = []

@@ -70,6 +70,72 @@ def test_submitted_no_false_positive_on_wrong_entity():
     assert not meta["exact_match"]
 
 
+def test_parenthetical_acronym_alias_exact_match():
+    fn = _fn()
+    for prediction, ground_truth in [
+        ("rilpivirine", "Rilpivirine (RPV)"),
+        ("RPV", "Rilpivirine (RPV)"),
+        ("interstimulus interval", "Inter-stimulus interval (ISI)"),
+        ("ISI", "Inter-stimulus interval (ISI)"),
+    ]:
+        is_correct, f1, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
+        assert is_correct
+        assert f1 == 1.0
+        assert meta["exact_match"]
+
+
+def test_version_prefix_alias_exact_match():
+    fn = _fn()
+    is_correct, f1, meta = fn.evaluate_answer("VarScan 2.3.9", "VarScan v2.3.9", is_submitted=True)
+    assert is_correct
+    assert f1 == 1.0
+    assert meta["exact_match"]
+
+
+def test_submitted_backslash_escape_is_coerced_before_scoring():
+    fn = _fn()
+    is_correct, f1, meta = fn.evaluate_answer(r"Documenting\ Hate", "Documenting Hate project", is_submitted=True)
+    assert is_correct
+    assert f1 == 1.0
+    assert meta["exact_match"]
+    assert meta["extracted_answer"] == "Documenting Hate"
+
+
+def test_generic_entity_suffix_alias_exact_match():
+    fn = _fn()
+    for prediction, ground_truth in [
+        ("Documenting Hate", "Documenting Hate project"),
+        ("JGI Genome", "JGI Genome Portal"),
+        ("Messiah Stradivarius dendrochronology", 'The "Messiah" Stradivarius dendrochronology report'),
+        ("ISO 1087-1", "ISO 1087-1 standard"),
+    ]:
+        is_correct, f1, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
+        assert is_correct
+        assert f1 == 1.0
+        assert meta["exact_match"]
+
+
+def test_generic_entity_suffix_alias_requires_same_core():
+    fn = _fn()
+    for prediction, ground_truth in [
+        ("Genome Portal", "JGI Genome Portal"),
+        ("Stradivarius", 'The "Messiah" Stradivarius dendrochronology report'),
+        ("Latin", "Medieval Latin standard"),
+    ]:
+        is_correct, f1, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
+        assert not is_correct
+        assert f1 > 0.0
+        assert not meta["exact_match"]
+
+
+def test_alias_matching_does_not_accept_plain_entity_substring():
+    fn = _fn()
+    is_correct, f1, meta = fn.evaluate_answer("Latin", "Medieval Latin", is_submitted=True)
+    assert not is_correct
+    assert f1 > 0.0
+    assert not meta["exact_match"]
+
+
 def test_partial_year_does_not_count_as_correct_date_answer():
     fn = _fn()
     is_correct, f1, meta = fn.evaluate_answer("1837", "20 June 1837", is_submitted=True)
@@ -119,6 +185,14 @@ def test_verbatim_extract_is_lossless():
     assert fn.extract_answer_from_response("Treviso, Italy", is_submitted=True) == "Treviso, Italy"
     assert fn.extract_answer_from_response("\\boxed{Mazhai}", is_submitted=True) == "Mazhai"
     assert fn.extract_answer_from_response("\\text{Latin}", is_submitted=True) == "Latin"
+
+
+def test_submitted_placeholder_boxed_answer_extracts_empty():
+    fn = _fn()
+    assert fn.extract_answer_from_response("\\boxed{FINAL_ANSWER}", is_submitted=True) == ""
+    is_correct, _, meta = fn.evaluate_answer("\\boxed{FINAL_ANSWER}", "Martin King Whyte", is_submitted=True)
+    assert not is_correct
+    assert meta["extracted_answer"] == ""
 
 
 def test_multiple_boxed_uses_final_answer_for_submitted_response():

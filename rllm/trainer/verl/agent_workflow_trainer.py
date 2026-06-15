@@ -1,5 +1,7 @@
 import asyncio
+import json
 import math
+import os
 import threading
 import uuid
 from collections import Counter, defaultdict
@@ -37,7 +39,54 @@ from rllm.trainer.verl.ray_trainer import (
 from rllm.engine.agent_workflow_engine import AgentWorkflowEngine
 from rllm.engine.rollout.verl_engine import VerlEngine
 from rllm.utils.episode_logger import EpisodeLogger
+from rllm.utils.think_tags import sanitize_messages_for_dump, sanitize_trajectory_dump_for_think_tags
 from rllm.workflows.workflow import TerminationReason
+
+
+class _SafeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, type):
+            return str(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
+        if isinstance(o, (np.floating,)):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        try:
+            return super().default(o)
+        except TypeError:
+            return str(o)
+
+
+def _is_truthy(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
+def _reward_value(row):
+    reward = row.get("reward")
+    if reward is None:
+        return None
+    try:
+        return float(reward)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rename_task_label_fields(value):
+    if isinstance(value, dict):
+        renamed = {}
+        for key, item in value.items():
+            renamed_key = "task" if key == "task_label" else key
+            renamed[renamed_key] = _rename_task_label_fields(item)
+        return renamed
+    if isinstance(value, list):
+        return [_rename_task_label_fields(item) for item in value]
+    return value
 
 
 def _make_dataproto_tensors_contiguous(batch: DataProto) -> DataProto:
@@ -106,6 +155,271 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
+
+    def _rllm_cfg_value(self, key, default=None):
+        if not hasattr(self.config, "rllm"):
+            return default
+        try:
+            return self.config.rllm.get(key, default)
+        except Exception:
+            return getattr(self.config.rllm, key, default)
+
+    def _offline_rs_fast_path_enabled(self) -> bool:
+        return _is_truthy(self._rllm_cfg_value("offline_rs_fast_path", False), default=False)
+
+    def _should_dump_trajectory_files(self) -> bool:
+        return _is_truthy(self._rllm_cfg_value("dump_trajectory_files", True), default=True)
+
+    def _batch_results_config(self):
+        batch_results_dir = self._rllm_cfg_value("batch_results_dir", None)
+        if not batch_results_dir:
+            return None
+        return {
+            "batch_results_dir": str(batch_results_dir),
+            "sample_n": int(self._rllm_cfg_value("offline_rs_sample_n", self.config.actor_rollout_ref.rollout.n)),
+            "reward_threshold": float(self._rllm_cfg_value("offline_rs_reward_threshold", 0.6)),
+            "max_per_problem": int(self._rllm_cfg_value("offline_rs_max_trajectory_per_problem", 1)),
+            "min_trials": int(self._rllm_cfg_value("offline_rs_min_sample_trial", 1)),
+        }
+
+    def _dump_offline_rs_batch_results(self, merged_data, file_stem):
+        cfg = self._batch_results_config()
+        if cfg is None:
+            return
+
+        rows = sanitize_trajectory_dump_for_think_tags(merged_data.get("accept_traj", []) + merged_data.get("reject_traj", []))
+        accepted_by_uid = defaultdict(list)
+        trial_counts = Counter()
+        source_counts = Counter()
+        selected_source_counts = Counter()
+
+        for row in rows:
+            uid = row.get("uuid") or row.get("prompt")
+            if not uid:
+                continue
+            trial_counts[uid] += 1
+            source_counts[row.get("data_source", "unknown")] += 1
+            reward = _reward_value(row)
+            if reward is not None and reward >= cfg["reward_threshold"]:
+                accepted_by_uid[uid].append(row)
+
+        selected = []
+        selected_rewards = {}
+        for uid, uid_rows in accepted_by_uid.items():
+            if trial_counts[uid] < cfg["min_trials"]:
+                continue
+            ranked = sorted(
+                uid_rows,
+                key=lambda item: _reward_value(item) if _reward_value(item) is not None else float("-inf"),
+                reverse=True,
+            )[: cfg["max_per_problem"]]
+            if ranked:
+                selected_rewards[uid] = _reward_value(ranked[0])
+            for rank, original_row in enumerate(ranked, start=1):
+                row = _rename_task_label_fields(sanitize_trajectory_dump_for_think_tags(dict(original_row)))
+                row["sample_trial"] = trial_counts[uid]
+                row["accepted_rank"] = rank
+                selected.append(row)
+                selected_source_counts[row.get("data_source", "unknown")] += 1
+
+        result = {
+            "batch_file": file_stem,
+            "sample_n": cfg["sample_n"],
+            "reward_threshold": cfg["reward_threshold"],
+            "max_trajectory_per_problem": cfg["max_per_problem"],
+            "min_sample_trial": cfg["min_trials"],
+            "num_questions": len(trial_counts),
+            "num_trials": sum(trial_counts.values()),
+            "num_usable_questions": len(selected_rewards),
+            "num_selected_trajectories": len(selected),
+            "min_selected_reward": min(selected_rewards.values(), default=None),
+            "max_selected_reward": max(selected_rewards.values(), default=None),
+            "source_trials": dict(source_counts),
+            "source_selected": dict(selected_source_counts),
+            "selected_trajectories": selected,
+        }
+
+        batch_results_dir = cfg["batch_results_dir"]
+        os.makedirs(batch_results_dir, exist_ok=True)
+        out_path = os.path.join(batch_results_dir, f"{file_stem}.json")
+        tmp_path = f"{out_path}.tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(result, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+        os.replace(tmp_path, out_path)
+        print(
+            "[offline-rs][batch] "
+            f"{file_stem}: questions={len(trial_counts)} trials={sum(trial_counts.values())} "
+            f"usable_questions={len(selected_rewards)} selected={len(selected)} "
+            f"threshold={cfg['reward_threshold']} dump={out_path}",
+            flush=True,
+        )
+
+    @staticmethod
+    def _stable_task_id(row, idx):
+        if isinstance(row, dict):
+            for key in ("uuid", "uid", "id", "task_id", "problem_id", "question_id"):
+                value = row.get(key)
+                if value is not None and str(value):
+                    return str(value)
+        return f"task_{idx}"
+
+    @staticmethod
+    def _termination_reason_value(reason):
+        if reason is None:
+            return "unknown"
+        return getattr(reason, "value", str(reason))
+
+    @staticmethod
+    def _trajectory_messages(trajectory):
+        if not trajectory.steps:
+            return []
+        for step in reversed(trajectory.steps):
+            if getattr(step, "chat_completions", None):
+                return sanitize_messages_for_dump(step.chat_completions)
+        return []
+
+    @staticmethod
+    def _prompt_from_messages(messages):
+        for msg in messages:
+            if msg.get("role") == "user":
+                return msg.get("content", "")
+        return ""
+
+    def _episodes_to_offline_rs_dump(self, episodes):
+        accepted = []
+        rejected = []
+        stats = Counter()
+
+        for episode in episodes:
+            if episode is None:
+                stats["none_episode"] += 1
+                rejected.append(
+                    {
+                        "uuid": "unknown",
+                        "prompt": "",
+                        "data_source": "unknown",
+                        "steps": 0,
+                        "reward": None,
+                        "termination_reason": "none_episode",
+                        "trajectory": [],
+                        "debug": {},
+                    }
+                )
+                continue
+
+            reason = self._termination_reason_value(episode.termination_reason)
+            stats[reason] += 1
+            task = episode.task if isinstance(episode.task, dict) else {}
+            task_uid = str(episode.id).split(":", 1)[0] if getattr(episode, "id", None) else self._stable_task_id(task, len(accepted) + len(rejected))
+            data_source = task.get("data_source", "unknown") if isinstance(task, dict) else "unknown"
+
+            if not episode.trajectories:
+                rejected.append(
+                    {
+                        "uuid": task_uid,
+                        "prompt": task.get("question") or task.get("prompt") or task.get("problem") or "",
+                        "data_source": data_source,
+                        "steps": 0,
+                        "reward": None,
+                        "termination_reason": reason,
+                        "trajectory": [],
+                        "debug": {"metrics": episode.metrics, "episode_id": episode.id},
+                    }
+                )
+                continue
+
+            for trajectory in episode.trajectories:
+                messages = self._trajectory_messages(trajectory)
+                raw_reward = trajectory.reward
+                reward = None if raw_reward is None else float(raw_reward)
+                row = {
+                    "uuid": task_uid,
+                    "prompt": self._prompt_from_messages(messages),
+                    "data_source": data_source,
+                    "steps": len(trajectory.steps),
+                    "reward": reward,
+                    "termination_reason": reason,
+                    "trajectory": messages,
+                    "debug": {
+                        "episode_id": episode.id,
+                        "trajectory_uid": trajectory.uid,
+                        "trajectory_name": trajectory.name,
+                        "metrics": episode.metrics,
+                        "trajectory_info": trajectory.info,
+                    },
+                }
+                if reward is None:
+                    rejected.append(row)
+                else:
+                    accepted.append(row)
+
+        return {
+            "traj_stats": dict(stats),
+            "accept_traj": accepted,
+            "reject_traj": rejected,
+        }
+
+    def _aggregate_offline_rs_metrics(self, episodes) -> dict:
+        metrics = {}
+        trajectories = [traj for episode in episodes if episode is not None for traj in episode.trajectories]
+        rewards = [float(traj.reward) for traj in trajectories if traj.reward is not None]
+        metrics["traj/accept_rate"] = len(rewards) / len(episodes) if episodes else 0.0
+        if rewards:
+            arr = np.array(rewards, dtype=np.float64)
+            metrics["traj/reward_mean"] = float(arr.mean())
+            metrics["traj/reward_min"] = float(arr.min())
+            metrics["traj/reward_max"] = float(arr.max())
+
+        episode_metric_values = defaultdict(list)
+        for episode in episodes:
+            if episode is None or not isinstance(episode.metrics, dict):
+                continue
+            for key, value in episode.metrics.items():
+                if isinstance(value, (int, float)) and value >= 0:
+                    episode_metric_values[key].append(value)
+        for key, values in episode_metric_values.items():
+            metrics[key if key.startswith(("traj/", "turn/", "timing/")) else f"batch/{key}"] = float(np.mean(values))
+        return metrics
+
+    def generate_offline_rs_trajectories(self, batch, timing_raw=None, is_eval=False):
+        if timing_raw is None:
+            timing_raw = {}
+
+        sleep_mode_enabled = _is_truthy(self._rllm_cfg_value("rollout_enable_sleep_mode", True), default=True)
+        woke_rollout_engine = False
+        with marked_timer("generate_trajectories", timing_raw, color="red"):
+            async def _execute():
+                nonlocal woke_rollout_engine
+                try:
+                    if sleep_mode_enabled:
+                        await self.agent_execution_engine.rollout_engine.wake_up()
+                        woke_rollout_engine = True
+                    return await self.agent_execution_engine.execute_tasks(
+                        batch.non_tensor_batch["extra_info"].tolist(),
+                        batch.non_tensor_batch["task_ids"].tolist(),
+                    )
+                finally:
+                    self.agent_execution_engine.rollout_engine.validate = False
+                    self.agent_execution_engine.current_mode = "train"
+                    if woke_rollout_engine:
+                        await self.agent_execution_engine.rollout_engine.sleep()
+
+            episodes = asyncio.run_coroutine_threadsafe(_execute(), self._loop).result()
+
+        merged_data = self._episodes_to_offline_rs_dump(episodes)
+        file_stem = f"global_steps_{self.global_steps}"
+        self._dump_offline_rs_batch_results(merged_data, file_stem)
+
+        if self._should_dump_trajectory_files():
+            subdir = "evals_trajectory" if is_eval else "train_trajectory"
+            save_dir = os.path.join(self.config.trainer.default_local_dir, subdir)
+            os.makedirs(save_dir, exist_ok=True)
+            file_path = os.path.join(save_dir, f"{file_stem}.json")
+            with open(file_path, "w") as f:
+                print(f"Saving raw offline RS trajectories and stats to {file_path}")
+                json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
+
+        return self._aggregate_offline_rs_metrics(episodes)
 
     def _validate_config(self):
         assert self.workflow_class is not None, "workflow_class is required for agent workflow trainer"
@@ -204,7 +518,11 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 new_batch: DataProto = DataProto.from_single_dict(batch_dict)
                 num_tasks += len(new_batch.batch)
 
-                new_batch.non_tensor_batch["task_ids"] = np.array([str(uuid.uuid4()) for _ in range(len(new_batch.batch))], dtype=object)
+                extra_info = new_batch.non_tensor_batch.get("extra_info", [])
+                new_batch.non_tensor_batch["task_ids"] = np.array(
+                    [self._stable_task_id(row, idx) for idx, row in enumerate(extra_info)],
+                    dtype=object,
+                )
                 new_batch = new_batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n)
 
                 new_batch.pop(batch_keys=["input_ids", "attention_mask", "position_ids"], non_tensor_batch_keys=["raw_prompt_ids"])
@@ -213,6 +531,25 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
                 self.agent_execution_engine.set_training_step(self.global_steps, mode="train", epoch=epoch)
 
                 with marked_timer("step", timing_raw):
+                    if self._offline_rs_fast_path_enabled() and not self.config.rllm.stepwise_advantage.enable:
+                        metrics.update(self.generate_offline_rs_trajectories(batch=new_batch, timing_raw=timing_raw))
+                        metrics.update({f"timing_s/{name}": value for name, value in timing_raw.items()})
+                        logger.log(data=metrics, step=self.global_steps)
+
+                        self.global_steps += 1
+                        if self.global_steps >= self.total_training_steps:
+                            if self.val_reward_fn is not None:
+                                self.agent_execution_engine.set_training_step(self.global_steps, mode="val", epoch=epoch)
+                                val_metrics = self._validate_agent()
+                                pprint(f"Final validation metrics: {val_metrics}")
+                                logger.log(data=val_metrics, step=self.global_steps)
+                            try:
+                                logger.finish()
+                            except Exception:
+                                pass
+                            return
+                        continue
+
                     # generate trajectories
                     final_gen_batch_output = self.generate_trajectories(batch=new_batch, timing_raw=timing_raw)
 

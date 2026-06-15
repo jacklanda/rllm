@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from rllm.environments.fused.fused import (
     FusedEnv,
+    _compact_mcp_tool_output,
     _build_evidence_to_field_trace,
     _extract_answer_schema,
     _validate_submission_schema,
@@ -61,6 +62,38 @@ def test_validate_submission_schema_rejects_empty_array_and_item_missing_key():
     assert any("$.[0].title" in err or "$[0].title" in err for err in missing_item_key["errors"])
 
 
+def test_validate_submission_schema_accepts_integer_fields_and_coerces_lossless_numbers():
+    schema = {
+        "type": "object",
+        "properties": {
+            "total": {"type": "integer"},
+            "nested": {
+                "type": "object",
+                "properties": {"count": {"type": "integer"}},
+                "required": ["count"],
+            },
+        },
+        "required": ["total", "nested"],
+    }
+
+    check = _validate_submission_schema({"total": 0.0, "nested": {"count": "2.0"}}, schema)
+
+    assert check["passed"] is True
+    assert check["normalized_payload"] == {"total": 0, "nested": {"count": 2}}
+
+
+def test_validate_submission_schema_treats_integer_as_number_compatible():
+    schema = {
+        "type": "object",
+        "properties": {"ratio": {"type": "number"}},
+        "required": ["ratio"],
+    }
+
+    check = _validate_submission_schema({"ratio": 1}, schema)
+
+    assert check["passed"] is True
+
+
 def test_mcp_finish_schema_self_check_blocks_invalid_submission():
     env = object.__new__(FusedEnv)
     env.total_steps = 0
@@ -77,6 +110,23 @@ def test_mcp_finish_schema_self_check_blocks_invalid_submission():
     assert env._mcp_schema_self_check_failures == 1
     assert info["mcp/schema_self_check_failed"] == 1
     assert "Schema self-check failed" in obs
+
+
+def test_mcp_finish_terminates_after_repeated_schema_self_check_failures():
+    env = object.__new__(FusedEnv)
+    env.total_steps = 0
+    env._mcp_answer = ""
+    env._mcp_answer_schema = {"type": "object", "required": ["analysis_summary"], "properties": {"analysis_summary": {"type": "string"}}}
+    env._mcp_schema_self_check_failures = 1
+    env._mcp_last_schema_self_check = {}
+
+    obs, reward, done, info = FusedEnv._handle_mcp_finish(env, SimpleNamespace(parameters={"result": "{}"}))
+
+    assert done is True
+    assert reward == 0.0
+    assert env._mcp_answer == ""
+    assert info["termination_reason"] == "MCP_SCHEMA_SELF_CHECK_EXCEEDED"
+    assert "failed too many times" in obs
 
 
 def test_mcp_finish_accepts_valid_submission_after_self_check():
@@ -97,6 +147,17 @@ def test_mcp_finish_accepts_valid_submission_after_self_check():
     assert env._mcp_last_schema_self_check["passed"] is True
 
 
+def test_compact_mcp_tool_output_preserves_head_and_tail_with_marker():
+    text = "\n".join(f"line {i}" for i in range(30))
+
+    compact = _compact_mcp_tool_output(text, char_limit=120, line_limit=10)
+
+    assert "line 0" in compact
+    assert "line 29" in compact
+    assert "truncated" in compact
+    assert len(compact) <= 180
+
+
 def test_evidence_to_field_trace_maps_answer_field_to_tool_output():
     answer = {"items": [{"name": "JFR CPU Load", "metric": "Thread CPU Load events"}]}
     tool_evidence = [
@@ -115,4 +176,3 @@ def test_evidence_to_field_trace_maps_answer_field_to_tool_output():
     assert metric_mapping["matched"] is True
     assert metric_mapping["source_tool"] == "get_finding_cpu_load_content"
     assert metric_mapping["source_heading"] == "Understanding Thread CPU Load Events"
-

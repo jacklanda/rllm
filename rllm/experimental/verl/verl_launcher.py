@@ -24,11 +24,11 @@ class VerlTaskRunner(TaskRunner):
 
         from omegaconf import OmegaConf
         from verl.trainer.ppo.utils import need_reference_policy
-        from verl.utils import hf_processor, hf_tokenizer
+        from verl.utils import hf_tokenizer
         from verl.utils.config import validate_config
         from verl.utils.fs import copy_to_local
 
-        from rllm.experimental.verl.utils import sync_config
+        from rllm.experimental.verl.utils import maybe_hf_processor, sync_config
 
         print(f"VerlTaskRunner hostname: {socket.gethostname()}, PID: {os.getpid()}")
         OmegaConf.register_new_resolver("mul", lambda x, y: int(x) * int(y))
@@ -55,7 +55,7 @@ class VerlTaskRunner(TaskRunner):
 
         trust_remote_code = config.data.get("trust_remote_code", False)
         tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
-        processor = hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
+        processor = maybe_hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
 
         resource_pool_manager = self.init_resource_pool_mgr(config)
 

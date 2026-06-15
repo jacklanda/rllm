@@ -212,7 +212,7 @@ def test_exclude_with_spaces():
 
 
 def test_cuda_visible_devices_is_never_forwarded_by_default():
-    """Ray owns CUDA_VISIBLE_DEVICES for each actor; forwarding it causes duplicate GPU ranks."""
+    """Ray owns per-actor GPU visibility; forwarding launcher overrides duplicates ranks."""
     test_env = {
         "CUDA_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7",
         "CUDA_DEVICE_MAX_CONNECTIONS": "1",
@@ -224,9 +224,24 @@ def test_cuda_visible_devices_is_never_forwarded_by_default():
         forwarded = _get_forwarded_env_vars()
 
     assert "CUDA_VISIBLE_DEVICES" not in forwarded
+    assert forwarded["RLLM_CUDA_VISIBLE_DEVICES"] == "0,1,2,3,4,5,6,7"
     assert forwarded["CUDA_DEVICE_MAX_CONNECTIONS"] == "1"
     assert forwarded["NCCL_DEBUG"] == "WARN"
-    assert forwarded["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] == "1"
+    assert "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES" not in forwarded
+
+
+def test_runtime_env_keeps_full_cuda_visibility_under_ray_control():
+    test_env = {
+        "CUDA_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7",
+        "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "0",
+    }
+
+    with patch.dict(os.environ, test_env, clear=True):
+        env_vars = get_ppo_ray_runtime_env()["env_vars"]
+
+    assert "CUDA_VISIBLE_DEVICES" not in env_vars
+    assert env_vars["RLLM_CUDA_VISIBLE_DEVICES"] == "0,1,2,3,4,5,6,7"
+    assert env_vars["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] == "1"
 
 
 def test_case_sensitive_prefixes():

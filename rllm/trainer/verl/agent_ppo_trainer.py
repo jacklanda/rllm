@@ -2,6 +2,8 @@ import asyncio
 import json
 import math
 import os
+import re
+import time
 import uuid
 
 
@@ -178,6 +180,90 @@ class AgentPPOTrainer(RayPPOTrainer):
             "min_trials": int(self._rllm_cfg_value("offline_rs_min_sample_trial", 1)),
         }
 
+    def _offline_rs_checkpoint_config(self):
+        if not self._offline_rs_fast_path_enabled():
+            return None
+        enable = _is_truthy(self._rllm_cfg_value("offline_rs_checkpoint_enable", False), default=False)
+        resume_mode = str(self._rllm_cfg_value("offline_rs_resume_mode", self._rllm_cfg_value("offline_rs_resume", "auto"))).lower()
+        if resume_mode in {"true", "1", "yes", "y", "on"}:
+            resume_mode = "force"
+        elif resume_mode in {"false", "0", "no", "n", "off"}:
+            resume_mode = "disable"
+        if resume_mode not in {"auto", "force", "disable"}:
+            raise ValueError(f"offline_rs_resume_mode must be auto, force, or disable, got {resume_mode!r}")
+        checkpoint_path = self._rllm_cfg_value("offline_rs_checkpoint_path", None)
+        if not checkpoint_path:
+            batch_cfg = self._batch_results_config()
+            batch_results_dir = batch_cfg["batch_results_dir"] if batch_cfg is not None else self.config.trainer.default_local_dir
+            checkpoint_path = os.path.join(batch_results_dir, "latest_checkpoint.json")
+        return {
+            "enable": enable,
+            "resume_mode": resume_mode,
+            "path": str(checkpoint_path),
+        }
+
+    def _save_offline_rs_checkpoint(self, global_step: int, file_stem: str, batch_result_path: str):
+        cfg = self._offline_rs_checkpoint_config()
+        if cfg is None or not cfg["enable"]:
+            return
+
+        checkpoint_path = cfg["path"]
+        os.makedirs(os.path.dirname(os.path.abspath(checkpoint_path)), exist_ok=True)
+        state = {
+            "version": 1,
+            "global_step": int(global_step),
+            "next_global_step": int(global_step) + 1,
+            "completed_batches": int(global_step),
+            "batch_file": file_stem,
+            "batch_result_path": batch_result_path,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        tmp_path = f"{checkpoint_path}.tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(state, f, ensure_ascii=False, indent=4, sort_keys=True, cls=_SafeEncoder)
+        os.replace(tmp_path, checkpoint_path)
+
+    def _latest_offline_rs_step_from_shards(self):
+        batch_cfg = self._batch_results_config()
+        if batch_cfg is None:
+            return 0
+        batch_results_dir = batch_cfg["batch_results_dir"]
+        if not os.path.isdir(batch_results_dir):
+            return 0
+
+        latest = 0
+        pattern = re.compile(r"^global_steps_(\d+)\.json$")
+        for name in os.listdir(batch_results_dir):
+            match = pattern.match(name)
+            if match:
+                latest = max(latest, int(match.group(1)))
+        return latest
+
+    def _load_offline_rs_checkpoint_step(self):
+        cfg = self._offline_rs_checkpoint_config()
+        if cfg is None or cfg["resume_mode"] == "disable":
+            return 0
+
+        checkpoint_step = 0
+        checkpoint_path = cfg["path"]
+        if os.path.exists(checkpoint_path):
+            with open(checkpoint_path, "r") as f:
+                state = json.load(f)
+            checkpoint_step = int(state.get("global_step") or state.get("completed_batches") or 0)
+        elif cfg["resume_mode"] == "force":
+            raise FileNotFoundError(f"offline RS checkpoint not found: {checkpoint_path}")
+
+        shard_step = self._latest_offline_rs_step_from_shards()
+        resume_step = max(checkpoint_step, shard_step)
+        if resume_step > 0:
+            print(
+                "[offline-rs][checkpoint] "
+                f"resuming after completed step {resume_step} "
+                f"(checkpoint={checkpoint_step}, shards={shard_step}, path={checkpoint_path})",
+                flush=True,
+            )
+        return resume_step
+
     def _dump_offline_rs_batch_results(self, merged_data, file_stem):
         cfg = self._batch_results_config()
         if cfg is None:
@@ -244,6 +330,13 @@ class AgentPPOTrainer(RayPPOTrainer):
         with open(tmp_path, "w") as f:
             json.dump(result, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
         os.replace(tmp_path, out_path)
+        step_match = re.search(r"(\d+)$", file_stem)
+        if step_match:
+            self._save_offline_rs_checkpoint(
+                global_step=int(step_match.group(1)),
+                file_stem=file_stem,
+                batch_result_path=out_path,
+            )
         print(
             "[offline-rs][batch] "
             f"{file_stem}: questions={len(trial_counts)} trials={sum(trial_counts.values())} "
@@ -551,13 +644,25 @@ class AgentPPOTrainer(RayPPOTrainer):
         print(f"Time taken to validate agent: {time.time() - start_time}")
         # we start from step 1
         self.global_steps += 1
+        offline_rs_resume_step = self._load_offline_rs_checkpoint_step()
+        if offline_rs_resume_step > 0:
+            self.global_steps = max(self.global_steps, offline_rs_resume_step + 1)
+            if self.global_steps > self.total_training_steps:
+                print(
+                    "[offline-rs][checkpoint] "
+                    f"resume step {offline_rs_resume_step} already reaches total_training_steps={self.total_training_steps}",
+                    flush=True,
+                )
+                return
 
         for epoch in range(self.config.trainer.total_epochs):
             if self.curriculum_sampler is not None:
                 self.curriculum_sampler.set_step(self.global_steps)
                 print(f"[curriculum] epoch={epoch} step={self.global_steps} phase={self.curriculum_sampler.current_phase} weights={self.curriculum_sampler.get_current_weights()}")
             print(f"epoch {epoch}, step {self.global_steps} started")
-            for batch_dict in self.train_dataloader:
+            for dataloader_step, batch_dict in enumerate(self.train_dataloader, start=1):
+                if offline_rs_resume_step > 0 and dataloader_step <= offline_rs_resume_step:
+                    continue
                 batch: DataProto = DataProto.from_single_dict(batch_dict)
                 batch.non_tensor_batch["uid"] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))], dtype=object)
                 # Extract data_source from extra_info if not already a top-level field
@@ -646,6 +751,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                     if self.config.rllm.stepwise_advantage.enable:
                         final_gen_batch_output = self.generate_agent_steps(timing_raw=timing_raw, meta_info=batch.meta_info, uids=batch.non_tensor_batch["uid"], data_sources=batch.non_tensor_batch.get("data_source"))
+                        metrics.update(self._rollout_step_metrics())
 
                         if "idxs" in final_gen_batch_output.non_tensor_batch:
                             valid_indices = np.unique(final_gen_batch_output.non_tensor_batch["idxs"])
@@ -1239,6 +1345,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 file_path = os.path.join(save_dir, f"global_steps_{self.global_steps}.json")
                 merged_data = {
                     "traj_stats": {},
+                    "rollout_step": self._rollout_step_summary_for_dump(),
                     "accept_traj": [],
                     "reject_traj": dropped_dump,
                 }
@@ -1250,6 +1357,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                         json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
             empty_output = DataProto.from_dict(tensors={}, non_tensors={"idxs": np.array([])})
             metrics = {"traj/accept_rate": 0.0}
+            metrics.update(self._rollout_step_metrics())
             return empty_output, metrics
 
         with marked_timer("transform_trajectory", timing_raw):
@@ -1258,6 +1366,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         total_trajectories = len(trajectories) + len(dropped_trajectories)
         metrics["traj/accept_rate"] = len(trajectories) / total_trajectories if total_trajectories > 0 else 0.0
+        metrics.update(self._rollout_step_metrics())
 
         return final_gen_batch_output, metrics
 
@@ -1314,6 +1423,20 @@ class AgentPPOTrainer(RayPPOTrainer):
         metrics["_raw_traj_metrics"] = raw_metrics
         return metrics
 
+    def _rollout_step_metrics(self) -> dict:
+        engine = getattr(self, "agent_execution_engine", None)
+        raw = getattr(engine, "last_rollout_step_metrics", {}) if engine is not None else {}
+        if not isinstance(raw, dict):
+            return {}
+        return {f"rollout_step/{key}": value for key, value in raw.items() if isinstance(value, (int, float))}
+
+    def _rollout_step_summary_for_dump(self) -> dict:
+        engine = getattr(self, "agent_execution_engine", None)
+        raw = getattr(engine, "last_rollout_step_metrics", {}) if engine is not None else {}
+        if not isinstance(raw, dict):
+            return {}
+        return {key: value for key, value in raw.items() if isinstance(value, (int, float))}
+
     def _raw_trajectories_to_dump(self, trajectories: list[dict], dropped_dump: list[dict], batch: DataProto | None = None) -> dict:
         traj_dump = []
         for traj in trajectories:
@@ -1368,6 +1491,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "INVALID_REACT_STRUCTURE",
             "INVALID_FINAL_STEP",
             "ENV_TIMEOUT",
+            "TAIL_GUARD_EARLY_STOP",
             "UNKNOWN",
         ]
         total_stats = {reason: 0 for reason in all_reasons}
@@ -1377,6 +1501,7 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         return {
             "traj_stats": total_stats,
+            "rollout_step": self._rollout_step_summary_for_dump(),
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
@@ -1415,7 +1540,9 @@ class AgentPPOTrainer(RayPPOTrainer):
                 print(f"Saving raw offline RS trajectories and stats to {file_path}")
                 json.dump(merged_data, f, ensure_ascii=False, indent=4, cls=_SafeEncoder)
 
-        return self._aggregate_raw_trajectory_metrics(trajectories, dropped_dump=dropped_dump)
+        metrics = self._aggregate_raw_trajectory_metrics(trajectories, dropped_dump=dropped_dump)
+        metrics.update(self._rollout_step_metrics())
+        return metrics
 
     def generate_agent_steps(self, timing_raw=None, meta_info=None, uids=None, data_sources=None):
         """
@@ -1787,6 +1914,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
         merged_data = {
             "traj_stats": traj_stats_data["total"],
+            "rollout_step": self._rollout_step_summary_for_dump(),
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }
@@ -2200,6 +2328,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         }
         merged_data = {
             "traj_stats": traj_stats_data["total"],
+            "rollout_step": self._rollout_step_summary_for_dump(),
             "accept_traj": traj_dump,
             "reject_traj": dropped_dump or [],
         }

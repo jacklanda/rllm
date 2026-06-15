@@ -14,6 +14,7 @@ import importlib.util
 import inspect
 import json
 import logging
+import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -30,6 +31,13 @@ _MCP_REGISTRATION_LOGGERS = (
     "mcp.server.fastmcp.tools",
     "mcp.server.fastmcp.tools.tool_manager",
 )
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 @contextmanager
@@ -372,8 +380,9 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
     # a perfect rollout above the verifier's ceiling.  In the training dump
     # 95 passed-but-devalued trajectories (9 % of accept_traj) had base=1.0
     # and final<1.0; 6 of those went below zero and trained against the truth.
+    disable_step_penalty = _env_flag("RLLM_MCP_DISABLE_STEP_PENALTY")
     if base_reward > 0.0:
-        applied_penalty = step_penalty
+        applied_penalty = 0.0 if disable_step_penalty else step_penalty
         applied_bonus = tool_call_bonus
         total_reward = min(1.0, max(0.0, base_reward + applied_penalty + applied_bonus))
     else:
@@ -400,6 +409,7 @@ def verifier_reward_fn(task_info: dict[str, Any], action: str) -> RewardOutput:
         "reward/step_penalty": applied_penalty,
         "reward/tool_call_bonus": applied_bonus,
         "reward/raw_step_penalty": step_penalty,
+        "reward/step_penalty_disabled": int(disable_step_penalty),
         "tool_call_reward": applied_penalty + applied_bonus,
         "tool_call_stats": tool_call_stats,
         "reward/total_clipped": base_reward > 0.0 and total_reward == 0.0 and (base_reward + step_penalty + tool_call_bonus) < 0.0,

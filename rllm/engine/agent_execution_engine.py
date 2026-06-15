@@ -6,6 +6,7 @@ import time
 import traceback
 import uuid
 import json
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 # Tool-UX / env-crash signatures: when a repeated action's observation matches any of
@@ -43,6 +44,118 @@ _ENV_PROTOCOL_ERROR_SIGS = (
     "Could not build command for",
 )
 PROTOCOL_ERROR_TERMINATE_THRESHOLD = 3
+
+
+class RolloutTailGuardState:
+    """Small per-rollout-batch state for conservative long-tail early stop."""
+
+    MIN_COMPLETION_RATIO = 0.80
+    PROJECTED_OVERLONG_RATIO = 1.10
+    FINAL_CHANCE_TOKENS = 512
+    PROMPT_LENGTH_GUARD_BAND_TOKENS = 512
+    OVERLONG_BURST_WINDOW = 16
+    OVERLONG_BURST_MIN_COUNT = 6
+    OVERLONG_BURST_MIN_RATIO = 0.50
+    OVERLONG_BURST_CONSECUTIVE = 3
+    OVERLONG_REASONS = {
+        "MAX_PROMPT_LENGTH_EXCEEDED",
+        "PROMPT_TRUNCATION",
+        "TRUNCATION",
+    }
+
+    def __init__(self, total: int, enabled: bool = False):
+        self.total = max(int(total), 1)
+        self.enabled = bool(enabled)
+        self.completed = 0
+        self.reason_counts: dict[str, int] = {}
+        self.start_time = time.perf_counter()
+        self.first_tail_elapsed_s: float | None = None
+        self.first_overlong_burst_elapsed_s: float | None = None
+        self._recent_overlong = deque(maxlen=self.OVERLONG_BURST_WINDOW)
+        self._consecutive_overlong = 0
+        self._lock = threading.Lock()
+
+    def record_result(self, result) -> None:
+        reason = None
+        if isinstance(result, dict):
+            reason = result.get("termination_reason")
+        with self._lock:
+            self.completed += 1
+            key = str(reason or "UNKNOWN")
+            self.reason_counts[key] = self.reason_counts.get(key, 0) + 1
+            if self.enabled and self.first_tail_elapsed_s is None and (self.completed / self.total) >= self.MIN_COMPLETION_RATIO:
+                self.first_tail_elapsed_s = time.perf_counter() - self.start_time
+            is_overlong = key in self.OVERLONG_REASONS
+            self._recent_overlong.append(is_overlong)
+            if is_overlong:
+                self._consecutive_overlong += 1
+            else:
+                self._consecutive_overlong = 0
+            if self.enabled and self.first_tail_elapsed_s is not None and self.first_overlong_burst_elapsed_s is None and self._has_overlong_burst_locked():
+                self.first_overlong_burst_elapsed_s = time.perf_counter() - self.start_time
+
+    def snapshot(self) -> tuple[int, int, float]:
+        with self._lock:
+            completed = self.completed
+        ratio = completed / self.total
+        return completed, self.total, ratio
+
+    def is_tail_phase(self) -> bool:
+        if not self.enabled:
+            return False
+        _, _, ratio = self.snapshot()
+        return ratio >= self.MIN_COMPLETION_RATIO
+
+    def _has_overlong_burst_locked(self) -> bool:
+        if self._consecutive_overlong >= self.OVERLONG_BURST_CONSECUTIVE:
+            return True
+        recent_count = len(self._recent_overlong)
+        if recent_count < self.OVERLONG_BURST_MIN_COUNT:
+            return False
+        overlong_count = sum(1 for item in self._recent_overlong if item)
+        return (
+            overlong_count >= self.OVERLONG_BURST_MIN_COUNT
+            and (overlong_count / recent_count) >= self.OVERLONG_BURST_MIN_RATIO
+        )
+
+    def has_overlong_burst(self) -> bool:
+        if not self.enabled:
+            return False
+        with self._lock:
+            return self.first_tail_elapsed_s is not None and self._has_overlong_burst_locked()
+
+    def metrics(self, elapsed_s: float | None = None) -> dict[str, float]:
+        with self._lock:
+            completed = self.completed
+            reason_counts = dict(self.reason_counts)
+            first_tail_elapsed_s = self.first_tail_elapsed_s
+            first_overlong_burst_elapsed_s = self.first_overlong_burst_elapsed_s
+            recent_overlong = list(self._recent_overlong)
+        elapsed = float(elapsed_s if elapsed_s is not None else time.perf_counter() - self.start_time)
+        observed_overlong = sum(reason_counts.get(reason, 0) for reason in self.OVERLONG_REASONS)
+        return {
+            "elapsed_time": elapsed,
+            "total_trajectories": float(self.total),
+            "completed_trajectories": float(completed),
+            "throughput_traj_per_second": float(completed / elapsed) if elapsed > 0 else 0.0,
+            "tail_guard_enabled": 1.0 if self.enabled else 0.0,
+            "tail_phase_start_elapsed_seconds": float(first_tail_elapsed_s) if first_tail_elapsed_s is not None else -1.0,
+            "tail_guard_early_stop": float(reason_counts.get("TAIL_GUARD_EARLY_STOP", 0)),
+            "tail_guard_observed_overlong": float(observed_overlong),
+            "tail_guard_overlong_burst": 1.0 if first_overlong_burst_elapsed_s is not None else 0.0,
+            "tail_guard_overlong_burst_elapsed_seconds": float(first_overlong_burst_elapsed_s) if first_overlong_burst_elapsed_s is not None else -1.0,
+            "tail_guard_recent_overlong_ratio": float(sum(1 for item in recent_overlong if item) / len(recent_overlong)) if recent_overlong else 0.0,
+        }
+
+
+def _config_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
 
 
 # --- Soft-repeat detection (fix for ABNORMAL_REPEATED_QUERY blind spot). -----
@@ -305,6 +418,7 @@ class AgentExecutionEngine:
         # (or <=0) disables the cap for backward compatibility.
         _per_step = _agent_cfg.get("per_step_max_tokens", None) if self.config is not None else None
         self.per_step_max_tokens = int(_per_step) if _per_step and int(_per_step) > 0 else None
+        self.tail_guard_enabled = _config_bool(_agent_cfg.get("tail_guard", False))
         self.disable_thinking = self.config.get("rllm", {}).get("disable_thinking", False) if self.config is not None else False
 
         # Trajectory filtering toggles (read from config, default to True for backward compat)
@@ -327,6 +441,7 @@ class AgentExecutionEngine:
         self.envs = [None for _ in range(n_parallel_agents)]
         self._docker_healthy = None  # Set per generation round in trajectory_generator
         self._trajectory_logs = []  # Collect all trajectory data for dumping to trajs.json
+        self.last_rollout_step_metrics: dict[str, float] = {}
 
         self.trajectory_timeout = trajectory_timeout
         if not trajectory_timeout:
@@ -469,6 +584,7 @@ class AgentExecutionEngine:
         llm_time = 0.0
         env_time = 0.0
         reward = 0.0
+        tail_guard: RolloutTailGuardState | None = kwargs.pop("tail_guard", None)
 
         # for step return
         episode_steps = []
@@ -613,6 +729,82 @@ class AgentExecutionEngine:
             # _detect_runaway gets a chance to fire between them.
             if self.per_step_max_tokens is not None:
                 max_tokens = min(max_tokens, self.per_step_max_tokens)
+
+            tail_phase = bool(tail_guard and tail_guard.is_tail_phase())
+            if tail_phase:
+                remaining_budget = max(self.max_response_length - response_token_len, 0)
+                overlong_burst = tail_guard.has_overlong_burst() if tail_guard else False
+                prompt_len_for_guard = locals().get("prompt_len")
+                prompt_near_limit = (
+                    isinstance(prompt_len_for_guard, int)
+                    and prompt_len_for_guard >= self.max_prompt_length - RolloutTailGuardState.PROMPT_LENGTH_GUARD_BAND_TOKENS
+                )
+                if remaining_budget <= 0:
+                    termination_reason = "TAIL_GUARD_EARLY_STOP"
+                    exception_message = f"Tail guard stopped trajectory with no remaining response budget: response_tokens={response_token_len}"
+                    reward = 0.0
+                    done = True
+                    cur_step = agent.get_current_state()
+                    if cur_step is not None:
+                        cur_step.done = done
+                        cur_step.reward = 0.0
+                        cur_step.info.update({"termination_reason": termination_reason, "tail_guard": True})
+                    break
+                max_tokens = min(max_tokens, RolloutTailGuardState.FINAL_CHANCE_TOKENS, remaining_budget)
+                if overlong_burst and prompt_near_limit:
+                    termination_reason = "TAIL_GUARD_EARLY_STOP"
+                    exception_message = (
+                        "Tail guard stopped near prompt limit after overlong burst: "
+                        f"prompt_tokens={prompt_len_for_guard}, max_prompt_length={self.max_prompt_length}"
+                    )
+                    reward = 0.0
+                    done = True
+                    cur_step = agent.get_current_state()
+                    if cur_step is not None:
+                        cur_step.done = done
+                        cur_step.reward = 0.0
+                        cur_step.info.update(
+                            {
+                                "termination_reason": termination_reason,
+                                "tail_guard": True,
+                                "tail_guard_prompt_tokens": prompt_len_for_guard,
+                            }
+                        )
+                    colorful_print(
+                        f"Trajectory {idx} ({task_label}), Step {step_idx}: Tail guard early stop "
+                        f"(prompt_tokens={prompt_len_for_guard}, max_prompt={self.max_prompt_length}).",
+                        "yellow",
+                    )
+                    break
+                if response_token_len > 0 and step_idx > 0:
+                    avg_tokens_per_step = response_token_len / step_idx
+                    projected_final_len = response_token_len + avg_tokens_per_step * max(1, effective_max_steps - step_idx)
+                    if overlong_burst and projected_final_len >= self.max_response_length * RolloutTailGuardState.PROJECTED_OVERLONG_RATIO:
+                        termination_reason = "TAIL_GUARD_EARLY_STOP"
+                        exception_message = (
+                            "Tail guard predicted overlong trajectory: "
+                            f"response_tokens={response_token_len}, projected_final_tokens={projected_final_len:.0f}, "
+                            f"max_response_length={self.max_response_length}"
+                        )
+                        reward = 0.0
+                        done = True
+                        cur_step = agent.get_current_state()
+                        if cur_step is not None:
+                            cur_step.done = done
+                            cur_step.reward = 0.0
+                            cur_step.info.update(
+                                {
+                                    "termination_reason": termination_reason,
+                                    "tail_guard": True,
+                                    "tail_guard_projected_final_tokens": projected_final_len,
+                                }
+                            )
+                        colorful_print(
+                            f"Trajectory {idx} ({task_label}), Step {step_idx}: Tail guard early stop "
+                            f"(tokens={response_token_len}, projected={projected_final_len:.0f}, max={self.max_response_length}).",
+                            "yellow",
+                        )
+                        break
 
             kwargs["max_tokens"] = max_tokens
 
@@ -1316,7 +1508,7 @@ class AgentExecutionEngine:
 
         masked_out = False
         if self.overlong_filter and not is_eval:
-            if termination_reason == "TRUNCATION" or termination_reason == "MAX_STEPS" or termination_reason == "TIMEOUT":
+            if termination_reason == "TRUNCATION" or termination_reason == "MAX_STEPS" or termination_reason == "TIMEOUT" or termination_reason == "TAIL_GUARD_EARLY_STOP":
                 # Mask out the entire response for overlong trajectories if the reward is 0.
                 response_masks = [0] * len(response_masks)
                 masked_out = True
@@ -1748,6 +1940,7 @@ class AgentExecutionEngine:
             await self.rollout_engine.wake_up()  # type: ignore
 
         semaphore = asyncio.Semaphore(self.n_parallel_agents)
+        tail_guard = RolloutTailGuardState(total=len(self.envs), enabled=self.tail_guard_enabled)
 
         async def launch_one_trajectory_task(env_idx: int):
             async with semaphore:
@@ -1756,6 +1949,7 @@ class AgentExecutionEngine:
                         idx=env_idx,
                         seed=reset_seed,
                         mode=mode,
+                        tail_guard=tail_guard,
                         **kwargs,
                     )
                 except Exception as e:
@@ -1773,6 +1967,7 @@ class AgentExecutionEngine:
         for coro in asyncio.as_completed(tasks_to_run):
             try:
                 result = await coro
+                tail_guard.record_result(result)
                 tasks_completed += 1
                 steps = result.get("metrics", {}).get("steps") if isinstance(result, dict) else None
                 label = result.get("metrics", {}).get("task_label") if isinstance(result, dict) else None
@@ -1800,6 +1995,19 @@ class AgentExecutionEngine:
 
         if self.engine_name == "verl":
             await self.rollout_engine.sleep()  # type: ignore
+
+        rollout_metrics = tail_guard.metrics()
+        self.last_rollout_step_metrics = rollout_metrics
+        colorful_print(
+            "[rollout-step] "
+            f"elapsed={rollout_metrics['elapsed_time']:.2f}s "
+            f"completed={int(rollout_metrics['completed_trajectories'])}/{int(rollout_metrics['total_trajectories'])} "
+            f"throughput={rollout_metrics['throughput_traj_per_second']:.3f} traj/s "
+            f"tail_guard={bool(rollout_metrics['tail_guard_enabled'])} "
+            f"tail_start={rollout_metrics['tail_phase_start_elapsed_seconds']:.2f}s "
+            f"tail_early_stop={int(rollout_metrics['tail_guard_early_stop'])}",
+            "cyan",
+        )
 
         self.executor.shutdown(wait=False, cancel_futures=True)
         _log_fd_count("trajectory_generator END")

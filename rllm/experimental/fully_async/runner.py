@@ -98,13 +98,15 @@ class FullyAsyncTaskRunner:
 
         print("[ASYNC MAIN] Initializing model and tokenizer...")
         local_path = copy_to_local(config.actor_rollout_ref.model.path, use_shm=config.actor_rollout_ref.model.get("use_shm", False))
-        from verl.utils import hf_processor, hf_tokenizer
+        from verl.utils import hf_tokenizer
+
+        from rllm.experimental.verl.utils import maybe_hf_processor
 
         trust_remote_code = config.data.get("trust_remote_code", False)
         self.tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
 
         # Used for multimodal LLM, could be None
-        self.processor = hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
+        self.processor = maybe_hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
 
         self.config = config
 

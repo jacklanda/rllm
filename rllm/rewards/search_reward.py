@@ -241,6 +241,69 @@ class RewardSearchFn:
 
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
+    def _answer_aliases(self, s: str) -> set[str]:
+        """Return conservative normalized aliases for entity-style answers.
+
+        This recovers common web-search false negatives such as full name vs
+        parenthetical acronym (``Rilpivirine (RPV)``), hyphenation variants
+        (``Inter-stimulus`` vs ``interstimulus``), and version prefixes
+        (``v2.3.9`` vs ``2.3.9``) without accepting arbitrary substrings like
+        ``Latin`` for ``Medieval Latin``.
+        """
+        raw = str(s or "").strip()
+        if not raw:
+            return set()
+
+        aliases = {self.normalize_answer(raw)}
+
+        paren_contents = [m.strip() for m in re.findall(r"\(([^()]+)\)", raw) if m.strip()]
+        without_parens = re.sub(r"\s*\([^()]*\)", "", raw).strip()
+        if without_parens:
+            aliases.add(self.normalize_answer(without_parens))
+        for content in paren_contents:
+            aliases.add(self.normalize_answer(content))
+
+        compact_source = {raw, without_parens, *paren_contents}
+        for value in compact_source:
+            if not value:
+                continue
+            normalized = self.normalize_answer(value)
+            if normalized:
+                aliases.add(re.sub(r"\s+", "", normalized))
+
+        version = re.fullmatch(r"(?i)\s*v(?:ersion)?\s*([0-9][0-9A-Za-z.\-_]*)\s*", raw)
+        if version:
+            aliases.add(self.normalize_answer(version.group(1)))
+        aliases.add(re.sub(r"(?i)\bv\s+(?=\d)", "", self.normalize_answer(raw)))
+        aliases.add(self.normalize_answer(re.sub(r"(?i)\bv(?=\d)", "", raw)))
+
+        generic_suffix_alias = self._generic_entity_suffix_alias(raw)
+        if generic_suffix_alias:
+            aliases.add(generic_suffix_alias)
+
+        return {alias for alias in aliases if alias}
+
+    _GENERIC_ENTITY_SUFFIXES = {"project", "portal", "report", "standard"}
+
+    def _generic_entity_suffix_alias(self, s: str) -> str:
+        """Drop generic entity words only when a stable core remains.
+
+        This intentionally removes only low-information wrappers that often
+        appear in gold labels ("Documenting Hate project") while avoiding broad
+        substring acceptance ("Latin" must not match "Medieval Latin").
+        """
+        tokens = self.normalize_answer(s).split()
+        core = [tok for tok in tokens if tok not in self._GENERIC_ENTITY_SUFFIXES]
+        if len(core) < 2 or core == tokens:
+            return ""
+        return " ".join(core)
+
+    def _coerce_submitted_answer_text(self, s: str) -> str:
+        """Normalize harmless escaping in submitted final-answer strings."""
+        text = str(s or "")
+        text = re.sub(r"\\+(?=\s*[A-Za-z0-9])", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
     def f1_score(self, prediction: str, ground_truth: str) -> tuple[float, float, float]:
         """Calculate F1 score between prediction and ground truth"""
         normalized_prediction = self.normalize_answer(prediction)
@@ -327,6 +390,10 @@ class RewardSearchFn:
         if pred_letter in self._OPTION_LETTERS or gt_letter in self._OPTION_LETTERS:
             return pred_letter == gt_letter
         if self.normalize_answer(prediction) == self.normalize_answer(ground_truth):
+            return True
+        pred_aliases = self._answer_aliases(prediction)
+        gt_aliases = self._answer_aliases(ground_truth)
+        if pred_aliases and gt_aliases and pred_aliases & gt_aliases:
             return True
         # P2-6: date DMY/MDY ambiguity — accept matching canonical variants.
         pv = self._date_variants(pred_raw)
@@ -655,7 +722,7 @@ class RewardSearchFn:
     @staticmethod
     def _is_placeholder_answer_marker(value: str) -> bool:
         normalized = re.sub(r"[\W_]+", "", str(value or "")).lower()
-        return normalized in {"", "answer", "finalanswer", "letter", "option", "choice"}
+        return normalized in {"", "answer", "finalanswer", "boxedfinalanswer", "letter", "option", "choice"}
 
     @classmethod
     def _has_placeholder_answer_marker(cls, raw: str) -> bool:
@@ -880,7 +947,9 @@ class RewardSearchFn:
         # present, so return it as-is. Skipping the prose cascade avoids
         # truncating clean answers like "Short Term 12"/"Treviso, Italy".
         if is_submitted:
-            return self._strip_latex_wrappers(response.strip())
+            submitted = self._strip_latex_wrappers(response.strip())
+            submitted = self._coerce_submitted_answer_text(submitted)
+            return "" if self._is_placeholder_answer_marker(submitted) else submitted
 
         bold_patterns = [
             r"\*\*([^*]+)\*\*",

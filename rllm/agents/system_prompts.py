@@ -617,7 +617,7 @@ RULES:
 3. For multi-hop questions, decompose into sub-questions and search each sub-question separately.
 4. Use the same language as the question when you write queries (e.g., Chinese question -> Chinese query).
 5. Synthesize the search results to form an accurate, concise answer. Only submit once you can ground each claim in retrieved text.
-6. The finish tool's ``result`` must contain only \\boxed{FINAL_ANSWER}. Do not include explanations, citations, aliases, confidence, or full sentences inside ``result``.
+6. The finish tool's ``result`` must contain only the final answer wrapped in \\boxed{}, e.g. \\boxed{Martin King Whyte}. Do not output the literal placeholder FINAL_ANSWER. Do not include explanations, citations, aliases, confidence, or full sentences inside ``result``.
 """
 
 FUSED_UNIFIED_SYSTEM_PROMPT = """You are a general agent that can solve three task families. At the start of each task, infer the task family from the user message, observation, and available tool schemas, then follow the corresponding rules.
@@ -701,7 +701,7 @@ Instructions:
 4. Write queries in the same language as the question (e.g., Chinese question -> Chinese query).
 5. Synthesize the search results to form an accurate answer grounded in retrieved text.
 6. When you have found the answer, use the finish tool to submit your response.
-7. The finish tool's result parameter must contain only \\boxed{FINAL_ANSWER}. Do not include explanations, citations, aliases, confidence, or full sentences inside result.
+7. The finish tool's result parameter must contain only the final answer wrapped in \\boxed{}, e.g. \\boxed{Martin King Whyte}. Do not output the literal placeholder FINAL_ANSWER. Do not include explanations, citations, aliases, confidence, or full sentences inside result.
 
 IMPORTANT: Do NOT use file editing tools (file_editor, execute_bash, search) for this task — only use web_search and finish.
 """

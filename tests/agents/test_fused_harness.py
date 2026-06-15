@@ -80,6 +80,9 @@ def test_train_fused_agent_script_passes_qwen35_harness_model_and_thinking_confi
     assert "+rllm.agent.agent_args.harness=${harness}" in content
     assert "+rllm.agent.agent_args.model_name=${model_path}" in content
     assert "+rllm.env.env_args.harness=${harness}" in content
+    assert 'gpu_memory_utilization="${GPU_MEMORY_UTILIZATION:-0.1}"' in content
+    assert 'vllm_max_num_seqs="${VLLM_MAX_NUM_SEQS:-1}"' in content
+    assert "+actor_rollout_ref.rollout.engine_kwargs.vllm.mm_processor_cache_type=${vllm_mm_processor_cache_type}" in content
 
 
 def test_fused_evals_script_passes_harness_to_env_and_agent():

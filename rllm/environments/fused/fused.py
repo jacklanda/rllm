@@ -1,4 +1,5 @@
 import inspect
+import hashlib
 import json
 import logging
 import os
@@ -42,6 +43,11 @@ _ANSWER_SCHEMA_MARKERS = (
     "submission format requirement",
 )
 
+_MCP_TOOL_OUTPUT_CHAR_LIMIT = int(os.environ.get("RLLM_MCP_TOOL_OUTPUT_CHAR_LIMIT", "6000"))
+_MCP_TOOL_OUTPUT_LINE_LIMIT = int(os.environ.get("RLLM_MCP_TOOL_OUTPUT_LINE_LIMIT", "160"))
+_MCP_SCHEMA_SELF_CHECK_MAX_FAILURES = int(os.environ.get("RLLM_MCP_SCHEMA_SELF_CHECK_MAX_FAILURES", "2"))
+_SEARCH_REWRITE_MAX_REJECTIONS = int(os.environ.get("RLLM_SEARCH_REWRITE_MAX_REJECTIONS", "2"))
+
 _EVIDENCE_STOPWORDS = {
     "and",
     "are",
@@ -58,6 +64,32 @@ _EVIDENCE_STOPWORDS = {
     "this",
     "with",
     "within",
+}
+
+_QUERY_STOPWORDS = _EVIDENCE_STOPWORDS | {
+    "about",
+    "after",
+    "before",
+    "between",
+    "does",
+    "find",
+    "give",
+    "info",
+    "information",
+    "list",
+    "look",
+    "lookup",
+    "name",
+    "news",
+    "search",
+    "show",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "whose",
 }
 
 
@@ -146,7 +178,9 @@ def _json_type_name(value: object) -> str:
         return "string"
     if isinstance(value, bool):
         return "boolean"
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if isinstance(value, int) and not isinstance(value, bool):
+        return "integer"
+    if isinstance(value, float):
         return "number"
     if value is None:
         return "null"
@@ -162,6 +196,43 @@ def _schema_expected_types(schema: dict) -> set[str]:
     return set()
 
 
+def _schema_type_matches(actual: str, expected: set[str]) -> bool:
+    if not expected:
+        return True
+    if actual in expected:
+        return True
+    return actual == "integer" and "number" in expected
+
+
+def _coerce_submission_for_schema(payload: object, schema: dict | None) -> object:
+    """Coerce lossless JSON scalar types before local schema self-check."""
+    if not isinstance(schema, dict):
+        return payload
+
+    expected = _schema_expected_types(schema)
+    if "integer" in expected:
+        if isinstance(payload, float) and payload.is_integer():
+            return int(payload)
+        if isinstance(payload, str) and re.fullmatch(r"[-+]?\d+(?:\.0+)?", payload.strip()):
+            return int(float(payload.strip()))
+
+    if isinstance(payload, dict):
+        properties = schema.get("properties", {})
+        if not isinstance(properties, dict):
+            properties = {}
+        return {
+            key: _coerce_submission_for_schema(value, properties.get(key, {}))
+            for key, value in payload.items()
+        }
+
+    if isinstance(payload, list):
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            return [_coerce_submission_for_schema(item, item_schema) for item in payload]
+
+    return payload
+
+
 def _validate_submission_schema(payload: object, schema: dict | None, *, max_errors: int = 8) -> dict:
     """Lightweight local submit self-check for top-level type/required/non-empty.
 
@@ -172,6 +243,7 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
     if not schema:
         return {"passed": True, "errors": [], "schema_found": False}
 
+    payload = _coerce_submission_for_schema(payload, schema)
     errors: list[str] = []
 
     def add(message: str) -> None:
@@ -184,7 +256,7 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
 
         expected = _schema_expected_types(node_schema)
         actual = _json_type_name(value)
-        if expected and actual not in expected:
+        if not _schema_type_matches(actual, expected):
             add(f"{path}: expected {sorted(expected)}, got {actual}")
             return
 
@@ -218,7 +290,37 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
                     validate_node(item, item_schema, f"{path}[{idx}]")
 
     validate_node(payload, schema, "$")
-    return {"passed": not errors, "errors": errors, "schema_found": True}
+    return {"passed": not errors, "errors": errors, "schema_found": True, "normalized_payload": payload}
+
+
+def _compact_mcp_tool_output(output: object, *, char_limit: int = _MCP_TOOL_OUTPUT_CHAR_LIMIT, line_limit: int = _MCP_TOOL_OUTPUT_LINE_LIMIT) -> str:
+    """Keep MCP observations bounded while preserving head/tail evidence."""
+    text = str(output)
+    if char_limit <= 0:
+        return text
+
+    lines = text.splitlines()
+    if line_limit > 0 and len(lines) > line_limit:
+        head_count = max(1, int(line_limit * 0.75))
+        tail_count = max(1, line_limit - head_count)
+        omitted = len(lines) - head_count - tail_count
+        text = "\n".join(
+            lines[:head_count]
+            + [f"... [truncated {omitted} lines from MCP tool output] ..."]
+            + lines[-tail_count:]
+        )
+
+    if len(text) <= char_limit:
+        return text
+
+    head_len = max(1, int(char_limit * 0.75))
+    tail_len = max(1, char_limit - head_len)
+    omitted = len(text) - head_len - tail_len
+    return (
+        text[:head_len].rstrip()
+        + f"\n... [truncated {omitted} characters from MCP tool output] ...\n"
+        + text[-tail_len:].lstrip()
+    )
 
 
 def _submission_self_check_observation(check: dict) -> str:
@@ -236,6 +338,66 @@ def _tokenize_for_evidence(text: object) -> set[str]:
     raw = str(text or "").lower()
     tokens = set(re.findall(r"[a-z0-9][a-z0-9_-]{2,}", raw))
     return {t for t in tokens if t not in _EVIDENCE_STOPWORDS}
+
+
+def _normalize_search_query(query: object) -> str:
+    text = str(query or "").lower()
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"[^\w\s\"'-]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _query_terms(query: object) -> set[str]:
+    normalized = _normalize_search_query(query)
+    terms = set(re.findall(r"[a-z0-9][a-z0-9_-]{2,}", normalized))
+    return {term for term in terms if term not in _QUERY_STOPWORDS}
+
+
+def _query_similarity(left: object, right: object) -> float:
+    left_terms = _query_terms(left)
+    right_terms = _query_terms(right)
+    if not left_terms or not right_terms:
+        return 0.0
+    return len(left_terms & right_terms) / max(1, min(len(left_terms), len(right_terms)))
+
+
+def _extract_precise_query_clues(query: object) -> set[str]:
+    """Extract clues specific enough to justify a duplicate-result rewrite."""
+    text = str(query or "")
+    clues: set[str] = set()
+
+    for match in re.findall(r"\b\d{2,4}(?:[-/.]\d{1,2}){0,2}\b|\b\d+(?:\.\d+)?%?\b", text):
+        clues.add(match.lower())
+
+    for match in re.findall(r'"([^"]{4,80})"|\'([^\']{4,80})\'', text):
+        quoted = next((part for part in match if part), "")
+        normalized = _normalize_search_query(quoted)
+        if normalized:
+            clues.add(normalized)
+
+    for match in re.findall(r"\b[A-Z][A-Za-z0-9]*(?:[-\s]+[A-Z0-9][A-Za-z0-9]*)+\b", text):
+        normalized = _normalize_search_query(match)
+        if normalized and len(_query_terms(normalized)) >= 2:
+            clues.add(normalized)
+
+    for term in re.findall(r"\b[a-zA-Z0-9]+(?:[-_][a-zA-Z0-9]+)+\b", text):
+        normalized = _normalize_search_query(term)
+        if normalized and normalized not in _QUERY_STOPWORDS:
+            clues.add(normalized)
+
+    for term in _query_terms(text):
+        if len(term) >= 8:
+            clues.add(term)
+
+    return clues
+
+
+def _search_rewrite_guidance(reason: str) -> str:
+    return (
+        f"Search rejected: {reason}. The previous web_search returned duplicate or generic evidence. "
+        "Rewrite the query with one unused precise clue from the question or evidence, such as a number, date, quoted title phrase, parameter combination, or proper noun. "
+        "Do not search the same entity alone again."
+    )
 
 
 def _flatten_answer_fields(value: object, path: str = "$", *, limit: int = 80) -> list[dict]:
@@ -529,6 +691,11 @@ class FusedEnv(CLIEnv):
         self._search_low_content_responses = 0
         self._search_retrieval_seen_docs = set()
         self._search_retrieval_duplicate_hits = 0
+        self._search_query_history: list[str] = []
+        self._search_used_precise_clues: set[str] = set()
+        self._search_rewrite_required = False
+        self._search_rewrite_reason = ""
+        self._search_rewrite_rejections = 0
 
         question = self.entry.get("question") or self.entry.get("query") or self.entry.get("input") or self.entry.get("problem_statement", "")
         # Strip stale answer-format instructions that conflict with FUSED_SEARCH_USER_PROMPT
@@ -1127,7 +1294,7 @@ class FusedEnv(CLIEnv):
     @staticmethod
     def _is_placeholder_answer_marker(value: str) -> bool:
         normalized = re.sub(r"[\W_]+", "", str(value or "")).lower()
-        return normalized in {"", "answer", "finalanswer", "letter", "option", "choice"}
+        return normalized in {"", "answer", "finalanswer", "boxedfinalanswer", "letter", "option", "choice"}
 
     @staticmethod
     def _has_tool_call_markup(raw: str) -> bool:
@@ -1425,7 +1592,8 @@ class FusedEnv(CLIEnv):
             try:
                 tool_outputs = self._mcp_connection_manager.execute_tool_calls(tool_calls)
                 output_str = tool_outputs.get(tool_call_id, "No output")
-                observations.append(f"Execution output of [{fn}]:\n{output_str}")
+                compact_output = _compact_mcp_tool_output(output_str)
+                observations.append(f"Execution output of [{fn}]:\n{compact_output}")
                 # Fix #3: track distinct successful tool names so the
                 # verifier can reward genuine exploration (gated on
                 # is_correct) rather than raw call count. A call is counted
@@ -1452,12 +1620,40 @@ class FusedEnv(CLIEnv):
         self.total_steps += 1
         params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
         query = params.get("query", "")
+        query_text = str(query or "").strip()
         top_k = params.get("top_k", None)
         if top_k is not None:
             try:
                 top_k = int(top_k)
             except (ValueError, TypeError):
                 top_k = None
+
+        history: list[str] = getattr(self, "_search_query_history", [])
+        used_clues: set[str] = getattr(self, "_search_used_precise_clues", set())
+        query_clues = _extract_precise_query_clues(query_text)
+        last_query = history[-1] if history else ""
+        if getattr(self, "_search_rewrite_required", False):
+            new_clues = query_clues - used_clues
+            too_similar = bool(last_query) and _query_similarity(query_text, last_query) >= 0.8
+            if not query_text or not new_clues or too_similar:
+                self._search_rewrite_rejections = getattr(self, "_search_rewrite_rejections", 0) + 1
+                reason_bits = []
+                if not query_text:
+                    reason_bits.append("empty query")
+                if not new_clues:
+                    reason_bits.append("missing an unused precise clue")
+                if too_similar:
+                    reason_bits.append("too similar to the previous query")
+                reason = ", ".join(reason_bits) or "query was not a valid rewrite"
+                info = {
+                    "search/query_rewrite_rejected": 1,
+                    "search/query_rewrite_rejections": self._search_rewrite_rejections,
+                }
+                if self._search_rewrite_rejections >= _SEARCH_REWRITE_MAX_REJECTIONS:
+                    info["termination_reason"] = "SEARCH_QUERY_REWRITE_EXCEEDED"
+                    info["termination_message"] = f"Rejected {self._search_rewrite_rejections} duplicate/generic follow-up queries."
+                    return _search_rewrite_guidance(reason) + "\nRepeated rewrite failures; terminating rollout.", 0.0, True, info
+                return _search_rewrite_guidance(reason), 0.0, False, info
 
         tool = self._get_retrieval_tool()
         if tool is None:
@@ -1475,10 +1671,11 @@ class FusedEnv(CLIEnv):
             new_chunks: list[str] = []
             dup_count = 0
             for chunk in raw.split("\n\n"):
-                sig = chunk.strip()[:400]
-                if not sig:
+                normalized = re.sub(r"\s+", " ", chunk.strip().lower())
+                normalized = re.sub(r"[^\w\s]", "", normalized)
+                if not normalized:
                     continue
-                h = hash(sig)
+                h = hashlib.sha1(normalized[:1000].encode("utf-8", errors="ignore")).hexdigest()
                 if h in seen:
                     dup_count += 1
                     continue
@@ -1487,7 +1684,12 @@ class FusedEnv(CLIEnv):
             if not new_chunks and raw.strip():
                 # All chunks dedup'd away — surface a hint instead of
                 # returning the identical passage a second time.
-                body = "All returned passages were already surfaced by a previous " "search. Rephrase the query (add entities, dates, or " "constraints) to retrieve new evidence."
+                body = (
+                    "All returned passages were already surfaced by a previous search. "
+                    "Do not submit an answer from repeated evidence. Rewrite the query with a different clue, exact title phrase, named entity, date, or number, then call web_search again."
+                )
+                self._search_rewrite_required = True
+                self._search_rewrite_reason = "all returned passages were duplicates"
             else:
                 body = "\n\n".join(new_chunks) if new_chunks else raw
             self._search_retrieval_seen_docs = seen
@@ -1495,8 +1697,20 @@ class FusedEnv(CLIEnv):
             # P0-2: count low-content responses (fewer than 20 words
             # after stripping the header) for reward shaping downstream.
             word_count = len(body.split())
+            useful_result = bool(new_chunks) and word_count >= 20
             if word_count < 20:
                 self._search_low_content_responses = getattr(self, "_search_low_content_responses", 0) + 1
+                self._search_rewrite_required = True
+                self._search_rewrite_reason = "low-content or generic search result"
+            elif useful_result:
+                self._search_rewrite_required = False
+                self._search_rewrite_reason = ""
+            if query_text:
+                history.append(query_text)
+                self._search_query_history = history
+                self._search_used_precise_clues = used_clues | query_clues
+            if useful_result:
+                self._search_rewrite_rejections = 0
             observation = f"Execution output of [web_search]:\n{body}"
         except Exception as e:
             logger.error("web_search execution failed: %s", str(e))
@@ -1509,6 +1723,13 @@ class FusedEnv(CLIEnv):
         self.total_steps += 1
         params = action_obj.parameters if hasattr(action_obj, "parameters") else {}
         result = params.get("result", "")
+        if self._is_placeholder_answer_marker(str(result or "")):
+            return (
+                "Error: FINAL_ANSWER is a placeholder, not an answer. Continue searching if needed, then submit the actual final answer in \\boxed{...}.",
+                0.0,
+                False,
+                {"search/placeholder_submit_rejected": 1},
+            )
         self._search_answer = result
         self._search_answer_is_verbatim_submission = True
         if self.harness not in {"cot", "bare"} and getattr(self, "_search_web_search_calls", 0) == 0:
@@ -1550,7 +1771,7 @@ class FusedEnv(CLIEnv):
 
         accepted, observation, info = self._accept_mcp_submission(parsed, result)
         if not accepted:
-            return observation, 0.0, False, info
+            return observation, 0.0, bool(info.get("termination_reason")), info
         return "Your answer has been submitted.", 0.0, True, {}
 
     def _handle_mcp_submit_result(self, action_obj) -> tuple[str, float, bool, dict]:
@@ -1569,7 +1790,7 @@ class FusedEnv(CLIEnv):
 
         accepted, observation, info = self._accept_mcp_submission(parsed, result)
         if not accepted:
-            return observation, 0.0, False, info
+            return observation, 0.0, bool(info.get("termination_reason")), info
 
         # Also execute on the MCP server if available (for side effects)
         if self._mcp_connection_manager is not None:
@@ -1605,8 +1826,21 @@ class FusedEnv(CLIEnv):
         """Store a submission only if it passes the local schema self-check."""
         check = _validate_submission_schema(parsed, getattr(self, "_mcp_answer_schema", None))
         self._mcp_last_schema_self_check = check
+        normalized = check.get("normalized_payload", parsed)
         if not check.get("passed", True):
             self._mcp_schema_self_check_failures += 1
+            if self._mcp_schema_self_check_failures >= _MCP_SCHEMA_SELF_CHECK_MAX_FAILURES:
+                errors = check.get("errors", [])
+                return (
+                    False,
+                    _submission_self_check_observation(check) + "\nSchema self-check failed too many times; terminating rollout.",
+                    {
+                        "mcp/schema_self_check_failed": 1,
+                        "mcp/schema_self_check_errors": errors,
+                        "termination_reason": "MCP_SCHEMA_SELF_CHECK_EXCEEDED",
+                        "termination_message": f"MCP schema self-check failed {self._mcp_schema_self_check_failures} times.",
+                    },
+                )
             return (
                 False,
                 _submission_self_check_observation(check),
@@ -1616,10 +1850,10 @@ class FusedEnv(CLIEnv):
                 },
             )
 
-        if isinstance(parsed, (dict, list)):
-            self._mcp_answer = json.dumps(parsed, ensure_ascii=False)
-        elif isinstance(parsed, str) and parsed.strip():
-            self._mcp_answer = parsed
+        if isinstance(normalized, (dict, list)):
+            self._mcp_answer = json.dumps(normalized, ensure_ascii=False)
+        elif isinstance(normalized, str) and normalized.strip():
+            self._mcp_answer = normalized
         else:
             self._mcp_answer = str(raw_result) if raw_result else ""
         return True, "", {}
@@ -1737,6 +1971,7 @@ class FusedEnv(CLIEnv):
         ws_calls = getattr(self, "_search_web_search_calls", 0)
         low_content = getattr(self, "_search_low_content_responses", 0)
         dup_hits = getattr(self, "_search_retrieval_duplicate_hits", 0)
+        rewrite_rejections = getattr(self, "_search_rewrite_rejections", 0)
 
         # Web-search training now uses only answer-match reward. Keep the
         # historical metric fields for dashboards, but do not apply them.
@@ -1794,6 +2029,8 @@ class FusedEnv(CLIEnv):
             "reward/web_search_calls": ws_calls,
             "reward/low_content_responses": low_content,
             "reward/duplicate_passage_hits": dup_hits,
+            "reward/query_rewrite_rejections": rewrite_rejections,
+            "reward/query_rewrite_required": bool(getattr(self, "_search_rewrite_required", False)),
             "implicit_text_submission": not is_verbatim_submission,
             "rollout_rescue/applied": rollout_rescue_applied,
             **({"rollout_rescue/previous_reward": reward_before_rescue} if rollout_rescue_applied else {}),

@@ -11,6 +11,11 @@ PPO_RAY_RUNTIME_ENV = {
         "VLLM_LOGGING_LEVEL": "WARN",
         "VLLM_ALLOW_RUNTIME_LORA_UPDATING": "true",
         "CUDA_DEVICE_MAX_CONNECTIONS": "1",
+        # Keep full launcher visibility in Ray workers. Verl/rLLM binds each
+        # worker with torch.cuda.set_device(local_rank). Letting Ray narrow
+        # CUDA_VISIBLE_DEVICES for fractional-GPU actors makes every colocated
+        # FSDP rank see cuda:0 and NCCL reports duplicate physical GPUs.
+        "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "1",
         "VLLM_USE_V1": "1",
         # To prevent hanging or crash during synchronization of weights between actor and rollout
         # in disaggregated mode. See:
@@ -45,6 +50,7 @@ FORWARD_PREFIXES = [
 
 DEFAULT_EXCLUDE_VARS = {
     "CUDA_VISIBLE_DEVICES",
+    "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES",
     "RLLM_EXCLUDE",
 }
 
@@ -79,6 +85,8 @@ def _get_forwarded_env_vars():
             exclude_vars.add(name)
 
     forwarded = {k: v for k, v in os.environ.items() if any(k.startswith(p) for p in forward_prefix) and k not in exclude_vars}
+    if os.environ.get("CUDA_VISIBLE_DEVICES"):
+        forwarded.setdefault("RLLM_CUDA_VISIBLE_DEVICES", os.environ["CUDA_VISIBLE_DEVICES"])
     return forwarded
 
 

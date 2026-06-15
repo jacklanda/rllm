@@ -15,6 +15,84 @@ _VERL_QWEN3_VL_DUMMY_INPLACE_PATCHED = False
 _VERL_TENSORDICT_JAGGED_PATCHED = False
 _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = False
 _VERL_RAY_LOCAL_RANK_ENV_PATCHED = False
+_VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED = False
+_VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = False
+
+_VERL_WORKER_PROCESS_SETUP_HOOK = "rllm.experimental.verl.patch.apply_all_verl_patches"
+
+
+def _split_visible_devices(value: str | None) -> list[str]:
+    return [device.strip() for device in str(value or "").split(",") if device.strip()]
+
+
+def _node_visible_devices(local_world_size: int) -> list[str]:
+    """Return the physical CUDA ids rLLM should map node-local ranks onto."""
+    import os
+
+    devices = _split_visible_devices(os.environ.get("RLLM_CUDA_VISIBLE_DEVICES"))
+    if devices:
+        return devices
+
+    devices = _split_visible_devices(os.environ.get("CUDA_VISIBLE_DEVICES"))
+    if devices:
+        return devices
+
+    return [str(rank) for rank in range(local_world_size)]
+
+
+def _bind_current_worker_cuda_device(worker=None) -> int | None:
+    """Select the CUDA device for the current Ray worker process.
+
+    Do not mutate CUDA_VISIBLE_DEVICES here. Ray and torch may already have
+    initialized the process-local CUDA device table, so changing the env var at
+    this point can leave torch still seeing the old table while our code thinks
+    it narrowed visibility to one device. The reliable operation before NCCL
+    init is setting torch's current device to the node-local rank.
+    """
+    import os
+
+    from verl.utils.device import get_torch_device
+
+    selected_device = os.environ.get("RLLM_WORKER_CUDA_VISIBLE_DEVICES")
+    visible_devices = _split_visible_devices(os.environ.get("CUDA_VISIBLE_DEVICES"))
+    if not visible_devices:
+        visible_devices = _split_visible_devices(os.environ.get("RLLM_CUDA_VISIBLE_DEVICES"))
+
+    if selected_device and visible_devices:
+        try:
+            cuda_rank = visible_devices.index(selected_device)
+        except ValueError:
+            cuda_rank = int(os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")))
+    elif len(visible_devices) == 1:
+        cuda_rank = 0
+    else:
+        cuda_rank = int(os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")))
+
+    device_count = get_torch_device().device_count()
+    if device_count > 0:
+        cuda_rank %= device_count
+    get_torch_device().set_device(cuda_rank)
+
+    os.environ["LOCAL_RANK"] = str(cuda_rank)
+    if worker is not None:
+        worker.__dict__["_local_rank"] = cuda_rank
+        if selected_device:
+            worker.__dict__["_cuda_visible_devices"] = selected_device
+    return cuda_rank
+
+
+def _vllm_server_runtime_env(env_vars: dict[str, str]) -> dict[str, object]:
+    """Build a Ray runtime_env for vLLM server actors.
+
+    The vLLM server actor is launched with a per-node CUDA visibility override.
+    Supplying an actor-specific runtime_env can replace the job-level worker
+    setup hook, so carry the hook here as well; otherwise server-only patches
+    such as the typed-token prompt fix never run in vLLMHttpServer processes.
+    """
+    return {
+        "env_vars": env_vars,
+        "worker_process_setup_hook": _VERL_WORKER_PROCESS_SETUP_HOOK,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -30,14 +108,28 @@ def patch_verl_ray_worker_local_rank_env() -> None:
     ``LOCAL_RANK`` and ``LOCAL_WORLD_SIZE`` instead, defaulting both to a
     single-rank process when they are absent.  With FSDP2 this makes every
     local rank select cuda:0 and NCCL aborts with "Duplicate GPU detected".
+
+    rLLM/Verl colocates multiple roles through fractional Ray GPU requests.
+    Ray may then give multiple FSDP ranks the same accelerator id, which makes
+    NCCL report duplicate GPUs.  We cannot put our chosen
+    ``CUDA_VISIBLE_DEVICES`` into the actor ``runtime_env`` because Ray reads
+    that variable while translating placement-group accelerator ids; with a
+    single-device runtime value and a non-zero bundle id, Ray itself can crash
+    with ``IndexError`` before the actor starts.  Instead, pass the intended
+    physical device through rLLM-private env vars and bind CUDA after Ray has
+    finished launching the worker process.
     """
     global _VERL_RAY_LOCAL_RANK_ENV_PATCHED
     if _VERL_RAY_LOCAL_RANK_ENV_PATCHED:
         return
 
+    from verl.single_controller.base import Worker
     from verl.single_controller.ray import RayWorkerGroup
+    from verl.workers import fsdp_workers
 
     _original_create_worker = RayWorkerGroup._create_worker
+    _original_worker_init = Worker.__init__
+    _original_actor_rollout_ref_worker_init = fsdp_workers.ActorRolloutRefWorker.__init__
 
     def _patched_create_worker(
         self,
@@ -51,9 +143,14 @@ def patch_verl_ray_worker_local_rank_env() -> None:
         detached,
     ):
         local_world_size = resource_pool.store[0]
+        node_visible_devices = _node_visible_devices(local_world_size)
+        visible_device = node_visible_devices[local_rank % len(node_visible_devices)]
         worker_env = dict(worker_env or {})
         worker_env.setdefault("LOCAL_RANK", str(local_rank))
         worker_env.setdefault("LOCAL_WORLD_SIZE", str(local_world_size))
+        worker_env.setdefault("RLLM_NODE_LOCAL_RANK", str(local_rank))
+        if getattr(self, "device_name", "cuda") == "cuda":
+            worker_env.setdefault("RLLM_WORKER_CUDA_VISIBLE_DEVICES", visible_device)
         return _original_create_worker(
             self,
             rank,
@@ -66,9 +163,227 @@ def patch_verl_ray_worker_local_rank_env() -> None:
             detached,
         )
 
+    def _patched_worker_init(self, *args, **kwargs):
+        try:
+            _bind_current_worker_cuda_device()
+            _original_worker_init(self, *args, **kwargs)
+            _bind_current_worker_cuda_device(self)
+        except Exception as exc:
+            logger.warning("Failed to set worker CUDA device from LOCAL_RANK: %s", exc)
+            raise
+
+    def _patched_actor_rollout_ref_worker_init(self, *args, **kwargs):
+        _bind_current_worker_cuda_device(self)
+        return _original_actor_rollout_ref_worker_init(self, *args, **kwargs)
+
     RayWorkerGroup._create_worker = _patched_create_worker
+    Worker.__init__ = _patched_worker_init
+    fsdp_workers.ActorRolloutRefWorker.__init__ = _patched_actor_rollout_ref_worker_init
     _VERL_RAY_LOCAL_RANK_ENV_PATCHED = True
-    logger.info("Patched Verl RayWorkerGroup to export LOCAL_RANK and LOCAL_WORLD_SIZE")
+    logger.info("Patched Verl RayWorkerGroup to export local-rank env and set worker CUDA device")
+
+
+def patch_verl_vllm_server_visible_devices() -> None:
+    """Bind the vLLM server/engine process to the colocated rollout worker GPUs.
+
+    Verl's async vLLM HTTP server actor is scheduled with node affinity only.
+    On Ray versions that do not assign a GPU to that server actor, the vLLM
+    EngineCore subprocess inherits visibility for the whole node and defaults
+    to physical cuda:0.  With one colocated rollout worker per GPU, all engine
+    cores then allocate their dummy model/KV cache on GPU 0 and fail before
+    training starts.  The colocated workers already know their Ray-assigned
+    visible device, so mirror that mapping into the server environment before
+    vLLM is initialized.
+    """
+    global _VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED
+    if _VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED:
+        return
+
+    from verl.workers.rollout.vllm_rollout import vllm_async_server as mod
+
+    _original_launch_server = mod.vLLMHttpServerBase.launch_server
+
+    async def _patched_launch_servers(self):
+        import asyncio
+        import os
+
+        import ray
+
+        assert len(self.workers) == self.world_size, (
+            f"worker number {len(self.workers)} not equal to world size {self.world_size}"
+        )
+
+        worker_infos = await asyncio.gather(
+            *[
+                worker.__ray_call__.remote(
+                    lambda self: (
+                        ray.get_runtime_context().get_node_id(),
+                        os.environ.get("CUDA_VISIBLE_DEVICES", "not set"),
+                        os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")),
+                    )
+                )
+                for worker in self.workers
+            ]
+        )
+        worker_node_ids = [node_id for node_id, _, _ in worker_infos]
+        worker_visible_devices = []
+        for _, visible_devices, node_local_rank in worker_infos:
+            visible_list = [device.strip() for device in str(visible_devices).split(",") if device.strip()]
+            if len(visible_list) > 1:
+                try:
+                    worker_visible_devices.append(visible_list[int(node_local_rank)])
+                except (IndexError, TypeError, ValueError):
+                    worker_visible_devices.append(str(node_local_rank))
+            else:
+                worker_visible_devices.append(visible_devices)
+
+        nnodes, gpus_per_node = self.nnodes, self.gpus_per_node
+        if self.config.data_parallel_size == 1:
+            nnodes = 1
+            gpus_per_node = self.world_size
+
+        for node_rank in range(nnodes):
+            start = node_rank * gpus_per_node
+            stop = (node_rank + 1) * gpus_per_node
+            workers = self.workers[start:stop]
+            visible_values = worker_visible_devices[start:stop]
+            node_id = worker_node_ids[start]
+            name = (
+                f"vllm_server_{self.replica_rank}_{node_rank}"
+                if not self.is_reward_model
+                else f"vllm_server_reward_{self.replica_rank}_{node_rank}"
+            )
+
+            ordered_devices = []
+            for value in visible_values:
+                for device in str(value).split(","):
+                    device = device.strip()
+                    if device and device != "not set" and device not in ordered_devices:
+                        ordered_devices.append(device)
+            env_vars = {}
+            if ordered_devices:
+                env_vars = {
+                    "CUDA_VISIBLE_DEVICES": ",".join(ordered_devices),
+                    "LOCAL_RANK": "0",
+                    "LOCAL_WORLD_SIZE": str(len(ordered_devices)),
+                }
+                logger.info("Launching %s with CUDA_VISIBLE_DEVICES=%s", name, env_vars["CUDA_VISIBLE_DEVICES"])
+
+            options = {
+                "scheduling_strategy": ray.util.scheduling_strategies.NodeAffinitySchedulingStrategy(
+                    node_id=node_id,
+                    soft=False,
+                ),
+                "name": name,
+            }
+            if env_vars:
+                options["runtime_env"] = _vllm_server_runtime_env(env_vars)
+
+            server = self.server_class.options(**options).remote(
+                config=self.config,
+                model_config=self.model_config,
+                rollout_mode=self.rollout_mode,
+                workers=workers,
+                replica_rank=self.replica_rank,
+                node_rank=node_rank,
+                gpus_per_node=gpus_per_node,
+                nnodes=nnodes,
+            )
+            self.servers.append(server)
+
+        master_address, master_port = await self.servers[0].get_master_address.remote()
+        await asyncio.gather(
+            *[
+                server.launch_server.remote(master_address=master_address, master_port=master_port)
+                for server in self.servers
+            ]
+        )
+
+        server_address, server_port = await self.servers[0].get_server_address.remote()
+        self._server_handle = self.servers[0]
+        self._server_address = (
+            f"[{server_address}]:{server_port}"
+            if mod.is_valid_ipv6_address(server_address)
+            else f"{server_address}:{server_port}"
+        )
+
+    async def _patched_launch_server(self, *args, **kwargs):
+        if getattr(self, "workers", None):
+            import os
+
+            import ray
+
+            visible_devices = ray.get([worker.get_cuda_visible_devices.remote() for worker in self.workers])
+            ordered_devices = []
+            for value in visible_devices:
+                for device in str(value).split(","):
+                    device = device.strip()
+                    if device and device != "not set" and device not in ordered_devices:
+                        ordered_devices.append(device)
+            if ordered_devices:
+                os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(ordered_devices)
+                os.environ["LOCAL_RANK"] = "0"
+                os.environ["LOCAL_WORLD_SIZE"] = str(len(ordered_devices))
+                logger.info("Bound vLLM server to CUDA_VISIBLE_DEVICES=%s", os.environ["CUDA_VISIBLE_DEVICES"])
+
+        return await _original_launch_server(self, *args, **kwargs)
+
+    mod.vLLMReplica.launch_servers = _patched_launch_servers
+    mod.vLLMHttpServerBase.launch_server = _patched_launch_server
+    _VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED = True
+    logger.info("Patched Verl vLLM server actors to inherit colocated worker CUDA_VISIBLE_DEVICES")
+
+
+def patch_verl_vllm_rollout_local_rank() -> None:
+    """Make colocated vLLM rollout workers use their assigned local CUDA rank.
+
+    In environments where Ray leaves all node GPUs visible to each actor,
+    verl's ``vLLMAsyncRollout._init_worker`` sets vLLM's ``local_rank`` to 0
+    for every colocated rollout worker.  That makes all rollout engines place
+    KV cache tensors on physical GPU 0 even though the actor worker itself has
+    a distinct ``LOCAL_RANK``.  Preserve the local-rank env that
+    ``patch_verl_ray_worker_local_rank_env`` exports before vLLM creates its
+    ``WorkerWrapperBase``.
+    """
+    global _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED
+    if _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED:
+        return
+
+    from verl.workers.rollout.vllm_rollout import vllm_rollout as mod
+
+    _original_init_worker = mod.vLLMAsyncRollout._init_worker
+
+    def _patched_init_worker(self, all_kwargs):
+        import os
+
+        from verl.utils.device import get_torch_device
+
+        visible_devices = [
+            device.strip()
+            for device in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",")
+            if device.strip()
+        ]
+        node_local_rank = int(os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")))
+        local_rank = node_local_rank if len(visible_devices) != 1 else 0
+        os.environ["LOCAL_RANK"] = str(local_rank)
+        all_kwargs[0]["local_rank"] = local_rank
+        get_torch_device().set_device(local_rank)
+
+        old_noset = os.environ.get("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES")
+        if len(visible_devices) != 1:
+            os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = "1"
+        try:
+            return _original_init_worker(self, all_kwargs)
+        finally:
+            if len(visible_devices) != 1:
+                if old_noset is None:
+                    os.environ.pop("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", None)
+                else:
+                    os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = old_noset
+
+    mod.vLLMAsyncRollout._init_worker = _patched_init_worker
+    _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = True
+    logger.info("Patched Verl vLLM rollout workers to preserve local CUDA rank")
 
 
 # ---------------------------------------------------------------------------
@@ -465,6 +780,8 @@ _ALL_VERL_PATCHES = {
     "patch_verl_qwen3_vl_dummy_inplace": patch_verl_qwen3_vl_dummy_inplace,
     "patch_verl_tensordict_jagged_layout": patch_verl_tensordict_jagged_layout,
     "patch_verl_vllm_typed_token_prompt": patch_verl_vllm_typed_token_prompt,
+    "patch_verl_vllm_server_visible_devices": patch_verl_vllm_server_visible_devices,
+    "patch_verl_vllm_rollout_local_rank": patch_verl_vllm_rollout_local_rank,
 }
 
 

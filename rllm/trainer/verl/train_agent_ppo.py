@@ -259,12 +259,14 @@ class TaskRunner:
         )
 
         # Instantiate the tokenizer and processor.
-        from verl.utils import hf_processor, hf_tokenizer
+        from verl.utils import hf_tokenizer
+
+        from rllm.experimental.verl.utils import maybe_hf_processor
 
         trust_remote_code = config.data.get("trust_remote_code", False)
         tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
         # Used for multimodal LLM, could be None
-        processor = hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
+        processor = maybe_hf_processor(local_path, trust_remote_code=trust_remote_code, backend="torchvision")
 
         # Load the reward manager for training and validation.
         reward_fn = load_reward_manager(
