@@ -107,3 +107,42 @@ def test_offline_rs_raw_dump_matches_batch_result_schema(tmp_path: Path):
     assert row["sample_trial"] == 1
     assert row["debug"]["ground_truth"] == "Example Founder"
     assert row["debug"]["reward_metadata"]["exact_match"] is True
+
+
+def test_offline_rs_pass_rate_is_threshold_pass_rate_over_sample_n(tmp_path: Path):
+    trainer = object.__new__(AgentPPOTrainer)
+    trainer.config = SimpleNamespace(
+        rllm={
+            "batch_results_dir": str(tmp_path),
+            "offline_rs_sample_n": 4,
+            "offline_rs_reward_threshold": 0.6,
+            "offline_rs_max_trajectory_per_problem": 2,
+            "offline_rs_min_sample_trial": 1,
+        },
+        actor_rollout_ref=SimpleNamespace(rollout=SimpleNamespace(n=4)),
+    )
+
+    merged_data = {
+        "accept_traj": [
+            {"uuid": "task-full", "prompt": "q1", "data_source": "web_search", "reward": 1.0, "trajectory": []},
+            {"uuid": "task-full", "prompt": "q1", "data_source": "web_search", "reward": 0.7, "trajectory": []},
+            {"uuid": "task-full", "prompt": "q1", "data_source": "web_search", "reward": 0.2, "trajectory": []},
+            {"uuid": "task-short", "prompt": "q2", "data_source": "web_search", "reward": 1.0, "trajectory": []},
+        ],
+        "reject_traj": [
+            {"uuid": "task-full", "prompt": "q1", "data_source": "web_search", "reward": None, "trajectory": []},
+            {"uuid": "task-short", "prompt": "q2", "data_source": "web_search", "reward": 0.0, "trajectory": []},
+        ],
+    }
+
+    trainer._dump_offline_rs_batch_results(merged_data, "global_steps_11")
+
+    payload = json.loads((tmp_path / "global_steps_11.json").read_text())
+    selected_by_uid = {row["uuid"]: row for row in payload["selected_trajectories"]}
+
+    assert selected_by_uid["task-full"]["pass_rate"] == 0.5
+    assert selected_by_uid["task-full"]["sample_trial"] == 4
+    assert selected_by_uid["task-short"]["pass_rate"] == 0.25
+    assert selected_by_uid["task-short"]["sample_trial"] == 2
+    assert {row["pass_rate"] for row in merged_data["accept_traj"] if row["uuid"] == "task-full"} == {0.5}
+    assert {row["pass_rate"] for row in merged_data["reject_traj"] if row["uuid"] == "task-short"} == {0.25}

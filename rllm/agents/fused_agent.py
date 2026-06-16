@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from types import SimpleNamespace
 
 from rllm.agents.cli_agent import (
     CLIAgent,
@@ -242,6 +243,7 @@ class FusedAgent(CLIAgent):
         self._search_system_prompt = _build_fused_search_system_prompt(scaffold, self.harness, model_name=model_name)
         # Pre-build the ET system prompt (lightweight, reusable)
         self._et_system_prompt = _build_fused_et_system_prompt(scaffold, self.harness, model_name=model_name)
+        self._task_type = "cli"
         # Re-initialize messages with the new system prompt. The bare harness
         # intentionally sends no system-role message.
         self.messages = [] if self.harness == "bare" else [{"role": "system", "content": self.system_prompt}]
@@ -256,6 +258,7 @@ class FusedAgent(CLIAgent):
         if not self._trajectory.steps:
             # First step: pick user prompt template based on task type
             task_type = info.get("task_type", "cli")
+            self._task_type = task_type
             if self.harness in _PROMPT_ONLY_HARNESSES:
                 self.user_prompt_template = COT_USER_PROMPT
                 self.messages = [] if self.harness == "bare" else [{"role": "system", "content": COT_SYSTEM_PROMPT}]
@@ -314,14 +317,24 @@ class FusedAgent(CLIAgent):
         super().update_from_env(observation, reward, done, info)
 
     def update_from_model(self, response: str, **kwargs):
-        actions = super().update_from_model(response, **kwargs)
-        if self.harness not in _PROMPT_ONLY_HARNESSES:
-            return actions
+        if self.harness in _PROMPT_ONLY_HARNESSES:
+            return self._update_prompt_only_from_model(response)
 
+        if self.harness not in _PROMPT_ONLY_HARNESSES and self._task_type == "web search":
+            return self._update_search_from_model(response)
+
+        actions = super().update_from_model(response, **kwargs)
+        return actions
+
+    def _update_prompt_only_from_model(self, response: str):
         has_tool_call_markup = bool(
             re.search(r"<\s*/?\s*(?:tool_call|function_call)\b|<function=", response or "")
         )
+        self._trajectory.steps.append(self.cur_step)
         cur_step = self._trajectory.steps[-1]
+
+        thought = response.strip()
+        action = Action(action="")
         if not has_tool_call_markup:
             cur_step.action = response
             cur_step.info = {
@@ -329,21 +342,72 @@ class FusedAgent(CLIAgent):
                 "prompt_only_implicit_answer": True,
                 f"{self.harness}_implicit_answer": True,
             }
-            return [Action(action=response)]
+            action = Action(action=response)
+        else:
+            tool_calls = self.tool_parser.parse(response)
+            for tc in tool_calls or []:
+                if tc.name in ("finish", "submit"):
+                    args = tc.arguments
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except (json.JSONDecodeError, ValueError):
+                            args = {}
+                    if not isinstance(args, dict):
+                        args = {}
+                    action = Action(action=SimpleNamespace(function_name="finish", parameters=args))
+                    cur_step.action = action.action
+                    break
+            else:
+                cur_step.action = ""
+                cur_step.info = {
+                    **(cur_step.info or {}),
+                    "suppressed_tool_action": True,
+                    f"{self.harness}_suppressed_tool_action": True,
+                }
 
-        allowed_actions = []
-        for action in actions:
-            action_text = str(action.action or "")
-            if re.search(r"(function_name=|<function=)(finish|submit)\b", action_text):
-                allowed_actions.append(action)
+        cur_step.thought = thought
+        cur_step.model_response = response
+        self.messages.append({"role": "assistant", "content": response})
+        cur_step.chat_completions = json.loads(json.dumps(self.messages))
+        self.step += 1
+        return [action]
 
-        if allowed_actions:
-            return allowed_actions
+    def _update_search_from_model(self, response: str):
+        """Parse search-mode tool calls without constructing SWE actions."""
+        self._trajectory.steps.append(self.cur_step)
+        tool_calls = self.tool_parser.parse(response)
 
-        cur_step.action = ""
-        cur_step.info = {
-            **(cur_step.info or {}),
-            "suppressed_tool_action": True,
-            f"{self.harness}_suppressed_tool_action": True,
-        }
-        return [Action(action="")]
+        actions = []
+        for tc in tool_calls or []:
+            args = tc.arguments
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except (json.JSONDecodeError, ValueError):
+                    args = {}
+            if not isinstance(args, dict):
+                args = {}
+
+            name = tc.name
+            if name == "submit":
+                name = "finish"
+            actions.append(Action(action=SimpleNamespace(function_name=name, parameters=args)))
+            if name == "finish":
+                break
+
+        if not actions:
+            actions.append(Action(action=response or ""))
+
+        tc_idx = response.find(self.tool_parser.tool_call_begin)
+        thought = response[:tc_idx].strip() if tc_idx >= 0 else response.strip()
+        cur_step = self._trajectory.steps[-1]
+        cur_step.thought = thought
+        cur_step.action = actions[0].action
+        cur_step.model_response = response
+
+        self.messages.append({"role": "assistant", "content": response})
+        cur_step.chat_completions = json.loads(json.dumps(self.messages))
+
+        self.step += 1
+        return actions

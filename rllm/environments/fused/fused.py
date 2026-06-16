@@ -7,6 +7,7 @@ import re
 import sys
 import threading
 import uuid
+from types import SimpleNamespace
 
 from rllm.environments.cli.cli import CLIEnv
 
@@ -1302,11 +1303,6 @@ class FusedEnv(CLIEnv):
 
     def _step_search(self, action):
         """Web-search-mode step: handle web_search + finish/submit locally, error on Docker tools."""
-        if SWEAction is None:
-            # Cannot parse actions without r2egym
-            self.total_steps += 1
-            return "Error: r2egym not available for action parsing.", 0.0, False, {}
-
         # Keep the raw model output so we can rescue \boxed{...} when the
         # tool-call parser returns nothing useful.
         raw_text = action if isinstance(action, str) else ""
@@ -1350,12 +1346,12 @@ class FusedEnv(CLIEnv):
                 tcs = _QTP().parse_qwen_tool_calls(raw_text)
                 if tcs and tcs[0].get("name") in ("finish", "submit"):
                     result = tcs[0].get("arguments", {}).get("result", "")
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
+                    action_objs = [self._make_action_obj("finish", {"result": result})]
             if not action_objs:
                 # Parser exhausted: try \boxed{...} as implicit finish.
                 final_marker = self._extract_final_answer_marker_from_raw(raw_text)
                 if final_marker is not None:
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": final_marker})]
+                    action_objs = [self._make_action_obj("finish", {"result": final_marker})]
                 elif self.harness in {"cot", "bare"} and raw_text and raw_text.strip():
                     self._search_answer = raw_text.strip()
                     self._search_answer_is_verbatim_submission = False
@@ -1421,11 +1417,19 @@ class FusedEnv(CLIEnv):
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _make_action_obj(function_name: str, parameters: dict | None = None):
+        parameters = parameters or {}
+        if SWEAction is not None:
+            return SWEAction(function_name=function_name, parameters=parameters)
+        return SimpleNamespace(function_name=function_name, parameters=parameters)
+
+    @staticmethod
     def _unwrap_actions(action) -> "list[SWEAction]":
         """Convert any action format from the workflow into a list of SWEAction objects.
 
         Handles:
         - ``str`` (XML-encoded SWEAction)
+        - lightweight objects with ``function_name`` and ``parameters``
         - ``SWEAction`` instance
         - ``Action`` dataclass (``action.action`` is the XML string)
         - ``list[Action | str]`` from CLIAgent.update_from_model()
@@ -1442,7 +1446,9 @@ class FusedEnv(CLIEnv):
         for item in raw_items:
             if isinstance(item, AgentAction):
                 item = item.action  # unwrap the dataclass
-            if isinstance(item, str):
+            if hasattr(item, "function_name") and hasattr(item, "parameters"):
+                swe_actions.append(item)
+            elif isinstance(item, str) and SWEAction is not None:
                 try:
                     swe_actions.append(SWEAction.from_string(item))
                 except Exception:

@@ -50,6 +50,39 @@ def _disable_incompatible_qwen35_fused_logprob(config):
             OmegaConf.update(config, path, False, merge=False)
 
 
+def _normalize_vllm_rollout_config(config):
+    """Apply conservative vLLM guards before Ray workers are created."""
+    rollout = config.actor_rollout_ref.rollout
+    if rollout.get("name") != "vllm":
+        return
+
+    if OmegaConf.select(config, "actor_rollout_ref.rollout.engine_kwargs.vllm", default=None) is None:
+        OmegaConf.update(config, "actor_rollout_ref.rollout.engine_kwargs.vllm", {}, merge=True)
+
+    if OmegaConf.select(config, "actor_rollout_ref.rollout.engine_kwargs.vllm.disable_cascade_attn", default=None) is None:
+        OmegaConf.update(config, "actor_rollout_ref.rollout.engine_kwargs.vllm.disable_cascade_attn", True, merge=True)
+        print("Setting actor_rollout_ref.rollout.engine_kwargs.vllm.disable_cascade_attn=True to avoid vLLM long-prefix CUDA illegal memory access.")
+
+    max_num_seqs = int(rollout.get("max_num_seqs", 0) or 0)
+    max_model_len = int(rollout.get("max_model_len", 0) or 0)
+    max_num_batched_tokens = int(rollout.get("max_num_batched_tokens", 0) or 0)
+
+    if max_num_seqs > 0:
+        n_parallel_tasks = int(config.rllm.workflow.get("n_parallel_tasks", 0) or 0)
+        if n_parallel_tasks > max_num_seqs:
+            OmegaConf.update(config, "rllm.workflow.n_parallel_tasks", max_num_seqs, merge=False)
+            print(f"Capping rllm.workflow.n_parallel_tasks from {n_parallel_tasks} to vLLM max_num_seqs={max_num_seqs}.")
+
+    if max_num_seqs > 0 and max_model_len > 0 and max_num_batched_tokens > 0:
+        max_useful_batched_tokens = max_num_seqs * max_model_len
+        if max_num_batched_tokens > max_useful_batched_tokens:
+            OmegaConf.update(config, "actor_rollout_ref.rollout.max_num_batched_tokens", max_useful_batched_tokens, merge=False)
+            print(
+                "Capping actor_rollout_ref.rollout.max_num_batched_tokens "
+                f"from {max_num_batched_tokens} to max_num_seqs * max_model_len = {max_useful_batched_tokens}."
+            )
+
+
 @hydra.main(config_path="../config", config_name="agent_ppo_trainer", version_base=None)
 def main(config):
     run_ppo_agent(config)
@@ -238,6 +271,7 @@ class TaskRunner:
         OmegaConf.register_new_resolver("mul", lambda x, y: int(x) * int(y))
         OmegaConf.resolve(config)
         _disable_incompatible_qwen35_fused_logprob(config)
+        _normalize_vllm_rollout_config(config)
 
         actor_rollout_cls, ray_worker_group_cls = self.add_actor_rollout_worker(config)
         self.add_critic_worker(config)

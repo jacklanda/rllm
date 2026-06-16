@@ -271,18 +271,38 @@ class AgentPPOTrainer(RayPPOTrainer):
 
         from collections import Counter, defaultdict
 
-        rows = sanitize_trajectory_dump_for_think_tags(merged_data.get("accept_traj", []) + merged_data.get("reject_traj", []))
+        raw_rows = merged_data.get("accept_traj", []) + merged_data.get("reject_traj", [])
         accepted_by_uid = defaultdict(list)
         trial_counts = Counter()
+        accepted_counts = Counter()
         source_counts = Counter()
         selected_source_counts = Counter()
 
-        for row in rows:
+        for row in raw_rows:
             uid = row.get("uuid") or row.get("prompt")
             if not uid:
                 continue
             trial_counts[uid] += 1
             source_counts[row.get("data_source", "unknown")] += 1
+            reward = _reward_value(row)
+            if reward is not None and reward >= cfg["reward_threshold"]:
+                accepted_counts[uid] += 1
+
+        sample_n = max(int(cfg["sample_n"]), 1)
+        pass_rate_by_uid = {
+            uid: min(max(float(accepted_counts[uid]) / float(sample_n), 0.0), 1.0)
+            for uid in trial_counts
+        }
+        for row in raw_rows:
+            uid = row.get("uuid") or row.get("prompt")
+            if uid in pass_rate_by_uid:
+                row["pass_rate"] = pass_rate_by_uid[uid]
+
+        rows = sanitize_trajectory_dump_for_think_tags(raw_rows)
+        for row in rows:
+            uid = row.get("uuid") or row.get("prompt")
+            if not uid:
+                continue
             reward = _reward_value(row)
             if reward is not None and reward >= cfg["reward_threshold"]:
                 accepted_by_uid[uid].append(row)
@@ -303,6 +323,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 row = _rename_task_label_fields(sanitize_trajectory_dump_for_think_tags(dict(original_row)))
                 row["sample_trial"] = trial_counts[uid]
                 row["accepted_rank"] = rank
+                row["pass_rate"] = pass_rate_by_uid[uid]
                 selected.append(row)
                 selected_source_counts[row.get("data_source", "unknown")] += 1
 
