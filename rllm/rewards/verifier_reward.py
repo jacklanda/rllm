@@ -10,16 +10,18 @@ Ported from wutong1's ``examples/general_agent/reward_verifier.py``.
 from __future__ import annotations
 
 import functools
-import importlib.util
 import inspect
 import json
 import logging
 import os
+import sys
+import types
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from rllm.environments.tools.mcp_source import sanitize_tools_source
 from rllm.rewards.reward_types import RewardOutput
 
 logger = logging.getLogger(__name__)
@@ -231,28 +233,39 @@ def _load_tools_from_tools_py(tools_py: str) -> dict[str, Any]:
     if not tools_path.exists():
         return {}
     module_name = f"_reward_tools_{uuid.uuid4().hex}"
-    spec = importlib.util.spec_from_file_location(module_name, tools_path)
-    if spec is None or spec.loader is None:
-        return {}
-    module = importlib.util.module_from_spec(spec)
-    import sys as _sys
-
+    source = sanitize_tools_source(tools_path.read_text(encoding="utf-8"))
+    module = types.ModuleType(module_name)
+    module.__file__ = str(tools_path)
+    module.__package__ = ""
+    module.Any = Any
     tools_dir = str(tools_path.parent)
-    _inserted = tools_dir not in _sys.path
+    _inserted = tools_dir not in sys.path
+    previous_tools_module = sys.modules.get("tools")
+    sys.modules["tools"] = module
     if _inserted:
-        _sys.path.insert(0, tools_dir)
+        sys.path.insert(0, tools_dir)
     try:
         with _silence_mcp_registration_loggers():
-            spec.loader.exec_module(module)
+            exec(compile(source, str(tools_path), "exec"), module.__dict__)
     finally:
-        if _inserted and tools_dir in _sys.path:
-            _sys.path.remove(tools_dir)
+        if _inserted and tools_dir in sys.path:
+            sys.path.remove(tools_dir)
+        if previous_tools_module is None:
+            sys.modules.pop("tools", None)
+        else:
+            sys.modules["tools"] = previous_tools_module
 
     tools: dict[str, Any] = {}
     for name, value in vars(module).items():
         if name.startswith("_"):
             continue
+        if name == "tool":
+            continue
         if inspect.isclass(value):
+            continue
+        if not inspect.isfunction(value):
+            continue
+        if getattr(value, "__module__", None) != module.__name__:
             continue
         if callable(value):
             tools[name] = _wrap_tool_for_verifier(value)

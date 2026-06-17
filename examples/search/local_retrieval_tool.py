@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 class LocalRetrievalTool(Tool):
     """
-    A tool for dense search using the local retrieval server.
+    A tool for lexical search using the local retrieval server.
 
-    This tool connects to a locally running dense retrieval server (launched via retrieval_launch.sh)
-    and performs dense retrieval using E5 embeddings on the indexed Wikipedia corpus.
+    This tool connects to a retrieval server and performs lexical retrieval by
+    default. Set ``retrieval_mode`` to use a different server-supported mode.
     """
 
     NAME = "local_search"
-    DESCRIPTION = "Search for information using a dense retrieval server with Wikipedia corpus"
+    DESCRIPTION = "Search for information using a lexical retrieval server with Wikipedia corpus"
 
     def __init__(
         self,
@@ -30,6 +30,8 @@ class LocalRetrievalTool(Tool):
         server_url: str = None,
         timeout: float = 3600.0,
         max_results: int = 10,
+        retrieval_mode: str | None = None,
+        retrieval_max_words: int | None = None,
     ):
         """
         Initialize the Local Retrieval Tool.
@@ -40,14 +42,22 @@ class LocalRetrievalTool(Tool):
             server_url: URL of the local retrieval server (if None, checks RETRIEVAL_SERVER_URL env var)
             timeout: Request timeout in seconds
             max_results: Maximum number of results to return
+            retrieval_mode: Retrieval mode to request from the server. Defaults to lexical.
+            retrieval_max_words: Maximum words per returned passage requested from the server.
         """
         # Use environment variable if server_url not provided
         if server_url is None:
             server_url = os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:8000")
+        if retrieval_mode is None:
+            retrieval_mode = os.environ.get("RLLM_RETRIEVAL_MODE", "lexical")
+        if retrieval_max_words is None:
+            retrieval_max_words = int(os.environ.get("RLLM_RETRIEVAL_MAX_WORDS", "64"))
 
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
         self.max_results = max_results
+        self.retrieval_mode = str(retrieval_mode or "lexical").strip() or "lexical"
+        self.retrieval_max_words = int(retrieval_max_words)
         self.client = httpx.Client(
             timeout=timeout,
             limits=httpx.Limits(max_connections=100, max_keepalive_connections=20, keepalive_expiry=30),
@@ -100,6 +110,36 @@ class LocalRetrievalTool(Tool):
     # minimum word threshold.
     _MIN_DOC_WORDS = 25
     _summarize_disabled_reason: str | None = None
+    _summarize_probe_calls = 0
+
+    @classmethod
+    def _log_summarization_probe(
+        cls,
+        *,
+        env_value: str,
+        requested: bool,
+        attempted: bool,
+        summary_used: bool,
+        num_results: int,
+        num_documents: int,
+        query: str,
+    ) -> None:
+        cls._summarize_probe_calls += 1
+        log_every = max(1, int(os.environ.get("RLLM_RETRIEVAL_SUMMARY_LOG_EVERY", "1")))
+        if cls._summarize_probe_calls % log_every != 0:
+            return
+        logger.warning(
+            "[retrieval-summary-probe] call=%s env_RLLM_RETRIEVAL_SUMMARIZE=%r " "requested=%s attempted=%s summary_used=%s disabled_reason=%r " "num_results=%s num_documents=%s query=%r",
+            cls._summarize_probe_calls,
+            env_value,
+            requested,
+            attempted,
+            summary_used,
+            cls._summarize_disabled_reason,
+            num_results,
+            num_documents,
+            str(query)[:200],
+        )
 
     @staticmethod
     def _normalize_doc_signature(text: str) -> str:
@@ -201,14 +241,11 @@ class LocalRetrievalTool(Tool):
     def _disable_summarization(cls, reason: str) -> None:
         if cls._summarize_disabled_reason is None:
             cls._summarize_disabled_reason = reason
-            logger.warning(
-                f"{reason} — disabling retrieval summarization for this process; "
-                "falling back to chunked docs without summarization"
-            )
+            logger.warning(f"{reason} — disabling retrieval summarization for this process; " "falling back to chunked docs without summarization")
 
     def forward(self, query: str, top_k: int | None = None, *args, **kwargs: Any) -> ToolOutput:
         """
-        Execute a search query using the dense retrieval server.
+        Execute a search query using the retrieval server.
 
         Args:
             query: Search query
@@ -221,15 +258,13 @@ class LocalRetrievalTool(Tool):
             # Use provided parameters or defaults
             top_k = top_k or self.max_results
 
-            # Prepare request payload. Ask for more candidates than we
-            # plan to show so the min-word filter in
-            # ``_format_search_results`` has headroom (P0-1).
+            # Prepare request payload following the retrieval server API:
+            # {"query": ..., "top_k": ..., "max_words": ..., "mode": ...}.
             payload = {
                 "query": query,
-                "top_k": max(top_k, 15),
-                "description": "",
-                "args": [],  # Add empty args
-                "kwargs": {},  # Add empty kwargs
+                "top_k": top_k,
+                "max_words": self.retrieval_max_words,
+                "mode": self.retrieval_mode,
             }
 
             # Make request to retrieval server
@@ -261,16 +296,15 @@ class LocalRetrievalTool(Tool):
             # Default behaviour is raw top-k passages. Set
             # ``RLLM_RETRIEVAL_SUMMARIZE=1`` to request abstractive
             # summaries via the server's ``/summarize`` endpoint.
-            # If that service is unavailable (unreachable, non-200,
-            # empty response, or raises), we auto fall back to the
-            # chunked setup of retrieval docs without summarization.
-            use_summary_requested = (
-                os.environ.get("RLLM_RETRIEVAL_SUMMARIZE", "0") == "1"
-                and self._summarize_disabled_reason is None
-            )
+            # Temporary strict summary mode: keep attempting /summarize when
+            # requested and surface failures instead of silently falling back.
+            summarize_env_value = os.environ.get("RLLM_RETRIEVAL_SUMMARIZE", "0")
+            use_summary_requested = summarize_env_value == "1"
             content = "\n\n".join(documents)
             summary_used = False
+            summarize_attempted = False
             if use_summary_requested:
+                summarize_attempted = True
                 try:
                     payload = {
                         "documents": [{"content": d} for d in documents],
@@ -284,18 +318,53 @@ class LocalRetrievalTool(Tool):
                             content = candidate
                             summary_used = True
                         else:
-                            self._disable_summarization("Summarize endpoint returned empty content")
+                            self._log_summarization_probe(
+                                env_value=summarize_env_value,
+                                requested=use_summary_requested,
+                                attempted=summarize_attempted,
+                                summary_used=summary_used,
+                                num_results=len(results),
+                                num_documents=len(documents),
+                                query=query,
+                            )
+                            return ToolOutput(name=self.name, error="Summarize endpoint returned empty content")
                     else:
-                        self._disable_summarization(f"Summarize endpoint returned status {response.status_code}")
+                        self._log_summarization_probe(
+                            env_value=summarize_env_value,
+                            requested=use_summary_requested,
+                            attempted=summarize_attempted,
+                            summary_used=summary_used,
+                            num_results=len(results),
+                            num_documents=len(documents),
+                            query=query,
+                        )
+                        return ToolOutput(name=self.name, error=f"Summarize endpoint returned status {response.status_code}")
                 except Exception as e:
-                    self._disable_summarization(f"Summarize service unavailable ({e})")
-                    content = "\n\n".join(documents)
+                    self._log_summarization_probe(
+                        env_value=summarize_env_value,
+                        requested=use_summary_requested,
+                        attempted=summarize_attempted,
+                        summary_used=summary_used,
+                        num_results=len(results),
+                        num_documents=len(documents),
+                        query=query,
+                    )
+                    return ToolOutput(name=self.name, error=f"Summarize service unavailable ({e})")
+            self._log_summarization_probe(
+                env_value=summarize_env_value,
+                requested=use_summary_requested,
+                attempted=summarize_attempted,
+                summary_used=summary_used,
+                num_results=len(results),
+                num_documents=len(documents),
+                query=query,
+            )
 
             # Cap total content by the *effective* mode, not the requested
             # one: a summary fallback that yields chunked passages should
-            # get the 2048-word chunked budget, not the 256-word summary
+            # get the 512-word chunked budget, not the 256-word summary
             # budget (which would truncate most of the evidence).
-            word_budget = 256 if summary_used else 1200
+            word_budget = 256 if summary_used else 512
             words = content.split()
             if len(words) >= word_budget:
                 content = " ".join(words[:word_budget]) + " ..."
@@ -305,7 +374,7 @@ class LocalRetrievalTool(Tool):
             metadata = {
                 "query": query,
                 "num_results": len(results),
-                "retriever_type": "dense",
+                "retriever_type": self.retrieval_mode,
                 "server_url": self.server_url,
                 "summary": summary,
                 "summary_used": summary_used,
@@ -336,15 +405,27 @@ class LocalRetrievalTool(Tool):
 
 
 # Convenience function for tool registry
-def create_local_retrieval_tool(server_url: str = "http://127.0.0.1:8000", max_results: int = 3) -> LocalRetrievalTool:
+def create_local_retrieval_tool(
+    server_url: str = "http://127.0.0.1:8000",
+    max_results: int = 3,
+    retrieval_mode: str | None = None,
+    retrieval_max_words: int | None = None,
+) -> LocalRetrievalTool:
     """
     Create a LocalRetrievalTool instance with specified configuration.
 
     Args:
         server_url: URL of the dense retrieval server
         max_results: Maximum number of results to return
+        retrieval_mode: Retrieval mode to request from the server
+        retrieval_max_words: Maximum words per returned passage requested from the server
 
     Returns:
         LocalRetrievalTool instance
     """
-    return LocalRetrievalTool(server_url=server_url, max_results=max_results)
+    return LocalRetrievalTool(
+        server_url=server_url,
+        max_results=max_results,
+        retrieval_mode=retrieval_mode,
+        retrieval_max_words=retrieval_max_words,
+    )

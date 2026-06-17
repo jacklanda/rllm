@@ -1,13 +1,15 @@
 import asyncio
+import contextlib
 import logging
 import re
 import threading
 import time
+import json
 import traceback
 import uuid
-import json
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 
 # Tool-UX / env-crash signatures: when a repeated action's observation matches any of
 # these, the action loop is treated as driven by an env-setup / tool-UX failure rather
@@ -46,45 +48,74 @@ _ENV_PROTOCOL_ERROR_SIGS = (
 PROTOCOL_ERROR_TERMINATE_THRESHOLD = 3
 
 
+@dataclass(frozen=True)
+class RolloutTailGuardConfig:
+    min_completion_ratio: float = 0.80
+    projected_overlong_ratio: float = 1.10
+    final_chance_tokens: int = 512
+    prompt_length_guard_band_tokens: int = 512
+    overlong_burst_window: int = 16
+    overlong_burst_min_count: int = 6
+    overlong_burst_min_ratio: float = 0.50
+    overlong_burst_consecutive: int = 3
+    time_guard_enabled: bool = False
+    time_guard_min_completed: int = 4
+    time_guard_multiplier: float = 1.50
+    time_guard_slack_seconds: float = 30.0
+    time_guard_min_threshold_seconds: float = 60.0
+    time_guard_check_interval_seconds: float = 5.0
+
+
 class RolloutTailGuardState:
     """Small per-rollout-batch state for conservative long-tail early stop."""
 
-    MIN_COMPLETION_RATIO = 0.80
-    PROJECTED_OVERLONG_RATIO = 1.10
-    FINAL_CHANCE_TOKENS = 512
-    PROMPT_LENGTH_GUARD_BAND_TOKENS = 512
-    OVERLONG_BURST_WINDOW = 16
-    OVERLONG_BURST_MIN_COUNT = 6
-    OVERLONG_BURST_MIN_RATIO = 0.50
-    OVERLONG_BURST_CONSECUTIVE = 3
     OVERLONG_REASONS = {
         "MAX_PROMPT_LENGTH_EXCEEDED",
         "PROMPT_TRUNCATION",
         "TRUNCATION",
     }
 
-    def __init__(self, total: int, enabled: bool = False):
+    def __init__(self, total: int, enabled: bool = False, config: RolloutTailGuardConfig | None = None):
         self.total = max(int(total), 1)
         self.enabled = bool(enabled)
+        self.config = config or RolloutTailGuardConfig()
         self.completed = 0
         self.reason_counts: dict[str, int] = {}
+        self.time_guard_early_stop_count = 0
+        self.completed_duration_sum_s = 0.0
+        self.completed_duration_count = 0
+        self.frozen_duration_avg_s: float | None = None
         self.start_time = time.perf_counter()
         self.first_tail_elapsed_s: float | None = None
         self.first_overlong_burst_elapsed_s: float | None = None
-        self._recent_overlong = deque(maxlen=self.OVERLONG_BURST_WINDOW)
+        self._recent_overlong = deque(maxlen=max(int(self.config.overlong_burst_window), 1))
         self._consecutive_overlong = 0
         self._lock = threading.Lock()
 
     def record_result(self, result) -> None:
         reason = None
+        duration_s = None
         if isinstance(result, dict):
             reason = result.get("termination_reason")
+            metrics = result.get("metrics") or {}
+            if isinstance(metrics, dict):
+                duration_s = metrics.get("total_time")
         with self._lock:
             self.completed += 1
             key = str(reason or "UNKNOWN")
             self.reason_counts[key] = self.reason_counts.get(key, 0) + 1
-            if self.enabled and self.first_tail_elapsed_s is None and (self.completed / self.total) >= self.MIN_COMPLETION_RATIO:
+            if (
+                self.frozen_duration_avg_s is None
+                and key != "TAIL_GUARD_EARLY_STOP"
+                and isinstance(duration_s, (int, float))
+                and duration_s >= 0
+            ):
+                self.completed_duration_sum_s += float(duration_s)
+                self.completed_duration_count += 1
+            if self.enabled and self.first_tail_elapsed_s is None and (self.completed / self.total) >= self.config.min_completion_ratio:
                 self.first_tail_elapsed_s = time.perf_counter() - self.start_time
+                if self.completed_duration_count > 0:
+                    self.frozen_duration_avg_s = self.completed_duration_sum_s / self.completed_duration_count
             is_overlong = key in self.OVERLONG_REASONS
             self._recent_overlong.append(is_overlong)
             if is_overlong:
@@ -104,18 +135,18 @@ class RolloutTailGuardState:
         if not self.enabled:
             return False
         _, _, ratio = self.snapshot()
-        return ratio >= self.MIN_COMPLETION_RATIO
+        return ratio >= self.config.min_completion_ratio
 
     def _has_overlong_burst_locked(self) -> bool:
-        if self._consecutive_overlong >= self.OVERLONG_BURST_CONSECUTIVE:
+        if self._consecutive_overlong >= self.config.overlong_burst_consecutive:
             return True
         recent_count = len(self._recent_overlong)
-        if recent_count < self.OVERLONG_BURST_MIN_COUNT:
+        if recent_count < self.config.overlong_burst_min_count:
             return False
         overlong_count = sum(1 for item in self._recent_overlong if item)
         return (
-            overlong_count >= self.OVERLONG_BURST_MIN_COUNT
-            and (overlong_count / recent_count) >= self.OVERLONG_BURST_MIN_RATIO
+            overlong_count >= self.config.overlong_burst_min_count
+            and (overlong_count / recent_count) >= self.config.overlong_burst_min_ratio
         )
 
     def has_overlong_burst(self) -> bool:
@@ -124,15 +155,47 @@ class RolloutTailGuardState:
         with self._lock:
             return self.first_tail_elapsed_s is not None and self._has_overlong_burst_locked()
 
+    def time_guard_threshold(self) -> float | None:
+        if not self.enabled or not self.config.time_guard_enabled:
+            return None
+        with self._lock:
+            if self.first_tail_elapsed_s is None:
+                return None
+            avg_duration_s = self.frozen_duration_avg_s
+            if avg_duration_s is None:
+                if self.completed_duration_count <= 0:
+                    return None
+                avg_duration_s = self.completed_duration_sum_s / self.completed_duration_count
+            if self.completed_duration_count < self.config.time_guard_min_completed:
+                return None
+        threshold = avg_duration_s * self.config.time_guard_multiplier + self.config.time_guard_slack_seconds
+        return max(threshold, self.config.time_guard_min_threshold_seconds)
+
+    def should_time_stop(self, running_duration_s: float) -> tuple[bool, float | None]:
+        threshold = self.time_guard_threshold()
+        if threshold is None:
+            return False, None
+        return running_duration_s >= threshold, threshold
+
+    def record_time_guard_stop(self) -> None:
+        with self._lock:
+            self.time_guard_early_stop_count += 1
+
     def metrics(self, elapsed_s: float | None = None) -> dict[str, float]:
         with self._lock:
             completed = self.completed
             reason_counts = dict(self.reason_counts)
+            completed_duration_count = self.completed_duration_count
+            completed_duration_sum_s = self.completed_duration_sum_s
+            frozen_duration_avg_s = self.frozen_duration_avg_s
+            time_guard_early_stop_count = self.time_guard_early_stop_count
             first_tail_elapsed_s = self.first_tail_elapsed_s
             first_overlong_burst_elapsed_s = self.first_overlong_burst_elapsed_s
             recent_overlong = list(self._recent_overlong)
         elapsed = float(elapsed_s if elapsed_s is not None else time.perf_counter() - self.start_time)
         observed_overlong = sum(reason_counts.get(reason, 0) for reason in self.OVERLONG_REASONS)
+        avg_duration_s = frozen_duration_avg_s if frozen_duration_avg_s is not None else (completed_duration_sum_s / completed_duration_count if completed_duration_count else 0.0)
+        current_time_threshold = self.time_guard_threshold()
         return {
             "elapsed_time": elapsed,
             "total_trajectories": float(self.total),
@@ -145,6 +208,11 @@ class RolloutTailGuardState:
             "tail_guard_overlong_burst": 1.0 if first_overlong_burst_elapsed_s is not None else 0.0,
             "tail_guard_overlong_burst_elapsed_seconds": float(first_overlong_burst_elapsed_s) if first_overlong_burst_elapsed_s is not None else -1.0,
             "tail_guard_recent_overlong_ratio": float(sum(1 for item in recent_overlong if item) / len(recent_overlong)) if recent_overlong else 0.0,
+            "tail_guard_time_enabled": 1.0 if self.config.time_guard_enabled else 0.0,
+            "tail_guard_time_early_stop": float(time_guard_early_stop_count),
+            "tail_guard_completed_avg_seconds": float(avg_duration_s),
+            "tail_guard_completed_duration_count": float(completed_duration_count),
+            "tail_guard_time_threshold_seconds": float(current_time_threshold) if current_time_threshold is not None else -1.0,
         }
 
 
@@ -419,6 +487,22 @@ class AgentExecutionEngine:
         _per_step = _agent_cfg.get("per_step_max_tokens", None) if self.config is not None else None
         self.per_step_max_tokens = int(_per_step) if _per_step and int(_per_step) > 0 else None
         self.tail_guard_enabled = _config_bool(_agent_cfg.get("tail_guard", False))
+        self.tail_guard_config = RolloutTailGuardConfig(
+            min_completion_ratio=float(_agent_cfg.get("tail_guard_min_completion_ratio", RolloutTailGuardConfig.min_completion_ratio)),
+            projected_overlong_ratio=float(_agent_cfg.get("tail_guard_projected_overlong_ratio", RolloutTailGuardConfig.projected_overlong_ratio)),
+            final_chance_tokens=int(_agent_cfg.get("tail_guard_final_chance_tokens", RolloutTailGuardConfig.final_chance_tokens)),
+            prompt_length_guard_band_tokens=int(_agent_cfg.get("tail_guard_prompt_length_guard_band_tokens", RolloutTailGuardConfig.prompt_length_guard_band_tokens)),
+            overlong_burst_window=int(_agent_cfg.get("tail_guard_overlong_burst_window", RolloutTailGuardConfig.overlong_burst_window)),
+            overlong_burst_min_count=int(_agent_cfg.get("tail_guard_overlong_burst_min_count", RolloutTailGuardConfig.overlong_burst_min_count)),
+            overlong_burst_min_ratio=float(_agent_cfg.get("tail_guard_overlong_burst_min_ratio", RolloutTailGuardConfig.overlong_burst_min_ratio)),
+            overlong_burst_consecutive=int(_agent_cfg.get("tail_guard_overlong_burst_consecutive", RolloutTailGuardConfig.overlong_burst_consecutive)),
+            time_guard_enabled=_config_bool(_agent_cfg.get("tail_guard_time_guard", False)),
+            time_guard_min_completed=int(_agent_cfg.get("tail_guard_time_min_completed", RolloutTailGuardConfig.time_guard_min_completed)),
+            time_guard_multiplier=float(_agent_cfg.get("tail_guard_time_multiplier", RolloutTailGuardConfig.time_guard_multiplier)),
+            time_guard_slack_seconds=float(_agent_cfg.get("tail_guard_time_slack_seconds", RolloutTailGuardConfig.time_guard_slack_seconds)),
+            time_guard_min_threshold_seconds=float(_agent_cfg.get("tail_guard_time_min_threshold_seconds", RolloutTailGuardConfig.time_guard_min_threshold_seconds)),
+            time_guard_check_interval_seconds=float(_agent_cfg.get("tail_guard_time_check_interval_seconds", RolloutTailGuardConfig.time_guard_check_interval_seconds)),
+        )
         self.disable_thinking = self.config.get("rllm", {}).get("disable_thinking", False) if self.config is not None else False
 
         # Trajectory filtering toggles (read from config, default to True for backward compat)
@@ -429,6 +513,7 @@ class AgentExecutionEngine:
 
         _ca = self.config.get("rllm", {}).get("credit_assignment", {}) if self.config is not None else {}
         self.credit_assignment_search_bypass = bool(_ca.get("enable", False) and _ca.get("search_bypass", False))
+        self.credit_assignment_tail_guard_early_stop = bool(_ca.get("enable", False) and _ca.get("tail_guard_early_stop", False))
 
         self.incremental_tokenization = self.config.get("rllm", {}).get("incremental_tokenization", False) if self.config is not None else False
 
@@ -737,7 +822,7 @@ class AgentExecutionEngine:
                 prompt_len_for_guard = locals().get("prompt_len")
                 prompt_near_limit = (
                     isinstance(prompt_len_for_guard, int)
-                    and prompt_len_for_guard >= self.max_prompt_length - RolloutTailGuardState.PROMPT_LENGTH_GUARD_BAND_TOKENS
+                    and prompt_len_for_guard >= self.max_prompt_length - tail_guard.config.prompt_length_guard_band_tokens
                 )
                 if remaining_budget <= 0:
                     termination_reason = "TAIL_GUARD_EARLY_STOP"
@@ -750,7 +835,7 @@ class AgentExecutionEngine:
                         cur_step.reward = 0.0
                         cur_step.info.update({"termination_reason": termination_reason, "tail_guard": True})
                     break
-                max_tokens = min(max_tokens, RolloutTailGuardState.FINAL_CHANCE_TOKENS, remaining_budget)
+                max_tokens = min(max_tokens, tail_guard.config.final_chance_tokens, remaining_budget)
                 if overlong_burst and prompt_near_limit:
                     termination_reason = "TAIL_GUARD_EARLY_STOP"
                     exception_message = (
@@ -779,7 +864,7 @@ class AgentExecutionEngine:
                 if response_token_len > 0 and step_idx > 0:
                     avg_tokens_per_step = response_token_len / step_idx
                     projected_final_len = response_token_len + avg_tokens_per_step * max(1, effective_max_steps - step_idx)
-                    if overlong_burst and projected_final_len >= self.max_response_length * RolloutTailGuardState.PROJECTED_OVERLONG_RATIO:
+                    if overlong_burst and projected_final_len >= self.max_response_length * tail_guard.config.projected_overlong_ratio:
                         termination_reason = "TAIL_GUARD_EARLY_STOP"
                         exception_message = (
                             "Tail guard predicted overlong trajectory: "
@@ -1508,7 +1593,7 @@ class AgentExecutionEngine:
 
         masked_out = False
         if self.overlong_filter and not is_eval:
-            if termination_reason == "TRUNCATION" or termination_reason == "MAX_STEPS" or termination_reason == "TIMEOUT" or termination_reason == "TAIL_GUARD_EARLY_STOP":
+            if termination_reason == "TRUNCATION" or termination_reason == "MAX_STEPS" or termination_reason == "TIMEOUT":
                 # Mask out the entire response for overlong trajectories if the reward is 0.
                 response_masks = [0] * len(response_masks)
                 masked_out = True
@@ -1629,6 +1714,9 @@ class AgentExecutionEngine:
             return trajectory
         elif mode == "Token":
             prompt_tokens, response_tokens, response_masks, is_valid_trajectory = self.assemble_steps(episode_steps)
+            tail_guard_masked_actions = termination_reason == "TAIL_GUARD_EARLY_STOP" and self.credit_assignment_tail_guard_early_stop
+            if tail_guard_masked_actions:
+                response_masks = torch.zeros_like(response_masks)
 
             reward_metrics = {}
             if trajectory.steps:
@@ -1721,6 +1809,7 @@ class AgentExecutionEngine:
                     "llm_time": llm_time,
                     # Total time spent in the trajectory
                     "total_time": total_time,
+                    "tail_guard_masked_actions": 1.0 if tail_guard_masked_actions else 0.0,
                     "token_mismatch": 0.0 if is_valid_trajectory else 1.0,
                     "reward_computed": 1.0 if final_reward_computed else 0.0,
                     # Per-tool call counts and error rates (tool_errors/{name} counts removed)
@@ -1818,6 +1907,94 @@ class AgentExecutionEngine:
         task_label = self._get_task_label(self.envs[idx])
         is_eval = kwargs.get("meta_info", {}).get("validate", False)
         effective_timeout = self.eval_trajectory_timeout if is_eval else self.trajectory_timeout
+        tail_guard: RolloutTailGuardState | None = kwargs.get("tail_guard")
+
+        async def _run_with_tail_time_guard(coro, application_id: str):
+            if not tail_guard or not tail_guard.enabled or not tail_guard.config.time_guard_enabled:
+                return await asyncio.wait_for(coro, timeout=effective_timeout)
+
+            task = asyncio.create_task(coro)
+            start_time = time.perf_counter()
+            check_interval = max(float(tail_guard.config.time_guard_check_interval_seconds), 0.5)
+            try:
+                while True:
+                    done, _ = await asyncio.wait({task}, timeout=check_interval)
+                    if done:
+                        return await task
+
+                    running_duration_s = time.perf_counter() - start_time
+                    should_stop, threshold_s = tail_guard.should_time_stop(running_duration_s)
+                    if not should_stop:
+                        if running_duration_s >= effective_timeout:
+                            task.cancel()
+                            with contextlib.suppress(BaseException):
+                                await task
+                            raise asyncio.TimeoutError()
+                        continue
+
+                    tail_guard.record_time_guard_stop()
+                    env = self.envs[idx]
+                    close_error = None
+                    try:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(self.executor, env.close)
+                    except Exception as exc:
+                        close_error = f"{type(exc).__name__}: {str(exc)[:200]}"
+                    task.cancel()
+                    with contextlib.suppress(BaseException):
+                        await task
+                    threshold_text = f"{threshold_s:.2f}" if threshold_s is not None else "unknown"
+                    colorful_print(
+                        f"Trajectory {idx} ({task_label}): Tail guard time stop after "
+                        f"{running_duration_s:.2f}s (threshold={threshold_text}s).",
+                        "yellow",
+                    )
+                    self._trajectory_logs.append(
+                        {
+                            "type": "trajectory",
+                            "idx": idx,
+                            "task_label": task_label,
+                            "dropped": False,
+                            "termination_reason": "TAIL_GUARD_EARLY_STOP",
+                            "reward": 0.0,
+                            "num_steps": 0,
+                            "chat_completions": [],
+                            "tail_guard": "time",
+                            "tail_guard_elapsed_seconds": running_duration_s,
+                            "tail_guard_threshold_seconds": threshold_s,
+                            "tail_guard_close_error": close_error,
+                        }
+                    )
+                    return {
+                        "dropped": True,
+                        "reward_metadata": {},
+                        "reward_debug": {},
+                        "idx": idx,
+                        "termination_reason": "TAIL_GUARD_EARLY_STOP",
+                        "exception": (
+                            "Tail guard time stop: "
+                            f"elapsed={running_duration_s:.2f}s threshold={threshold_text}s "
+                            f"application_id={application_id}"
+                        ),
+                        "steps": [],
+                        "chat_completions": [],
+                        "metrics": {
+                            "task_label": task_label,
+                            "steps": 0,
+                            "reward_time": 0.0,
+                            "env_time": 0.0,
+                            "llm_time": 0.0,
+                            "total_time": running_duration_s,
+                            "tail_guard_time_stop": 1.0,
+                            "tail_guard_time_threshold_seconds": float(threshold_s or -1.0),
+                            "reward_computed": 0.0,
+                        },
+                    }
+            finally:
+                if not task.done():
+                    task.cancel()
+                    with contextlib.suppress(BaseException):
+                        await task
 
         for attempt in range(max_attempts):
             # Fast-fail if Docker daemon has been detected as down by another trajectory
@@ -1838,7 +2015,8 @@ class AgentExecutionEngine:
 
             try:
                 application_id = str(uuid.uuid4())
-                return await asyncio.wait_for(self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs), timeout=effective_timeout)
+                coro = self.run_agent_trajectory_async(idx, application_id=application_id, seed=seed, mode=mode, **kwargs)
+                return await _run_with_tail_time_guard(coro, application_id)
             except InvalidReactStructureError as e:
                 # Retry `max_attempts` times for this specific error
                 if attempt < max_attempts - 1:

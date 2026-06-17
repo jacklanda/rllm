@@ -291,7 +291,9 @@ def test_runtime_env_no_job_config():
     assert "env_vars" in runtime_env
     assert runtime_env["env_vars"]["TOKENIZERS_PARALLELISM"] == "true"
     assert runtime_env["env_vars"]["NCCL_DEBUG"] == "WARN"
-    assert runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)[0].endswith("/rllm")
+    assert "VLLM_ALLOW_RUNTIME_LORA_UPDATING" not in runtime_env["env_vars"]
+    assert "VLLM_USE_V1" not in runtime_env["env_vars"]
+    assert any(entry.endswith("/rllm") for entry in runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep))
     assert runtime_env["worker_process_setup_hook"] == "rllm.experimental.verl.patch.apply_all_verl_patches"
     assert runtime_env["working_dir"] is None
 
@@ -302,19 +304,22 @@ def test_runtime_env_prepends_repo_root_to_existing_pythonpath():
         runtime_env = get_ppo_ray_runtime_env()
 
     entries = runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)
-    assert entries[0].endswith("/rllm")
-    assert entries[1:] == ["/tmp/other", "/opt/site"]
+    repo_index = next(index for index, entry in enumerate(entries) if entry.endswith("/rllm"))
+    assert entries[repo_index + 1 :] == ["/tmp/other", "/opt/site"]
 
 
 def test_runtime_env_deduplicates_repo_root_in_pythonpath():
     with patch.dict(os.environ, {}, clear=True):
-        repo_root = get_ppo_ray_runtime_env()["env_vars"]["PYTHONPATH"].split(os.pathsep)[0]
+        entries = get_ppo_ray_runtime_env()["env_vars"]["PYTHONPATH"].split(os.pathsep)
+        repo_root = next(entry for entry in entries if entry.endswith("/rllm"))
 
     with patch.dict(os.environ, {"PYTHONPATH": f"/tmp/other:{repo_root}:/opt/site"}, clear=True):
         runtime_env = get_ppo_ray_runtime_env()
 
     entries = runtime_env["env_vars"]["PYTHONPATH"].split(os.pathsep)
-    assert entries == [repo_root, "/tmp/other", "/opt/site"]
+    assert entries.count(repo_root) == 1
+    repo_index = entries.index(repo_root)
+    assert entries[repo_index + 1 :] == ["/tmp/other", "/opt/site"]
 
 
 def test_runtime_env_pops_keys_from_job_config():

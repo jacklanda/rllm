@@ -32,6 +32,8 @@ def test_fused_agent_gem_harness_uses_task_specific_prompt():
     assert isinstance(agent.tool_parser, QwenToolParser)
     assert FUSED_AGENT_SYSTEM_PROMPT.splitlines()[0] in agent.system_prompt
     assert FUSED_UNIFIED_SYSTEM_PROMPT.splitlines()[0] not in agent.system_prompt
+    assert '"name": "web_search"' not in agent.system_prompt
+    assert "web_search" not in agent.tool_parser.valid_tools
 
 
 def test_fused_agent_qwen35_model_uses_qwen3_coder_tool_format():
@@ -175,9 +177,17 @@ def test_fused_agent_bare_harness_uses_user_prompt_without_system_prompt():
 
 
 def test_fused_agent_gem_selects_task_specific_prompts_by_task_type():
+    cli_agent = FusedAgent(harness="gem")
+    cli_agent.update_from_env("Fix the issue.", 0.0, False, {"task_type": "cli"})
+    assert FUSED_AGENT_SYSTEM_PROMPT.splitlines()[0] in cli_agent.messages[0]["content"]
+    assert '"name": "web_search"' not in cli_agent.messages[0]["content"]
+    assert cli_agent.tool_parser.valid_tools == {"file_editor", "search", "execute_bash", "finish"}
+
     search_agent = FusedAgent(harness="gem")
     search_agent.update_from_env("Who?", 0.0, False, {"task_type": "web search"})
     assert FUSED_SEARCH_SYSTEM_PROMPT.splitlines()[0] in search_agent.messages[0]["content"]
+    assert '"name": "web_search"' in search_agent.messages[0]["content"]
+    assert search_agent.tool_parser.valid_tools == {"web_search", "finish"}
 
     mcp_agent = FusedAgent(harness="gem")
     mcp_agent.update_from_env("Fetch data.", 0.0, False, {"task_type": "mcp", "tools_json": []})

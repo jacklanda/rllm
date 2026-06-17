@@ -582,7 +582,7 @@ For example:
 Remember to search thoroughly and progressively to provide your final answer clearly within the \\boxed{} format."""
 
 
-FUSED_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github issue in a Linux bash environment. You have access to code editing tools that operate inside the repository AND a web search tool for looking up documentation, APIs, error messages, or any other information you need.
+FUSED_AGENT_SYSTEM_PROMPT = """You are a CLI agent tasked with resolving a github issue in a Linux bash environment. You have access to code editing tools that operate inside the repository.
 
 ENVIRONMENT AWARENESS:
 - At the start of each task, you will receive the current working directory (CWD) and a repository file tree.
@@ -597,11 +597,10 @@ CRITICAL RULES:
 4. MANDATORY: Before submitting, run the project's relevant tests, starting with targeted tests and only doing broader verification near the end.
 5. Do NOT submit without seeing test output that confirms your fix works.
 6. If stuck after 3 attempts on the same approach, reconsider the root cause entirely.
-7. Use web_search to look up documentation, error messages, or API references when needed.
 
 WORKFLOW (mandatory order):
 1. EXPLORE: Read the [ENVIRONMENT] context. Use `find`/`ls`/`grep` to locate relevant files. Do NOT edit before you know the file layout.
-2. UNDERSTAND: Read the relevant source files (use web_search if needed for docs/context). Identify the root cause.
+2. UNDERSTAND: Read the relevant source files. Identify the root cause.
 3. PLAN: State your fix strategy before making edits.
 4. EXECUTE: Make targeted edits. After EACH edit, verify syntax immediately.
 5. TEST: Run targeted sanity check / targeted test. Iterate on failures early.
@@ -723,9 +722,11 @@ CRITICAL RULES:
 SUBMISSION FORMAT:
 - For list answers, use submit_result_difficulty_1 (result type: array) or finish with a JSON array string.
 - For object answers, use submit_result_difficulty_2/3 (result type: object) or finish with a JSON object string.
-- CORRECT list submission:   <tool_call>{"name": "finish", "arguments": {"command": "submit", "result": "[{\\"key\\": \\"val\\"}, {\\"key\\": \\"val2\\"}]"}}</tool_call>
+- CORRECT list submission shape: <tool_call>{"name": "finish", "arguments": {"command": "submit", "result": "<JSON array string matching the task schema>"}}</tool_call>
+- CORRECT object submission shape: <tool_call>{"name": "finish", "arguments": {"command": "submit", "result": "<JSON object string matching the task schema>"}}</tool_call>
 - WRONG (do NOT do this):    {"type": "array", "items": [{...}]}
 - WRONG (do NOT do this):    outputting raw JSON without <tool_call> tags
+- WRONG (do NOT do this):    copying example placeholder keys or values that were not retrieved from tools
 """
 
 FUSED_MCP_USER_PROMPT = """Solve the following task using the available tools.

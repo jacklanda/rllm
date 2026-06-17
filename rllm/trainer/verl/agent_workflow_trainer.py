@@ -77,6 +77,40 @@ def _reward_value(row):
         return None
 
 
+def _trajectory_step_count(row):
+    for key in ("steps", "num_steps", "n_steps"):
+        value = row.get(key)
+        if value is not None:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                pass
+
+    debug = row.get("debug")
+    if isinstance(debug, dict):
+        metrics = debug.get("metrics")
+        if isinstance(metrics, dict):
+            for key in ("steps", "num_steps", "n_steps"):
+                value = metrics.get(key)
+                if value is not None:
+                    try:
+                        return int(value)
+                    except (TypeError, ValueError):
+                        pass
+
+    trajectory = row.get("trajectory")
+    if isinstance(trajectory, list):
+        return len(trajectory)
+    return 0
+
+
+def _offline_rs_rank_key(row):
+    reward = _reward_value(row)
+    if reward is None:
+        reward = float("-inf")
+    return reward, _trajectory_step_count(row)
+
+
 def _rename_task_label_fields(value):
     if isinstance(value, dict):
         renamed = {}
@@ -174,12 +208,18 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
         batch_results_dir = self._rllm_cfg_value("batch_results_dir", None)
         if not batch_results_dir:
             return None
+        certainty_filter = self._rllm_cfg_value(
+            "offline_rs_certainty_filter",
+            self._rllm_cfg_value("offline_rs_uncertainty_filter", True),
+        )
         return {
             "batch_results_dir": str(batch_results_dir),
             "sample_n": int(self._rllm_cfg_value("offline_rs_sample_n", self.config.actor_rollout_ref.rollout.n)),
             "reward_threshold": float(self._rllm_cfg_value("offline_rs_reward_threshold", 0.6)),
+            "min_steps": int(self._rllm_cfg_value("offline_rs_min_steps", 2)),
             "max_per_problem": int(self._rllm_cfg_value("offline_rs_max_trajectory_per_problem", 1)),
             "min_trials": int(self._rllm_cfg_value("offline_rs_min_sample_trial", 1)),
+            "certainty_filter": _is_truthy(certainty_filter, default=True),
         }
 
     def _dump_offline_rs_batch_results(self, merged_data, file_stem):
@@ -201,7 +241,8 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             trial_counts[uid] += 1
             source_counts[row.get("data_source", "unknown")] += 1
             reward = _reward_value(row)
-            if reward is not None and reward >= cfg["reward_threshold"]:
+            steps = _trajectory_step_count(row)
+            if reward is not None and reward >= cfg["reward_threshold"] and steps >= cfg["min_steps"]:
                 accepted_counts[uid] += 1
 
         sample_n = max(int(cfg["sample_n"]), 1)
@@ -220,17 +261,24 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             if not uid:
                 continue
             reward = _reward_value(row)
-            if reward is not None and reward >= cfg["reward_threshold"]:
+            steps = _trajectory_step_count(row)
+            if reward is not None and reward >= cfg["reward_threshold"] and steps >= cfg["min_steps"]:
                 accepted_by_uid[uid].append(row)
 
         selected = []
         selected_rewards = {}
+        certainty_filtered_questions = 0
         for uid, uid_rows in accepted_by_uid.items():
             if trial_counts[uid] < cfg["min_trials"]:
                 continue
+            if cfg["certainty_filter"]:
+                pass_rate = pass_rate_by_uid[uid]
+                if trial_counts[uid] < sample_n or pass_rate <= 0.0 or pass_rate >= 1.0:
+                    certainty_filtered_questions += 1
+                    continue
             ranked = sorted(
                 uid_rows,
-                key=lambda item: _reward_value(item) if _reward_value(item) is not None else float("-inf"),
+                key=_offline_rs_rank_key,
                 reverse=True,
             )[: cfg["max_per_problem"]]
             if ranked:
@@ -247,10 +295,13 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             "batch_file": file_stem,
             "sample_n": cfg["sample_n"],
             "reward_threshold": cfg["reward_threshold"],
+            "min_steps": cfg["min_steps"],
+            "certainty_filter": cfg["certainty_filter"],
             "max_trajectory_per_problem": cfg["max_per_problem"],
             "min_sample_trial": cfg["min_trials"],
             "num_questions": len(trial_counts),
             "num_trials": sum(trial_counts.values()),
+            "num_certainty_filtered_questions": certainty_filtered_questions,
             "num_usable_questions": len(selected_rewards),
             "num_selected_trajectories": len(selected),
             "min_selected_reward": min(selected_rewards.values(), default=None),
@@ -271,7 +322,7 @@ class AgentWorkflowPPOTrainer(RayPPOTrainer):
             "[offline-rs][batch] "
             f"{file_stem}: questions={len(trial_counts)} trials={sum(trial_counts.values())} "
             f"usable_questions={len(selected_rewards)} selected={len(selected)} "
-            f"threshold={cfg['reward_threshold']} dump={out_path}",
+            f"threshold={cfg['reward_threshold']} certainty_filter={cfg['certainty_filter']} dump={out_path}",
             flush=True,
         )
 

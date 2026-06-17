@@ -43,6 +43,40 @@ def _reward_value(row):
         return None
 
 
+def _trajectory_step_count(row):
+    for key in ("steps", "num_steps", "n_steps"):
+        value = row.get(key)
+        if value is not None:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                pass
+
+    debug = row.get("debug")
+    if isinstance(debug, dict):
+        metrics = debug.get("metrics")
+        if isinstance(metrics, dict):
+            for key in ("steps", "num_steps", "n_steps"):
+                value = metrics.get(key)
+                if value is not None:
+                    try:
+                        return int(value)
+                    except (TypeError, ValueError):
+                        pass
+
+    trajectory = row.get("trajectory")
+    if isinstance(trajectory, list):
+        return len(trajectory)
+    return 0
+
+
+def _offline_rs_rank_key(row):
+    reward = _reward_value(row)
+    if reward is None:
+        reward = float("-inf")
+    return reward, _trajectory_step_count(row)
+
+
 def _rename_task_label_fields(value):
     if isinstance(value, dict):
         renamed = {}
@@ -111,6 +145,7 @@ class AgentPPOTrainer(RayPPOTrainer):
         self.agent_class = agent_class
         self.env_args = env_args or {}
         self.agent_args = agent_args or {}
+        self._accepted_group_accumulator: list[DataProto] = []
 
         assert self.config.actor_rollout_ref.hybrid_engine, "Only hybrid engine is supported"
         assert self.config.actor_rollout_ref.rollout.mode == "async", "Only async rollout mode is supported"
@@ -172,12 +207,18 @@ class AgentPPOTrainer(RayPPOTrainer):
         batch_results_dir = self._rllm_cfg_value("batch_results_dir", None)
         if not batch_results_dir:
             return None
+        certainty_filter = self._rllm_cfg_value(
+            "offline_rs_certainty_filter",
+            self._rllm_cfg_value("offline_rs_uncertainty_filter", True),
+        )
         return {
             "batch_results_dir": str(batch_results_dir),
             "sample_n": int(self._rllm_cfg_value("offline_rs_sample_n", self.config.actor_rollout_ref.rollout.n)),
             "reward_threshold": float(self._rllm_cfg_value("offline_rs_reward_threshold", 0.6)),
+            "min_steps": int(self._rllm_cfg_value("offline_rs_min_steps", 2)),
             "max_per_problem": int(self._rllm_cfg_value("offline_rs_max_trajectory_per_problem", 1)),
             "min_trials": int(self._rllm_cfg_value("offline_rs_min_sample_trial", 1)),
+            "certainty_filter": _is_truthy(certainty_filter, default=True),
         }
 
     def _offline_rs_checkpoint_config(self):
@@ -201,6 +242,91 @@ class AgentPPOTrainer(RayPPOTrainer):
             "resume_mode": resume_mode,
             "path": str(checkpoint_path),
         }
+
+    def _accepted_group_accumulator_enabled(self) -> bool:
+        if not self.config.rllm.rejection_sample.get("accumulate_valid_groups", False):
+            return False
+        # Stepwise/broadcast batches contain intermediate rows tied to final
+        # rows. Keep that path on the legacy immediate-update behavior.
+        return not self.config.rllm.stepwise_advantage.enable
+
+    @staticmethod
+    def _uid_order(batch: DataProto) -> list:
+        seen = set()
+        ordered = []
+        for uid in batch.non_tensor_batch["uid"]:
+            if uid in seen:
+                continue
+            seen.add(uid)
+            ordered.append(uid)
+        return ordered
+
+    @classmethod
+    def _num_uid_groups(cls, batch: DataProto) -> int:
+        return len(cls._uid_order(batch))
+
+    @classmethod
+    def _split_by_uid_group_count(cls, batch: DataProto, num_groups: int) -> tuple[DataProto | None, DataProto | None]:
+        if num_groups <= 0:
+            return None, batch
+
+        selected_uids = set(cls._uid_order(batch)[:num_groups])
+        if not selected_uids:
+            return None, batch
+
+        uids = batch.non_tensor_batch["uid"]
+        selected_mask = np.array([uid in selected_uids for uid in uids], dtype=bool)
+        remaining_mask = ~selected_mask
+
+        selected = batch[np.where(selected_mask)[0]]
+        remaining = batch[np.where(remaining_mask)[0]] if remaining_mask.any() else None
+        return selected, remaining
+
+    def _take_accepted_group_batch(self, current_batch: DataProto, metrics: dict) -> DataProto | None:
+        rs_cfg = self.config.rllm.rejection_sample
+        min_groups = int(rs_cfg.get("update_min_accepted_groups", 1) or 1)
+        max_groups_cfg = rs_cfg.get("update_max_accepted_groups", None)
+        max_groups = min_groups if max_groups_cfg is None else int(max_groups_cfg)
+        max_groups = max(max_groups, min_groups)
+
+        self._accepted_group_accumulator.append(current_batch)
+        buffered_groups = sum(self._num_uid_groups(batch) for batch in self._accepted_group_accumulator)
+        metrics["accepted_group_accumulator/groups_buffered"] = buffered_groups
+        metrics["accepted_group_accumulator/min_groups"] = min_groups
+        metrics["accepted_group_accumulator/max_groups"] = max_groups
+
+        if buffered_groups < min_groups:
+            print(
+                "[accepted_group_accumulator] waiting for more accepted uid groups: "
+                f"{buffered_groups}/{min_groups}"
+            )
+            return None
+
+        remaining_to_take = min(max_groups, buffered_groups)
+        taken_batches = []
+        remaining_batches = []
+
+        for batch in self._accepted_group_accumulator:
+            if remaining_to_take <= 0:
+                remaining_batches.append(batch)
+                continue
+
+            batch_groups = self._num_uid_groups(batch)
+            take_groups = min(batch_groups, remaining_to_take)
+            taken, remaining = self._split_by_uid_group_count(batch, take_groups)
+            if taken is not None:
+                taken_batches.append(taken)
+            if remaining is not None:
+                remaining_batches.append(remaining)
+            remaining_to_take -= take_groups
+
+        self._accepted_group_accumulator = remaining_batches
+        update_batch = taken_batches[0] if len(taken_batches) == 1 else DataProto.concat(taken_batches)
+
+        metrics["accepted_group_accumulator/groups_for_update"] = self._num_uid_groups(update_batch)
+        metrics["accepted_group_accumulator/groups_remaining"] = sum(self._num_uid_groups(batch) for batch in self._accepted_group_accumulator)
+        metrics["accepted_group_accumulator/trajectories_for_update"] = int(update_batch.batch["input_ids"].shape[0])
+        return update_batch
 
     def _save_offline_rs_checkpoint(self, global_step: int, file_stem: str, batch_result_path: str):
         cfg = self._offline_rs_checkpoint_config()
@@ -285,7 +411,8 @@ class AgentPPOTrainer(RayPPOTrainer):
             trial_counts[uid] += 1
             source_counts[row.get("data_source", "unknown")] += 1
             reward = _reward_value(row)
-            if reward is not None and reward >= cfg["reward_threshold"]:
+            steps = _trajectory_step_count(row)
+            if reward is not None and reward >= cfg["reward_threshold"] and steps >= cfg["min_steps"]:
                 accepted_counts[uid] += 1
 
         sample_n = max(int(cfg["sample_n"]), 1)
@@ -304,17 +431,24 @@ class AgentPPOTrainer(RayPPOTrainer):
             if not uid:
                 continue
             reward = _reward_value(row)
-            if reward is not None and reward >= cfg["reward_threshold"]:
+            steps = _trajectory_step_count(row)
+            if reward is not None and reward >= cfg["reward_threshold"] and steps >= cfg["min_steps"]:
                 accepted_by_uid[uid].append(row)
 
         selected = []
         selected_rewards = {}
+        certainty_filtered_questions = 0
         for uid, uid_rows in accepted_by_uid.items():
             if trial_counts[uid] < cfg["min_trials"]:
                 continue
+            if cfg["certainty_filter"]:
+                pass_rate = pass_rate_by_uid[uid]
+                if trial_counts[uid] < sample_n or pass_rate <= 0.0 or pass_rate >= 1.0:
+                    certainty_filtered_questions += 1
+                    continue
             ranked = sorted(
                 uid_rows,
-                key=lambda item: _reward_value(item) if _reward_value(item) is not None else float("-inf"),
+                key=_offline_rs_rank_key,
                 reverse=True,
             )[: cfg["max_per_problem"]]
             if ranked:
@@ -331,10 +465,13 @@ class AgentPPOTrainer(RayPPOTrainer):
             "batch_file": file_stem,
             "sample_n": cfg["sample_n"],
             "reward_threshold": cfg["reward_threshold"],
+            "min_steps": cfg["min_steps"],
+            "certainty_filter": cfg["certainty_filter"],
             "max_trajectory_per_problem": cfg["max_per_problem"],
             "min_sample_trial": cfg["min_trials"],
             "num_questions": len(trial_counts),
             "num_trials": sum(trial_counts.values()),
+            "num_certainty_filtered_questions": certainty_filtered_questions,
             "num_usable_questions": len(selected_rewards),
             "num_selected_trajectories": len(selected),
             "min_selected_reward": min(selected_rewards.values(), default=None),
@@ -362,7 +499,7 @@ class AgentPPOTrainer(RayPPOTrainer):
             "[offline-rs][batch] "
             f"{file_stem}: questions={len(trial_counts)} trials={sum(trial_counts.values())} "
             f"usable_questions={len(selected_rewards)} selected={len(selected)} "
-            f"threshold={cfg['reward_threshold']} dump={out_path}",
+            f"threshold={cfg['reward_threshold']} certainty_filter={cfg['certainty_filter']} dump={out_path}",
             flush=True,
         )
 
@@ -400,7 +537,11 @@ class AgentPPOTrainer(RayPPOTrainer):
                 return
 
             batch_size = self.config.data.train_batch_size
-            num_batches = max(1, len(self.train_dataset) // batch_size)
+            drop_last = self.config.data.get("drop_last", True)
+            if drop_last:
+                num_batches = max(1, len(self.train_dataset) // batch_size)
+            else:
+                num_batches = max(1, math.ceil(len(self.train_dataset) / batch_size))
 
             self.curriculum_sampler = CurriculumSampler(
                 difficulties=difficulties,
@@ -416,7 +557,7 @@ class AgentPPOTrainer(RayPPOTrainer):
                 dataset=self.train_dataset,
                 batch_size=batch_size,
                 sampler=self.curriculum_sampler,
-                drop_last=True,
+                drop_last=drop_last,
                 collate_fn=default_collate_fn,
             )
 
@@ -937,6 +1078,13 @@ class AgentPPOTrainer(RayPPOTrainer):
 
                             # Filter batch to keep only valid samples
                             batch = batch[valid_mask]
+                            valid_uid_groups = len(np.unique(batch.non_tensor_batch["uid"]))
+                            metrics["accepted_group_accumulator/valid_groups_from_rollout"] = valid_uid_groups
+
+                            if self._accepted_group_accumulator_enabled():
+                                batch = self._take_accepted_group_batch(batch, metrics)
+                                if batch is None:
+                                    continue
 
                             if self.config.rllm.stepwise_advantage.enable and self.config.rllm.stepwise_advantage.mode == "broadcast":
                                 # batch now only contains steps with valid uids

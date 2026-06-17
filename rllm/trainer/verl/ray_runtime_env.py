@@ -9,14 +9,12 @@ PPO_RAY_RUNTIME_ENV = {
         "TOKENIZERS_PARALLELISM": "true",
         "NCCL_DEBUG": "WARN",
         "VLLM_LOGGING_LEVEL": "WARN",
-        "VLLM_ALLOW_RUNTIME_LORA_UPDATING": "true",
         "CUDA_DEVICE_MAX_CONNECTIONS": "1",
         # Keep full launcher visibility in Ray workers. Verl/rLLM binds each
         # worker with torch.cuda.set_device(local_rank). Letting Ray narrow
         # CUDA_VISIBLE_DEVICES for fractional-GPU actors makes every colocated
         # FSDP rank see cuda:0 and NCCL reports duplicate physical GPUs.
         "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "1",
-        "VLLM_USE_V1": "1",
         # To prevent hanging or crash during synchronization of weights between actor and rollout
         # in disaggregated mode. See:
         # https://docs.vllm.ai/en/latest/usage/troubleshooting.html?h=nccl_cumem_enable#known-issues
@@ -94,6 +92,24 @@ def _get_repo_root() -> str:
     return str(Path(__file__).resolve().parents[3])
 
 
+def _get_r2egym_src() -> str | None:
+    configured = os.environ.get("R2EGYM_PATH") or os.environ.get("R2E_GYM_PATH")
+    candidates = []
+    if configured:
+        candidates.extend([Path(configured), Path(configured) / "src"])
+    repo_root = Path(_get_repo_root())
+    candidates.extend(
+        [
+            repo_root.parent / "R2E-Gym" / "src",
+            Path("/share/nlp/liuyang/workspace/gem/R2E-Gym/src"),
+        ]
+    )
+    for path in candidates:
+        if (path / "r2egym").is_dir():
+            return str(path)
+    return None
+
+
 def _prepend_pythonpath(env: dict[str, str], path: str) -> None:
     entries = [entry for entry in env.get("PYTHONPATH", os.environ.get("PYTHONPATH", "")).split(os.pathsep) if entry]
     if path in entries:
@@ -105,6 +121,9 @@ def get_ppo_ray_runtime_env():
     env = PPO_RAY_RUNTIME_ENV["env_vars"].copy()
     env.update(_get_forwarded_env_vars())
     _prepend_pythonpath(env, _get_repo_root())
+    r2egym_src = _get_r2egym_src()
+    if r2egym_src:
+        _prepend_pythonpath(env, r2egym_src)
 
     job_runtime_env = {}
     job_config_str = os.environ.get(RAY_JOB_CONFIG_JSON_ENV_VAR)

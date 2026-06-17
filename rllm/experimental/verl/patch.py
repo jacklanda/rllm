@@ -17,6 +17,8 @@ _VERL_VLLM_TYPED_TOKEN_PROMPT_PATCHED = False
 _VERL_RAY_LOCAL_RANK_ENV_PATCHED = False
 _VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED = False
 _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = False
+_VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED = False
+_VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED = False
 
 _VERL_WORKER_PROCESS_SETUP_HOOK = "rllm.experimental.verl.patch.apply_all_verl_patches"
 
@@ -384,6 +386,73 @@ def patch_verl_vllm_rollout_local_rank() -> None:
     mod.vLLMAsyncRollout._init_worker = _patched_init_worker
     _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = True
     logger.info("Patched Verl vLLM rollout workers to preserve local CUDA rank")
+
+
+def patch_verl_vllm_async_server_ray_get() -> None:
+    """Avoid blocking ray.get calls inside Verl's async vLLM server actor."""
+    global _VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED
+    if _VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED:
+        return
+
+    import inspect
+    import textwrap
+
+    from verl.workers.rollout.vllm_rollout import vllm_async_server as mod
+
+    original = mod.vLLMHttpServerBase.launch_server
+    src = inspect.getsource(original)
+    old = "zmq_addresses = ray.get([worker.get_zeromq_address.remote() for worker in self.workers])"
+    new = (
+        "zmq_addresses = await asyncio.gather(\n"
+        "            *[worker.get_zeromq_address.remote() for worker in self.workers]\n"
+        "        )"
+    )
+    if old not in src:
+        _VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED = True
+        logger.info("Verl vLLM async server ray.get patch: source already changed; nothing to patch.")
+        return
+
+    patched_src = textwrap.dedent(src).replace(old, new)
+    namespace = dict(mod.__dict__)
+    exec(compile(patched_src, mod.__file__, "exec"), namespace)
+    mod.vLLMHttpServerBase.launch_server = namespace["launch_server"]
+
+    _VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED = True
+    logger.info("Patched Verl vLLM async server to await worker ZMQ address refs without blocking ray.get")
+
+
+def patch_vllm_worker_shared_lock_warning() -> None:
+    """Avoid vLLM's shared_worker_lock warning when shm MM cache is not used."""
+    global _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED
+    if _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED:
+        return
+
+    import threading
+
+    try:
+        from vllm.v1.worker import worker_base as mod
+    except ImportError:
+        _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED = True
+        return
+
+    original = mod.WorkerWrapperBase.init_worker
+
+    def _patched_init_worker(self, all_kwargs):
+        kwargs = all_kwargs[self.rpc_rank]
+        if "shared_worker_lock" not in kwargs:
+            vllm_config = kwargs.get("vllm_config")
+            mm_config = getattr(getattr(vllm_config, "model_config", None), "multimodal_config", None)
+            cache_type = getattr(mm_config, "mm_processor_cache_type", None)
+            if cache_type != "shm":
+                kwargs = dict(kwargs)
+                kwargs["shared_worker_lock"] = threading.Lock()
+                all_kwargs = list(all_kwargs)
+                all_kwargs[self.rpc_rank] = kwargs
+        return original(self, all_kwargs)
+
+    mod.WorkerWrapperBase.init_worker = _patched_init_worker
+    _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED = True
+    logger.info("Patched vLLM WorkerWrapperBase to avoid shared_worker_lock warning outside shm MM cache")
 
 
 # ---------------------------------------------------------------------------
@@ -780,6 +849,8 @@ _ALL_VERL_PATCHES = {
     "patch_verl_qwen3_vl_dummy_inplace": patch_verl_qwen3_vl_dummy_inplace,
     "patch_verl_tensordict_jagged_layout": patch_verl_tensordict_jagged_layout,
     "patch_verl_vllm_typed_token_prompt": patch_verl_vllm_typed_token_prompt,
+    "patch_verl_vllm_async_server_ray_get": patch_verl_vllm_async_server_ray_get,
+    "patch_vllm_worker_shared_lock_warning": patch_vllm_worker_shared_lock_warning,
     "patch_verl_vllm_server_visible_devices": patch_verl_vllm_server_visible_devices,
     "patch_verl_vllm_rollout_local_rank": patch_verl_vllm_rollout_local_rank,
 }

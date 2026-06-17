@@ -33,6 +33,7 @@ actor_rollout_ref:
 
 data:
   shuffle_data: True
+  drop_last: True
   gen_batch_size: ${mul:${data.train_batch_size},${rllm.rejection_sample.multiplier}}
   return_multi_modal_inputs: False
   max_response_length: 32768
@@ -93,6 +94,7 @@ rllm:
     repeated_search_query: False
     too_many_tool_calls: False
     search_bypass: False
+    tail_guard_early_stop: False
   trajectory_filtering:
     # SimpleTIR-style trajectory-level filtering for search agents
     # Filters out individual trajectories from batches before gradient updates
@@ -120,6 +122,9 @@ rllm:
     max_uid_reward_std: null
     filter_verifier_missing: False
     filter_zero_variance: False   # Drop groups where all rewards are identical (zero GRPO gradient)
+    accumulate_valid_groups: False # Accumulate accepted uid groups across rollout batches before updating actor
+    update_min_accepted_groups: 1  # Minimum accepted uid groups required for an actor update
+    update_max_accepted_groups: null # Maximum accepted uid groups consumed per actor update (null => min)
   curriculum_filter:
     # Quarantine CLI/SWE tasks that look unsolvable or infra-broken. When a task's
     # group of ``rollout.n`` returns the same non-zero ``omnigril_exit_code`` for

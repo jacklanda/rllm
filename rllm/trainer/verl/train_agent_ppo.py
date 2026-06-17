@@ -315,6 +315,8 @@ class TaskRunner:
             num_examine=1,
             **config.reward_model.get("reward_kwargs", {}),
         )
+        if config.trainer.get("disable_validation", False):
+            val_reward_fn = None
 
         resource_pool_manager = self.init_resource_pool_mgr(config)
 

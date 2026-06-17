@@ -241,6 +241,40 @@ class RewardSearchFn:
 
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
+    _ACRONYM_TOKEN_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9.+-]{1,12}$")
+    _ROMAN_NUMERAL_PATTERN = re.compile(r"(?i)^[ivxlcdm]+$")
+    _CHEMICAL_LOCANT_PATTERN = re.compile(r"(?i)^[a-z]?\d+(?:[.,;:/_-]?[a-z]?\d+)*[a-z]?$")
+
+    def _is_safe_parenthetical_alias(self, content: str, outer: str) -> bool:
+        """Accept only high-signal parenthetical aliases.
+
+        Parentheses in web answers often hold disambiguating chemistry,
+        chromosomal loci, monomer composition, or roman numerals. Treating every
+        parenthetical fragment as an alias caused false positives such as
+        ``III`` matching unrelated metal complexes and ``P`` matching different
+        copolymers. Keep conventional acronyms like ``RPV``/``ISI``/``FEA``.
+        """
+        raw = str(content or "").strip()
+        if not raw:
+            return False
+        if len(raw) == 1:
+            return False
+        if self._ROMAN_NUMERAL_PATTERN.fullmatch(raw):
+            return False
+        if self._CHEMICAL_LOCANT_PATTERN.fullmatch(raw):
+            return False
+        if re.search(r"\d", raw) and not re.fullmatch(r"(?i)[A-Z]{2,}\d{0,3}", raw):
+            return False
+        if not self._ACRONYM_TOKEN_PATTERN.fullmatch(raw):
+            return False
+        letters = re.sub(r"[^A-Za-z]", "", raw).lower()
+        outer_words = re.findall(r"[A-Za-z]+", outer)
+        if not letters or not outer_words:
+            return False
+        initials = "".join(word[0].lower() for word in outer_words if word)
+        outer_compact = "".join(outer_words).lower()
+        return letters in initials or letters in outer_compact or len(letters) <= 5
+
     def _answer_aliases(self, s: str) -> set[str]:
         """Return conservative normalized aliases for entity-style answers.
 
@@ -261,9 +295,11 @@ class RewardSearchFn:
         if without_parens:
             aliases.add(self.normalize_answer(without_parens))
         for content in paren_contents:
-            aliases.add(self.normalize_answer(content))
+            if self._is_safe_parenthetical_alias(content, without_parens or raw):
+                aliases.add(self.normalize_answer(content))
 
-        compact_source = {raw, without_parens, *paren_contents}
+        compact_source = {raw, without_parens}
+        compact_source.update(content for content in paren_contents if self._is_safe_parenthetical_alias(content, without_parens or raw))
         for value in compact_source:
             if not value:
                 continue
@@ -283,7 +319,129 @@ class RewardSearchFn:
 
         return {alias for alias in aliases if alias}
 
-    _GENERIC_ENTITY_SUFFIXES = {"project", "portal", "report", "standard"}
+    def _parenthetical_acronym_aliases(self, s: str) -> set[str]:
+        raw = str(s or "").strip()
+        without_parens = re.sub(r"\s*\([^()]*\)", "", raw).strip()
+        aliases = set()
+        for content in [m.strip() for m in re.findall(r"\(([^()]+)\)", raw) if m.strip()]:
+            if self._is_safe_parenthetical_alias(content, without_parens or raw):
+                normalized = self.normalize_answer(content)
+                if normalized:
+                    aliases.add(normalized)
+        return aliases
+
+    def _subject_tokens_for_alias_guard(self, s: str) -> set[str]:
+        without_parens = re.sub(r"\s*\([^()]*\)", "", str(s or "")).strip()
+        tokens = set(self.normalize_answer(without_parens).split())
+        return {
+            token
+            for token in tokens
+            if len(token) >= 3 and token not in self._GENERIC_ENTITY_SUFFIXES and token not in self._GENERIC_TECH_SUFFIX_TOKENS
+        }
+
+    def _aliases_match_safely(self, prediction: str, ground_truth: str) -> bool:
+        pred_aliases = self._answer_aliases(prediction)
+        gt_aliases = self._answer_aliases(ground_truth)
+        shared = pred_aliases & gt_aliases
+        if not shared:
+            return False
+
+        # Shared parenthetical acronyms are safe when one side is the acronym
+        # itself. When both sides are long entities, require compatible subject
+        # tokens so generic technical acronyms like IPN do not erase different
+        # material names.
+        pred_acronyms = self._parenthetical_acronym_aliases(prediction)
+        gt_acronyms = self._parenthetical_acronym_aliases(ground_truth)
+        acronym_only = shared <= (pred_acronyms | gt_acronyms)
+        if not acronym_only:
+            return True
+
+        pred_norm = self.normalize_answer(prediction)
+        gt_norm = self.normalize_answer(ground_truth)
+        if pred_norm in shared or gt_norm in shared:
+            return True
+
+        pred_subject = self._subject_tokens_for_alias_guard(prediction)
+        gt_subject = self._subject_tokens_for_alias_guard(ground_truth)
+        if not pred_subject or not gt_subject:
+            return True
+        return bool(pred_subject & gt_subject)
+
+    def _person_name_aliases(self, s: str) -> set[str]:
+        raw = str(s or "").strip()
+        if not raw:
+            return set()
+        cleaned = re.sub(r"[^A-Za-z,\s.'-]", " ", raw)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        aliases = set()
+        has_comma = "," in cleaned
+
+        comma = re.fullmatch(r"([A-Za-z][A-Za-z'.-]+),\s*([A-Za-z])\.?", cleaned)
+        if comma:
+            last, initial = comma.groups()
+            aliases.add(f"{initial.lower()} {last.lower()}")
+            aliases.add(f"{last.lower()} {initial.lower()}")
+
+        tokens = [tok.strip(".") for tok in re.split(r"\s+", cleaned.replace(",", " ")) if tok.strip(".")]
+        if any(tok.lower() in {"of", "de", "del", "la", "le", "van", "von"} for tok in tokens):
+            return aliases
+        suffixes = {"jr", "sr", "ii", "iii", "iv"}
+        tokens = [tok for tok in tokens if tok.lower() not in suffixes]
+        has_initial = any(len(tok) == 1 for tok in tokens)
+        if (has_comma or has_initial or len(tokens) == 2) and len(tokens) >= 2 and all(re.fullmatch(r"[A-Za-z][A-Za-z'.-]*", tok) for tok in tokens):
+            first = tokens[0]
+            last = tokens[-1]
+            aliases.add(f"{first.lower()} {last.lower()}")
+            if has_comma or has_initial:
+                aliases.add(f"{first[0].lower()} {last.lower()}")
+                aliases.add(f"{last.lower()} {first[0].lower()}")
+        return aliases
+
+    def _critical_surface_mismatch(self, prediction: str, ground_truth: str) -> bool:
+        """Reject matches that only work after erasing critical symbols/digits."""
+        pred_raw = str(prediction or "").strip()
+        gt_raw = str(ground_truth or "").strip()
+        if not pred_raw or not gt_raw:
+            return False
+
+        pv = self._date_variants(pred_raw)
+        gv = self._date_variants(gt_raw)
+        if pv and gv:
+            return not bool(pv & gv)
+
+        def _canonical_digit_chunks(text: str) -> list[str]:
+            chunks = re.findall(r"(?i)[a-z]*\d[a-z0-9.+:/;_-]*", text)
+            return [re.sub(r"(?i)^v(?=\d)", "", chunk).lower() for chunk in chunks]
+
+        pred_digit_chunks = _canonical_digit_chunks(pred_raw)
+        gt_digit_chunks = _canonical_digit_chunks(gt_raw)
+        if pred_digit_chunks or gt_digit_chunks:
+            if pred_digit_chunks != gt_digit_chunks:
+                return True
+
+        critical_symbols = {"+", "#"}
+        pred_symbols = {ch for ch in pred_raw if ch in critical_symbols}
+        gt_symbols = {ch for ch in gt_raw if ch in critical_symbols}
+        if pred_symbols != gt_symbols:
+            return True
+
+        return False
+
+    _GENERIC_ENTITY_SUFFIXES = {"project", "portal", "report", "standard", "province", "model"}
+    _GENERIC_TECH_SUFFIX_TOKENS = {
+        "analysis",
+        "based",
+        "framework",
+        "hydrogel",
+        "imaging",
+        "interpenetrating",
+        "method",
+        "microscopy",
+        "model",
+        "network",
+        "polymer",
+        "technique",
+    }
 
     def _generic_entity_suffix_alias(self, s: str) -> str:
         """Drop generic entity words only when a stable core remains.
@@ -389,11 +547,13 @@ class RewardSearchFn:
         gt_letter = gt_raw.upper()
         if pred_letter in self._OPTION_LETTERS or gt_letter in self._OPTION_LETTERS:
             return pred_letter == gt_letter
+        if self._critical_surface_mismatch(prediction, ground_truth):
+            return False
         if self.normalize_answer(prediction) == self.normalize_answer(ground_truth):
             return True
-        pred_aliases = self._answer_aliases(prediction)
-        gt_aliases = self._answer_aliases(ground_truth)
-        if pred_aliases and gt_aliases and pred_aliases & gt_aliases:
+        if self._aliases_match_safely(prediction, ground_truth):
+            return True
+        if self._person_name_aliases(prediction) & self._person_name_aliases(ground_truth):
             return True
         # P2-6: date DMY/MDY ambiguity — accept matching canonical variants.
         pv = self._date_variants(pred_raw)

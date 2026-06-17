@@ -366,6 +366,400 @@ class TestMCPEnvironment:
         assert result.stdout.strip() == "before_relative_import,after_relative_import"
         assert "ImportError" not in result.stderr
 
+    def test_ensure_server_script_normalizes_builtin_any_annotations(self, tmp_path):
+        """Generated assets sometimes annotate tool signatures with builtin `any`."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.annotations = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.annotations.append(fn.__annotations__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(self.annotations[0]['result'])\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='bad annotation')\n"
+            "def submit_result_difficulty_3(result: dict[str, any]) -> dict[str, any]:\n"
+            "    return {'uses_builtin_any_call': any([True]), **result}\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert "typing.Any" in result.stdout
+        assert "PydanticSchemaGenerationError" not in result.stderr
+
+    def test_ensure_server_script_repairs_numeric_line_prefix(self, tmp_path):
+        """Generated assets can contain stray line-number digits before statements."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='bad generated line')\n"
+            "def submit_result_difficulty_3(result: dict[str, Any]) -> dict[str, Any]:\n"
+            "    if not isinstance(result, dict):\n"
+            "       1 raise ValueError('result must be dict')\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "SyntaxError" not in result.stderr
+
+    def test_ensure_server_script_preserves_valid_numeric_generator_prefix(self, tmp_path):
+        """Valid ``1 for`` generator expressions must not be stripped."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(count_keywords('alpha beta alpha'))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='valid generator')\n"
+            "def count_keywords(text: str) -> int:\n"
+            "    keywords = ['alpha', 'gamma']\n"
+            "    return sum(\n"
+            "        1 for keyword in keywords if keyword in text\n"
+            "    )\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "1"
+        assert "SyntaxError" not in result.stderr
+
+    def test_ensure_server_script_repairs_generated_fstring_quotes(self, tmp_path):
+        """Generated submit validators can mix f-string and dict-index quotes."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='bad fstring')\n"
+            "def submit_result_difficulty_3(result: list[dict]):\n"
+            "    for idx, item in enumerate(result):\n"
+            "        if not isinstance(item['name'], str):\n"
+            "            raise ValueError(f'item at index {idx}: name must be string, got {type(item['name']).__name__}')\n"
+            "        if len(item['sources']) < 2:\n"
+            "            raise ValueError(f'item at index {idx}: sources too short, got {len(item['sources'])}')\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "SyntaxError" not in result.stderr
+
+    def test_ensure_server_script_repairs_empty_except_with_comment(self, tmp_path):
+        """Generated files can contain empty fallback blocks with comments only."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "try:\n"
+            "    from missing_module import thing\n"
+            "except ImportError:\n"
+            "    # fallback handled later\n"
+            "@mcp.tool(description='after empty except')\n"
+            "def submit_result_difficulty_3(result: dict):\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "IndentationError" not in result.stderr
+
+    def test_ensure_server_script_repairs_empty_try_before_except(self, tmp_path):
+        """Generated files can contain a try block with no body before except."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "try:\n"
+            "except ImportError:\n"
+            "    pass\n"
+            "@mcp.tool(description='after empty try')\n"
+            "def submit_result_difficulty_3(result: dict):\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "IndentationError" not in result.stderr
+
+    def test_ensure_server_script_maps_bare_tool_to_mcp_tool(self, tmp_path):
+        """Generated submit tools may use @tool after defining an mcp instance."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='first')\n"
+            "def first_tool():\n"
+            "    return 'ok'\n"
+            "@tool(description='bare submit')\n"
+            "def submit_result_difficulty_3(result: dict):\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "first_tool,submit_result_difficulty_3"
+        assert "NameError" not in result.stderr
+
+    def test_ensure_server_script_repairs_non_ascii_numeric_default(self, tmp_path):
+        """Generated signatures may contain non-ASCII text before numeric defaults."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.values = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.values.append(fn())\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(map(str, self.values)))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "@mcp.tool(description='bad default')\n"
+            "def count_tool(min_bullet_count: int =常说0):\n"
+            "    return min_bullet_count\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "0"
+        assert "NameError" not in result.stderr
+
+    def test_ensure_server_script_drops_unavailable_mcp_tool_import(self, tmp_path):
+        """Some generated files import a non-existent top-level mcp.tool."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "from mcp import tool\n"
+            "@mcp.tool(description='after bad import')\n"
+            "def submit_result_difficulty_3(result: dict):\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "ImportError" not in result.stderr
+
+    def test_ensure_server_script_drops_self_imported_mcp(self, tmp_path):
+        """Generated chunks may import mcp back from tools.py while executing."""
+        (tmp_path / "tools.py").write_text(
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.names = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.names.append(fn.__name__)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.names))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "from tools import mcp\n"
+            "@mcp.tool(description='after self import')\n"
+            "def submit_result_difficulty_3(result: dict):\n"
+            "    return result\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "submit_result_difficulty_3"
+        assert "ImportError" not in result.stderr
+
+    def test_ensure_server_script_repairs_relative_base_dir_import(self, tmp_path):
+        """Generated files can use package-relative imports while run as scripts."""
+        (tmp_path / "tools.py").write_text(
+            "from pathlib import Path\n"
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.values = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.values.append(fn())\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(self.values[0])\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "from . import BASE_DIR\n"
+            "@mcp.tool(description='uses base dir')\n"
+            "def base_dir_name():\n"
+            "    return BASE_DIR.name\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == tmp_path.name
+        assert "ImportError" not in result.stderr
+
+    def test_ensure_server_script_repairs_tools_base_dir_import(self, tmp_path):
+        """Generated chunks may import BASE_DIR back from tools.py."""
+        (tmp_path / "tools.py").write_text(
+            "from pathlib import Path\n"
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.values = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.values.append(fn())\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(self.values[0])\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "from tools import BASE_DIR\n"
+            "@mcp.tool(description='uses base dir')\n"
+            "def base_dir_name():\n"
+            "    return BASE_DIR.name\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == tmp_path.name
+        assert "ImportError" not in result.stderr
+
+    def test_ensure_server_script_repairs_missing_enum_all_default(self, tmp_path):
+        """Generated defaults sometimes reference Enum.ALL when the enum lacks ALL."""
+        (tmp_path / "tools.py").write_text(
+            "from enum import Enum\n"
+            "class _MCP:\n"
+            "    def __init__(self, *args, **kwargs):\n"
+            "        self.values = []\n"
+            "    def tool(self, description=None):\n"
+            "        def decorate(fn):\n"
+            "            self.values.append(fn().value)\n"
+            "            return fn\n"
+            "        return decorate\n"
+            "    def run(self):\n"
+            "        print(','.join(self.values))\n"
+            "FastMCP = _MCP\n"
+            "mcp = FastMCP('Tools')\n"
+            "class Timeframe(Enum):\n"
+            "    CURRENT = 'current'\n"
+            "    FUTURE = 'future'\n"
+            "@mcp.tool(description='bad enum default')\n"
+            "def timeframe_tool(timeframe: Timeframe = Timeframe.ALL):\n"
+            "    return timeframe\n",
+            encoding="utf-8",
+        )
+        server_script = MCPEnvironment._ensure_server_script(tmp_path)
+
+        result = subprocess.run([sys.executable, str(server_script)], cwd=tmp_path, capture_output=True, text=True, timeout=10)
+
+        assert result.returncode == 0
+        assert result.stdout.strip() == "current"
+        assert "AttributeError" not in result.stderr
+
     @patch.object(MCPConnectionManager, "start")
     @patch.object(MCPConnectionManager, "__init__", return_value=None)
     def test_init_with_custom_parameters(self, mock_init, mock_start):

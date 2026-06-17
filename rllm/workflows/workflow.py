@@ -36,7 +36,7 @@ def _normalize_task_source(task_type: object) -> str | None:
     if value in {"mcp"}:
         return "mcp"
     if value in {"web search", "websearch", "search", "web"}:
-        return "web search"
+        return "web"
     if value in {"cli", "swe", "swe bench", "gemcli", "gemswe", "et", "endless terminals"}:
         return "cli"
     return value
@@ -86,7 +86,7 @@ def infer_task_source(task: object) -> str:
     if task.get("docker_image"):
         return "cli"
     if task.get("data_source"):
-        return "web search"
+        return "webqa"
 
     return "unknown"
 

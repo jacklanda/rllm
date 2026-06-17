@@ -7,6 +7,7 @@ import re
 import sys
 import threading
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
 from rllm.environments.cli.cli import CLIEnv
@@ -244,12 +245,37 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
     if not schema:
         return {"passed": True, "errors": [], "schema_found": False}
 
+    original_payload = payload
+    original_type = _json_type_name(original_payload)
     payload = _coerce_submission_for_schema(payload, schema)
     errors: list[str] = []
+    expected_top_level_types = sorted(_schema_expected_types(schema))
+    required_top_level_keys = schema.get("required", [])
+    if not isinstance(required_top_level_keys, list):
+        required_top_level_keys = []
+    required_top_level_keys = [key for key in required_top_level_keys if isinstance(key, str)]
 
     def add(message: str) -> None:
         if len(errors) < max_errors:
             errors.append(message)
+
+    def requires_non_empty(node_schema: dict, container_type: str) -> bool:
+        if not isinstance(node_schema, dict):
+            return False
+        if container_type == "array":
+            min_items = node_schema.get("minItems")
+            if isinstance(min_items, int):
+                return min_items > 0
+        if container_type == "object":
+            min_properties = node_schema.get("minProperties")
+            if isinstance(min_properties, int):
+                return min_properties > 0
+        description = str(node_schema.get("description", "")).lower()
+        title = str(node_schema.get("title", "")).lower()
+        text = f"{description} {title}"
+        if any(phrase in text for phrase in ("may be empty", "can be empty", "must be empty", "empty if no")):
+            return False
+        return any(phrase in text for phrase in ("non-empty", "not be empty", "at least one", "one or more"))
 
     def validate_node(value: object, node_schema: dict, path: str) -> None:
         if len(errors) >= max_errors or not isinstance(node_schema, dict):
@@ -262,8 +288,8 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
             return
 
         if isinstance(value, dict):
-            if path == "$" and not value:
-                add("$: object submission must not be empty")
+            if not value and requires_non_empty(node_schema, "object"):
+                add(f"{path}: object submission must not be empty")
             required = node_schema.get("required", [])
             properties = node_schema.get("properties", {})
             if not isinstance(required, list):
@@ -278,11 +304,9 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
                     add(f"{child_path}: missing required key")
                     continue
                 child = value[key]
-                if child == [] or child == {}:
-                    add(f"{child_path}: required value must not be empty")
                 validate_node(child, properties.get(key, {}), child_path)
         elif isinstance(value, list):
-            if not value:
+            if not value and requires_non_empty(node_schema, "array"):
                 add(f"{path}: array submission must not be empty")
                 return
             item_schema = node_schema.get("items")
@@ -291,7 +315,57 @@ def _validate_submission_schema(payload: object, schema: dict | None, *, max_err
                     validate_node(item, item_schema, f"{path}[{idx}]")
 
     validate_node(payload, schema, "$")
-    return {"passed": not errors, "errors": errors, "schema_found": True, "normalized_payload": payload}
+    return {
+        "passed": not errors,
+        "errors": errors,
+        "schema_found": True,
+        "normalized_payload": payload,
+        "actual_top_level_type": _json_type_name(payload),
+        "original_top_level_type": original_type,
+        "expected_top_level_types": expected_top_level_types,
+        "required_top_level_keys": required_top_level_keys,
+        "schema": schema,
+    }
+
+
+def _schema_placeholder(schema: dict, *, depth: int = 0) -> object:
+    """Build a compact example shape from the task schema without fake content."""
+    if depth > 3 or not isinstance(schema, dict):
+        return "..."
+
+    expected = _schema_expected_types(schema)
+    if "object" in expected:
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
+        if not isinstance(properties, dict):
+            properties = {}
+        if not isinstance(required, list):
+            required = []
+        keys = [key for key in required if isinstance(key, str)]
+        if not keys:
+            keys = [key for key in properties.keys() if isinstance(key, str)][:5]
+        return {
+            key: _schema_placeholder(properties.get(key, {}), depth=depth + 1)
+            for key in keys[:8]
+        }
+    if "array" in expected:
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            return [_schema_placeholder(item_schema, depth=depth + 1)]
+        return ["..."]
+    if "integer" in expected:
+        return 0
+    if "number" in expected:
+        return 0
+    if "boolean" in expected:
+        return False
+    if "null" in expected:
+        return None
+    return "..."
+
+
+def _looks_like_json_string(value: object) -> bool:
+    return isinstance(value, str) and value.strip().startswith(("{", "["))
 
 
 def _compact_mcp_tool_output(output: object, *, char_limit: int = _MCP_TOOL_OUTPUT_CHAR_LIMIT, line_limit: int = _MCP_TOOL_OUTPUT_LINE_LIMIT) -> str:
@@ -326,11 +400,55 @@ def _compact_mcp_tool_output(output: object, *, char_limit: int = _MCP_TOOL_OUTP
 
 def _submission_self_check_observation(check: dict) -> str:
     errors = check.get("errors") or []
+    expected_types = check.get("expected_top_level_types") or []
+    required_keys = check.get("required_top_level_keys") or []
+    actual_type = check.get("actual_top_level_type")
+    original_type = check.get("original_top_level_type")
+    payload = check.get("normalized_payload")
+    schema = check.get("schema")
+    hints = []
+    repair_steps = []
+    if expected_types:
+        hints.append(f"Expected top-level JSON type: {', '.join(expected_types)}.")
+    if actual_type:
+        hints.append(f"Your submitted top-level JSON type: {actual_type}.")
+    if required_keys:
+        hints.append(f"Required top-level keys: {', '.join(required_keys)}.")
+        if isinstance(payload, dict):
+            missing = [key for key in required_keys if key not in payload]
+            if missing:
+                repair_steps.append(f"Add these missing top-level keys: {', '.join(missing)}.")
+    if "array" in expected_types:
+        hints.append("Submit a non-empty JSON array directly, not an object that wraps the array.")
+        repair_steps.append("The first character of the submitted JSON value should be '['.")
+    if "object" in expected_types:
+        hints.append("Submit the answer object itself, not a JSON schema/meta object with type/properties/items.")
+        repair_steps.append("The first character of the submitted JSON value should be '{'.")
+    if original_type == "string" and _looks_like_json_string(payload):
+        repair_steps.append(
+            "Your value is still a string containing JSON text. Submit the parsed JSON object/array as the result value, "
+            "or call finish with result set to a JSON string that can be parsed exactly once."
+        )
+    if isinstance(payload, dict) and {"type", "properties"} <= set(payload):
+        repair_steps.append("Do not submit the schema definition. Fill the schema with actual answer values from tool results.")
+    if isinstance(payload, list) and not payload:
+        repair_steps.append("Replace the empty array with at least one answer item.")
+    if isinstance(payload, dict):
+        empty_required = [key for key in required_keys if payload.get(key) in ({}, [])]
+        if empty_required:
+            repair_steps.append(f"Fill these required keys with non-empty values: {', '.join(empty_required)}.")
+    if isinstance(schema, dict):
+        skeleton = json.dumps(_schema_placeholder(schema), ensure_ascii=False)
+        hints.append(f"Minimum answer shape from schema: {skeleton}")
     details = "\n".join(f"- {err}" for err in errors)
+    hint_text = "\n".join(f"- {hint}" for hint in hints)
+    repair_text = "\n".join(f"- {step}" for step in repair_steps)
     return (
         "Schema self-check failed; your answer was not submitted.\n"
         "Fix the JSON value and submit again. Minimum checks: top-level type, "
-        "required keys, and non-empty required arrays/objects.\n"
+        "required keys, and schema-declared non-empty containers.\n"
+        f"{hint_text}\n"
+        f"{repair_text}\n"
         f"{details}"
     ).strip()
 
@@ -564,12 +682,16 @@ class FusedEnv(CLIEnv):
         self,
         retrieval_server_url: str | None = None,
         retrieval_max_results: int = 3,
+        retrieval_mode: str | None = None,
+        retrieval_max_words: int | None = None,
         harness: str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.retrieval_server_url = retrieval_server_url or os.environ.get("RETRIEVAL_SERVER_URL", "http://127.0.0.1:65432")
         self.retrieval_max_results = retrieval_max_results
+        self.retrieval_mode = retrieval_mode or os.environ.get("RLLM_RETRIEVAL_MODE", "lexical")
+        self.retrieval_max_words = int(retrieval_max_words or os.environ.get("RLLM_RETRIEVAL_MAX_WORDS", "64"))
         self.harness = str(harness or self.entry.get("harness") or "").strip().lower().replace("-", "_")
         self._record_parser_unknown_metrics = self.harness not in {"cot", "bare"}
 
@@ -596,6 +718,7 @@ class FusedEnv(CLIEnv):
         self._mcp_answer_schema: dict | None = None
         self._mcp_schema_self_check_failures = 0
         self._mcp_last_schema_self_check: dict = {}
+        self._mcp_last_submit_rejected_by_schema = False
         self._mcp_tool_evidence: list[dict] = []
 
         # ET mode state — built lazily in _reset_et so failures during ETEnv
@@ -627,6 +750,8 @@ class FusedEnv(CLIEnv):
                     FusedEnv._shared_retrieval_tool = LocalRetrievalTool(
                         server_url=self.retrieval_server_url,
                         max_results=self.retrieval_max_results,
+                        retrieval_mode=self.retrieval_mode,
+                        retrieval_max_words=self.retrieval_max_words,
                     )
         return FusedEnv._shared_retrieval_tool
 
@@ -840,6 +965,10 @@ class FusedEnv(CLIEnv):
         self._mcp_schema_self_check_failures = 0
         self._mcp_last_schema_self_check = {}
         self._mcp_tool_evidence = []
+        self._mcp_submit_attempted = False
+        self._mcp_submit_accepted = False
+        self._mcp_submit_rejected = False
+        self._mcp_last_submit_rejected_by_schema = False
 
         # Release any manager held from a prior reset on this instance so the
         # pool refcount stays balanced (reset() only auto-closes on task change).
@@ -865,6 +994,8 @@ class FusedEnv(CLIEnv):
         # If tools_py_abs doesn't exist, try the original path directly
         if not os.path.exists(tools_py_abs):
             tools_py_abs = tools_py
+        if tools_py_abs and not os.path.exists(tools_py_abs):
+            tools_py_abs = self._resolve_mcp_tools_py_fallback(tools_py_abs)
 
         # Start MCP server and discover tools
         if MCPConnectionManager is not None and MCPEnvironment is not None:
@@ -918,6 +1049,23 @@ class FusedEnv(CLIEnv):
             "tools_json": self._mcp_tool_schemas,
             "difficulty": self.entry.get("difficulty", ""),
         }
+
+    @staticmethod
+    def _resolve_mcp_tools_py_fallback(tools_py: str) -> str:
+        """Resolve generated asset suffixes when metadata points at a missing directory."""
+        path = Path(tools_py)
+        if path.name != "tools.py":
+            return tools_py
+        parent = path.parent
+        grandparent = parent.parent
+        if not parent.name or not grandparent.exists():
+            return tools_py
+        candidates = sorted(grandparent.glob(f"{parent.name}_*/tools.py"))
+        existing = [candidate for candidate in candidates if candidate.is_file()]
+        if len(existing) == 1:
+            logger.warning("Resolved missing MCP tools_py %s to %s", tools_py, existing[0])
+            return str(existing[0])
+        return tools_py
 
     # ------------------------------------------------------------------
     # step
@@ -1122,16 +1270,21 @@ class FusedEnv(CLIEnv):
         return self._step_swe(action)
 
     def _step_swe(self, action):
-        """CLI-mode step: web_search goes to retrieval tool, everything else to Docker."""
+        """CLI-mode step: route scaffold tools to Docker and reject web_search."""
         if SWEAction is None:
             return super().step(action)
 
         # Unwrap list[Action] → list[SWEAction] and process each
         action_objs = self._unwrap_actions(action)
 
-        # Check if the first action is web_search; rest go to Docker
         if action_objs and action_objs[0].function_name == "web_search":
-            return self._handle_web_search(action_objs[0])
+            self.total_steps += 1
+            return (
+                "Error: The tool 'web_search' is not available for CLI/SWE tasks. Use only file_editor, search, execute_bash, and finish.",
+                0.0,
+                False,
+                {"cli/web_search_rejected": 1},
+            )
 
         # For SWE tools, pass the first action as its XML string to the parent
         if action_objs:
@@ -1308,9 +1461,11 @@ class FusedEnv(CLIEnv):
         raw_text = action if isinstance(action, str) else ""
         if not raw_text and isinstance(action, list) and action:
             first = action[0]
-            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+            candidate = getattr(first, "action", "") if not isinstance(first, str) else first
+            raw_text = candidate if isinstance(candidate, str) else ""
         if not raw_text and action is not None:
-            raw_text = getattr(action, "action", "") or getattr(action, "model_response", "")
+            candidate = getattr(action, "action", "") or getattr(action, "model_response", "")
+            raw_text = candidate if isinstance(candidate, str) else ""
         if raw_text and raw_text.strip():
             self._search_last_raw_action = raw_text.strip()
 
@@ -1470,16 +1625,13 @@ class FusedEnv(CLIEnv):
         tool calls per model turn).  Non-finish tool calls are executed
         sequentially and their results concatenated; a finish call terminates.
         """
-        if SWEAction is None:
-            self.total_steps += 1
-            return "Error: r2egym not available for action parsing.", 0.0, False, {}
-
         # Keep raw text so we can rescue a `\boxed{…}` implicit finish and
         # report structural parse failures explicitly (fix #6).
         raw_text = action if isinstance(action, str) else ""
         if not raw_text and isinstance(action, list) and action:
             first = action[0]
-            raw_text = getattr(first, "action", "") if not isinstance(first, str) else first
+            candidate = getattr(first, "action", "") if not isinstance(first, str) else first
+            raw_text = candidate if isinstance(candidate, str) else ""
 
         action_objs = self._unwrap_actions(action)
         if not action_objs:
@@ -1491,13 +1643,13 @@ class FusedEnv(CLIEnv):
                     tcs = _QTP().parse_qwen_tool_calls(raw_text)
                     if tcs and tcs[0].get("name") in ("finish", "submit"):
                         result = tcs[0].get("arguments", {}).get("result", "")
-                        action_objs = [SWEAction(function_name="finish", parameters={"result": result})]
+                        action_objs = [self._make_action_obj("finish", {"result": result})]
                 except Exception:
                     pass
             if not action_objs:
                 boxed = self._extract_boxed_from_raw(raw_text)
                 if boxed is not None:
-                    action_objs = [SWEAction(function_name="finish", parameters={"result": boxed})]
+                    action_objs = [self._make_action_obj("finish", {"result": boxed})]
                 else:
                     self.total_steps += 1
                     self._mcp_consecutive_unknown = getattr(self, "_mcp_consecutive_unknown", 0) + 1
@@ -1798,42 +1950,18 @@ class FusedEnv(CLIEnv):
         if not accepted:
             return observation, 0.0, bool(info.get("termination_reason")), info
 
-        # Also execute on the MCP server if available (for side effects)
-        if self._mcp_connection_manager is not None:
-            fn = action_obj.function_name
-            # Restore types for MCP server execution (same as _step_mcp)
-            restored_params = {}
-            for k, v in params.items():
-                if isinstance(v, str):
-                    try:
-                        restored_params[k] = json.loads(v)
-                    except (json.JSONDecodeError, ValueError):
-                        restored_params[k] = v
-                else:
-                    restored_params[k] = v
-            tool_call_id = str(uuid.uuid4())
-            tool_calls = [
-                {
-                    "id": tool_call_id,
-                    "function": {
-                        "name": fn,
-                        "arguments": json.dumps(restored_params, ensure_ascii=False),
-                    },
-                }
-            ]
-            try:
-                self._mcp_connection_manager.execute_tool_calls(tool_calls)
-            except Exception:
-                pass
-
         return "Your answer has been submitted.", 0.0, True, {}
 
     def _accept_mcp_submission(self, parsed: object, raw_result: object) -> tuple[bool, str, dict]:
         """Store a submission only if it passes the local schema self-check."""
+        self._mcp_submit_attempted = True
+        self._mcp_last_submit_rejected_by_schema = False
         check = _validate_submission_schema(parsed, getattr(self, "_mcp_answer_schema", None))
         self._mcp_last_schema_self_check = check
         normalized = check.get("normalized_payload", parsed)
         if not check.get("passed", True):
+            self._mcp_submit_rejected = True
+            self._mcp_last_submit_rejected_by_schema = True
             self._mcp_schema_self_check_failures += 1
             if self._mcp_schema_self_check_failures >= _MCP_SCHEMA_SELF_CHECK_MAX_FAILURES:
                 errors = check.get("errors", [])
@@ -1862,6 +1990,7 @@ class FusedEnv(CLIEnv):
             self._mcp_answer = normalized
         else:
             self._mcp_answer = str(raw_result) if raw_result else ""
+        self._mcp_submit_accepted = bool(self._mcp_answer)
         return True, "", {}
 
     # ------------------------------------------------------------------
@@ -2068,13 +2197,62 @@ class FusedEnv(CLIEnv):
             except (json.JSONDecodeError, ValueError):
                 parsed_answer = answer
 
-        try:
-            reward_output = verifier_reward_fn(task_info=task_info, action=answer)
-        except Exception as e:
-            logger.error("MCP reward computation failed: %s", e)
-            reward_output = RewardOutput(reward=0.0, metadata={"verifier_error": str(e)})
+        schema_check = getattr(self, "_mcp_last_schema_self_check", {}) or {}
+        submit_accepted = bool(getattr(self, "_mcp_submit_accepted", False))
+        schema_passed = bool(schema_check.get("passed", True))
+        evidence_trace = _build_evidence_to_field_trace(parsed_answer, getattr(self, "_mcp_tool_evidence", [])) if isinstance(parsed_answer, (dict, list)) else {"field_count": 0, "mapped_count": 0, "missing_or_weak_count": 0, "mappings": []}
+        nonempty_tool_evidence = 0
+        for evidence in getattr(self, "_mcp_tool_evidence", []):
+            output = str((evidence or {}).get("output", "")).strip()
+            if output:
+                nonempty_tool_evidence += 1
+
+        evidence_gate_failed = False
+        evidence_gate_reason = ""
+
+        if not submit_accepted or not schema_passed:
+            verifier_metadata = {
+                "error": "mcp_submission_not_accepted" if not submit_accepted else "mcp_schema_self_check_failed",
+                "reward/base_reward": 0.0,
+                "reward/tool_call_total": 0.0,
+                "reward/step_penalty": 0.0,
+                "reward/tool_call_bonus": 0.0,
+            }
+            reward_output = RewardOutput(reward=0.0, is_correct=False, metadata=verifier_metadata)
+        else:
+            try:
+                reward_output = verifier_reward_fn(task_info=task_info, action=answer)
+            except Exception as e:
+                logger.error("MCP reward computation failed: %s", e)
+                reward_output = RewardOutput(reward=0.0, is_correct=False, metadata={"verifier_error": str(e)})
 
         verifier_reward = float(reward_output.reward)
+        if submit_accepted and schema_passed and (verifier_reward > 0.0 or bool(reward_output.is_correct)):
+            field_count = int(evidence_trace.get("field_count", 0) or 0)
+            mapped_count = int(evidence_trace.get("mapped_count", 0) or 0)
+            mapped_ratio = (mapped_count / field_count) if field_count else 0.0
+            if field_count > 0 and mapped_count == 0:
+                evidence_gate_failed = True
+                evidence_gate_reason = "no_evidence_field_alignment"
+            elif field_count >= 3 and mapped_ratio < 0.15:
+                evidence_gate_failed = True
+                evidence_gate_reason = "insufficient_evidence_field_alignment"
+            elif nonempty_tool_evidence == 0:
+                evidence_gate_failed = True
+                evidence_gate_reason = "empty_tool_observations"
+            if evidence_gate_failed:
+                reward_output = RewardOutput(
+                    reward=0.0,
+                    is_correct=False,
+                    metadata={
+                        "error": evidence_gate_reason,
+                        "reward/base_reward": 0.0,
+                        "reward/tool_call_total": 0.0,
+                        "reward/step_penalty": 0.0,
+                        "reward/tool_call_bonus": 0.0,
+                    },
+                )
+                verifier_reward = 0.0
         answer_text = str(answer or "").strip()
         non_submit_tool_calls = self.total_steps - (1 if self._mcp_answer else 0)
         distinct_successful_tools = len(self._mcp_distinct_tools)
@@ -2096,7 +2274,7 @@ class FusedEnv(CLIEnv):
             "reward/mcp_tool_evidence_bonus": 0.0,
             "reward/mcp_answer_length_bonus": 0.0,
         }
-        if verifier_reward < 1.0 and nontrivial_submit and non_submit_tool_calls > 0 and distinct_successful_tools > 0:
+        if verifier_reward < 1.0 and not evidence_gate_failed and nontrivial_submit and non_submit_tool_calls > 0 and distinct_successful_tools > 0:
             shaping_components["reward/mcp_submit_bonus"] = 0.12
             shaping_components["reward/mcp_tool_evidence_bonus"] = min(distinct_successful_tools, 4) * 0.05
             shaping_components["reward/mcp_answer_length_bonus"] = min(len(answer_text) / 3000.0, 1.0) * 0.06
@@ -2112,16 +2290,22 @@ class FusedEnv(CLIEnv):
             "is_correct": bool(reward_output.is_correct) if reward_output.is_correct is not None else False,
             "verifier_error": reward_output.metadata.get("error", ""),
             "submit_called": bool(self._mcp_answer),
+            "submit_attempted": bool(getattr(self, "_mcp_submit_attempted", False)),
+            "submit_accepted": submit_accepted,
+            "submit_rejected": bool(getattr(self, "_mcp_submit_rejected", False)),
+            "submit_rejected_by_schema": bool(getattr(self, "_mcp_last_submit_rejected_by_schema", False)),
+            "submit_ever_rejected_by_schema": bool(getattr(self, "_mcp_submit_rejected", False)),
             "non_submit_tool_calls": non_submit_tool_calls,
             "distinct_successful_tools": distinct_successful_tools,
             "nontrivial_submit": nontrivial_submit,
             "placeholder_submit": is_placeholder,
-            "schema_self_check": getattr(self, "_mcp_last_schema_self_check", {}),
+            "schema_self_check": schema_check,
             "schema_self_check_failures": getattr(self, "_mcp_schema_self_check_failures", 0),
             "mcp_tool_evidence_count": len(getattr(self, "_mcp_tool_evidence", [])),
-            "evidence_to_field": _build_evidence_to_field_trace(parsed_answer, getattr(self, "_mcp_tool_evidence", []))
-            if isinstance(parsed_answer, (dict, list))
-            else {"field_count": 0, "mapped_count": 0, "missing_or_weak_count": 0, "mappings": []},
+            "evidence_to_field": evidence_trace,
+            "evidence_gate_failed": evidence_gate_failed,
+            "evidence_gate_reason": evidence_gate_reason,
+            "nonempty_tool_evidence_count": nonempty_tool_evidence,
             **shaping_components,
             **reward_output.metadata,
         }

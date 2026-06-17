@@ -51,14 +51,14 @@ def _coerce_bool(value) -> bool:
 def _format_system_prompt(base_prompt: str, schemas: list[dict], model_name: str | None = None) -> str:
     if _is_qwen3_coder_model(model_name):
         base_prompt = base_prompt.replace(
-            '<tool_call>{"name": "finish", "arguments": {"command": "submit", "result": "[{\\"key\\": \\"val\\"}, {\\"key\\": \\"val2\\"}]"}}</tool_call>',
+            '<tool_call>{"name": "finish", "arguments": {"command": "submit", "result": "<JSON array string matching the task schema>"}}</tool_call>',
             """<tool_call>
 <function=finish>
 <parameter=command>
 submit
 </parameter>
 <parameter=result>
-[{"key": "val"}, {"key": "val2"}]
+<JSON value string matching the task schema>
 </parameter>
 </function>
 </tool_call>""",
@@ -112,18 +112,16 @@ def _prompt_only_system_prompt(harness: str) -> str | None:
 
 
 def _build_fused_tools_system_prompt(scaffold: str = "r2egym", harness: str = "gem", model_name: str | None = None) -> str:
-    """Build the full system prompt with r2egym tools + web_search tool.
+    """Build the CLI/SWE system prompt with only scaffold tools.
 
     Returns:
-        The fused system prompt string with all tool schemas.
+        The fused system prompt string with CLI/SWE tool schemas.
     """
     prompt_only_system_prompt = _prompt_only_system_prompt(harness)
     if harness in _PROMPT_ONLY_HARNESSES:
         return prompt_only_system_prompt or ""
 
     schemas = generate_tool_schemas(scaffold)
-    web_search_schema = parse_r2egym_tool_docstring(WEB_SEARCH_TOOL_FILE)
-    schemas.append(web_search_schema)
 
     base_prompt = _base_prompt_for_harness(harness, FUSED_AGENT_SYSTEM_PROMPT)
     return _format_system_prompt(base_prompt, schemas, model_name=model_name)
@@ -207,11 +205,11 @@ def _build_fused_et_system_prompt(scaffold: str = "r2egym", harness: str = "gem"
 
 
 class FusedAgent(CLIAgent):
-    """Fused Agent combining CLI/SWE tools with web search capability.
+    """Fused Agent for CLI/SWE, web search, MCP, and ET tasks.
 
-    Extends CLIAgent by adding a web_search tool to the system prompt.
-    All other behavior (multi-tool-call, pre-submission validation,
-    loop detection, etc.) is inherited from CLIAgent.
+    Extends CLIAgent with task-type-specific prompts and tool sets. CLI/SWE
+    tasks use only scaffold tools; web search is exposed only for web-search
+    tasks.
 
     Automatically detects web search vs CLI tasks via the ``task_type`` key
     in the info dict returned by FusedEnv.reset() and uses the appropriate
@@ -219,7 +217,7 @@ class FusedAgent(CLIAgent):
     """
 
     # Valid tool sets per task type
-    _VALID_TOOLS_FUSED_SWE = {"file_editor", "search", "execute_bash", "finish", "web_search"}
+    _VALID_TOOLS_FUSED_SWE = {"file_editor", "search", "execute_bash", "finish"}
     _VALID_TOOLS_FUSED_SEARCH = {"web_search", "finish"}
     _VALID_TOOLS_FUSED_ET = {"execute_bash", "str_replace_editor", "file_editor", "finish", "submit"}
 
@@ -235,9 +233,10 @@ class FusedAgent(CLIAgent):
         if harness is None and unified_system_prompt is not None:
             harness = "unified_gem" if _coerce_bool(unified_system_prompt) else "gem"
         self.harness = _normalize_harness(harness)
-        # Expand parser's valid_tools to include web_search (SWE default)
+        # Keep CLI/SWE parser scoped to scaffold tools. Web search is enabled
+        # only after a web-search task reset.
         self.tool_parser.valid_tools = self._VALID_TOOLS_FUSED_SWE
-        # Override the system prompt with the fused version that includes web_search
+        # Override the system prompt with the fused CLI/SWE prompt.
         self.system_prompt = _build_fused_tools_system_prompt(scaffold, self.harness, model_name=model_name)
         # Pre-build the search-only system prompt (lightweight, reusable)
         self._search_system_prompt = _build_fused_search_system_prompt(scaffold, self.harness, model_name=model_name)
@@ -320,8 +319,8 @@ class FusedAgent(CLIAgent):
         if self.harness in _PROMPT_ONLY_HARNESSES:
             return self._update_prompt_only_from_model(response)
 
-        if self.harness not in _PROMPT_ONLY_HARNESSES and self._task_type == "web search":
-            return self._update_search_from_model(response)
+        if self.harness not in _PROMPT_ONLY_HARNESSES and self._task_type == "mcp":
+            return self._update_mcp_from_model(response)
 
         actions = super().update_from_model(response, **kwargs)
         return actions
@@ -373,8 +372,8 @@ class FusedAgent(CLIAgent):
         self.step += 1
         return [action]
 
-    def _update_search_from_model(self, response: str):
-        """Parse search-mode tool calls without constructing SWE actions."""
+    def _update_mcp_from_model(self, response: str):
+        """Parse MCP tool calls without constructing SWE actions."""
         self._trajectory.steps.append(self.cur_step)
         tool_calls = self.tool_parser.parse(response)
 

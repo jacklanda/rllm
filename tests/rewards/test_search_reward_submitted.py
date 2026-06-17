@@ -108,6 +108,8 @@ def test_generic_entity_suffix_alias_exact_match():
         ("JGI Genome", "JGI Genome Portal"),
         ("Messiah Stradivarius dendrochronology", 'The "Messiah" Stradivarius dendrochronology report'),
         ("ISO 1087-1", "ISO 1087-1 standard"),
+        ("Eastern Cape", "Eastern Cape Province"),
+        ("Linear Generalized Bradley-Terry Model with Diffusion Prior", "Linear Generalized Bradley-Terry with Diffusion Prior"),
     ]:
         is_correct, f1, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
         assert is_correct
@@ -134,6 +136,52 @@ def test_alias_matching_does_not_accept_plain_entity_substring():
     assert not is_correct
     assert f1 > 0.0
     assert not meta["exact_match"]
+
+
+def test_name_order_and_middle_initial_alias_exact_match():
+    fn = _fn()
+    for prediction, ground_truth in [
+        ("Wirth, M.", "M. Wirth"),
+        ("Arthur E. Bryson Jr.", "Arthur E. Bryson"),
+        ("Malcolm Williamson", "Malcolm J. Williamson"),
+    ]:
+        is_correct, f1, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
+        assert is_correct
+        assert f1 == 1.0
+        assert meta["exact_match"]
+
+
+def test_parenthetical_acronym_alias_rejects_conflicting_material_subjects():
+    fn = _fn()
+    is_correct, f1, meta = fn.evaluate_answer(
+        "Polyacrylamide-based interpenetrating polymer network (IPN) hydrogel",
+        "Gellan Gum-oxidized Alginate (GG-OxA) interpenetrating polymer network (IPN) hydrogel",
+        is_submitted=True,
+    )
+    assert not is_correct
+    assert f1 > 0.0
+    assert not meta["exact_match"]
+
+
+def test_exact_match_rejects_symbol_sensitive_acronym_mismatch():
+    fn = _fn()
+    is_correct, f1, meta = fn.evaluate_answer("WOTS", "WOTS+", is_submitted=True)
+    assert not is_correct
+    assert f1 == 1.0
+    assert not meta["exact_match"]
+
+
+def test_exact_match_rejects_parenthetical_fragment_false_positives():
+    fn = _fn()
+    cases = [
+        ("t(9;11) AML", "t(10;11)(q22;q23) AML"),
+        ("tris(2-thenoyltrifluoroacetone)europium(III)", "Tris(2-phenylpyridinato-C2,N)iridium(III) ([Ir(ppy)3])"),
+        ("P(3HB-co-3HV)", "P(3HB-co-4HB)"),
+    ]
+    for prediction, ground_truth in cases:
+        is_correct, _, meta = fn.evaluate_answer(prediction, ground_truth, is_submitted=True)
+        assert not is_correct
+        assert not meta["exact_match"]
 
 
 def test_partial_year_does_not_count_as_correct_date_answer():

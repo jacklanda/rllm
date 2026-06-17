@@ -67,6 +67,23 @@ def test_prompt_only_harness_suppresses_parser_unknown_reward_metadata():
     assert "parser/unknown_total" not in env.reward_debug
 
 
+def test_cli_mode_rejects_web_search_tool():
+    env = FusedEnv.from_dict({"docker_image": "python:3.11", "harness": "gem"})
+    env._task_mode = "cli"
+
+    class Action:
+        function_name = "web_search"
+        parameters = {"query": "python docs"}
+
+    obs, reward, done, info = env._step_swe([Action()])
+
+    assert "web_search" in obs
+    assert "not available for CLI/SWE tasks" in obs
+    assert reward == 0.0
+    assert done is False
+    assert info == {"cli/web_search_rejected": 1}
+
+
 def test_cot_plain_text_answer_is_implicit_search_submission():
     env = FusedEnv.from_dict({"question": "What is 2+2?", "answer": "4", "harness": "cot"})
     env._reset_search()
