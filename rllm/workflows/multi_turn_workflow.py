@@ -1,9 +1,26 @@
 from typing import Any
 
 from rllm.engine.rollout.rollout_engine import ModelOutput
-from rllm.types import Episode
+from rllm.types import Episode, Step
 from rllm.workflows.timing_mixin import TimingTrackingMixin
 from rllm.workflows.workflow import TerminationEvent, TerminationReason, Workflow
+
+
+def _attach_model_output_to_latest_step(agent, output: ModelOutput, response: str) -> None:
+    """Populate training token fields on the step created from this model turn."""
+    trajectory = getattr(agent, "trajectory", None)
+    steps = getattr(trajectory, "steps", None)
+    if not steps:
+        return
+
+    step: Step = steps[-1]
+    step.model_output = output
+    step.prompt_ids = output.prompt_ids or []
+    step.response_ids = output.completion_ids or []
+    step.logprobs = output.logprobs or []
+    step.model_response = response
+    if getattr(output, "weight_version", None) is not None:
+        step.weight_version = output.weight_version
 
 
 class MultiTurnWorkflow(TimingTrackingMixin, Workflow):
@@ -43,6 +60,7 @@ class MultiTurnWorkflow(TimingTrackingMixin, Workflow):
             response = output.text
 
             action = self.agent.update_from_model(response)
+            _attach_model_output_to_latest_step(self.agent, output, response)
 
             if output.finish_reason == "length":
                 self.mark_abnormal_generation(response, "model response hit max_response_length")

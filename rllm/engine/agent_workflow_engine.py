@@ -419,6 +419,7 @@ class AgentWorkflowEngine:
         self.workflow_queue = None
         self.trajectory_timeout = _coerce_timeout(_get_nested_config(config, ("rllm", "agent", "trajectory_timeout")))
         self.eval_trajectory_timeout = _coerce_timeout(_get_nested_config(config, ("rllm", "agent", "eval_trajectory_timeout"))) or self.trajectory_timeout
+        self.terminal_log_style = str(_get_nested_config(config, ("rllm", "async_training", "terminal_log_style"), "progress")).lower()
 
         # Episode logging support
         self.episode_logger = episode_logger
@@ -440,6 +441,9 @@ class AgentWorkflowEngine:
 
     def _progress_safe_print(self, string: str, *args, **kwargs) -> None:
         colorful_print(string, *args, **kwargs)
+
+    def _show_rollout_progress(self) -> bool:
+        return self.terminal_log_style in {"rollouts", "both"}
 
     async def initialize_pool(self):
         """Initialize the workflow pool with parallel workflow instances.
@@ -567,11 +571,12 @@ class AgentWorkflowEngine:
             steps_str = ", ".join([str(len(traj.steps)) for traj in episode.trajectories])
             rewards_str = ", ".join([format_progress_reward(traj.reward) for traj in episode.trajectories])
             has_full_reward = any(_is_full_reward(traj.reward) for traj in episode.trajectories)
-            self._progress_safe_print(
-                f"[{uid4log}][{task_type}] {completed_trajectories}/{total_trajectories}, steps: {steps_str}, reward: {rewards_str}, state: {str(episode.termination_reason).rsplit('.')[-1]}",
-                fg="green" if episode.is_correct else "yellow",
-                bold=has_full_reward,
-            )
+            if self._show_rollout_progress():
+                self._progress_safe_print(
+                    f"[{uid4log}][{task_type}] {completed_trajectories}/{total_trajectories}, steps: {steps_str}, reward: {rewards_str}, state: {str(episode.termination_reason).rsplit('.')[-1]}",
+                    fg="green" if episode.is_correct else "yellow",
+                    bold=has_full_reward,
+                )
 
         results = []
         sorted_tasks = sorted(task_states.keys(), key=lambda task_id: task_states[task_id]["idx"])

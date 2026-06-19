@@ -18,6 +18,9 @@ _VERL_RAY_LOCAL_RANK_ENV_PATCHED = False
 _VERL_VLLM_SERVER_VISIBLE_DEVICES_PATCHED = False
 _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = False
 _VERL_VLLM_ASYNC_SERVER_RAY_GET_PATCHED = False
+_VERL_ENGINE_WORKER_WEIGHT_SYNC_PATCHED = False
+_VLLM_VOCAB_WEIGHT_LOADER_DEBUG_PATCHED = False
+_VLLM_PARAMETER_WEIGHT_LOAD_DEVICE_PATCHED = False
 _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED = False
 
 _VERL_WORKER_PROCESS_SETUP_HOOK = "rllm.experimental.verl.patch.apply_all_verl_patches"
@@ -146,13 +149,18 @@ def patch_verl_ray_worker_local_rank_env() -> None:
     ):
         local_world_size = resource_pool.store[0]
         node_visible_devices = _node_visible_devices(local_world_size)
-        visible_device = node_visible_devices[local_rank % len(node_visible_devices)]
+        pool_name = str(getattr(resource_pool, "name_prefix", ""))
+        device_offset = 0
+        if pool_name.startswith("rollout_pool") and len(node_visible_devices) >= 2 * local_world_size:
+            device_offset = local_world_size
+        visible_device = node_visible_devices[(device_offset + local_rank) % len(node_visible_devices)]
         worker_env = dict(worker_env or {})
         worker_env.setdefault("LOCAL_RANK", str(local_rank))
         worker_env.setdefault("LOCAL_WORLD_SIZE", str(local_world_size))
         worker_env.setdefault("RLLM_NODE_LOCAL_RANK", str(local_rank))
         if getattr(self, "device_name", "cuda") == "cuda":
             worker_env.setdefault("RLLM_WORKER_CUDA_VISIBLE_DEVICES", visible_device)
+            worker_env.setdefault("RLLM_WORKER_CUDA_DEVICE_OFFSET", str(device_offset))
         return _original_create_worker(
             self,
             rank,
@@ -222,14 +230,18 @@ def patch_verl_vllm_server_visible_devices() -> None:
                         ray.get_runtime_context().get_node_id(),
                         os.environ.get("CUDA_VISIBLE_DEVICES", "not set"),
                         os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")),
+                        os.environ.get("RLLM_WORKER_CUDA_VISIBLE_DEVICES"),
                     )
                 )
                 for worker in self.workers
             ]
         )
-        worker_node_ids = [node_id for node_id, _, _ in worker_infos]
+        worker_node_ids = [node_id for node_id, _, _, _ in worker_infos]
         worker_visible_devices = []
-        for _, visible_devices, node_local_rank in worker_infos:
+        for _, visible_devices, node_local_rank, selected_device in worker_infos:
+            if selected_device:
+                worker_visible_devices.append(selected_device)
+                continue
             visible_list = [device.strip() for device in str(visible_devices).split(",") if device.strip()]
             if len(visible_list) > 1:
                 try:
@@ -315,9 +327,30 @@ def patch_verl_vllm_server_visible_devices() -> None:
 
             import ray
 
-            visible_devices = ray.get([worker.get_cuda_visible_devices.remote() for worker in self.workers])
+            worker_infos = ray.get(
+                [
+                    worker.__ray_call__.remote(
+                        lambda self: (
+                            os.environ.get("RLLM_WORKER_CUDA_VISIBLE_DEVICES"),
+                            self.get_cuda_visible_devices(),
+                            os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")),
+                        )
+                    )
+                    for worker in self.workers
+                ]
+            )
             ordered_devices = []
-            for value in visible_devices:
+            for selected_device, visible_devices, node_local_rank in worker_infos:
+                value = selected_device
+                if not value:
+                    visible_list = [device.strip() for device in str(visible_devices).split(",") if device.strip()]
+                    if len(visible_list) > 1:
+                        try:
+                            value = visible_list[int(node_local_rank)]
+                        except (IndexError, TypeError, ValueError):
+                            value = str(node_local_rank)
+                    else:
+                        value = visible_devices
                 for device in str(value).split(","):
                     device = device.strip()
                     if device and device != "not set" and device not in ordered_devices:
@@ -365,10 +398,19 @@ def patch_verl_vllm_rollout_local_rank() -> None:
             for device in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",")
             if device.strip()
         ]
+        selected_device = os.environ.get("RLLM_WORKER_CUDA_VISIBLE_DEVICES")
         node_local_rank = int(os.environ.get("RLLM_NODE_LOCAL_RANK", os.environ.get("LOCAL_RANK", "0")))
-        local_rank = node_local_rank if len(visible_devices) != 1 else 0
+        local_rank = 0 if len(visible_devices) == 1 else node_local_rank
         os.environ["LOCAL_RANK"] = str(local_rank)
         all_kwargs[0]["local_rank"] = local_rank
+        if not getattr(self, "_rllm_logged_vllm_init_rank", False):
+            print(
+                "[rLLM vLLM init] "
+                f"selected_device={selected_device} visible_devices={visible_devices} "
+                f"node_local_rank={node_local_rank} local_rank={local_rank}",
+                flush=True,
+            )
+            self._rllm_logged_vllm_init_rank = True
         get_torch_device().set_device(local_rank)
 
         old_noset = os.environ.get("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES")
@@ -386,6 +428,180 @@ def patch_verl_vllm_rollout_local_rank() -> None:
     mod.vLLMAsyncRollout._init_worker = _patched_init_worker
     _VERL_VLLM_ROLLOUT_LOCAL_RANK_PATCHED = True
     logger.info("Patched Verl vLLM rollout workers to preserve local CUDA rank")
+
+
+def patch_vllm_vocab_weight_loader_debug() -> None:
+    """Handle CPU full-vocab weights when syncing to TP-sharded vLLM embeddings."""
+    global _VLLM_VOCAB_WEIGHT_LOADER_DEBUG_PATCHED
+    if _VLLM_VOCAB_WEIGHT_LOADER_DEBUG_PATCHED:
+        return
+
+    from vllm.model_executor.layers import vocab_parallel_embedding as mod
+
+    original = mod.VocabParallelEmbedding.weight_loader
+
+    def _patched_weight_loader(self, param, loaded_weight):
+        import os
+
+        param_data = getattr(param, "data", None)
+        if not getattr(self, "_rllm_logged_vocab_loader_debug", False):
+            try:
+                import torch
+
+                current_device = torch.cuda.current_device() if torch.cuda.is_available() else None
+            except Exception as exc:
+                current_device = f"unavailable:{exc}"
+            print(
+                "[rLLM vLLM vocab loader] "
+                f"LOCAL_RANK={os.environ.get('LOCAL_RANK')} "
+                f"RLLM_NODE_LOCAL_RANK={os.environ.get('RLLM_NODE_LOCAL_RANK')} "
+                f"RLLM_WORKER_CUDA_VISIBLE_DEVICES={os.environ.get('RLLM_WORKER_CUDA_VISIBLE_DEVICES')} "
+                f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')} "
+                f"current_device={current_device} "
+                f"param_shape={tuple(getattr(param, 'shape', ())) } "
+                f"param_device={getattr(param_data, 'device', None)} "
+                f"loaded_shape={tuple(loaded_weight.shape)} "
+                f"loaded_device={loaded_weight.device} "
+                f"loaded_dtype={loaded_weight.dtype} "
+                f"org_vocab_size={getattr(self, 'org_vocab_size', None)} "
+                f"shard=({getattr(self.shard_indices, 'org_vocab_start_index', None)},"
+                f"{getattr(self.shard_indices, 'org_vocab_end_index', None)})",
+                flush=True,
+            )
+            self._rllm_logged_vocab_loader_debug = True
+        output_dim = getattr(param, "output_dim", None)
+        packed_dim = getattr(param, "packed_dim", None)
+        if (
+            param_data is not None
+            and output_dim is not None
+            and loaded_weight.device != param_data.device
+            and loaded_weight.shape[output_dim] == getattr(self, "org_vocab_size", None)
+        ):
+            import torch
+
+            start_idx = self.shard_indices.org_vocab_start_index
+            shard_size = self.shard_indices.org_vocab_end_index - start_idx
+            if packed_dim is not None and packed_dim == output_dim:
+                packed_factor = getattr(param, "packed_factor", getattr(param, "pack_factor", None))
+                if packed_factor:
+                    start_idx = start_idx // packed_factor
+                    shard_size = shard_size // packed_factor
+            loaded_weight = loaded_weight.narrow(output_dim, start_idx, shard_size).contiguous()
+            with torch.cuda.device(param_data.device):
+                loaded_weight = loaded_weight.to(device=param_data.device, dtype=param_data.dtype, non_blocking=False)
+                loaded_weight = loaded_weight.contiguous()
+                rows = loaded_weight.shape[output_dim]
+                target = param_data.narrow(output_dim, 0, rows)
+                assert target.shape == loaded_weight.shape
+                target.copy_(loaded_weight)
+                padding = param_data.shape[output_dim] - rows
+                if padding > 0:
+                    param_data.narrow(output_dim, rows, padding).fill_(0)
+            return None
+        if param_data is not None and loaded_weight.device != param_data.device:
+            loaded_weight = loaded_weight.to(device=param_data.device, dtype=param_data.dtype, non_blocking=False)
+        return original(self, param, loaded_weight)
+
+    mod.VocabParallelEmbedding.weight_loader = _patched_weight_loader
+    _VLLM_VOCAB_WEIGHT_LOADER_DEBUG_PATCHED = True
+    logger.info("Patched vLLM VocabParallelEmbedding weight_loader debug logging")
+
+
+def patch_vllm_parameter_weight_load_device() -> None:
+    """Move only narrowed vLLM TP shards to the destination CUDA device.
+
+    In separate-rollout mode Ray leaves all node GPUs visible, while each vLLM
+    worker owns a physical GPU selected through rLLM's local-rank mapping. Some
+    vLLM loaders narrow TP shards and then call ``param_data.copy_`` directly.
+    Moving the full CPU checkpoint tensor to GPU before vLLM narrows it is both
+    wasteful and can trip CUDA on large tensors, so keep the original shard
+    logic and move only the narrowed shard immediately before copy.
+    """
+    global _VLLM_PARAMETER_WEIGHT_LOAD_DEVICE_PATCHED
+    if _VLLM_PARAMETER_WEIGHT_LOAD_DEVICE_PATCHED:
+        return
+
+    from vllm.model_executor import parameter as mod
+
+    PackedColumnParameter = getattr(mod, "PackedColumnParameter", ())
+    PackedvLLMParameter = getattr(mod, "PackedvLLMParameter", ())
+
+    def _copy_to_param(param_data, loaded_weight):
+        import torch
+
+        if param_data is None or not getattr(param_data, "is_cuda", False):
+            assert param_data.shape == loaded_weight.shape
+            param_data.copy_(loaded_weight)
+            return None
+        if getattr(loaded_weight, "device", None) != param_data.device:
+            loaded_weight = loaded_weight.to(device=param_data.device, dtype=param_data.dtype, non_blocking=False)
+        elif getattr(loaded_weight, "dtype", None) != param_data.dtype:
+            loaded_weight = loaded_weight.to(dtype=param_data.dtype)
+        assert param_data.shape == loaded_weight.shape
+        with torch.cuda.device(param_data.device):
+            param_data.copy_(loaded_weight)
+        return None
+
+    def _patched_assert_and_load(self, loaded_weight):
+        if len(loaded_weight.shape) == 0 and self.data.numel() == 1:
+            loaded_weight = loaded_weight.reshape(1)
+        _copy_to_param(self.data, loaded_weight)
+
+    def _patched_load_qkv_weight(self, loaded_weight, **kwargs):
+        shard_offset = kwargs["shard_offset"]
+        shard_size = kwargs["shard_size"]
+        shard_id = kwargs["shard_id"]
+        num_heads = kwargs["num_heads"]
+        if isinstance(self, (PackedColumnParameter, PackedvLLMParameter)) and self.output_dim == self.packed_dim:
+            shard_size, shard_offset = self.adjust_shard_indexes_for_packing(
+                shard_offset=shard_offset,
+                shard_size=shard_size,
+            )
+        param_data = self.data.narrow(self.output_dim, shard_offset, shard_size)
+        shard_id_int = self.tp_rank if shard_id == "q" else self.tp_rank // num_heads
+        loaded_weight = loaded_weight.narrow(self.output_dim, shard_id_int * shard_size, shard_size)
+        _copy_to_param(param_data, loaded_weight)
+
+    def _patched_load_merged_column_weight(self, loaded_weight, **kwargs):
+        shard_offset = kwargs["shard_offset"]
+        shard_size = kwargs["shard_size"]
+        if isinstance(self, (PackedColumnParameter, PackedvLLMParameter)) and self.packed_dim == self.output_dim:
+            shard_size, shard_offset = self.adjust_shard_indexes_for_packing(
+                shard_offset=shard_offset,
+                shard_size=shard_size,
+            )
+        param_data = self.data.narrow(self.output_dim, shard_offset, shard_size)
+        loaded_weight = loaded_weight.narrow(self.output_dim, self.tp_rank * shard_size, shard_size)
+        _copy_to_param(param_data, loaded_weight)
+
+    def _patched_load_column_parallel_weight(self, loaded_weight):
+        shard_size = self.data.shape[self.output_dim]
+        loaded_weight = loaded_weight.narrow(self.output_dim, self.tp_rank * shard_size, shard_size)
+        _copy_to_param(self.data, loaded_weight)
+
+    def _patched_load_row_parallel_weight(self, loaded_weight):
+        shard_size = self.data.shape[self.input_dim]
+        loaded_weight = loaded_weight.narrow(self.input_dim, self.tp_rank * shard_size, shard_size)
+        if len(loaded_weight.shape) == 0:
+            loaded_weight = loaded_weight.reshape(1)
+        _copy_to_param(self.data, loaded_weight)
+
+    for cls_name in ("BasevLLMParameter", "RowvLLMParameter"):
+        cls = getattr(mod, cls_name, None)
+        if cls is not None:
+            cls._assert_and_load = _patched_assert_and_load
+
+    for cls_name in ("PackedvLLMParameter", "ModelWeightParameter", "PackedColumnParameter"):
+        cls = getattr(mod, cls_name, None)
+        if cls is None:
+            continue
+        cls.load_qkv_weight = _patched_load_qkv_weight
+        cls.load_merged_column_weight = _patched_load_merged_column_weight
+        cls.load_column_parallel_weight = _patched_load_column_parallel_weight
+        cls.load_row_parallel_weight = _patched_load_row_parallel_weight
+
+    _VLLM_PARAMETER_WEIGHT_LOAD_DEVICE_PATCHED = True
+    logger.info("Patched vLLM parameter weight loaders to move narrowed shards before copy")
 
 
 def patch_verl_vllm_async_server_ray_get() -> None:
@@ -453,6 +669,117 @@ def patch_vllm_worker_shared_lock_warning() -> None:
     mod.WorkerWrapperBase.init_worker = _patched_init_worker
     _VLLM_WORKER_SHARED_LOCK_WARNING_PATCHED = True
     logger.info("Patched vLLM WorkerWrapperBase to avoid shared_worker_lock warning outside shm MM cache")
+
+
+def patch_verl_engine_worker_weight_sync() -> None:
+    """Add minimal object-ref based weight sync helpers to Verl engine workers."""
+    global _VERL_ENGINE_WORKER_WEIGHT_SYNC_PATCHED
+    if _VERL_ENGINE_WORKER_WEIGHT_SYNC_PATCHED:
+        return
+
+    import ray
+    from verl.single_controller.base.decorator import Dispatch, register
+    from verl.workers.engine_workers import ActorRolloutRefWorker
+
+    def _is_debug_weight(name: str) -> bool:
+        return any(part in name for part in ("embed_tokens", "lm_head", "q_proj", "k_proj", "v_proj", "o_proj"))
+
+    def _tensor_debug(name: str, tensor) -> str:
+        return f"{name} shape={tuple(tensor.shape)} dtype={tensor.dtype} device={tensor.device}"
+
+    @register(dispatch_mode=Dispatch.ALL_TO_ALL, blocking=True)
+    def export_actor_weight_refs(self):
+        assert self._is_actor and self.actor is not None
+        per_tensor_param, peft_config = self.actor.engine.get_per_tensor_param()
+        refs = []
+        debug_lines = []
+        for name, tensor in per_tensor_param:
+            cpu_tensor = tensor.detach().cpu()
+            refs.append((name, ray.put(cpu_tensor)))
+            if len(debug_lines) < 8 and _is_debug_weight(name):
+                debug_lines.append(_tensor_debug(name, cpu_tensor))
+        if not getattr(self, "_rllm_logged_weight_export_debug", False):
+            import os
+
+            print(
+                "[rLLM weight-sync export] "
+                f"LOCAL_RANK={os.environ.get('LOCAL_RANK')} "
+                f"RLLM_NODE_LOCAL_RANK={os.environ.get('RLLM_NODE_LOCAL_RANK')} "
+                f"num_tensors={len(refs)} samples={debug_lines}",
+                flush=True,
+            )
+            self._rllm_logged_weight_export_debug = True
+        return {
+            "refs": refs,
+            "peft_config": peft_config,
+            "base_sync_done": getattr(self, "base_sync_done", False),
+        }
+
+    @register(dispatch_mode=Dispatch.ALL_TO_ALL, blocking=True)
+    async def import_rollout_weight_refs(self, payload):
+        assert self._is_rollout and self.rollout is not None
+        _bind_current_worker_cuda_device(self)
+        refs = payload["refs"]
+        should_log = not getattr(self, "_rllm_logged_weight_sync_debug", False)
+
+        def _iter_weights():
+            import os
+
+            debug_lines = []
+            for name, ref in refs:
+                tensor = ray.get(ref)
+                if should_log and len(debug_lines) < 8 and _is_debug_weight(name):
+                    debug_lines.append(_tensor_debug(name, tensor))
+                yield name, tensor
+            if should_log:
+                print(
+                    "[rLLM weight-sync import] "
+                    f"LOCAL_RANK={os.environ.get('LOCAL_RANK')} "
+                    f"RLLM_NODE_LOCAL_RANK={os.environ.get('RLLM_NODE_LOCAL_RANK')} "
+                    f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')} "
+                    f"num_tensors={len(refs)} samples={debug_lines}",
+                    flush=True,
+                )
+
+        try:
+            if getattr(self.rollout.config, "free_cache_engine", False):
+                try:
+                    await self.rollout.resume(tags=["weights"])
+                except RuntimeError as exc:
+                    if "cumem_allocator" not in str(exc) and "CUDA Error: invalid argument" not in str(exc):
+                        raise
+                    print(
+                        "[rLLM weight-sync import] continuing weight update after vLLM weights wake failure: "
+                        f"{type(exc).__name__}: {exc}",
+                        flush=True,
+                    )
+            await self.rollout.update_weights(
+                _iter_weights(),
+                peft_config=payload.get("peft_config"),
+                base_sync_done=payload.get("base_sync_done", False),
+            )
+            if getattr(self.rollout.config, "free_cache_engine", False):
+                await self.rollout.resume(tags=["kv_cache"])
+        except Exception as exc:
+            import os
+
+            print(
+                "[rLLM weight-sync import failed] "
+                f"LOCAL_RANK={os.environ.get('LOCAL_RANK')} "
+                f"RLLM_NODE_LOCAL_RANK={os.environ.get('RLLM_NODE_LOCAL_RANK')} "
+                f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')} "
+                f"num_tensors={len(refs)} error={type(exc).__name__}: {exc}",
+                flush=True,
+            )
+            raise
+        self._rllm_logged_weight_sync_debug = True
+        self.base_sync_done = True
+        return True
+
+    ActorRolloutRefWorker.export_actor_weight_refs = export_actor_weight_refs
+    ActorRolloutRefWorker.import_rollout_weight_refs = import_rollout_weight_refs
+    _VERL_ENGINE_WORKER_WEIGHT_SYNC_PATCHED = True
+    logger.info("Patched Verl ActorRolloutRefWorker object-ref weight sync helpers")
 
 
 # ---------------------------------------------------------------------------
@@ -851,6 +1178,9 @@ _ALL_VERL_PATCHES = {
     "patch_verl_vllm_typed_token_prompt": patch_verl_vllm_typed_token_prompt,
     "patch_verl_vllm_async_server_ray_get": patch_verl_vllm_async_server_ray_get,
     "patch_vllm_worker_shared_lock_warning": patch_vllm_worker_shared_lock_warning,
+    "patch_vllm_vocab_weight_loader_debug": patch_vllm_vocab_weight_loader_debug,
+    "patch_vllm_parameter_weight_load_device": patch_vllm_parameter_weight_load_device,
+    "patch_verl_engine_worker_weight_sync": patch_verl_engine_worker_weight_sync,
     "patch_verl_vllm_server_visible_devices": patch_verl_vllm_server_visible_devices,
     "patch_verl_vllm_rollout_local_rank": patch_verl_vllm_rollout_local_rank,
 }
@@ -875,6 +1205,13 @@ def apply_all_verl_patches() -> None:
     for environment-specific workarounds (e.g. disabling cuDNN on a host
     with a broken cuDNN install) that should not be baked into rLLM itself.
     """
+    try:
+        from rllm.trainer.verl.warning_filters import apply_verl_vllm_noise_filters
+
+        apply_verl_vllm_noise_filters()
+    except Exception:  # pragma: no cover — filtering is best-effort
+        logger.exception("Failed to apply Verl/vLLM warning filters")
+
     for patch_name, patch_func in _ALL_VERL_PATCHES.items():
         try:
             patch_func()

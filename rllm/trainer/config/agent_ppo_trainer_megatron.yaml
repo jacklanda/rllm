@@ -26,6 +26,29 @@ data:
 
 rllm:
   max_val_num: -1  # Maximum number of validation batches to use (-1 = use all)
+  rollout:
+    n: 8
+    n_val: 1  # number of validation samples per prompt
+    train:
+      temperature: 1.0
+      top_p: 1.0
+      top_k: -1
+      max_tokens: 2048
+    val:
+      temperature: 1.0
+      top_p: 1.0
+      top_k: -1
+      max_tokens: 2048
+  trainer:
+    total_epochs: 10
+    total_batches: -1
+    logger: ["console"]
+    project_name: "rllm-training"
+    experiment_name: "default"
+    test_freq: 5
+    save_freq: 20
+    val_before_train: False
+    val_only: False
   agent:
     name: math_agent
     max_steps: 20
@@ -51,6 +74,24 @@ rllm:
   disable_thinking: False
   accumulate_reasoning: False
   mask_truncated_samples: False
+  algorithm:
+    adv_estimator: grpo
+    norm_adv_by_std_in_grpo: True
+    use_rllm: null
+    use_precomputed_advantage: False
+    loss_fn: null
+    loss_agg_mode: null
+    lr_schedule: constant
+    warmup_steps: -1
+    warmup_steps_ratio: 0.0
+    kl_beta: 0.0
+    eps_clip: 0.2
+    eps_clip_high: null
+    router_replay: disabled
+    rollout_correction:
+      bypass_mode: null
+      tis_mode: null
+      tis_cap: 2.0
   stepwise_advantage:
     enable: False
     mode: broadcast # [broadcast, per_step]
@@ -93,5 +134,6 @@ rllm:
       max_prompt_length: 32768
 
 trainer:
+  val_only: false
   log_episodes: false
   episode_log_dir: logs/${trainer.project_name}/${trainer.experiment_name}

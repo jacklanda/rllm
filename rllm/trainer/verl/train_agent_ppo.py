@@ -90,6 +90,12 @@ def main(config):
 
 def run_ppo_agent(config):
     patch_rlhf_dataset_answer_norm()
+    try:
+        from hydra.core.hydra_config import HydraConfig
+
+        hydra_overrides = list(HydraConfig.get().overrides.task)
+    except (ValueError, AttributeError, ImportError):
+        hydra_overrides = None
 
     # Check if Ray is not initialized
     if not ray.is_initialized():
@@ -107,7 +113,7 @@ def run_ppo_agent(config):
         runner = runner_cls.options(runtime_env={"nsight": nsight_options}).remote()
     else:
         runner = runner_cls.remote()
-    ray.get(runner.run.remote(config))
+    ray.get(runner.run.remote(config, hydra_overrides=hydra_overrides))
 
     # [Optional] get the path of the timeline trace file from the configuration, default to None
     # This file is used for performance analysis
@@ -136,11 +142,18 @@ class TaskRunner:
         from verl.single_controller.ray import RayWorkerGroup
 
         use_legacy_worker_impl = config.trainer.get("use_legacy_worker_impl", "auto")
+        if config.rllm.get("async_training", {}).get("enable", False) and int(config.get("rollout", {}).get("n_gpus_per_node", 0) or 0) > 0:
+            use_legacy_worker_impl = "disable"
+            config.trainer.use_legacy_worker_impl = "disable"
 
         # use new model engine implementation
         if use_legacy_worker_impl == "disable":
+            from rllm.experimental.verl.patch import patch_verl_engine_worker_weight_sync
             from verl.workers.engine_workers import ActorRolloutRefWorker
 
+            patch_verl_engine_worker_weight_sync()
+            if not hasattr(ActorRolloutRefWorker, "export_actor_weight_refs") or not hasattr(ActorRolloutRefWorker, "import_rollout_weight_refs"):
+                raise RuntimeError("Failed to register async separate-rollout weight sync methods on ActorRolloutRefWorker.")
             actor_rollout_cls = ActorRolloutRefWorker
             ray_worker_group_cls = RayWorkerGroup
 
@@ -156,6 +169,9 @@ class TaskRunner:
                 role = Role.ActorRollout
             self.role_worker_mapping[role] = ray.remote(actor_rollout_cls)
             self.mapping[role] = "global_pool"
+            if int(config.get("rollout", {}).get("n_gpus_per_node", 0) or 0) > 0:
+                self.role_worker_mapping[Role.Rollout] = ray.remote(actor_rollout_cls)
+                self.mapping[Role.Rollout] = "global_pool"
             return actor_rollout_cls, ray_worker_group_cls
 
         # Note: sync mode validation is now handled in RolloutConfig.__post_init__
@@ -224,10 +240,28 @@ class TaskRunner:
     def init_resource_pool_mgr(self, config):
         """Initialize resource pool manager."""
 
-        global_pool_id = "global_pool"
-        resource_pool_spec = {
-            global_pool_id: [config.trainer.n_gpus_per_node] * config.trainer.nnodes,
-        }
+        async_enabled = config.rllm.get("async_training", {}).get("enable", False)
+        rollout_gpus = int(config.get("rollout", {}).get("n_gpus_per_node", 0) or 0)
+        rollout_nnodes = int(config.get("rollout", {}).get("nnodes", config.trainer.nnodes) or config.trainer.nnodes)
+
+        if async_enabled and rollout_gpus > 0:
+            actor_pool_id = "actor_pool"
+            rollout_pool_id = "rollout_pool"
+            resource_pool_spec = {
+                actor_pool_id: [config.trainer.n_gpus_per_node] * config.trainer.nnodes,
+                rollout_pool_id: [rollout_gpus] * rollout_nnodes,
+            }
+            for role in list(self.mapping):
+                if role in (Role.ActorRollout, Role.ActorRolloutRef):
+                    self.mapping[role] = actor_pool_id
+                elif role == Role.RefPolicy:
+                    self.mapping[role] = actor_pool_id
+            self.mapping[Role.Rollout] = rollout_pool_id
+        else:
+            global_pool_id = "global_pool"
+            resource_pool_spec = {
+                global_pool_id: [config.trainer.n_gpus_per_node] * config.trainer.nnodes,
+            }
         # TODO Here you can use the new registration method to support dynamic registration of roles
         if config.reward_model.enable_resource_pool:
             if config.reward_model.n_gpus_per_node <= 0:
@@ -248,6 +282,7 @@ class TaskRunner:
         config,
         workflow_class=None,
         workflow_args=None,
+        hydra_overrides=None,
     ):
         """Execute the main PPO training workflow.
 
@@ -270,8 +305,15 @@ class TaskRunner:
         pprint(OmegaConf.to_container(config))
         OmegaConf.register_new_resolver("mul", lambda x, y: int(x) * int(y))
         OmegaConf.resolve(config)
+        from rllm.experimental.verl.utils import sync_config
+
+        sync_config(config, hydra_overrides=hydra_overrides)
         _disable_incompatible_qwen35_fused_logprob(config)
         _normalize_vllm_rollout_config(config)
+        if config.rllm.get("rollout_enable_sleep_mode", None) is not None:
+            OmegaConf.set_struct(config.actor_rollout_ref.rollout, False)
+            config.actor_rollout_ref.rollout.enable_sleep_mode = config.rllm.rollout_enable_sleep_mode
+            OmegaConf.set_struct(config.actor_rollout_ref.rollout, True)
 
         actor_rollout_cls, ray_worker_group_cls = self.add_actor_rollout_worker(config)
         self.add_critic_worker(config)
@@ -351,18 +393,37 @@ class TaskRunner:
                         else:
                             workflow_args[key] = value
 
-            trainer = AgentWorkflowPPOTrainer(
-                config=config,
-                tokenizer=tokenizer,
-                processor=processor,
-                role_worker_mapping=self.role_worker_mapping,
-                resource_pool_manager=resource_pool_manager,
-                ray_worker_group_cls=ray_worker_group_cls,
-                reward_fn=reward_fn,
-                val_reward_fn=val_reward_fn,
-                workflow_class=workflow_class,
-                workflow_args=workflow_args,
-            )
+            if config.rllm.get("async_training", {}).get("enable", False):
+                from rllm.experimental.unified_trainer import UnifiedTrainer
+                from rllm.experimental.verl.verl_backend import VerlBackend
+
+                print("Using UnifiedTrainer with VerlBackend for dense async actor updates.")
+                trainer = UnifiedTrainer(
+                    backend_cls=VerlBackend,
+                    config=config,
+                    workflow_class=workflow_class,
+                    workflow_args=workflow_args,
+                    backend_args={
+                        "tokenizer": tokenizer,
+                        "processor": processor,
+                        "role_worker_mapping": self.role_worker_mapping,
+                        "resource_pool_manager": resource_pool_manager,
+                        "ray_worker_group_cls": ray_worker_group_cls,
+                    },
+                )
+            else:
+                trainer = AgentWorkflowPPOTrainer(
+                    config=config,
+                    tokenizer=tokenizer,
+                    processor=processor,
+                    role_worker_mapping=self.role_worker_mapping,
+                    resource_pool_manager=resource_pool_manager,
+                    ray_worker_group_cls=ray_worker_group_cls,
+                    reward_fn=reward_fn,
+                    val_reward_fn=val_reward_fn,
+                    workflow_class=workflow_class,
+                    workflow_args=workflow_args,
+                )
         else:
             raise ValueError(f"Unknown workflow class: {config.rllm.workflow.get('name')}")
 
@@ -372,9 +433,12 @@ class TaskRunner:
         patch_verl_ray_worker_local_rank_env()
         patch_verl_dynamic_batch_sync()
 
-        trainer.init_workers()
         try:
-            trainer.fit_agent()
+            if config.rllm.get("async_training", {}).get("enable", False):
+                trainer.fit()
+            else:
+                trainer.init_workers()
+                trainer.fit_agent()
         finally:
             trainer.shutdown()
 

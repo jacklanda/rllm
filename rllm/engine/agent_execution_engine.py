@@ -364,13 +364,32 @@ def _append_credit_assignment_step(agent, response: str, model_output, reason: s
         )
         agent.trajectory.steps.append(step)
 
-    cur_step = agent.get_current_state()
-    if cur_step is not None:
-        cur_step.model_output = model_output
-        cur_step.prompt_ids = model_output.prompt_ids or []
-        cur_step.response_ids = model_output.completion_ids or []
-        cur_step.logprobs = model_output.logprobs or []
+    _attach_model_output_to_last_step(agent, model_output, start_index=before)
     _record_credit_assignment_event(agent, reason, event)
+
+
+def _attach_model_output_to_last_step(agent, model_output, start_index: int | None = None) -> None:
+    """Attach model output to the trajectory step created by update_from_model."""
+    if model_output is None:
+        return
+    steps = getattr(getattr(agent, "trajectory", None), "steps", None)
+    if steps:
+        if start_index is not None and len(steps) > start_index:
+            _attach_model_output_to_step(steps[-1], model_output)
+            return
+        _attach_model_output_to_step(steps[-1], model_output)
+        return
+    _attach_model_output_to_step(agent.get_current_state(), model_output)
+
+
+def _attach_model_output_to_step(step, model_output) -> None:
+    """Attach token ids to the agent step that was just created from a model response."""
+    if step is None or model_output is None:
+        return
+    step.model_output = model_output
+    step.prompt_ids = model_output.prompt_ids or []
+    step.response_ids = model_output.completion_ids or []
+    step.logprobs = model_output.logprobs or []
 
 
 import torch
@@ -1103,7 +1122,9 @@ class AgentExecutionEngine:
                 accumulated_prompt_ids = list(model_output.prompt_ids) + list(model_output.completion_ids)
 
             # Update agent with model response — may return multiple actions
+            before_agent_steps = len(agent.trajectory.steps)
             actions_result = agent.update_from_model(response)
+            _attach_model_output_to_last_step(agent, model_output, start_index=before_agent_steps)
             # Backward compatibility: wrap single Action in a list
             if isinstance(actions_result, Action):
                 actions_result = [actions_result]

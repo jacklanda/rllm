@@ -159,6 +159,7 @@ async_training:
   partial_rollout: false
   episode_offload_dir: null       # NVMe offload dir for pending episodes (null = disabled)
   trajectory_group_offload_dir: null  # NVMe offload dir for queued task batches (null = disabled)
+  terminal_log_style: progress    # progress | rollouts | both
 
 # Episode Logging Configuration
 episode_logging:

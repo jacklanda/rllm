@@ -3,7 +3,7 @@ import logging
 import time
 import uuid
 from abc import ABC, abstractmethod
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pprint import pprint
@@ -12,6 +12,7 @@ from typing import Any, Literal
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
+from verl import DataProto
 
 from rllm.data import Dataset
 from rllm.experimental.buffer import TrajectoryGroupBuffer
@@ -44,7 +45,7 @@ from rllm.experimental.sync_coordinator import SyncCoordinator, SyncCoordinatorC
 from rllm.types import Episode, TrajectoryGroup
 from rllm.utils import EpisodeLogger, Tracking, extract_source_metadata
 from rllm.workflows.store import Store
-from rllm.workflows.workflow import TerminationReason, Workflow
+from rllm.workflows.workflow import TerminationReason, Workflow, infer_task_source
 
 logger = logging.getLogger(__name__)
 
@@ -502,7 +503,8 @@ class UnifiedTrainer:
             trainer_state.total_steps = len(train_dataloader) * self.rllm_config.trainer.total_epochs
 
         total_tasks = len(train_dataloader) * self.rllm_config.trainer.total_epochs
-        pbar = tqdm(total=total_tasks, desc="Tasks", unit="task")
+        show_progress = self.async_config.terminal_log_style in {"progress", "both"}
+        pbar = tqdm(total=total_tasks, desc="Tasks", unit="task") if show_progress else None
         buffer._pbar = pbar
 
         try:
@@ -515,7 +517,8 @@ class UnifiedTrainer:
                 except asyncio.CancelledError:
                     pass
         finally:
-            pbar.close()
+            if pbar is not None:
+                pbar.close()
 
     async def _generation_loop(
         self,
@@ -525,30 +528,140 @@ class UnifiedTrainer:
     ) -> None:
         """Generate episodes and stream to TrajectoryGroupBuffer."""
         group_size = self.rllm_config.rollout.n
+        max_in_flight_groups = self.async_config.max_in_flight_groups
+        if max_in_flight_groups is None:
+            max_in_flight_groups = min(
+                int(self.rllm_config.workflow.n_parallel_tasks),
+                int(self.async_config.mini_batch_size) * int(self.async_config.trigger_parameter_sync_step) * 4,
+            )
+        max_in_flight_groups = max(int(max_in_flight_groups), int(self.async_config.mini_batch_size))
+        read_ahead_groups = self.async_config.dispatch_read_ahead_groups
+        if read_ahead_groups is None:
+            read_ahead_groups = int(self.rllm_config.workflow.n_parallel_tasks)
+        read_ahead_groups = max(int(read_ahead_groups), int(self.async_config.mini_batch_size))
+
+        max_mcp_in_flight_groups = self.async_config.max_mcp_in_flight_groups
+        if max_mcp_in_flight_groups is None:
+            max_mcp_in_flight_groups = max(int(self.async_config.mini_batch_size), max_in_flight_groups // 8)
+        max_mcp_in_flight_groups = max(0, int(max_mcp_in_flight_groups))
+
+        dispatch_semaphore = asyncio.Semaphore(max_in_flight_groups)
+        pending_by_source: dict[str, deque] = defaultdict(deque)
+        pending_total = 0
+        active_by_source: Counter[str] = Counter()
+        dispatched_by_source: Counter[str] = Counter()
+        released_task_ids: set[str] = set()
+        dataloader_exhausted = False
+        dataloader_iter = None
+
+        logger.info(
+            "[GenerationLoop] Limiting in-flight prompt groups to %d; read_ahead=%d max_mcp_in_flight=%d",
+            max_in_flight_groups,
+            read_ahead_groups,
+            max_mcp_in_flight_groups,
+        )
+
+        def _select_pending_task() -> tuple[Any, str] | None:
+            nonlocal pending_total
+            if pending_total <= 0:
+                return None
+
+            source_order = sorted(
+                pending_by_source,
+                key=lambda src: (
+                    src == "mcp",
+                    active_by_source[src],
+                    -len(pending_by_source[src]),
+                    src,
+                ),
+            )
+            for source in source_order:
+                queue = pending_by_source[source]
+                if not queue:
+                    continue
+                if source == "mcp" and active_by_source[source] >= max_mcp_in_flight_groups:
+                    continue
+                pending_total -= 1
+                return queue.popleft(), source
+
+            # If all buffered work is MCP, keep the rollout engine busy instead
+            # of deadlocking behind the source cap.
+            for source in source_order:
+                queue = pending_by_source[source]
+                if queue:
+                    pending_total -= 1
+                    return queue.popleft(), source
+            return None
+
+        def _release_prompt_group(tid: str, source: str) -> None:
+            if tid in released_task_ids:
+                return
+            released_task_ids.add(tid)
+            active_by_source[source] = max(0, active_by_source[source] - 1)
+            dispatch_semaphore.release()
 
         try:
             for epoch in range(self.rllm_config.trainer.total_epochs):
                 await self.backend.on_epoch_start(trainer_state)
                 train_dataloader = self.backend.get_dataloader(self.train_dataset, trainer_state)
+                dataloader_iter = iter(train_dataloader)
+                dataloader_exhausted = False
                 self.agent_workflow_engine.set_training_step(trainer_state.global_step, mode="train", epoch=epoch)
 
-                for batch in train_dataloader:
-                    task = batch[0]
+                while True:
+                    while pending_total < read_ahead_groups and not dataloader_exhausted:
+                        try:
+                            batch = next(dataloader_iter)
+                        except StopIteration:
+                            dataloader_exhausted = True
+                            break
+                        task = batch[0]
+                        source = infer_task_source(task)
+                        pending_by_source[source].append(task)
+                        pending_total += 1
+
+                    if pending_total <= 0 and dataloader_exhausted:
+                        break
 
                     await coordinator.wait_for_generation_allowed()
                     if not coordinator.has_quota():
                         await coordinator.wait_for_throttle()
+                    await dispatch_semaphore.acquire()
+                    selected = _select_pending_task()
+                    if selected is None:
+                        dispatch_semaphore.release()
+                        if dataloader_exhausted:
+                            break
+                        await asyncio.sleep(0)
+                        continue
+                    task, source = selected
+                    active_by_source[source] += 1
+                    dispatched_by_source[source] += 1
                     coordinator.on_group_dispatched()
 
                     task_id = str(uuid.uuid4())
                     for rollout_idx in range(group_size):
 
-                        async def _run_rollout(t=task, tid=task_id, ridx=rollout_idx):
-                            _, _, _, episode = await self.agent_workflow_engine.process_task_with_retry(task=t, task_id=tid, rollout_idx=ridx, result_idx=0)
-                            await buffer.add_episode(tid, episode)
+                        async def _run_rollout(t=task, tid=task_id, ridx=rollout_idx, src=source):
+                            try:
+                                _, _, _, episode = await self.agent_workflow_engine.process_task_with_retry(task=t, task_id=tid, rollout_idx=ridx, result_idx=0)
+                                group_ready = await buffer.add_episode(tid, episode)
+                                if group_ready:
+                                    _release_prompt_group(tid, src)
+                            except BaseException:
+                                _release_prompt_group(tid, src)
+                                raise
 
                         t = asyncio.create_task(_run_rollout())
                         coordinator.track_task(t)
+
+                    if sum(dispatched_by_source.values()) % 64 == 0:
+                        logger.info(
+                            "[GenerationLoop] dispatched=%s active=%s pending=%s",
+                            dict(dispatched_by_source),
+                            dict(active_by_source),
+                            {src: len(q) for src, q in pending_by_source.items() if q},
+                        )
 
                 await self.backend.on_epoch_end(trainer_state)
 
@@ -574,6 +687,7 @@ class UnifiedTrainer:
             trainer_state.reset_batch()
             step_start = time.perf_counter()
             weight_versions = []
+            backend_batches: list[DataProto] = []
             all_trajectory_groups: list[TrajectoryGroup] = []
             all_episodes: list[Episode] = []
             groups_consumed = 0
@@ -586,13 +700,31 @@ class UnifiedTrainer:
             )
 
             # 1. Pull mini_batch_size task batches total, split into
-            #    num_fwd_bwd_passes forward-backward passes of fwd_bwd_group_size each.
+            #    num_fwd_bwd_passes chunks for backend preprocessing.
             for pass_idx in range(num_fwd_bwd_passes):
                 chunk_groups: list[TrajectoryGroup] = []
+                chunk_episodes: list[Episode] = []
 
                 for _ in range(fwd_bwd_group_size):
                     t_wait = time.perf_counter()
-                    task_batch = await buffer.get()
+                    while True:
+                        try:
+                            task_batch = await asyncio.wait_for(buffer.get(), timeout=60.0)
+                            break
+                        except asyncio.TimeoutError:
+                            stats = buffer.stats()
+                            coord_stats = coordinator.stats()
+                            logger.info(
+                                "[TrainingLoop] Step %s: still waiting for accepted task batches "
+                                "(consumed=%s/%s, queued=%s, pending=%s, filtered=%s, coordinator=%s)",
+                                trainer_state.global_step,
+                                groups_consumed,
+                                mini_batch_size,
+                                stats.get("async/buffer_qsize"),
+                                stats.get("async/buffer_pending"),
+                                stats.get("async/buffer_filtered"),
+                                coord_stats,
+                            )
                     buffer_wait_time += time.perf_counter() - t_wait
                     if task_batch is None:
                         done = True
@@ -604,6 +736,7 @@ class UnifiedTrainer:
                     for group in task_batch.groups:
                         weight_versions.append(group.weight_version)
                     chunk_groups.extend(task_batch.groups)
+                    chunk_episodes.extend(task_batch.episodes)
                     all_trajectory_groups.extend(task_batch.groups)
                     all_episodes.extend(task_batch.episodes)
 
@@ -611,13 +744,16 @@ class UnifiedTrainer:
                     break
 
                 # Forward-backward on this chunk
+                trainer_state.episodes = chunk_episodes
                 trainer_state.trajectory_groups = chunk_groups
 
                 if trainer_state.has_trajectory_groups:
-                    logger.info(f"[TrainingLoop] Step {trainer_state.global_step}: fwd-bwd pass {pass_idx + 1}/{num_fwd_bwd_passes} ({len(chunk_groups)} groups)")
+                    logger.info(f"[TrainingLoop] Step {trainer_state.global_step}: preprocessing chunk {pass_idx + 1}/{num_fwd_bwd_passes} ({len(chunk_groups)} groups)")
                     await self.backend.on_batch_start(trainer_state)
                     trainer_state.backend_batch = self.backend.transform_to_backend_batch(trainer_state)
                     await self.backend.process_backend_batch(trainer_state)
+                    await self.backend.compute_advantages(trainer_state, self.algorithm_config)
+                    backend_batches.append(trainer_state.backend_batch)
 
                     # Drain per-chunk backend metrics into aggregator
                     aggregator.record_dict(trainer_state.metrics)
@@ -629,7 +765,8 @@ class UnifiedTrainer:
                 break
 
             # 2. Optimizer step
-            logger.info(f"[TrainingLoop] Step {trainer_state.global_step}: optimizer step")
+            trainer_state.backend_batch = DataProto.concat(backend_batches) if len(backend_batches) > 1 else backend_batches[0]
+            logger.info(f"[TrainingLoop] Step {trainer_state.global_step}: optimizer step ({len(backend_batches)} processed actor update chunks)")
             await self.backend.update_policy(trainer_state)
 
             # 3. Capture pre-sync metrics (before weight sync resets coordinator state)
@@ -674,16 +811,21 @@ class UnifiedTrainer:
 
             # 6. Compute derived metrics
             step_time = trainer_state.metrics.get("time/step", 1.0)
+            trainer_state.timing_dict.setdefault("step", step_time)
             trainer_state.metrics["async/trainer_idle_ratio"] = buffer_wait_time / max(step_time, 1e-9)
 
             # 7. on_batch_end writes backend metrics (progress, optim, timing)
             await self.backend.on_batch_end(trainer_state)
 
-            # 7. Print and log
+            # 7. Print and log. Fully async progress already has dedicated
+            # terminal output; skip the raw console metrics line here while
+            # preserving external tracking backends such as wandb/ui/file.
             print_metrics_table(trainer_state.metrics, trainer_state.global_step)
+            tracking_backends = [name for name in self.logger.logger if name != "console"]
             self.logger.log(
                 data=trainer_state.metrics,
                 step=trainer_state.global_step,
+                backend=tracking_backends,
                 episodes=trainer_state.episodes,
                 trajectory_groups=trainer_state.trajectory_groups,
             )

@@ -31,13 +31,24 @@ class AsyncTrainingConfig:
     partial_rollout: bool = True  # enable turn-level gating during weight sync
     episode_offload_dir: str | None = None  # NVMe offload dir for pending episodes (None = disabled)
     trajectory_group_offload_dir: str | None = None  # NVMe offload dir for queued task batches (None = disabled)
+    max_in_flight_groups: int | None = None  # cap dispatched prompt groups before they enter the training buffer
+    dispatch_read_ahead_groups: int | None = None  # task groups buffered for source-aware async dispatch
+    max_mcp_in_flight_groups: int | None = None  # cap MCP prompt groups so fast uniform completions cannot starve accepted batches
+    terminal_log_style: Literal["progress", "rollouts", "both"] = "progress"  # terminal output: tqdm progress, per-rollout lines, or both
 
     def __post_init__(self):
         if self.fwd_bwd_group_size is None:
             self.fwd_bwd_group_size = self.mini_batch_size
+        assert self.terminal_log_style in {"progress", "rollouts", "both"}
         if self.enable:
             assert self.fwd_bwd_group_size >= 1
             assert self.mini_batch_size % self.fwd_bwd_group_size == 0, f"mini_batch_size ({self.mini_batch_size}) must be divisible by fwd_bwd_group_size ({self.fwd_bwd_group_size})"
+            if self.max_in_flight_groups is not None:
+                assert self.max_in_flight_groups >= self.mini_batch_size
+            if self.dispatch_read_ahead_groups is not None:
+                assert self.dispatch_read_ahead_groups >= self.mini_batch_size
+            if self.max_mcp_in_flight_groups is not None:
+                assert self.max_mcp_in_flight_groups >= 0
 
     @classmethod
     def from_config(cls, config: DictConfig) -> "AsyncTrainingConfig":
@@ -114,6 +125,7 @@ class CreditAssignmentConfig:
     repeated_search_query: bool = False
     too_many_tool_calls: bool = False
     search_bypass: bool = False
+    tail_guard_early_stop: bool = False
 
     @classmethod
     def from_config(cls, config: DictConfig | dict | None) -> "CreditAssignmentConfig":
@@ -211,6 +223,7 @@ class rLLMAdvantageEstimator(str, Enum):
     """
 
     GRPO = "grpo"
+    DR_GRPO = "dr_grpo"
     REINFORCE = "reinforce"
     REINFORCE_PLUS_PLUS_BASELINE = "reinforce_plus_plus_baseline"
     RLOO = "rloo"
@@ -218,6 +231,8 @@ class rLLMAdvantageEstimator(str, Enum):
 
     @classmethod
     def _missing_(cls, value: object) -> "rLLMAdvantageEstimator":
+        if value == "dr-grpo":
+            return cls.DR_GRPO
         return cls.OTHER
 
 

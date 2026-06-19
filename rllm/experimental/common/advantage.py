@@ -72,6 +72,7 @@ def get_rllm_adv_estimator(name: str | rLLMAdvantageEstimator) -> Callable:
 
 
 @register_rllm_adv_estimator(rLLMAdvantageEstimator.GRPO)
+@register_rllm_adv_estimator(rLLMAdvantageEstimator.DR_GRPO)
 def calculate_grpo_advantages(rewards: list[np.ndarray], algorithm_config: AlgorithmConfig, **kwargs) -> tuple[list[np.ndarray], list[np.ndarray]]:
     norm_adv_by_std_in_grpo = algorithm_config.norm_adv_by_std_in_grpo
     advantages_by_group, returns_by_group = zip(

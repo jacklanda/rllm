@@ -212,6 +212,143 @@ def sync_config(config: DictConfig, hydra_overrides: list[str] | None = None) ->
                 for path in train_temp_paths:
                     OmegaConf.update(config, path, 0.0, merge=False)
 
+    def sync_data_shuffle_alias() -> None:
+        """Map rLLM's legacy shuffle flag onto Verl's sampler flag.
+
+        Verl's ``create_rl_sampler`` reads ``data.shuffle``.  Several rLLM
+        scripts still set ``data.shuffle_data``; without this alias those
+        scripts silently fall back to sequential sampling.
+        """
+        shuffle_path = "data.shuffle"
+        legacy_path = "data.shuffle_data"
+        legacy_value = OmegaConf.select(config, legacy_path, default=None)
+        if legacy_value is None:
+            return
+
+        shuffle_value = OmegaConf.select(config, shuffle_path, default=None)
+        if shuffle_path in explicit and not same(shuffle_value, legacy_value):
+            logger.warning(
+                "%s=%s conflicts with %s=%s; keeping explicit %s.",
+                shuffle_path,
+                shuffle_value,
+                legacy_path,
+                legacy_value,
+                shuffle_path,
+            )
+            return
+
+        if shuffle_value is None or legacy_path in explicit:
+            OmegaConf.update(config, shuffle_path, bool(legacy_value), merge=False)
+
+    def _largest_divisor_at_most(value: int, upper: int) -> int:
+        return max(divisor for divisor in range(1, upper + 1) if value % divisor == 0)
+
+    def normalize_parallel_mesh_sizes() -> None:
+        """Keep actor and rollout mesh dimensions compatible with worker sizes.
+
+        Verl's FSDP engine constructs a mesh shaped as
+        ``(dp_size, ulysses_sequence_parallel_size)``.  If SP is larger than
+        the actor world size, or the actor world size is not divisible by SP,
+        PyTorch fails later inside ``init_device_mesh`` with a low-level layout
+        assertion.
+
+        The rollout engine has the same divisibility requirement for
+        ``tensor_model_parallel_size * data_parallel_size *
+        pipeline_model_parallel_size`` against the rollout worker world size.
+        Normalize both here so invalid launch scripts fail less mysteriously
+        and can still run with the same high-level training setup.
+        """
+
+        nnodes = OmegaConf.select(config, "trainer.nnodes")
+        n_gpus_per_node = OmegaConf.select(config, "trainer.n_gpus_per_node")
+        if nnodes is not None and n_gpus_per_node is not None:
+            actor_world_size = int(nnodes) * int(n_gpus_per_node)
+            if actor_world_size > 0:
+                actor_sp_path = "actor_rollout_ref.actor.ulysses_sequence_parallel_size"
+                actor_sp = OmegaConf.select(config, actor_sp_path, default=1)
+                if actor_sp is not None:
+                    actor_sp = int(actor_sp)
+                    if actor_sp <= 0:
+                        logger.warning("Invalid %s=%s; setting it to 1.", actor_sp_path, actor_sp)
+                        actor_sp = 1
+
+                    if actor_world_size % actor_sp == 0:
+                        normalized_sp = actor_sp
+                    else:
+                        normalized_sp = _largest_divisor_at_most(actor_world_size, min(actor_sp, actor_world_size))
+                        logger.warning(
+                            "Adjusting %s from %s to %s because actor world size is %s. "
+                            "Ulysses sequence parallel size must divide the actor worker world size.",
+                            actor_sp_path,
+                            actor_sp,
+                            normalized_sp,
+                            actor_world_size,
+                        )
+
+                    OmegaConf.update(config, actor_sp_path, normalized_sp, merge=False)
+                    ref_sp_path = "actor_rollout_ref.ref.ulysses_sequence_parallel_size"
+                    if OmegaConf.select(config, ref_sp_path, default=None) is not None:
+                        OmegaConf.update(config, ref_sp_path, normalized_sp, merge=False)
+
+        rollout_nnodes = OmegaConf.select(config, "rollout.nnodes")
+        rollout_gpus_per_node = OmegaConf.select(config, "rollout.n_gpus_per_node")
+        if rollout_nnodes is None or rollout_gpus_per_node is None:
+            return
+
+        rollout_world_size = int(rollout_nnodes) * int(rollout_gpus_per_node)
+        if rollout_world_size <= 0:
+            return
+
+        rollout_path = "actor_rollout_ref.rollout"
+        load_format_path = f"{rollout_path}.load_format"
+        load_format = OmegaConf.select(config, load_format_path, default=None)
+        if load_format == "dummy":
+            logger.warning(
+                "Adjusting %s from 'dummy' to 'auto' for separate rollout workers. "
+                "The rollout server can load the initial base checkpoint directly; "
+                "this avoids a blocking step-0 full-weight export from FSDP workers.",
+                load_format_path,
+            )
+            OmegaConf.update(config, load_format_path, "auto", merge=False)
+
+        tp_path = f"{rollout_path}.tensor_model_parallel_size"
+        tp_size = int(OmegaConf.select(config, tp_path, default=1) or 1)
+        dp_size = int(OmegaConf.select(config, f"{rollout_path}.data_parallel_size", default=1) or 1)
+        pp_size = int(OmegaConf.select(config, f"{rollout_path}.pipeline_model_parallel_size", default=1) or 1)
+        fixed_parallel_size = max(1, dp_size) * max(1, pp_size)
+
+        if tp_size <= 0:
+            logger.warning("Invalid %s=%s; setting it to 1.", tp_path, tp_size)
+            tp_size = 1
+
+        if rollout_world_size % fixed_parallel_size != 0:
+            logger.warning(
+                "Rollout world size %s is not divisible by rollout data_parallel_size * pipeline_model_parallel_size (%s); "
+                "leaving %s=%s unchanged.",
+                rollout_world_size,
+                fixed_parallel_size,
+                tp_path,
+                tp_size,
+            )
+            return
+
+        max_compatible_tp = rollout_world_size // fixed_parallel_size
+        infer_world_size = tp_size * fixed_parallel_size
+        if rollout_world_size % infer_world_size == 0:
+            normalized_tp = tp_size
+        else:
+            normalized_tp = _largest_divisor_at_most(max_compatible_tp, min(tp_size, max_compatible_tp))
+            logger.warning(
+                "Adjusting %s from %s to %s because rollout world size is %s. "
+                "tensor_model_parallel_size * data_parallel_size * pipeline_model_parallel_size must divide rollout world size.",
+                tp_path,
+                tp_size,
+                normalized_tp,
+                rollout_world_size,
+            )
+
+        OmegaConf.update(config, tp_path, normalized_tp, merge=False)
+
     def sync_clip_ratio() -> None:
         eps_clip_path = "rllm.algorithm.eps_clip"
         clip_ratio_path = "actor_rollout_ref.actor.clip_ratio"
@@ -282,6 +419,12 @@ def sync_config(config: DictConfig, hydra_overrides: list[str] | None = None) ->
 
     # When do_sample=False, force the effective sampling temperature to 0.0
     sync_do_sample_temperature()
+
+    # Keep legacy rLLM shuffle_data wired into Verl's sampler.
+    sync_data_shuffle_alias()
+
+    # Keep actor FSDP/Ulysses and rollout TP mesh dimensions valid.
+    normalize_parallel_mesh_sizes()
 
 
 def save_checkpoint(

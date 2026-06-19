@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import math
+import inspect
+import asyncio
 import uuid
+import time
 from collections import defaultdict
 from collections.abc import Iterable
 from functools import reduce
@@ -13,9 +16,8 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 from verl import DataProto
-from verl.checkpoint_engine import CheckpointEngineManager
 from verl.experimental.agent_loop.agent_loop import AgentLoopManager, AsyncLLMServerManager
-from verl.single_controller.ray import RayClassWithInitArgs, RayWorkerGroup, ResourcePoolManager
+from verl.single_controller.ray import RayClassWithInitArgs, RayWorkerGroup
 from verl.single_controller.ray.base import create_colocated_worker_cls
 from verl.trainer.ppo.core_algos import agg_loss
 from verl.trainer.ppo.metric_utils import (
@@ -24,6 +26,10 @@ from verl.trainer.ppo.metric_utils import (
     compute_timing_metrics,
 )
 from verl.trainer.ppo.utils import Role, WorkerType, need_reference_policy
+try:
+    from verl.single_controller.ray import ResourcePoolManager
+except ImportError:
+    from verl.trainer.ppo.ray_trainer import ResourcePoolManager
 from verl.utils import tensordict_utils as tu
 from verl.utils.config import omega_conf_to_dataclass
 from verl.utils.metric import reduce_metrics
@@ -61,6 +67,31 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_VERL_LOSS = "vanilla"
 _VERL_KNOWN_LOSSES: set[str] | None = None
+
+
+def _resolve_worker_group_method(worker_group, method_name: str, role_prefix: str):
+    method = getattr(worker_group, method_name, None)
+    if method is not None:
+        return method
+    return getattr(worker_group, f"{role_prefix}_{method_name}", None)
+
+
+class _AsyncTaskDataloader:
+    """Expose Verl batch_size=1 dataloader rows as single-task lists."""
+
+    def __init__(self, dataloader):
+        self.dataloader = dataloader
+
+    def __iter__(self):
+        for batch in self.dataloader:
+            data_batch = DataProto.from_single_dict(batch) if isinstance(batch, dict) else batch
+            extra_infos = data_batch.non_tensor_batch["extra_info"].tolist()
+            if len(extra_infos) != 1:
+                raise ValueError(f"Async dense Verl training requires train_batch_size=1, got batch with {len(extra_infos)} tasks")
+            yield [extra_infos[0]]
+
+    def __len__(self):
+        return len(self.dataloader)
 
 
 class CustomPPOLoss:
@@ -137,10 +168,12 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         self.resource_pool_manager = resource_pool_manager
         self.ray_worker_group_cls = ray_worker_group_cls
         self.actor_rollout_wg = None
+        self.rollout_wg = None
         self.ref_policy_wg = None
+        self.rollout_resource_pool = None
 
         self.async_rollout_manager = None
-        self.checkpoint_manager: CheckpointEngineManager | None = None
+        self.checkpoint_manager = None
         self.rollout_engine: VerlEngine | None = None
         self.algorithm_config: AlgorithmConfig | None = None
 
@@ -150,6 +183,42 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
             processor,
         )
 
+    def _sleep_rollout_replicas(self) -> None:
+        if self.checkpoint_manager is not None:
+            self.checkpoint_manager.sleep_replicas()
+
+    async def _sync_rollout_weights(self, global_step: int) -> None:
+        if self.checkpoint_manager is not None:
+            await self.checkpoint_manager.update_weights(global_step)
+            return
+        if self.rollout_wg is not None and self.rollout_wg is not self.actor_rollout_wg:
+            if global_step <= 0 and self.config.actor_rollout_ref.rollout.get("load_format", None) != "dummy":
+                logger.info(
+                    "Skipping step-0 actor-to-rollout weight sync because the separate rollout workers "
+                    "loaded initial weights directly from the model checkpoint."
+                )
+                return
+            export_weights = _resolve_worker_group_method(self.actor_rollout_wg, "export_actor_weight_refs", str(Role.ActorRollout))
+            import_weights = _resolve_worker_group_method(self.rollout_wg, "import_rollout_weight_refs", str(Role.Rollout))
+            if export_weights is None or import_weights is None:
+                actor_methods = [name for name in dir(self.actor_rollout_wg) if "weight_refs" in name]
+                rollout_methods = [name for name in dir(self.rollout_wg) if "weight_refs" in name]
+                raise RuntimeError(
+                    "Separate rollout weight sync requires export_actor_weight_refs/import_rollout_weight_refs worker methods. "
+                    f"Available actor methods={actor_methods}, rollout methods={rollout_methods}."
+                )
+            payloads = export_weights()
+            if len(payloads) != self.rollout_wg.world_size:
+                raise RuntimeError(f"Actor/rollout worker count mismatch for weight sync: actor={len(payloads)} rollout={self.rollout_wg.world_size}")
+            import_weights(payloads)
+            return
+        if self.async_rollout_manager is not None:
+            rollout_replicas = getattr(self.async_rollout_manager, "rollout_replicas", None)
+            if rollout_replicas is not None:
+                await asyncio.gather(*[replica.wake_up() for replica in rollout_replicas])
+            elif hasattr(self.async_rollout_manager, "wake_up"):
+                self.async_rollout_manager.wake_up()
+
     def _init_colocated_workers(self) -> None:
         """Create worker groups for colocated (hybrid engine) mode."""
         config = self.config
@@ -158,11 +227,22 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
 
         actor_role = Role.ActorRolloutRef if Role.ActorRolloutRef in self.role_worker_mapping else Role.ActorRollout
         actor_rollout_resource_pool = self.resource_pool_manager.get_resource_pool(actor_role)
+        self.rollout_resource_pool = None
+        if Role.Rollout in self.resource_pool_manager.mapping:
+            self.rollout_resource_pool = self.resource_pool_manager.get_resource_pool(Role.Rollout)
         resource_pool_to_cls[actor_rollout_resource_pool][str(actor_role)] = RayClassWithInitArgs(
             cls=self.role_worker_mapping[actor_role],
             config=config.actor_rollout_ref,
             role=str(actor_role),
         )
+        use_separate_rollout_pool = self.rollout_resource_pool is not None and self.rollout_resource_pool is not actor_rollout_resource_pool
+        if use_separate_rollout_pool:
+            rollout_cls = self.role_worker_mapping.get(Role.Rollout) or self.role_worker_mapping[actor_role]
+            resource_pool_to_cls[self.rollout_resource_pool][str(Role.Rollout)] = RayClassWithInitArgs(
+                cls=rollout_cls,
+                config=config.actor_rollout_ref,
+                role=str(Role.Rollout),
+            )
 
         if self.use_reference_policy and Role.RefPolicy in self.role_worker_mapping:
             resource_pool = self.resource_pool_manager.get_resource_pool(Role.RefPolicy)
@@ -195,19 +275,30 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         if self.ref_in_actor:
             self.ref_policy_wg = self.actor_rollout_wg
 
-        self.async_rollout_manager = AgentLoopManager.create(
+        if use_separate_rollout_pool:
+            self.rollout_wg = all_wg[str(Role.Rollout)]
+            self.rollout_wg.init_model()
+        else:
+            self.rollout_wg = self.actor_rollout_wg
+
+        self.async_rollout_manager = AgentLoopManager(
             config=config,
-            worker_group=self.actor_rollout_wg,
-            rollout_resource_pool=actor_rollout_resource_pool,
+            worker_group=self.rollout_wg,
+            rm_resource_pool=None,
         )
 
-        ckpt_cfg = omega_conf_to_dataclass(config.actor_rollout_ref.rollout.checkpoint_engine)
-        self.checkpoint_manager = CheckpointEngineManager(
-            config=ckpt_cfg,
-            trainer=self.actor_rollout_wg,
-            replicas=self.async_rollout_manager.rollout_replicas,
-        )
-        self.checkpoint_manager.sleep_replicas()
+        try:
+            from verl.checkpoint_engine import CheckpointEngineManager
+
+            ckpt_cfg = omega_conf_to_dataclass(config.actor_rollout_ref.rollout.checkpoint_engine)
+            self.checkpoint_manager = CheckpointEngineManager(
+                config=ckpt_cfg,
+                trainer=self.actor_rollout_wg,
+                replicas=self.async_rollout_manager.rollout_replicas,
+            )
+            self.checkpoint_manager.sleep_replicas()
+        except ModuleNotFoundError:
+            logger.info("verl.checkpoint_engine is unavailable; using worker-group wake_up plus AgentLoopManager sleep for rollout weight sync.")
 
     # =========================================================================
     # BackendProtocol interface methods
@@ -238,8 +329,12 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         else:
             logger.warning("RayWorkerGroup.set_loss_fn not available — skipping custom loss injection")
 
-        servers = zip(self.async_rollout_manager.server_addresses, self.async_rollout_manager.server_handles, strict=True)
-        server_manager = AsyncLLMServerManager(self.config, servers=servers, load_balancer_handle=self.async_rollout_manager.global_load_balancer)
+        server_manager_sig = inspect.signature(AsyncLLMServerManager.__init__)
+        if "server_handles" in server_manager_sig.parameters:
+            server_manager = AsyncLLMServerManager(self.config, server_handles=self.async_rollout_manager.server_handles)
+        else:
+            servers = zip(self.async_rollout_manager.server_addresses, self.async_rollout_manager.server_handles, strict=True)
+            server_manager = AsyncLLMServerManager(self.config, servers=servers, load_balancer_handle=self.async_rollout_manager.global_load_balancer)
 
         self.rollout_engine = VerlEngine(
             config=self.config,
@@ -279,6 +374,8 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
     def get_dataloader(self, dataset: Dataset | None, trainer_state: TrainerState) -> Iterable:
         """Get dataloader. Note that for Verl backend, the RayPPOTrainer init already creates the dataloaders."""
         if trainer_state.is_training:
+            if self.config.rllm.get("async_training", {}).get("enable", False):
+                return _AsyncTaskDataloader(self.train_dataloader)
             return self.train_dataloader
         elif self.val_dataloader is not None:
             return self.val_dataloader
@@ -318,8 +415,8 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         # Step 3: sleep the replicas to free kv_cache before weight sync (if free_cache_engine is enabled)
         # Only sleep during training — validation doesn't update weights, so there's no wake_up call after it.
         # Sleeping after validation would leave replicas asleep, causing CUDA illegal memory access on the next generation.
-        if not is_validation:
-            await self.checkpoint_manager.sleep_replicas()
+        if not is_validation and self.checkpoint_manager is not None:
+            self._sleep_rollout_replicas()
         return episodes
 
     async def _execute_tasks_async(self, batch: DataProto, agent_workflow_engine: UnifiedWorkflowEngine, **kwargs) -> list[Episode]:
@@ -408,14 +505,10 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         if dp_size is None:
             return batch
 
-        # From verl RayPPOTrainer._update_actor: ppo_mini_batch_size is multiplied
-        # by rollout.n before being passed as mini_batch_size to update_actor and
-        # make_iterator enforces batch_per_gpu % mini_batch_size == 0. Globally this
-        # requires batch_size % (ppo_mini_batch_size * rollout.n) == 0.
-        rollout_n = self.config.actor_rollout_ref.rollout.n
-        ppo_mbs = self.config.actor_rollout_ref.actor.ppo_mini_batch_size
-        mini_batch_global = ppo_mbs * rollout_n
-        divisor = math.lcm(dp_size, mini_batch_global)
+        # Async chunks can contain an arbitrary number of trainable steps, so
+        # padding only needs to satisfy DP sharding here. The actor update path
+        # picks a per-sub-batch mini_batch_size that divides the actual rows.
+        divisor = dp_size
 
         batch = self._remove_padding(batch)  # Remove any padded steps from the batch (just in case)
         original_batch_size = batch.batch["prompts"].shape[0]
@@ -444,6 +537,15 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         metrics = trainer_state.metrics
         timing_dict = trainer_state.timing_dict
         batch: DataProto = trainer_state.backend_batch  # type: ignore[assignment]
+        input_rows = int(batch.batch["input_ids"].shape[0])
+        response_tokens = int(batch.batch["response_mask"].sum().item()) if "response_mask" in batch.batch else -1
+        logger.info(
+            "[VerlBackend] Step %s: process_backend_batch start rows=%d response_tokens=%d",
+            trainer_state.global_step,
+            input_rows,
+            response_tokens,
+        )
+        process_start = time.perf_counter()
 
         # Balance the number of valid tokens across DP ranks.
         # NOTE: This usually changes the order of data in the `batch`,
@@ -482,6 +584,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
                 batch.batch["old_log_probs"] = batch.batch["rollout_log_probs"]
         else:
             with simple_timer("old_log_probs", timing_dict):
+                logger.info("[VerlBackend] Step %s: compute old_log_probs start", trainer_state.global_step)
                 tu.assign_non_tensor(batch_td, calculate_entropy=True, compute_loss=False)
                 output = self.actor_rollout_wg.compute_log_prob(batch_td)
                 log_probs = no_padding_2_padding(tu.get(output, "log_probs"), batch_td)
@@ -506,6 +609,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
                 old_log_prob.batch.pop("entropys")
 
                 batch = batch.union(old_log_prob)
+                logger.info("[VerlBackend] Step %s: compute old_log_probs complete", trainer_state.global_step)
 
             tis_mode = rc.tis_mode if rc is not None else None
             if tis_mode is not None and has_rollout_log_probs:
@@ -540,6 +644,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         # --- Compute reference log_probs (reuse batch_td) ---
         if self.use_reference_policy:
             with simple_timer("ref", timing_dict):
+                logger.info("[VerlBackend] Step %s: compute ref_log_probs start", trainer_state.global_step)
                 tu.assign_non_tensor(batch_td, calculate_entropy=False, compute_loss=False)
                 if not self.ref_in_actor:
                     ref_output = self.ref_policy_wg.compute_ref_log_prob(batch_td)
@@ -549,6 +654,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
                 ref_lp = no_padding_2_padding(tu.get(ref_output, "log_probs"), batch_td)
                 ref_log_prob = DataProto.from_tensordict(tu.get_tensordict({"ref_log_prob": ref_lp.float()}))
                 batch = batch.union(ref_log_prob)
+                logger.info("[VerlBackend] Step %s: compute ref_log_probs complete", trainer_state.global_step)
 
         # Mask truncated samples if configured
         if self.config.rllm.get("mask_truncated_samples", False):
@@ -556,6 +662,12 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
             batch = batch[~mask]
 
         trainer_state.backend_batch = batch
+        logger.info(
+            "[VerlBackend] Step %s: process_backend_batch complete rows=%d elapsed=%.2fs",
+            trainer_state.global_step,
+            int(batch.batch["input_ids"].shape[0]),
+            time.perf_counter() - process_start,
+        )
 
     async def compute_advantages(self, trainer_state: TrainerState, algorithm_config: AlgorithmConfig, **kwargs) -> None:
         """Compute advantages from trajectory groups.
@@ -602,12 +714,35 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         group_roles = batch.non_tensor_batch.get("group_roles") if hasattr(batch, "non_tensor_batch") and batch.non_tensor_batch is not None else None
 
         # Common training metadata
-        rollout_n = self.config.actor_rollout_ref.rollout.n
         actor_cfg = self.config.actor_rollout_ref.actor
-        ppo_mbs = actor_cfg.ppo_mini_batch_size * rollout_n
+
+        def _actor_update_mini_batch_size(sub_batch: DataProto) -> int:
+            batch_size = int(sub_batch.batch["input_ids"].shape[0])
+            configured = max(1, int(actor_cfg.ppo_mini_batch_size))
+            if batch_size % configured == 0:
+                return configured
+            logger.warning(
+                "Async actor update batch_size=%d is not divisible by ppo_mini_batch_size=%d; "
+                "using mini_batch_size=1 for this update.",
+                batch_size,
+                configured,
+            )
+            return 1
 
         def _send_actor_update(sub_batch: DataProto, loss_override: str | None = None) -> None:
             """Convert DataProto to TensorDict, inject metadata, send to worker."""
+            ppo_mbs = _actor_update_mini_batch_size(sub_batch)
+            rows = int(sub_batch.batch["input_ids"].shape[0])
+            response_tokens = int(sub_batch.batch["response_mask"].sum().item()) if "response_mask" in sub_batch.batch else -1
+            logger.info(
+                "[VerlBackend] Step %s: update_actor RPC start rows=%d response_tokens=%d mini_batch_size=%d loss_override=%s",
+                trainer_state.global_step,
+                rows,
+                response_tokens,
+                ppo_mbs,
+                loss_override,
+            )
+            rpc_start = time.perf_counter()
             batch_td = sub_batch.to_tensordict()
             batch_td = left_right_2_no_padding(batch_td)
             metadata: dict[str, Any] = dict(
@@ -624,6 +759,11 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
             actor_output = self.actor_rollout_wg.update_actor(batch_td)
             actor_metrics = tu.get(actor_output, "metrics")
             trainer_state.metrics.update(reduce_metrics(actor_metrics))
+            logger.info(
+                "[VerlBackend] Step %s: update_actor RPC complete elapsed=%.2fs",
+                trainer_state.global_step,
+                time.perf_counter() - rpc_start,
+            )
 
         # Fast path: no per-role loss overrides or no role annotations.
         if not loss_fn_map or group_roles is None:
@@ -666,10 +806,9 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         holding tens of GB each until the Ray actors are torn down.
         """
         try:
-            if self.checkpoint_manager is not None:
-                self.checkpoint_manager.sleep_replicas()
+            self._sleep_rollout_replicas()
         except Exception:
-            logger.exception("VerlBackend.shutdown: sleep_replicas failed")
+            logger.exception("VerlBackend.shutdown: rollout sleep failed")
 
     # =========================================================================
     # Async hook methods - leverage RayPPOTrainer utilities where possible
@@ -679,7 +818,7 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         """Called at the start of training."""
         self.global_steps = trainer_state.global_step
         self.global_steps = load_checkpoint(self.config, self.actor_rollout_wg, train_dataloader=self.train_dataloader)
-        await self.checkpoint_manager.update_weights(self.global_steps)
+        await self._sync_rollout_weights(self.global_steps)
         # we need to set trainer's global_steps to sync with the loaded checkpoint
         trainer_state.global_step = self.global_steps
         trainer_state.epoch = self.global_steps // len(self.train_dataloader)
@@ -706,10 +845,6 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
             with simple_timer("save_checkpoint", trainer_state.timing_dict):
                 save_checkpoint(self.config, self.global_steps, self.actor_rollout_wg, train_dataloader=self.train_dataloader)
 
-        # Weight synchronization
-        with simple_timer("update_weights", trainer_state.timing_dict):
-            await self.checkpoint_manager.update_weights(trainer_state.global_step)
-
         # Update metrics
         if trainer_state.has_backend_batch:
             batch: DataProto = trainer_state.backend_batch  # type: ignore[attr-defined]
@@ -732,3 +867,8 @@ class VerlBackend(BackendProtocol[Iterable, DataProto]):
         """Called at the end of validation."""
         trainer_state.is_training = True
         self.rollout_engine.is_validation = False
+
+    async def on_policy_updated(self, trainer_state: TrainerState) -> None:
+        """Synchronize updated actor weights to async rollout replicas."""
+        with simple_timer("update_weights", trainer_state.timing_dict):
+            await self._sync_rollout_weights(trainer_state.global_step)

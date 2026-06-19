@@ -134,6 +134,7 @@ def visualize_trajectory_last_steps(
     tokenizer,
     max_steps_to_visualize: int = 1,
     show_workflow_metadata: bool = True,
+    max_display_chars: int | None = None,
     config: VisualizationConfig | None = None,
 ):
     """
@@ -148,6 +149,8 @@ def visualize_trajectory_last_steps(
         tokenizer: Tokenizer for decoding.
         max_steps_to_visualize: Maximum number of steps to visualize.
         show_workflow_metadata: Whether to show workflow metadata (episode_ids, trajectory_ids, etc.).
+        max_display_chars: Optional maximum decoded characters for prompt/response display.
+            None means display the full decoded text.
         config: VisualizationConfig for colors.
     """
     if config is None:
@@ -190,7 +193,9 @@ def visualize_trajectory_last_steps(
         if len(clean_prompt_ids) != len(prompt_ids):
             colorful_warning(f"During visualization, skipped {len(prompt_ids) - len(clean_prompt_ids)} non-int elements in prompt_ids.")
 
-        prompt_str = abbreviate_string(tokenizer.decode(clean_prompt_ids))
+        prompt_str = tokenizer.decode(clean_prompt_ids)
+        if max_display_chars is not None:
+            prompt_str = abbreviate_string(prompt_str, max_length=max_display_chars)
 
         print(_format_token(prompt_str, config.masked_token_style))
         print("----------------")
@@ -200,7 +205,9 @@ def visualize_trajectory_last_steps(
             continue
 
         # for response string, we simply highlight the last token
-        response_str_prev = abbreviate_string(tokenizer.decode(response_ids[:-1]))
+        response_str_prev = tokenizer.decode(response_ids[:-1])
+        if max_display_chars is not None:
+            response_str_prev = abbreviate_string(response_str_prev, max_length=max_display_chars)
         response_str_last = tokenizer.decode([response_ids[-1]])
 
         response_style = config.unmasked_token_style

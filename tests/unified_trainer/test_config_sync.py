@@ -31,14 +31,20 @@ def _make_config():
                     "clip_ratio_low": 0.2,
                     "clip_ratio_high": 0.2,
                     "use_kl_loss": False,
+                    "ulysses_sequence_parallel_size": 1,
                     "optim": {
                         "lr_scheduler_type": "constant",
                         "lr_warmup_steps": -1,
                         "lr_warmup_steps_ratio": 0.0,
                     },
                 },
+                "ref": {"ulysses_sequence_parallel_size": 1},
                 "rollout": {
+                    "data_parallel_size": 1,
+                    "load_format": "dummy",
                     "n": 1,
+                    "pipeline_model_parallel_size": 1,
+                    "tensor_model_parallel_size": 1,
                     "val_kwargs": {"n": 1},
                 },
             },
@@ -52,6 +58,12 @@ def _make_config():
                 "logger": ["console"],
                 "project_name": "verl",
                 "experiment_name": "default",
+                "nnodes": 1,
+                "n_gpus_per_node": 8,
+            },
+            "data": {
+                "shuffle": False,
+                "shuffle_data": True,
             },
             "rllm": {
                 "algorithm": {
@@ -84,6 +96,7 @@ def _make_config():
                     "experiment_name": "default",
                 },
             },
+            "rollout": {"nnodes": 1, "n_gpus_per_node": 0},
         }
     )
 
@@ -191,6 +204,88 @@ def test_sync_before_resolve_updates_interpolated_verl_paths(propagate):
     cfg = propagate(cfg, explicit_keys={"rllm.trainer.project_name", "rllm.trainer.experiment_name"})
     OmegaConf.resolve(cfg)
     assert cfg.trainer.default_local_dir == "checkpoints/project/experiment"
+
+
+def test_ulysses_sequence_parallel_size_is_capped_to_actor_world_size(propagate, caplog):
+    caplog.set_level(logging.WARNING, logger="rllm.experimental.verl.utils")
+    cfg = _make_config()
+    cfg.trainer.n_gpus_per_node = 4
+    cfg.actor_rollout_ref.actor.ulysses_sequence_parallel_size = 8
+    cfg.actor_rollout_ref.ref.ulysses_sequence_parallel_size = 8
+
+    cfg = propagate(cfg)
+
+    assert cfg.actor_rollout_ref.actor.ulysses_sequence_parallel_size == 4
+    assert cfg.actor_rollout_ref.ref.ulysses_sequence_parallel_size == 4
+    assert "Ulysses sequence parallel size must divide the actor worker world size" in caplog.text
+
+
+def test_ulysses_sequence_parallel_size_is_reduced_to_divisor(propagate):
+    cfg = _make_config()
+    cfg.trainer.n_gpus_per_node = 6
+    cfg.actor_rollout_ref.actor.ulysses_sequence_parallel_size = 4
+
+    cfg = propagate(cfg)
+
+    assert cfg.actor_rollout_ref.actor.ulysses_sequence_parallel_size == 3
+
+
+def test_rollout_tensor_model_parallel_size_is_capped_to_rollout_world_size(propagate, caplog):
+    caplog.set_level(logging.WARNING, logger="rllm.experimental.verl.utils")
+    cfg = _make_config()
+    cfg.rollout.n_gpus_per_node = 4
+    cfg.actor_rollout_ref.rollout.tensor_model_parallel_size = 8
+
+    cfg = propagate(cfg)
+
+    assert cfg.actor_rollout_ref.rollout.tensor_model_parallel_size == 4
+    assert "tensor_model_parallel_size * data_parallel_size * pipeline_model_parallel_size" in caplog.text
+
+
+def test_rollout_tensor_model_parallel_size_accounts_for_dp_and_pp(propagate):
+    cfg = _make_config()
+    cfg.rollout.n_gpus_per_node = 8
+    cfg.actor_rollout_ref.rollout.data_parallel_size = 2
+    cfg.actor_rollout_ref.rollout.pipeline_model_parallel_size = 1
+    cfg.actor_rollout_ref.rollout.tensor_model_parallel_size = 8
+
+    cfg = propagate(cfg)
+
+    assert cfg.actor_rollout_ref.rollout.tensor_model_parallel_size == 4
+
+
+def test_separate_rollout_uses_checkpoint_load_for_initial_weights(propagate, caplog):
+    caplog.set_level(logging.WARNING, logger="rllm.experimental.verl.utils")
+    cfg = _make_config()
+    cfg.rollout.n_gpus_per_node = 4
+    cfg.actor_rollout_ref.rollout.load_format = "dummy"
+
+    cfg = propagate(cfg)
+
+    assert cfg.actor_rollout_ref.rollout.load_format == "auto"
+    assert "load the initial base checkpoint directly" in caplog.text
+
+
+def test_shuffle_data_alias_updates_verl_sampler_shuffle(propagate):
+    cfg = _make_config()
+    cfg.data.shuffle = False
+    cfg.data.shuffle_data = True
+
+    cfg = propagate(cfg, explicit_keys={"data.shuffle_data"})
+
+    assert cfg.data.shuffle is True
+
+
+def test_explicit_verl_shuffle_wins_over_shuffle_data_alias(propagate, caplog):
+    caplog.set_level(logging.WARNING, logger="rllm.experimental.verl.utils")
+    cfg = _make_config()
+    cfg.data.shuffle = False
+    cfg.data.shuffle_data = True
+
+    cfg = propagate(cfg, explicit_keys={"data.shuffle", "data.shuffle_data"})
+
+    assert cfg.data.shuffle is False
+    assert "data.shuffle=False conflicts with data.shuffle_data=True" in caplog.text
 
 
 # ---------------------------------------------------------------------------

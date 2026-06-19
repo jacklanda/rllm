@@ -10,6 +10,17 @@ startup.
 import warnings
 
 
+def _suppress_verl_vllm_noise() -> None:
+    """Suppress selected noisy warnings in early Ray child-process startup."""
+
+    try:
+        from rllm.trainer.verl.warning_filters import apply_verl_vllm_noise_filters
+    except Exception:
+        return
+
+    apply_verl_vllm_noise_filters()
+
+
 def _suppress_vllm_fla_short_sequence_format_warning() -> None:
     """Suppress vLLM FLA's false-positive layout warning on short chunks."""
 
@@ -69,6 +80,7 @@ def _patch_transformers_use_return_dict() -> None:
     PreTrainedConfig.use_return_dict = property(_get_return_dict, _set_return_dict)
 
 
+_suppress_verl_vllm_noise()
 _suppress_vllm_fla_short_sequence_format_warning()
 _suppress_torch_inductor_online_softmax_warning()
 _patch_opentelemetry_prometheus_env_var()
