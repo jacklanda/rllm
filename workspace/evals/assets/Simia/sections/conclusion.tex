@@ -1,0 +1,13 @@
+
+\section{Conclusion}
+In this work, we observed that LLMs can reason to simulate agent environments even without the actual testbed data. By leveraging this capability, we propose Simia-SFT, an LLM trajectory simulator framework to synthesize agentic SFT data. By combining LLm-based pre-filtering, LLM simulation and rule-based sanity check, our pipeline produces high-quality trajectories across heterogeneous agent environments without requiring laborious environment engineering. We further proposed Simia-RL, an LLM environment simulator framework to enable RL without real agent environment implementations. Our experiments show that smaller open models surpass much larger proprietary models. Together, these results establish environment simulation as a practical pathway for advancing LLM agent training, opening opportunities for scalable research and deployment across diverse real-world tasks.
+
+\subsubsection*{Limitations}
+While our pipeline targets broad, environment-agnostic trajectory synthesis, our current study still has several limitations. Experiments focus on a finite set of agent domains such as airline, retail, web navigation, and office scenarios. Extending to more domains with different tool schemas is important. Additionally, our data generation and RL environments rely on LLM simulators. Although prompts constrain the action space by anchoring formal tool specifications, the simulation may still introduce distributional bias that differ from real deployments. 
+
+
+\subsubsection*{Ethical Considerations}
+This work investigates synthetic data and simulated environments for agentic training.  
+It does not involve human subjects, user studies, or the collection of personally identifiable information. 
+The dataset and benchmarks used in our experiments are publicly available. We do not introduce or endorse any applications that could cause harm or be misused.
+This paper does not present any ethical concerns. 

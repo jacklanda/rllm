@@ -1,0 +1,169 @@
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{gray}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=5pt,
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    frame=single,
+    framesep=2pt,
+    xleftmargin=15pt,
+    framexleftmargin=15pt,
+    tabsize=4,
+    columns=flexible,
+    keepspaces=true,
+    escapeinside={(*@}{@*)},
+    literate={\_}{\_}1,
+}
+
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}{0.97\textwidth}
+\begin{lstlisting}[style=pythonstyle, firstnumber=1]
+from fastapi import FastAPI, Query, Path, Body
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List, Dict
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Date, ForeignKey, Text, UniqueConstraint, Index, Float
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+import os
+from datetime import datetime
+
+database_url = os.getenv("DATABASE_PATH", "sqlite:///outputs/databases/spotify.db")
+engine = create_engine(database_url, connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+app = FastAPI(title="Simplified Spotify API")
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(Text, nullable=False, unique=True)
+    email = Column(Text, nullable=False, unique=True)
+    display_name = Column(Text)
+    profile_data = Column(Text)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class Artist(Base):
+    __tablename__ = "artists"
+    id = Column(Integer, primary_key=True)
+    name = Column(Text, nullable=False)
+    sort_name = Column(Text)
+    primary_genre_id = Column(Integer, ForeignKey("genres.id"))
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class Track(Base):
+    __tablename__ = "tracks"
+    id = Column(Integer, primary_key=True)
+    title = Column(Text, nullable=False)
+    album_id = Column(Integer, ForeignKey("albums.id"))
+    duration_ms = Column(Integer)
+    track_number = Column(Integer)
+    popularity = Column(Integer, default=0)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class Playlist(Base):
+    __tablename__ = "playlists"
+    id = Column(Integer, primary_key=True)
+    owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(Text, nullable=False)
+    description = Column(Text)
+    is_collaborative = Column(Integer, default=0)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+\end{lstlisting}
+\end{minipage}
+\caption{Synthesized Spotify environment code (Part 1 / 2): Imports and core database models including User, Artist, Track, and Playlist tables. The full implementation includes 25 database models covering genres, albums, podcasts, listening history, and more. Note that this is a simplified example and the full implementation contains approximately 2,400 lines of code, which is not shown here for brevity.}
+\label{fig:env-code-part1}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}{0.97\textwidth}
+\begin{lstlisting}[style=pythonstyle, firstnumber=200]
+
+.....about 150 lines of code here.....
+
+@app.get(
+    "/api/playlists",
+    response_model=PlaylistsResponse,
+    summary="Get all playlists for current user",
+    description="Retrieve all playlists owned by or shared with the current user.",
+    tags=["playlists"],
+    operation_id="get_playlists",
+)
+async def get_playlists(
+    limit: int = Query(20, description="Maximum number of playlists"),
+    offset: int = Query(0, description="Offset for pagination"),
+) -> PlaylistsResponse:
+    session = SessionLocal()
+    playlists = session.query(Playlist).filter(
+        Playlist.owner_user_id == 1
+    ).offset(offset).limit(limit).all()
+    result = [
+        PlaylistModel(
+            id=p.id, owner_user_id=p.owner_user_id, name=p.name,
+            description=p.description,
+            is_collaborative=bool(p.is_collaborative),
+            created_at=p.created_at.isoformat() if p.created_at else None,
+        ) for p in playlists
+    ]
+    session.close()
+    return PlaylistsResponse(playlists=result)
+
+@app.post(
+    "/api/playlists",
+    response_model=PlaylistModel,
+    summary="Create a new playlist",
+    description="Create a new playlist for the current user.",
+    tags=["playlists"],
+    operation_id="create_playlist",
+)
+async def create_playlist(
+    body: PlaylistCreateBody = Body(..., description="Playlist data"),
+) -> PlaylistModel:
+    session = SessionLocal()
+    now = datetime.utcnow()
+    playlist = Playlist(
+        owner_user_id=1, name=body.name, description=body.description,
+        is_collaborative=1 if body.is_collaborative else 0,
+        created_at=now, updated_at=now,
+    )
+    session.add(playlist)
+    session.commit()
+    result = PlaylistModel(
+        id=playlist.id, owner_user_id=playlist.owner_user_id,
+        name=playlist.name, description=playlist.description,
+        is_collaborative=bool(playlist.is_collaborative),
+        created_at=playlist.created_at.isoformat(),
+    )
+    session.close()
+    return result
+
+.....about 2000 lines of code here.....
+
+@app.on_event("startup")
+async def startup():
+    Base.metadata.create_all(bind=engine)
+
+if __name__ == "__main__":
+    import uvicorn
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)
+\end{lstlisting}
+\end{minipage}
+\caption{Synthesized Spotify environment code (Part 2 / 2): Pydantic response models and example toolset endpoints for playlist operations. Each endpoint includes OpenAPI metadata (summary, description, tags, operation\_id) for automatic documentation and agent discovery via the MCP protocol. In the last, the environment reads configuration from environment variables and creates database tables on startup, which is designed for isolated launching for RL training. Note that this is a simplified example and the full implementation contains approximately 2,400 lines of code, which is not shown here for brevity.}
+\label{fig:env-code-part2}
+\end{figure*}
+

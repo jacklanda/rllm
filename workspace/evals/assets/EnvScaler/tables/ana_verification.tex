@@ -1,0 +1,30 @@
+\begin{table}[t]
+\centering
+\caption{
+    Overall performance across three verification strategies: LLM-only, code-only, and code-augmented. LLM-only verification decides the rewards based on the agent trajectory. Code-only verification inspects database state differences and the final answer, deciding either \texttt{Completed} ($r_t = 1$) or \texttt{Others} ($r_t = 0$).
+}
+\label{tab:ana_verification}
+\small
+\resizebox{0.85\columnwidth}{!}{%
+\begin{tabular}{@{}l|l|cccc@{}}
+\toprule
+\textbf{Size} & \textbf{Verification} & \textbf{BFCLv3} & \textbf{$\tau^2$ P@1} & \textbf{$\tau^2$ P@4} & \textbf{MCP} \\
+\midrule
+\multirow{3}{*}{4B} 
+  & LLM & 51.92 & 15.65 & 35.97 & \textbf{6.70} \\
+  & Code & 55.66 & 14.93 & 32.01 & 6.15 \\
+  & Augmented & \textbf{64.50} & \textbf{22.57} & \textbf{43.89} & \textbf{6.70} \\
+\midrule
+\multirow{3}{*}{8B} 
+  & LLM & 55.46 & 26.44 & 52.52 & 10.62 \\
+  & Code & 60.00 & 29.59 & 52.88 & 5.59 \\
+  & Augmented & \textbf{65.94} & \textbf{33.45} & \textbf{55.40} & \textbf{11.17} \\
+\midrule
+\multirow{3}{*}{14B} 
+  & LLM & 65.44 & 31.03 & 55.76 & 10.62 \\
+  & Code & 65.04 & 29.50 & 53.60 & 8.38 \\
+  & Augmented & \textbf{70.18} & \textbf{39.03} & \textbf{57.19} & \textbf{12.29} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

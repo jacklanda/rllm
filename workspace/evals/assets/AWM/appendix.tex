@@ -1,0 +1,259 @@
+\appendix
+\onecolumn
+
+
+\section{Implementation Details} \label{appendix:full_implementation_details}
+
+\subsection{Scenario Generation} \label{appendix:scenario_generation}
+
+We adopt a Self-Instruct style expansion~\citep{selfinstruct} to scale from 100 seed websites to 1,000 diverse scenarios.
+The seed set is drawn from popular domain names\footnote{\url{https://www.similarweb.com/top-websites/}}, and the LLM generates new candidates conditioned on few-shot examples that emphasize stateful, database-backed interactions.
+To maintain diversity, we apply two complementary filters: (1) an LLM classifier that scores each candidate on suitability for CRUD operations (create, read, update, delete), rejecting content-centric or read-only scenarios (e.g., news), and (2) embedding-based deduplication using cosine similarity with a threshold of 0.85, ensuring newly generated scenarios are sufficiently distinct from the existing pool.
+We also enforce category caps to prevent over-representation of dominant types such as e-commerce.
+The prompts used for generation and classification are provided in Figures~\ref{fig:gen-scenario-system} and \ref{fig:gen-scenario-user}.
+Table~\ref{tab:scenarios_demo} shows a random sample of 100 generated scenarios.
+We also show the distribution of the synthesized scenarios in Figure~\ref{fig:domain_distribution} and the wordcloud of the scenario descriptions in Figure~\ref{fig:wordcloud}.
+The distribution shows that the synthesized scenarios span diverse domains without collapsing to a few dominant types.
+
+\subsection{Task Generation} \label{appendix:task_generation}
+
+For each scenario, we prompt the LLM to generate $k=10$ diverse user tasks that serve as functional requirements for downstream synthesis.
+This modest count keeps the database schema and toolset implementation tractable for LLMs.
+The prompt enforces two constraints: (1) tasks must be API-solvable without UI dependencies such as clicking or page navigation, and (2) tasks assume post-authentication context to unlock deeper functionalities.
+Each task is required to be specific and self-contained, including concrete parameters (e.g., product IDs, user names) so that it can be executed without additional clarification.
+This requirement-driven design ensures that the subsequently generated database schema and toolset are aligned with actual user needs rather than being over-specified or incomplete.
+The prompt template is shown in Figure~\ref{fig:gen-task}. And the generated tasks are shown in Table~\ref{tab:tasks_demo}.
+
+\subsection{Environment Synthesis} \label{appendix:environment_synthesis}
+
+This section details the synthesis of the three core POMDP components: state space (database), action and observation spaces (interface), and reward function (verification).
+
+\myparagraph{Database Schema Generation.}
+Given the scenario description and task set $\mathcal{T}_{E_i}$, the LLM infers the minimal relational schema required to make all tasks feasible.
+The output is a set of SQLite DDL statements defining tables, columns, types, primary keys, foreign keys, and indexes.
+We instruct the LLM to reason about entity relationships implied by the tasks (e.g., a ``cancel order'' task implies an Orders table with a status column) and to avoid authentication-related fields.
+Based on the introduced self-correction mechanism, we attempt to run the generated DDL statements in an isolated environment and test the functionality.
+If any DDL statement fails execution, we capture the error message, summarize it via a separate LLM call, and append the summary to the prompt for regeneration.
+This feedback loop repeats with an error threshold of 10\%: if fewer than 10\% of tables fail, we accept the schema.
+The prompt is shown in Figure~\ref{fig:gen-db}. And we visualize part of the SQLite database schema with sample data in Figure~\ref{fig:database_view}.
+
+\myparagraph{Sample Data Synthesis.}
+An empty schema is insufficient for task execution, since many tasks require querying or updating existing records.
+We synthesize sample data by prompting the LLM to analyze task preconditions and generate INSERT statements that satisfy them.
+For example, if a task requires ``updating product inventory,'' the synthesized data must include at least one product with a non-zero stock level.
+The LLM outputs a JSON structure containing table names and corresponding INSERT statements, which are executed in dependency order respecting foreign key constraints.
+We apply the same error-feedback loop as schema generation, with an error threshold of 10\% for acceptable insert failures.
+The prompt is shown in Figures~\ref{fig:gen-data-1} and \ref{fig:gen-data-2}. 
+
+\myparagraph{Interface Specification Design.}
+Before generating implementation code, we first synthesize an interface specification that defines the toolset schema.
+This two-stage approach (schema then code) reduces hallucination in long code generation, since pilot experiments show that direct code generation for environments with 30+ tools often produces inconsistent interfaces.
+Given the task set and database schema, the LLM infers the minimal set of endpoints required to make every task executable.
+Each endpoint specification includes: name, method, path, summary, typed input parameters, and response schema.
+The specification also serves as documentation for agents at inference time, shown in Table~\ref{tab:demo_api_schema}.
+The prompt is shown in Figures~\ref{fig:gen-api-1} and \ref{fig:gen-api-2}, and an example of the synthesized MCP toolset is shown in Figure~\ref{fig:toolset-demo}.
+
+\myparagraph{Environment Implementation.}
+With the API specification and database schema, we generate a complete Python file implementing an MCP server.
+The generated code includes: SQLAlchemy ORM models mirroring the database schema, Pydantic request/response models, and FastAPI endpoint handlers that perform database operations.
+Each environment averages about 2,000 lines of code and exposes 35 tools on average.
+After generation, we validate the environment by launching and checking that the MCP server starts successfully and responds to health checks and ``list tools'' calls.
+Failed environments enter the self-correction loop to fix the errors.
+The prompt is shown in Figures~\ref{fig:gen-env-1}, \ref{fig:gen-env-2}, and \ref{fig:gen-env-3}.
+
+\myparagraph{Verification Code Synthesis.}
+For each task, we generate a Python verification function that compares database states before and after agent execution.
+The function takes two database paths (initial and final) as input, executes SQL queries to extract task-relevant information, and returns a structured dictionary containing: changed records, expected outcomes, and diagnostic signals.
+We also generate success and failure criteria in natural language that guide the LLM-as-a-Judge in interpreting the verification results.
+During RL training, this code-augmented verification provides grounded evidence to the judge, reducing hallucination in reward assignment.
+The prompt for generating the verification code is shown in Table~\ref{tab:verification-prompt-2}, and the example of the synthesized verification code is shown in Figure~\ref{fig:verification-code-part1} and~\ref{fig:verification-code-part2}.
+
+\myparagraph{Self-Correction Mechanism.}
+All synthesis stages share a common error-recovery pattern.
+When generated code fails execution, we capture the full error traceback and invoke a separate LLM call to produce a concise error summary (typically 200-500 tokens) that identifies the root cause and suggests fixes.
+This summary is appended to the original prompt for the next generation attempt.
+We limit retries to 5 iterations per component.
+If an error threshold (10\% for schema/data, 0\% for environment startup) is exceeded after all retries, we select the best attempt based on error rate and proceed.
+This approach achieves over 85\% first-attempt success rate across all stages, with an average of 1.13 correction iterations for failed cases.
+
+
+\subsection{Tool Calling Format and Validation} \label{appendix:tool_call_format}
+
+We adopt the Qwen3 tool-calling format~\citep{qwen3}, which wraps each tool invocation in XML tags: ``\texttt{<tool\_call>}\{name: \dots, arguments: \dots\}\texttt{</tool\_call>}''.
+Rather than exposing all environment-specific tools directly to the agent, we design a two-level abstraction that decouples the agent from environment details.
+
+\myparagraph{Two-Level Tool Abstraction}
+The agent interacts with MCP environments through exactly two meta-tools:
+(1) \texttt{list\_tools}, which queries the MCP server to retrieve all available tools in the current environment along with their metadata (input/output schemas, descriptions), and
+(2) \texttt{call\_tool}, which invokes an environment-specific tool by name with the required arguments passed as a JSON string.
+This design enables the agent to dynamically discover and invoke different toolsets across environments without hardcoding any tool information.
+The complete system prompt is shown in Figure~\ref{fig:agent-system-prompt}.
+
+\myparagraph{Format Validation Rules}
+During RL training, we enforce format constraints to ensure well-formed tool calls and prevent hallucinated or malformed interactions.
+We apply rule-based validation at each step of the trajectory, classifying it as either valid, a format error, or an environment/server error.
+The validation checks the following conditions:
+(1) Reasoning format: All assistant messages must contain non-empty reasoning within \texttt{<think>...</think>} tags.
+(2) Tool name validity: The agent must not call hallucinated tools (tools not returned by \texttt{list\_tools}) or use invalid tool names.
+(3) Argument validity: Tool arguments must be well-formed JSON that conforms to the tool schema.
+(4) Protocol adherence: The agent must call \texttt{list\_tools} exactly once, and it must be the first tool call in the trajectory.
+(5) Interaction consistency: If the agent produces multiple interaction turns, it must make at least one successful tool call beyond the initial \texttt{list\_tools}.
+(6) Server response: Each tool call must receive a non-error response from the MCP server. For example, if the server returns an error message indicating timeout or internal failure, we classify it as an environment error.
+For each step $t$, if any of the 1-5 conditions are violated, we classify it as a format error, assigning a negative reward $r_t = -1$. If condition 6 is violated, we classify it as an environment error with reward $r_t = 0$ following the reward shapes in Sec.~\ref{sec:reward_design}. 
+
+\myparagraph{Early Termination}
+To improve training efficiency, we implement early stopping for unrecoverable errors.
+When the validator detects a format error or server error during rollout, we terminate the trajectory immediately rather than continuing to generate additional steps.
+This saves computational resources and prevents the agent from receiving reward signals for fundamentally broken trajectories. 
+
+
+\subsection{Training and Evaluation Details} \label{appendix:implementation_details}
+
+\myparagraph{Training Hyperparameters.}
+Table~\ref{tab:rl_hyper} summarizes the hyperparameters used for GRPO training~\citep{shao2024deepseekmath}.
+According to the common agentic RL training settings~\citep{li2025simulatingenvironmentsreasoningmodels,wang2025ragenunderstandingselfevolutionllm}, we set the KL coefficient to 0.001.
+Beyond standard GRPO settings, we use a higher clip ratio of 0.28, following the recommendation in DAPO~\citep{dapo} to allow more exploration for the agent.
+Also, we use sequence-level importance sampling to mitigate the distribution shift issue between the rollout engine and the model training engine~\citep{yao2025offpolicy}.
+
+\myparagraph{Environment Management.}
+We implement multi-turn RL training on top of AgentFly~\citep{wang2025agentfly} and verl~\citep{verl}.
+Each training step launches 1,024 isolated environment instances in parallel, with each instance running as an independent MCP server backed by its own SQLite database copy.
+This isolation ensures that concurrent rollouts do not interfere with each other's state transitions.
+Environment instances are reset by restoring the database to its initial state after each rollout completes.
+Environment startup (spawning MCP servers, copying databases) is a bottleneck in online RL, as it blocks rollout collection.
+To overlap environment preparation with policy training, we further implement a pre-fetching mechanism: while the current batch undergoes gradient updates, a background thread pre-configures environments for the next batch.
+This significantly reduces per-step wall-clock time compared to sequential environment startup.
+
+\myparagraph{Sample Splitting for History-Aware Training.}
+As described in Section~\ref{sec:history_aware_training}, we align training with inference by applying history truncation during optimization.
+We use simple history context management, specifically sliding window truncation, to study the mismatch issue between training and inference.
+Specifically, given a completed rollout with $T$ assistant turns, we split it into $T$ separate training samples.
+For sample $t$, the input consists of the system prompt, initial user message, the first assistant-tool exchange (which contains the \texttt{list\_tools} call), and the $w=3$ most recent turns preceding turn $t$.
+The loss is computed only on the tokens of turn $t$, while all preceding context tokens have their loss mask set to zero.
+This ``sample splitting'' approach ensures each training sample mirrors the truncated context the agent will see at inference time. Although this increases the number of forward passes per rollout by a factor of $T$, it eliminates the distribution shift that would otherwise occur when training on full histories but deploying with truncated contexts.
+More complex history context management is possible, but it is beyond the scope of this paper.
+
+\myparagraph{Reward Computation.}
+At the end of each rollout, we invoke the code-augmented LLM-as-a-Judge to determine task completion status.
+The verification code is executed on the final database state, comparing it against the initial state, and its structured output (changed records, success criteria) is provided to GPT-5~\citep{openai_gpt5_2025} along with the agent trajectory.
+The judge returns one of four classifications: \texttt{Completed}, \texttt{Partially Completed}, \texttt{Agent Error}, or \texttt{Environment Error}.
+We map these to rewards as specified in Sec.~\ref{sec:reward_design}.
+To reduce latency, verification calls are batched and executed asynchronously while the next rollout batch is being collected, adding negligible overhead to the training loop.
+
+\myparagraph{Evaluation Protocol.}
+We evaluate trained agents on three benchmarks that differ substantially from our training distribution.
+A key challenge is that each benchmark uses a different tool-calling format: \taubench~\citep{taubench2,verified_tau2} expects direct tool names (e.g., \texttt{get\_user\_details}), BFCLv3~\citep{bfcl} uses function-calling syntax, and MCP-Universe~\citep{mcpuniverse} uses the MCP protocol.
+To bridge this gap, we implement format converters that translate between our unified \texttt{call\_tool} abstraction and each benchmark's native format.
+For \taubench, we wrap each tool call as \texttt{call\_tool(tool\_name="mcp\_tool\_\{name\}", arguments=\{...\})} and unwrap responses accordingly.
+For BFCLv3, we aggregate multi-turn trajectories into the expected single-turn or parallel function call format, skipping \texttt{list\_tools} meta-calls.
+This ensures evaluation measures the agent's actual task-solving ability rather than format compliance.
+
+\myparagraph{Decoding and Context Configuration.}
+During evaluation, we use temperature 0.6 with top-$k$=20 and top-$p$=0.95, following the recommended decoding settings in Qwen3~\citep{qwen3}.
+We extend the context window to 131,072 tokens via RoPE scaling~\citep{rope} for all evaluations, as some benchmark tasks (especially BFCLv3 multi-turn categories) require processing lengthy interaction histories.
+When processing long context tasks, the history limit is loosened to $w=10$ turns during evaluation, allowing agents to leverage more context information.
+
+\input{tables/rl_hyper.tex}
+
+
+\section{Analysis}
+
+\subsection{Analysis on Step-level Format Correctness Reward} \label{appendix:analysis_on_step_level}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.8\columnwidth]{figures/step_reward_cmp.png}
+    \caption{Format error ratio comparison of \synth. ``w/o Format'' means disabling the step-level format correctness reward. 
+    }
+    \label{fig:format_error_ratio_cmp}
+  \end{figure}
+  
+  
+
+We study the impact of the step-level format correctness reward in Figure~\ref{fig:format_error_ratio_cmp}.
+With this reward, agents quickly learn to follow the tool interface contract, and the format error ratio rapidly converges to a low level.
+It also improves training efficiency by reducing the average rollout time by about $27\%$.
+In contrast, without this reward, the format error ratio remains above $20\%$ even after 50 optimization steps, leading to frequent invalid actions and noisier learning signals.
+This degradation further translates into a lower task completion rate, which saturates below $40\%$.
+Overall, the step-level format correctness reward improves both agent performance and training efficiency.
+
+
+\subsection{Case Study for Verification} \label{appendix:case_study_for_verification}
+We provide three representative cases in Figures~\ref{fig:case1}, \ref{fig:case2}, and \ref{fig:case3} to illustrate why our code-augmented LLM-as-a-Judge is more robust than either rigid code-only verification or LLM-only judging from agent trajectories.
+For the first case (Fig.~\ref{fig:case1}), the task is a clean, database-grounded query: the agent calls the correct tool to retrieve the full bid history of the item and summarize the findings; the verifier can deterministically confirm these statistics from the underlying state/returned records, and the judge aligns, illustrating the ideal regime where structured verification evidence is decisive. 
+For the second case (Fig.~\ref{fig:case2}), the environment exhibits an imperfection when the agent tries to create a routine; a strict code-only verifier that expects a state delta would incorrectly flag failure because the initial and final snapshots appear identical, yet the trajectory shows an idempotent success path, and the code-augmented judge uses this context to correctly mark \texttt{Completed}, reducing false negatives under transient tool/infrastructure issues. 
+For the last case (Fig.~\ref{fig:case3}), an API/tool calling error misleads the agent into creating a duplicate event and then adding the session under the wrong event ID; tool calls succeed locally so a judge without verifier grounding could be fooled into marking \texttt{Completed}, but the verifier reveals the real target event remains unchanged, enabling the code-augmented judge to identify a wrong operation and correctly reject the spurious success claim.
+
+Overall, the key theme is that synthetic interactive environments are imperfect: transient tool failures, idempotent tasks, and ambiguous tool calling behaviors can all break the assumptions of rigid verification.
+Our design mitigates this by letting the verifier extract \emph{structured evidence} from database snapshots and rule-based checks, while the judge reasons over \emph{trajectory context} to resolve ambiguity and reduce both false negatives and false positives.
+
+
+
+
+
+\begin{figure}
+    \centering
+    \begin{minipage}{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/env_category_distribution.pdf}
+        \caption{Distribution of synthesized scenarios of \synth.}
+        \label{fig:domain_distribution}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/env_category_wordcloud.pdf}
+        \caption{Wordcloud of the scenario descriptions of \synth.}
+        \label{fig:wordcloud}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\columnwidth]{figures/database_view.png}
+    \caption{Visualization of part of the SQLite database schema of ``Spotify'' environment.}
+    \label{fig:database_view}
+\end{figure}
+
+\input{prompts/agent_system_prompt.tex}
+
+\input{prompts/scenarios_demo.tex}
+\input{prompts/gen_scenario.tex}
+\input{prompts/gen_task.tex}
+\input{prompts/gen_db.tex}
+\input{prompts/gen_data_1.tex}
+\input{prompts/gen_data_2.tex}
+\input{prompts/gen_api_1.tex}
+\input{prompts/gen_api_2.tex}
+\input{prompts/gen_env_1.tex}
+\input{prompts/gen_env_2.tex}
+\input{prompts/gen_env_3.tex}
+\input{prompts/gen_verification.tex}
+\input{prompts/prompt_verify_judge.tex}
+
+\input{tables/demo_api_schema.tex}
+\input{prompts/tasks_demo.tex}
+\input{prompts/env_code_demo.tex}
+\input{tables/toolset_mcp_demo.tex}
+\input{prompts/verification_demo.tex}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\columnwidth]{figures/case1.pdf}
+    \caption{Case study for verification: code-based verifier and LLM judge fully align on a clean, database-grounded success signal.}
+    \label{fig:case1}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\columnwidth]{figures/case2.pdf}
+    \caption{Case study for verification: Tool/Infrastructure error produces a false negative for code-only verification, while the judge uses trajectory context to recover the correct judgment.}
+    \label{fig:case2}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\columnwidth]{figures/case3.pdf}
+    \caption{Case study for verification: Tool calling ambiguity causes a ``wrong-entity'' action that looks successful locally; verification grounded in the true database state prevents a false positive.}
+    \label{fig:case3}
+\end{figure}

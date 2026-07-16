@@ -1,0 +1,118 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \small
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \texttt{You are an expert at identifying websites, apps, and digital platforms that are HIGHLY SUITABLE for API environment simulation and database-driven interactions.}\\[4pt]
+
+        \texttt{\#\# KEY PRINCIPLE: Can the data be SYNTHESIZED?}\\
+        \texttt{We need platforms where data can be FAKED but still be REALISTIC and USEFUL.}\\[3pt]
+
+        \texttt{\#\#\# Data that CAN be synthesized:}\\
+        \texttt{- Numbers: temperatures, prices, quantities, ratings, coordinates, stock prices}\\
+        \texttt{- Entities: users, products, orders, bookings, employees, devices, sensors}\\
+        \texttt{- Status values: order status, flight status, device state}\\
+        \texttt{- Short text: names, titles, addresses, categories, descriptions}\\
+        \texttt{- Timestamps: dates, schedules, deadlines, historical records}\\
+        \texttt{- Geographic: cities, airports, coordinates (static data)}\\[3pt]
+
+        \texttt{\#\#\# Data that CANNOT be synthesized meaningfully:}\\
+        \texttt{- Long articles: news content, blog posts, encyclopedia entries}\\
+        \texttt{- Media: actual video/audio content (not metadata)}\\
+        \texttt{- AI inference: chatbot responses, ML-based recommendations}\\
+        \texttt{- Real search: search engine results with ranking}\\[4pt]
+
+        \texttt{\#\# HIGH Suitability Examples (GENERATE THESE):}\\
+        \texttt{E-commerce: CRUD on orders, reviews (products, orders, cart, reviews)}\\
+        \texttt{Task Management: CRUD on tasks (tasks, boards, assignments)}\\
+        \texttt{Banking/Fintech: CRUD on transactions (accounts, transactions, transfers)}\\
+        \texttt{Booking/Reservation: CRUD on reservations (listings, bookings, availability)}\\
+        \texttt{Weather Services: Query weather data (locations, forecasts, alerts, history)}\\
+        \texttt{Flight/Travel: Search \& book flights (flights, airports, bookings, prices)}\\
+        \texttt{Stock Trading: Trade \& portfolio (stocks, trades, portfolio, prices)}\\
+        \texttt{IoT/Smart Home: Control devices (devices, sensors, readings, schedules)}\\
+        \texttt{Fitness Tracking: Log workouts (workouts, exercises, metrics, goals)}\\
+        \texttt{Healthcare: Manage appointments (patients, appointments, records, prescriptions)}\\
+        \texttt{HR/Payroll: Manage employees (employees, timesheets, payroll)}\\
+        \texttt{CRM/Sales: Manage leads (leads, deals, contacts, activities)}\\
+        \texttt{Inventory: Manage stock (products, inventory, warehouses)}\\
+        \texttt{Logistics: Track shipments (shipments, packages, routes, status)}\\
+        \texttt{Restaurant/Food: Orders \& menu (menu\_items, orders, reservations)}\\
+        \texttt{Property/Real Estate: Listings \& viewings (properties, listings, viewings, offers)}\\
+        \texttt{Education/LMS: Courses \& grades (courses, enrollments, assignments, grades)}\\
+        \texttt{Event Management: Events \& tickets (events, tickets, attendees, venues)}\\[4pt]
+
+        \texttt{\#\# LOW Suitability (AVOID THESE):}\\
+        \texttt{News sites (BBC, CNN): Article CONTENT is the product (cannot synthesize meaningful articles)}\\
+        \texttt{Wikipedia/Encyclopedia: Article CONTENT is the product (cannot fake knowledge)}\\
+        \texttt{Search Engines: Need real search index + ranking (cannot simulate relevance)}\\
+        \texttt{AI Assistants (ChatGPT): Need real AI inference (cannot fake AI responses)}\\
+        \texttt{Translation (Google Translate): Need real NLP models (cannot fake translations)}\\
+        \texttt{Content platforms focus: If CONTENT is core value (metadata is not enough)}\\[4pt]
+
+        \texttt{\#\# MEDIUM Suitability (Focus on CRUD aspects):}\\
+        \texttt{YouTube: CAN simulate playlists, subs, comments, channel mgmt; CANNOT simulate actual videos, recommendations}\\
+        \texttt{Spotify: CAN simulate playlists, library, following; CANNOT simulate actual audio, music discovery}\\
+        \texttt{Reddit: CAN simulate posts (short), comments, votes; CANNOT simulate long-form quality content}\\[4pt]
+
+        \texttt{\#\# Categories to Cover (for diversity):}\\
+        \texttt{E-commerce, Booking/Reservation, Task/Project Management, Finance/Banking, Weather/Environmental, Flight/Travel, Stock/Investment,}\\
+        \texttt{IoT/Smart Home, Fitness/Health Tracking, Healthcare/Medical, HR/Recruiting, CRM/Sales, Inventory/Warehouse, Logistics/Shipping,}\\
+        \texttt{Restaurant/Food, Real Estate, Education/LMS, Event/Ticketing, Legal/Contracts, Subscription Management, Customer Support,}\\
+        \texttt{Forms/Surveys, Analytics Dashboards, Fleet Management, Utility Management (electricity, water), Insurance, Pet Services, Automotive}\\[4pt]
+
+        \texttt{\#\# Your Task:}\\
+        \texttt{Generate NEW platforms that are HIGHLY SUITABLE where data can be realistically SYNTHESIZED and users perform meaningful CRUD operations.}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{System prompt for scenario generation (part 1 of 2).}
+    \label{fig:gen-scenario-system}
+\end{figure*}
+
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \small
+        \vspace{2pt}
+        \setlength{\baselineskip}{9pt}
+
+        \texttt{Here are \{num\_examples\} examples of suitable website/app scenarios:}\\[3pt]
+
+        \texttt{\{examples\}}\\[6pt]
+
+        \texttt{---}\\[4pt]
+
+        \texttt{Now generate \{num\_to\_generate\} NEW and DIVERSE website/app/platform scenarios that are DIFFERENT from all examples above.}\\[4pt]
+
+        \texttt{Requirements:}\\
+        \texttt{1. Each scenario must be suitable for API environment synthesis (CRUD operations, database interactions)}\\
+        \texttt{2. Cover DIFFERENT interaction patterns and industries than the examples}\\
+        \texttt{3. Include a mix of: well-known platforms, niche services, B2B tools, mobile apps, and specialized tools}\\
+        \texttt{4. The description should emphasize: what entities users can manage, what operations are available, what workflows exist}\\
+        \texttt{5. Avoid content-heavy sites, real-time data sites, search engines, AI inference services}\\
+        \texttt{6. Each description should be 150-300 words, focusing on actionable features}\\[4pt]
+
+        \texttt{Output format (JSON array, no markdown fences):}\\
+        \texttt{[}\\
+        \texttt{~~~~\{\{"name": "Platform Name", "url": "example.com", "description": "Description focusing on CRUD operations, entities, and workflows..."\}\},}\\
+        \texttt{~~~~...}\\
+        \texttt{]}\\[4pt]
+
+        \texttt{Generate exactly \{num\_to\_generate\} new scenarios:}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{User prompt template for scenario generation (part 2 of 2).}
+    \label{fig:gen-scenario-user}
+\end{figure*}

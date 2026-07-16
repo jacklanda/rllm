@@ -1,0 +1,66 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Generate a \PYG{g+gs}{**Multi\PYGZhy{}Server Tool Use Question**} based on the provided MCP Servers and their tool descriptions.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided MCP Servers and their available tools, then create a realistic user question that would naturally require the use of \PYG{g+gs}{**\PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools from at least 2 different MCP servers**} to solve completely.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Guidelines}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Realism}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that represent real\PYGZhy{}world scenarios where users would need to interact with tools from multiple MCP Servers
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should sound natural and authentic, as if asked by someone genuinely needing to accomplish a complex task
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider workflows that span across different services/domains that would require multiple servers
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Think about how different MCP servers complement each other in real\PYGZhy{}world use cases
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Server and Tool Selection}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Use tools from \PYG{g+gs}{**at least 2 different MCP servers**} to answer the question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Select \PYG{g+gs}{**\PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools total**} that work together across multiple servers
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should require a sequence or combination of tool calls from different servers to solve completely
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Choose tools based on how they complement each other across different services/domains
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider each tool\PYGZsq{}s description and purpose when crafting the cross\PYGZhy{}server workflow
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Ensure tools from different servers create a logical, interconnected workflow
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Complexity}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that are complex enough to warrant using \PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools across multiple servers
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should have multiple components or require several steps that span different services
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Include relevant context or constraints that make the multi\PYGZhy{}server tool usage necessary
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Do not contain the exact tool names or server names in the question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Ensure the question cannot be reasonably answered with tools from just a single server
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create scenarios that naturally require different types of services working together
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Cross\PYGZhy{}Server Integration}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Think about how different servers\PYGZsq{} capabilities can be combined
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider data flow between different services (e.g., retrieving data from one service to use in another)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create realistic scenarios where multiple services need to work together
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Focus on complementary functionalities across different domains
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Output Format}
+Your response should include:
+\PYG{k}{1.} \PYG{g+gs}{**Server Analysis**}: Briefly analyze all MCP Servers and their available tools, focusing on how they can work together.
+\PYG{k}{2.} \PYG{g+gs}{**Cross\PYGZhy{}Server Workflow**}: Describe the workflow showing how tools from different servers will be used together.
+\PYG{k}{3.} \PYG{g+gs}{**Target Tools**}: The specific tool names from different MCP Servers that should be used together, in the order they would likely be called, with their server names.
+\PYG{k}{4.} \PYG{g+gs}{**Question**}: A clear, realistic user question that requires multi\PYGZhy{}server tool usage.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Available MCP Servers}
+
+\PYGZob{}SERVER\PYGZus{}DESCRIPTIONS\PYGZcb{}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Ensure your question requires exactly \PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools from at least 2 different servers to solve completely. Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}server\PYGZus{}analysis\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Briefly analyze all MCP Servers and their available tools, focusing on how they can work together across different domains/services. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/server\PYGZus{}analysis\PYGZgt{}
+  \PYGZlt{}cross\PYGZus{}server\PYGZus{}workflow\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Describe the workflow showing how tools from different servers will be used together to solve the question. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/cross\PYGZus{}server\PYGZus{}workflow\PYGZgt{}
+  \PYGZlt{}target\PYGZus{}tools\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} The specific tool names from different MCP Servers that should be used together, listed in order with their server names. e.g., \PYGZlt{}tool server=\PYGZdq{}Server1\PYGZdq{}\PYGZgt{}search\PYGZus{}posts\PYGZlt{}/tool\PYGZgt{} \PYGZlt{}tool server=\PYGZdq{}Server2\PYGZdq{}\PYGZgt{}send\PYGZus{}email\PYGZlt{}/tool\PYGZgt{} \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/target\PYGZus{}tools\PYGZgt{}
+  \PYGZlt{}question\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} A clear, realistic user question that requires multi\PYGZhy{}server tool usage spanning different services/domains. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/question\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

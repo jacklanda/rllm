@@ -1,0 +1,50 @@
+
+
+\begin{table}[t]
+  \caption{Statistics of the synthesis pipeline.
+  Success rates and trial counts reflect the self-correction.
+  Costs are averaged per 100 samples using GPT-5~\citep{openai_gpt5_2025} as the generation model.}
+  \label{tab:synthesis_statistics}
+  \centering
+  \small
+    \resizebox{0.83\columnwidth}{!}{
+      \begin{tabular}{l|rrr}
+        \toprule
+        \textbf{Synthesis Stage} & \textbf{Success (\%)} & \textbf{\# Trial} & \textbf{Cost (\$)} \\
+        \midrule
+        Scenario & -- & -- & 0.43 \\
+        Task & -- & -- & 0.56 \\
+        Database & 88.3 & 1.12 & 3.59 \\
+        Sample Data & 88.2 & 1.12 & 13.75 \\
+        Toolset Schema & -- & -- & 23.74 \\
+        Env Code & 86.8 & 1.13 & 12.81 \\
+        Verification & -- & -- & 2.21 \\
+        \midrule
+        \textbf{Total} & -- & -- & \textbf{57.09} \\
+        \bottomrule
+      \end{tabular}
+    }
+\end{table}
+
+\begin{table}[t]
+  \caption{Environment complexity statistics.
+  Agent steps and unique tools are measured using Claude-4.5-Sonnet~\citep{claude45} as the agent backbone, with a maximum step budget of 20.
+  About $13.7\%$ of tasks exceeded this budget.}
+  \label{tab:env_complexity}
+  \centering
+  \small
+    \resizebox{0.92\columnwidth}{!}{
+      \begin{tabular}{l|rrr}
+        \toprule
+        \textbf{Metric (\#)} & \textbf{Mean} & \textbf{Median} & \textbf{Top 90\%} \\
+        \midrule
+        Database Tables & 18.5 & 18.0 & 25.0 \\
+        Sample Data Records & 129.3 & 121.0 & 192.0 \\
+        Exposed Tools & 35.1 & 35.0 & 45.0 \\
+        Environment Code Lines & 1,984.7 & 1,944.0 & 2,586.0 \\
+        Agent Steps per Task & 8.5 & 6.0 & 20.0 \\
+        Unique Tools used per Task & 7.1 & 6.0 & 12.0 \\ 
+        \bottomrule
+      \end{tabular}
+    }
+\end{table}

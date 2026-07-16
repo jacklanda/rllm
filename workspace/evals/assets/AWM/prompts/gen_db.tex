@@ -1,0 +1,54 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \normalsize
+        \vspace{2pt}
+        \setlength{\baselineskip}{9pt}
+
+        \textbf{System Prompt:}\\[2pt]
+        \texttt{You are an expert database architect specializing in SQLite schema design. Your job is to create complete database schemas that can fully support the given user intentions.}\\[6pt]
+
+        \textbf{User Prompt:}\\[2pt]
+        \texttt{Design a complete SQLite database schema to support the following user intentions for a simplified version of \{scenario\_name\}.}\\[3pt]
+
+        \texttt{Note: A scenario can be a website, a mobile app, or a collection of tools and services. This is part of an automatic environment}\\
+        \texttt{synthesis pipeline where we generate executable tool-use environments.}\\[4pt]
+
+        \texttt{User Intentions (\{num\_tasks\} tasks):}\\
+        \texttt{\{user\_intentions\}}\\[4pt]
+
+        \texttt{Requirements:}\\
+        \texttt{1. Create ALL necessary tables to cover all the given user intentions}\\
+        \texttt{2. Include proper primary keys, foreign keys, indexes, and constraints}\\
+        \texttt{3. Use appropriate data types for SQLite (TEXT, INTEGER, REAL, BLOB)}\\
+        \texttt{4. Add timestamps (created\_at, updated\_at) where appropriate}\\
+        \texttt{5. Do not include any example records in the DDL statements}\\
+        \texttt{6. Only create tables and fields that are necessary to cover all the given user intentions}\\
+        \texttt{7. EXCLUDE authentication-related fields like password\_hash, salt, token, session - assume authentication is handled externally}\\
+        \texttt{8. If a users table is needed, only include essential profile fields (id, username, email, profile data)}\\
+        \texttt{9. All operations will be performed as the authenticated user with user\_id=1}\\
+        \texttt{10. Return ONLY valid JSON with DDL statements}\\[4pt]
+
+        \texttt{Output format (without any comments):}\\
+        \texttt{\{}\\
+        \texttt{~~~~``tables'': [}\\
+        \texttt{~~~~~~~~\{}\\
+        \texttt{~~~~~~~~~~~~``name'': ``users'',}\\
+        \texttt{~~~~~~~~~~~~``ddl'': ``CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, email TEXT UNIQUE NOT NULL,}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~full\_name TEXT, created\_at DATETIME DEFAULT CURRENT\_TIMESTAMP);'',}\\
+        \texttt{~~~~~~~~~~~~``indexes'': [}\\
+        \texttt{~~~~~~~~~~~~~~~~``CREATE INDEX idx\_users\_email ON users(email);''}\\
+        \texttt{~~~~~~~~~~~~]}\\
+        \texttt{~~~~~~~~\}}\\
+        \texttt{~~~~]}\\
+        \texttt{\}}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for database schema generation given user tasks.}
+    \label{fig:gen-db}
+\end{figure*}

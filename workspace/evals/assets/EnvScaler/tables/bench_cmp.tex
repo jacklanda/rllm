@@ -1,0 +1,28 @@
+\definecolor{customblue}{RGB}{88,118,169}
+
+\begin{table}[t]
+  \caption{Comparison with existing programming-based environments.
+  Our \synth generates environments with minimal reliance (only a seed set of scenario names) on human or real APIs, achieving the largest scale with SQL-backed state consistency.}
+  \label{tab:bench_cmp}
+  \begin{center}
+    \resizebox{1\columnwidth}{!}{
+    \begin{small}
+        \begin{tabular}{l|c>{\centering\arraybackslash}p{1.6cm}ccrr}
+          \toprule
+          Method & Syn. & Reliance & SQL & \# Envs & \# Tools & \# Code \\
+          \midrule
+          $\tau$-bench & $\times$ & \cellcolor{customblue!80}\textcolor{white}{Human} & $\times$ & 2 & 12.5 & -- \\
+          $\tau^2$-bench & $\times$ & \cellcolor{customblue!80}\textcolor{white}{Human} & $\times$ & 3 & 22.7 & -- \\
+          MCP-Universe & $\times$ & \cellcolor{customblue!60}{Real APIs} & -- & 11 & 12.1 & -- \\
+          \midrule
+          AutoForge & \checkmark & \cellcolor{customblue!50}{Tool Doc} & $\times$ & 10 & -- & -- \\
+          EnvScaler & \checkmark & \cellcolor{customblue!40}{Task Set} & $\times$ & 191 & 18.6 & 662.1 \\
+          \midrule
+          \textbf{\synth} & \checkmark & \cellcolor{customblue!10}{Names Only} & \checkmark & \textbf{1,000} & \textbf{35.1} & \textbf{1984.7} \\
+          \bottomrule
+        \end{tabular}
+      
+    \end{small}
+    }
+  \end{center}
+\end{table}

@@ -1,0 +1,54 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Generate \PYG{g+gs}{**augmented variations**} of a given question that maintain the same target tool(s) usage and complexity level but apply them across different contexts and scenarios.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Take an existing question and its associated target tool(s), then create multiple variations that:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Use the same target tool(s) to achieve the core goal
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Maintain the exact same tool usage order and final outcome
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Apply the question to completely different contexts, scenarios, or domains
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Keep the same level of complexity and constraints as the original
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Demonstrate how the same tool usage pattern applies across diverse real\PYGZhy{}world scenarios
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Guidelines}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Translate the question to distinctly different domains, user personas, or situational contexts while preserving its original complexity level.
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Keep the tool usage sequence and final outcome identical across all variations.
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Ensure each variation feels like a realistic scenario in its new context and remains solvable with the same tool operations.
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Ensure the question does not contain any tool names or explicit references to the target tools.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Input Format}
+\PYG{g+gs}{**Original Question**}: \PYGZob{}ORIGINAL\PYGZus{}QUESTION\PYGZcb{}
+\PYG{g+gs}{**Target Tools**}: \PYGZob{}TARGET\PYGZus{}TOOLS\PYGZcb{}
+\PYG{g+gs}{**Tool Descriptions**}: \PYGZob{}TOOL\PYGZus{}DESCRIPTIONS\PYGZcb{}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output Requirements}
+Generate \PYG{g+gs}{**\PYGZob{}VARIATIONS\PYGZus{}COUNT\PYGZcb{} augmented variations**} of the original question. Each variation should:
+\PYG{k}{1.} Maintain the same core goal that requires the target tool(s)
+\PYG{k}{2.} Use the exact same tool(s) in the same order with the same final outcome
+\PYG{k}{3.} Apply to a completely different context, scenario, or domain
+\PYG{k}{4.} Keep the same complexity level and constraints as the original
+\PYG{k}{5.} Feel like a natural, real\PYGZhy{}world scenario from a different setting
+\PYG{k}{6.} Be meaningfully different from the original and other variations in terms of context only
+\PYG{k}{7.} Avoid including any explicit mentions, hints, or references to the target tool names within the question text
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}analysis\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Briefly analyze the original question and target tool(s) to understand the core goal, tool usage pattern, complexity level, and expected outcome, then identify how this can be applied across different domains while maintaining operational consistency \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/analysis\PYGZgt{}
+  \PYGZlt{}variations\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Generate \PYGZob{}VARIATIONS\PYGZus{}COUNT\PYGZcb{} variations, each with \PYGZlt{}variation\PYGZus{}X\PYGZgt{}, \PYGZlt{}context\PYGZgt{}, and \PYGZlt{}question\PYGZgt{} tags \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}variation\PYGZus{}1\PYGZgt{}
+      \PYGZlt{}context\PYGZgt{}
+        \PYGZlt{}!\PYGZhy{}\PYGZhy{} Brief description of the new domain/scenario introduced \PYGZhy{}\PYGZhy{}\PYGZgt{}
+      \PYGZlt{}/context\PYGZgt{}
+      \PYGZlt{}question\PYGZgt{}
+        \PYGZlt{}!\PYGZhy{}\PYGZhy{} The augmented question that maintains the same target tool(s) usage order, complexity, and outcome but in a different context \PYGZhy{}\PYGZhy{}\PYGZgt{}
+      \PYGZlt{}/question\PYGZgt{}
+    \PYGZlt{}/variation\PYGZus{}1\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Continue with variation\PYGZus{}2, variation\PYGZus{}3, etc. as needed based on number of variations \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/variations\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

@@ -1,0 +1,3377 @@
+[
+    {
+        "task_id": "0",
+        "input": "Who was president of the United States in the year that Citibank was founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "james madison",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "james madison",
+        "target": "james madison",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "james madison",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 0,
+            "question": "Who was president of the United States in the year that Citibank was founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "james madison"
+            ],
+            "gen_text_store": "",
+            "pid": "0",
+            "query": "Who was president of the United States in the year that Citibank was founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "1",
+        "input": "What rocket was the first spacecraft that ever approached Uranus launched on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Titan IIIE",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Titan IIIE",
+        "target": "Titan IIIE",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Titan IIIE",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 1,
+            "question": "What rocket was the first spacecraft that ever approached Uranus launched on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Titan IIIE"
+            ],
+            "gen_text_store": "",
+            "pid": "1",
+            "query": "What rocket was the first spacecraft that ever approached Uranus launched on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "2",
+        "input": "In what year was the company that was founded as Sound of Music added to the S&P 500?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1999",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1999",
+        "target": "1999",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1999",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 2,
+            "question": "In what year was the company that was founded as Sound of Music added to the S&P 500?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1999"
+            ],
+            "gen_text_store": "",
+            "pid": "2",
+            "query": "In what year was the company that was founded as Sound of Music added to the S&P 500?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "3",
+        "input": "Who was the first African American mayor of the most populous city in the United States?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "David Dinkins",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "David Dinkins",
+        "target": "David Dinkins",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "David Dinkins",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 3,
+            "question": "Who was the first African American mayor of the most populous city in the United States?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "David Dinkins"
+            ],
+            "gen_text_store": "",
+            "pid": "3",
+            "query": "Who was the first African American mayor of the most populous city in the United States?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "4",
+        "input": "When did the last king from Britain's House of Hanover die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "20 June 1837",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "20 June 1837",
+        "target": "20 June 1837",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "20 June 1837",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 4,
+            "question": "When did the last king from Britain's House of Hanover die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "20 June 1837"
+            ],
+            "gen_text_store": "",
+            "pid": "4",
+            "query": "When did the last king from Britain's House of Hanover die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "5",
+        "input": "When did the president who set the precedent of a two term limit enter office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "April 30, 1789",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 30, 1789",
+        "target": "April 30, 1789",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 30, 1789",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 5,
+            "question": "When did the president who set the precedent of a two term limit enter office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "April 30, 1789"
+            ],
+            "gen_text_store": "",
+            "pid": "5",
+            "query": "When did the president who set the precedent of a two term limit enter office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "6",
+        "input": "When did the president who set the precedent of a two term limit leave office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "March 4, 1797",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "March 4, 1797",
+        "target": "March 4, 1797",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "March 4, 1797",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 6,
+            "question": "When did the president who set the precedent of a two term limit leave office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "March 4, 1797"
+            ],
+            "gen_text_store": "",
+            "pid": "6",
+            "query": "When did the president who set the precedent of a two term limit leave office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "7",
+        "input": "How many people died in the second most powerful earthquake ever recorded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "131",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "131",
+        "target": "131",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "131",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 7,
+            "question": "How many people died in the second most powerful earthquake ever recorded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "131"
+            ],
+            "gen_text_store": "",
+            "pid": "7",
+            "query": "How many people died in the second most powerful earthquake ever recorded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "8",
+        "input": "Can people who have celiac eat camel meat?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Yes",
+        "target": "Yes",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 8,
+            "question": "Can people who have celiac eat camel meat?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Yes"
+            ],
+            "gen_text_store": "",
+            "pid": "8",
+            "query": "Can people who have celiac eat camel meat?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "9",
+        "input": "What was the final book written by the author of On the Origin of Species?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "The Formation of Vegetable Mould Through the Action of Worms",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "The Formation of Vegetable Mould Through the Action of Worms",
+        "target": "The Formation of Vegetable Mould Through the Action of Worms",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "The Formation of Vegetable Mould Through the Action of Worms",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 9,
+            "question": "What was the final book written by the author of On the Origin of Species?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "The Formation of Vegetable Mould Through the Action of Worms"
+            ],
+            "gen_text_store": "",
+            "pid": "9",
+            "query": "What was the final book written by the author of On the Origin of Species?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "10",
+        "input": "When was the company that built the first steam locomotive to carry passengers on a public rail line founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1823",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1823",
+        "target": "1823",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1823",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 10,
+            "question": "When was the company that built the first steam locomotive to carry passengers on a public rail line founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1823"
+            ],
+            "gen_text_store": "",
+            "pid": "10",
+            "query": "When was the company that built the first steam locomotive to carry passengers on a public rail line founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "11",
+        "input": "Which Theranos whistleblower is not related to a senior American government official?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Erika Cheung",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Erika Cheung",
+        "target": "Erika Cheung",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Erika Cheung",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 11,
+            "question": "Which Theranos whistleblower is not related to a senior American government official?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Erika Cheung"
+            ],
+            "gen_text_store": "",
+            "pid": "11",
+            "query": "Which Theranos whistleblower is not related to a senior American government official?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "12",
+        "input": "What is the fastest air-breathing manned aircraft mostly made out of?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Titanium",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Titanium",
+        "target": "Titanium",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Titanium",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 12,
+            "question": "What is the fastest air-breathing manned aircraft mostly made out of?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Titanium"
+            ],
+            "gen_text_store": "",
+            "pid": "12",
+            "query": "What is the fastest air-breathing manned aircraft mostly made out of?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "13",
+        "input": "Who built the fastest air-breathing manned aircraft?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Lockheed Corporation",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Lockheed Corporation",
+        "target": "Lockheed Corporation",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Lockheed Corporation",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 13,
+            "question": "Who built the fastest air-breathing manned aircraft?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Lockheed Corporation"
+            ],
+            "gen_text_store": "",
+            "pid": "13",
+            "query": "Who built the fastest air-breathing manned aircraft?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "14",
+        "input": "When was the author of The Population Bomb born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "May 29, 1932",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "May 29, 1932",
+        "target": "May 29, 1932",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "May 29, 1932",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 14,
+            "question": "When was the author of The Population Bomb born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "May 29, 1932"
+            ],
+            "gen_text_store": "",
+            "pid": "14",
+            "query": "When was the author of The Population Bomb born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "15",
+        "input": "When did the author of Annabel Lee enlist in the army?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1827",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1827",
+        "target": "1827",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1827",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 15,
+            "question": "When did the author of Annabel Lee enlist in the army?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1827"
+            ],
+            "gen_text_store": "",
+            "pid": "15",
+            "query": "When did the author of Annabel Lee enlist in the army?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "16",
+        "input": "What was the religion of the inventor of the Polio vaccine?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Jewish",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jewish",
+        "target": "Jewish",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jewish",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 16,
+            "question": "What was the religion of the inventor of the Polio vaccine?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Jewish"
+            ],
+            "gen_text_store": "",
+            "pid": "16",
+            "query": "What was the religion of the inventor of the Polio vaccine?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "17",
+        "input": "Who was the second wife of the founder of CNN?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Jane Shirley Smith",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jane Shirley Smith",
+        "target": "Jane Shirley Smith",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jane Shirley Smith",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 17,
+            "question": "Who was the second wife of the founder of CNN?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Jane Shirley Smith"
+            ],
+            "gen_text_store": "",
+            "pid": "17",
+            "query": "Who was the second wife of the founder of CNN?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "18",
+        "input": "When did the first prime minister of the Russian Empire come into office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "November 6, 1905",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "November 6, 1905",
+        "target": "November 6, 1905",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "November 6, 1905",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 18,
+            "question": "When did the first prime minister of the Russian Empire come into office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "November 6, 1905"
+            ],
+            "gen_text_store": "",
+            "pid": "18",
+            "query": "When did the first prime minister of the Russian Empire come into office?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "19",
+        "input": "What is the primary male hormone derived from?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "cholesterol",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "cholesterol",
+        "target": "cholesterol",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "cholesterol",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 19,
+            "question": "What is the primary male hormone derived from?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "cholesterol"
+            ],
+            "gen_text_store": "",
+            "pid": "19",
+            "query": "What is the primary male hormone derived from?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "20",
+        "input": "The Filipino statesman who established the government-in-exile during the outbreak of World War II was also the mayor of what city?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Quezon City",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Quezon City",
+        "target": "Quezon City",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Quezon City",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 20,
+            "question": "The Filipino statesman who established the government-in-exile during the outbreak of World War II was also the mayor of what city?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Quezon City"
+            ],
+            "gen_text_store": "",
+            "pid": "20",
+            "query": "The Filipino statesman who established the government-in-exile during the outbreak of World War II was also the mayor of what city?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "21",
+        "input": "Where was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Oranienburg, Germany",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Oranienburg, Germany",
+        "target": "Oranienburg, Germany",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Oranienburg, Germany",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 21,
+            "question": "Where was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Oranienburg, Germany"
+            ],
+            "gen_text_store": "",
+            "pid": "21",
+            "query": "Where was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "22",
+        "input": "When was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "January 8, 1891",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "January 8, 1891",
+        "target": "January 8, 1891",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "January 8, 1891",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 22,
+            "question": "When was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "January 8, 1891"
+            ],
+            "gen_text_store": "",
+            "pid": "22",
+            "query": "When was the person who shared the Nobel Prize in Physics in 1954 with Max Born born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "23",
+        "input": "What was the founding date of the university in which Plotonium was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "March 23, 1868",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "March 23, 1868",
+        "target": "March 23, 1868",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "March 23, 1868",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 23,
+            "question": "What was the founding date of the university in which Plotonium was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "March 23, 1868"
+            ],
+            "gen_text_store": "",
+            "pid": "23",
+            "query": "What was the founding date of the university in which Plotonium was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "24",
+        "input": "The material out of which the Great Sphinx of Giza is made of is mainly composed of what mineral?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "calcite",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "calcite",
+        "target": "calcite",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "calcite",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 24,
+            "question": "The material out of which the Great Sphinx of Giza is made of is mainly composed of what mineral?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "calcite"
+            ],
+            "gen_text_store": "",
+            "pid": "24",
+            "query": "The material out of which the Great Sphinx of Giza is made of is mainly composed of what mineral?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "25",
+        "input": "The husband of Lady Godiva was Earl of which Anglic kingdom?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Mercia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mercia",
+        "target": "Mercia",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mercia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 25,
+            "question": "The husband of Lady Godiva was Earl of which Anglic kingdom?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Mercia"
+            ],
+            "gen_text_store": "",
+            "pid": "25",
+            "query": "The husband of Lady Godiva was Earl of which Anglic kingdom?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "26",
+        "input": "The machine used to extract honey from honeycombs uses which physical force?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Centrifugal Force",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Centrifugal Force",
+        "target": "Centrifugal Force",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Centrifugal Force",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 26,
+            "question": "The machine used to extract honey from honeycombs uses which physical force?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Centrifugal Force"
+            ],
+            "gen_text_store": "",
+            "pid": "26",
+            "query": "The machine used to extract honey from honeycombs uses which physical force?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "27",
+        "input": "What is the third letter of the top level domain of the military?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "l",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "l",
+        "target": "l",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "l",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 27,
+            "question": "What is the third letter of the top level domain of the military?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "l"
+            ],
+            "gen_text_store": "",
+            "pid": "27",
+            "query": "What is the third letter of the top level domain of the military?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "28",
+        "input": "In what year was the government department where the internet originated at founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1947",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1947",
+        "target": "1947",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1947",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 28,
+            "question": "In what year was the government department where the internet originated at founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1947"
+            ],
+            "gen_text_store": "",
+            "pid": "28",
+            "query": "In what year was the government department where the internet originated at founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "29",
+        "input": "The main actor of Indiana Jones is a licensed what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "pilot",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "pilot",
+        "target": "pilot",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "pilot",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 29,
+            "question": "The main actor of Indiana Jones is a licensed what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "pilot"
+            ],
+            "gen_text_store": "",
+            "pid": "29",
+            "query": "The main actor of Indiana Jones is a licensed what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "30",
+        "input": "When was the person after which the Hubble Space Telescope is named after born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "November 20, 1889",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "November 20, 1889",
+        "target": "November 20, 1889",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "November 20, 1889",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 30,
+            "question": "When was the person after which the Hubble Space Telescope is named after born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "November 20, 1889"
+            ],
+            "gen_text_store": "",
+            "pid": "30",
+            "query": "When was the person after which the Hubble Space Telescope is named after born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "31",
+        "input": "When did the person who gave the Checkers speech die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "April 22, 1994",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 22, 1994",
+        "target": "April 22, 1994",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 22, 1994",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 31,
+            "question": "When did the person who gave the Checkers speech die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "April 22, 1994"
+            ],
+            "gen_text_store": "",
+            "pid": "31",
+            "query": "When did the person who gave the Checkers speech die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "32",
+        "input": "When was the philosopher that formulated the hard problem of consciousness born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "April 20, 1966",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 20, 1966",
+        "target": "April 20, 1966",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 20, 1966",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 32,
+            "question": "When was the philosopher that formulated the hard problem of consciousness born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "April 20, 1966"
+            ],
+            "gen_text_store": "",
+            "pid": "32",
+            "query": "When was the philosopher that formulated the hard problem of consciousness born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "33",
+        "input": "What is the capital of the second largest state in the US by area?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Austin",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Austin",
+        "target": "Austin",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Austin",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 33,
+            "question": "What is the capital of the second largest state in the US by area?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Austin"
+            ],
+            "gen_text_store": "",
+            "pid": "33",
+            "query": "What is the capital of the second largest state in the US by area?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "34",
+        "input": "What is the maximum airspeed (in km/h) of the third fastest bird?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "320 km/h",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "320 km/h",
+        "target": "320 km/h",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "320 km/h",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 34,
+            "question": "What is the maximum airspeed (in km/h) of the third fastest bird?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "320 km/h"
+            ],
+            "gen_text_store": "",
+            "pid": "34",
+            "query": "What is the maximum airspeed (in km/h) of the third fastest bird?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "35",
+        "input": "Who founded the city where the founder of geometry lived?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Alexander the Great",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Alexander the Great",
+        "target": "Alexander the Great",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Alexander the Great",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 35,
+            "question": "Who founded the city where the founder of geometry lived?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Alexander the Great"
+            ],
+            "gen_text_store": "",
+            "pid": "35",
+            "query": "Who founded the city where the founder of geometry lived?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "36",
+        "input": "What is the capital of the country where yoga originated?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "New Delhi",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "New Delhi",
+        "target": "New Delhi",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "New Delhi",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 36,
+            "question": "What is the capital of the country where yoga originated?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "New Delhi"
+            ],
+            "gen_text_store": "",
+            "pid": "36",
+            "query": "What is the capital of the country where yoga originated?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "37",
+        "input": "The fourth largest city in Germany was originally called what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Colonia Claudia Ara Agrippinensium",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Colonia Claudia Ara Agrippinensium",
+        "target": "Colonia Claudia Ara Agrippinensium",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Colonia Claudia Ara Agrippinensium",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 37,
+            "question": "The fourth largest city in Germany was originally called what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Colonia Claudia Ara Agrippinensium"
+            ],
+            "gen_text_store": "",
+            "pid": "37",
+            "query": "The fourth largest city in Germany was originally called what?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "38",
+        "input": "When did Nirvana's second most selling studio album come out?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "September 13, 1993",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "September 13, 1993",
+        "target": "September 13, 1993",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "September 13, 1993",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 38,
+            "question": "When did Nirvana's second most selling studio album come out?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "September 13, 1993"
+            ],
+            "gen_text_store": "",
+            "pid": "38",
+            "query": "When did Nirvana's second most selling studio album come out?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "39",
+        "input": "What was the job of the father of the founder of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "wool merchant",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "wool merchant",
+        "target": "wool merchant",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "wool merchant",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 39,
+            "question": "What was the job of the father of the founder of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "wool merchant"
+            ],
+            "gen_text_store": "",
+            "pid": "39",
+            "query": "What was the job of the father of the founder of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "40",
+        "input": "How much protein in four boiled egg yolks?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "10.8",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "10.8",
+        "target": "10.8",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "10.8",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 40,
+            "question": "How much protein in four boiled egg yolks?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "10.8"
+            ],
+            "gen_text_store": "",
+            "pid": "40",
+            "query": "How much protein in four boiled egg yolks?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "41",
+        "input": "What is the political party of the American president who entered into the Paris agreement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Democratic Party",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Democratic Party",
+        "target": "Democratic Party",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Democratic Party",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 41,
+            "question": "What is the political party of the American president who entered into the Paris agreement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Democratic Party"
+            ],
+            "gen_text_store": "",
+            "pid": "41",
+            "query": "What is the political party of the American president who entered into the Paris agreement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "42",
+        "input": "The most populous city in Punjab is how large (area wise)?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "310 square kilometers",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "310 square kilometers",
+        "target": "310 square kilometers",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "310 square kilometers",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 42,
+            "question": "The most populous city in Punjab is how large (area wise)?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "310 square kilometers"
+            ],
+            "gen_text_store": "",
+            "pid": "42",
+            "query": "The most populous city in Punjab is how large (area wise)?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "43",
+        "input": "What was the death toll of the second largest volcanic eruption in the 20th century?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "847",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "847",
+        "target": "847",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "847",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 43,
+            "question": "What was the death toll of the second largest volcanic eruption in the 20th century?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "847"
+            ],
+            "gen_text_store": "",
+            "pid": "43",
+            "query": "What was the death toll of the second largest volcanic eruption in the 20th century?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "44",
+        "input": "What was the death toll of the most intense Atlantic hurricane?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "52",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "52",
+        "target": "52",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "52",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 44,
+            "question": "What was the death toll of the most intense Atlantic hurricane?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "52"
+            ],
+            "gen_text_store": "",
+            "pid": "44",
+            "query": "What was the death toll of the most intense Atlantic hurricane?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "45",
+        "input": "Who was the head of NASA during Apollo 11?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Thomas O. Paine",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Thomas O. Paine",
+        "target": "Thomas O. Paine",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Thomas O. Paine",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 45,
+            "question": "Who was the head of NASA during Apollo 11?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Thomas O. Paine"
+            ],
+            "gen_text_store": "",
+            "pid": "45",
+            "query": "Who was the head of NASA during Apollo 11?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "46",
+        "input": "Who is the father of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Lawrence Washington",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Lawrence Washington",
+        "target": "Lawrence Washington",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Lawrence Washington",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 46,
+            "question": "Who is the father of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Lawrence Washington"
+            ],
+            "gen_text_store": "",
+            "pid": "46",
+            "query": "Who is the father of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "47",
+        "input": "Who is the mother of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Mildred Warner",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mildred Warner",
+        "target": "Mildred Warner",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mildred Warner",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 47,
+            "question": "Who is the mother of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Mildred Warner"
+            ],
+            "gen_text_store": "",
+            "pid": "47",
+            "query": "Who is the mother of the father of George Washington?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "48",
+        "input": "Who is the father of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Hussein Onyango Obama",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Hussein Onyango Obama",
+        "target": "Hussein Onyango Obama",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Hussein Onyango Obama",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 48,
+            "question": "Who is the father of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Hussein Onyango Obama"
+            ],
+            "gen_text_store": "",
+            "pid": "48",
+            "query": "Who is the father of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "49",
+        "input": "Who is the mother of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Habiba Akumu Nyanjango",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Habiba Akumu Nyanjango",
+        "target": "Habiba Akumu Nyanjango",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Habiba Akumu Nyanjango",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 49,
+            "question": "Who is the mother of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Habiba Akumu Nyanjango"
+            ],
+            "gen_text_store": "",
+            "pid": "49",
+            "query": "Who is the mother of the father of Barack Obama?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "50",
+        "input": "Who was mayor of New York City when Fiorello H. La Guardia was born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "William Russell Grace",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "William Russell Grace",
+        "target": "William Russell Grace",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "William Russell Grace",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 50,
+            "question": "Who was mayor of New York City when Fiorello H. La Guardia was born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "William Russell Grace"
+            ],
+            "gen_text_store": "",
+            "pid": "50",
+            "query": "Who was mayor of New York City when Fiorello H. La Guardia was born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "51",
+        "input": "Who was president of the U.S. when superconductivity was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "William Howard Taft",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "William Howard Taft",
+        "target": "William Howard Taft",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "William Howard Taft",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 51,
+            "question": "Who was president of the U.S. when superconductivity was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "William Howard Taft"
+            ],
+            "gen_text_store": "",
+            "pid": "51",
+            "query": "Who was president of the U.S. when superconductivity was discovered?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "52",
+        "input": "When was the person Russ Hanneman is based on born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "July 31, 1958",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "July 31, 1958",
+        "target": "July 31, 1958",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "July 31, 1958",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 52,
+            "question": "When was the person Russ Hanneman is based on born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "July 31, 1958"
+            ],
+            "gen_text_store": "",
+            "pid": "52",
+            "query": "When was the person Russ Hanneman is based on born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "53",
+        "input": "When was the first location of the world's largest coffeehouse chain opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "March 30, 1971",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "March 30, 1971",
+        "target": "March 30, 1971",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "March 30, 1971",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 53,
+            "question": "When was the first location of the world's largest coffeehouse chain opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "March 30, 1971"
+            ],
+            "gen_text_store": "",
+            "pid": "53",
+            "query": "When was the first location of the world's largest coffeehouse chain opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "54",
+        "input": "Who directed the highest grossing film?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "James Cameroon",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "James Cameroon",
+        "target": "James Cameroon",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "James Cameroon",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 54,
+            "question": "Who directed the highest grossing film?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "James Cameroon"
+            ],
+            "gen_text_store": "",
+            "pid": "54",
+            "query": "Who directed the highest grossing film?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "55",
+        "input": "When was the longest bridge in the world opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "30 June 2011",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "30 June 2011",
+        "target": "30 June 2011",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "30 June 2011",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 55,
+            "question": "When was the longest bridge in the world opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "30 June 2011"
+            ],
+            "gen_text_store": "",
+            "pid": "55",
+            "query": "When was the longest bridge in the world opened?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "56",
+        "input": "Which company was responsible for the largest pharmaceutical settlement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "GlaxoSmithKline",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "GlaxoSmithKline",
+        "target": "GlaxoSmithKline",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "GlaxoSmithKline",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 56,
+            "question": "Which company was responsible for the largest pharmaceutical settlement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "GlaxoSmithKline"
+            ],
+            "gen_text_store": "",
+            "pid": "56",
+            "query": "Which company was responsible for the largest pharmaceutical settlement?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "57",
+        "input": "In what year was the tallest self-supporting tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "2012",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "2012",
+        "target": "2012",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "2012",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 57,
+            "question": "In what year was the tallest self-supporting tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "2012"
+            ],
+            "gen_text_store": "",
+            "pid": "57",
+            "query": "In what year was the tallest self-supporting tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "58",
+        "input": "In what year was the tallest fixed steel structure completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1988",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1988",
+        "target": "1988",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1988",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 58,
+            "question": "In what year was the tallest fixed steel structure completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1988"
+            ],
+            "gen_text_store": "",
+            "pid": "58",
+            "query": "In what year was the tallest fixed steel structure completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "59",
+        "input": "In what year was the tallest lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "2012",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "2012",
+        "target": "2012",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "2012",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 59,
+            "question": "In what year was the tallest lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "2012"
+            ],
+            "gen_text_store": "",
+            "pid": "59",
+            "query": "In what year was the tallest lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "60",
+        "input": "In what year was the current tallest wooden lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1935",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1935",
+        "target": "1935",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1935",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 60,
+            "question": "In what year was the current tallest wooden lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1935"
+            ],
+            "gen_text_store": "",
+            "pid": "60",
+            "query": "In what year was the current tallest wooden lattice tower completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "61",
+        "input": "In what country is the second tallest statue in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "China",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "China",
+        "target": "China",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "China",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 61,
+            "question": "In what country is the second tallest statue in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "China"
+            ],
+            "gen_text_store": "",
+            "pid": "61",
+            "query": "In what country is the second tallest statue in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "62",
+        "input": "When was the tallest ferris wheel in the world completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "2021",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "2021",
+        "target": "2021",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "2021",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 62,
+            "question": "When was the tallest ferris wheel in the world completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "2021"
+            ],
+            "gen_text_store": "",
+            "pid": "62",
+            "query": "When was the tallest ferris wheel in the world completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "63",
+        "input": "In what year was the tallest lighthouse completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1902",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1902",
+        "target": "1902",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1902",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 63,
+            "question": "In what year was the tallest lighthouse completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1902"
+            ],
+            "gen_text_store": "",
+            "pid": "63",
+            "query": "In what year was the tallest lighthouse completed?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "64",
+        "input": "In what country is the world largest desalination plant?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Saudi Arabia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Saudi Arabia",
+        "target": "Saudi Arabia",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Saudi Arabia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 64,
+            "question": "In what country is the world largest desalination plant?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Saudi Arabia"
+            ],
+            "gen_text_store": "",
+            "pid": "64",
+            "query": "In what country is the world largest desalination plant?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "65",
+        "input": "The most populous national capital city was established in what year?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1045 BC",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1045 BC",
+        "target": "1045 BC",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1045 BC",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 65,
+            "question": "The most populous national capital city was established in what year?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1045 BC"
+            ],
+            "gen_text_store": "",
+            "pid": "65",
+            "query": "The most populous national capital city was established in what year?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "66",
+        "input": "The third largest river (by discharge) in the world is in what countries?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "India and Bangladesh",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "India and Bangladesh",
+        "target": "India and Bangladesh",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "India and Bangladesh",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 66,
+            "question": "The third largest river (by discharge) in the world is in what countries?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "India and Bangladesh"
+            ],
+            "gen_text_store": "",
+            "pid": "66",
+            "query": "The third largest river (by discharge) in the world is in what countries?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "67",
+        "input": "What is the highest elevation (in meters) of the second largest island in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "4,884 m",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "4,884 m",
+        "target": "4,884 m",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "4,884 m",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 67,
+            "question": "What is the highest elevation (in meters) of the second largest island in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "4,884 m"
+            ],
+            "gen_text_store": "",
+            "pid": "67",
+            "query": "What is the highest elevation (in meters) of the second largest island in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "68",
+        "input": "What is the length of the second deepest river in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "6,300 km",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "6,300 km",
+        "target": "6,300 km",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "6,300 km",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 68,
+            "question": "What is the length of the second deepest river in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "6,300 km"
+            ],
+            "gen_text_store": "",
+            "pid": "68",
+            "query": "What is the length of the second deepest river in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "69",
+        "input": "In what country is the third largest stadium in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "United States",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "United States",
+        "target": "United States",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "United States",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 69,
+            "question": "In what country is the third largest stadium in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "United States"
+            ],
+            "gen_text_store": "",
+            "pid": "69",
+            "query": "In what country is the third largest stadium in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "70",
+        "input": "Who is the largest aircraft carrier in the world is named after?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Gerald R. Ford",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Gerald R. Ford",
+        "target": "Gerald R. Ford",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Gerald R. Ford",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 70,
+            "question": "Who is the largest aircraft carrier in the world is named after?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Gerald R. Ford"
+            ],
+            "gen_text_store": "",
+            "pid": "70",
+            "query": "Who is the largest aircraft carrier in the world is named after?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "71",
+        "input": "In what year did the oldest cat ever recorded with the Cat of the Year award?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1999",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1999",
+        "target": "1999",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1999",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 71,
+            "question": "In what year did the oldest cat ever recorded with the Cat of the Year award?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1999"
+            ],
+            "gen_text_store": "",
+            "pid": "71",
+            "query": "In what year did the oldest cat ever recorded with the Cat of the Year award?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "72",
+        "input": "In what year was the country that is the third largest exporter of coffee founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1810",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1810",
+        "target": "1810",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1810",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 72,
+            "question": "In what year was the country that is the third largest exporter of coffee founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1810"
+            ],
+            "gen_text_store": "",
+            "pid": "72",
+            "query": "In what year was the country that is the third largest exporter of coffee founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "73",
+        "input": "Who was the commander for the space mission that had the first spacewalk?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Pavel Belyayev",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Pavel Belyayev",
+        "target": "Pavel Belyayev",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Pavel Belyayev",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 73,
+            "question": "Who was the commander for the space mission that had the first spacewalk?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Pavel Belyayev"
+            ],
+            "gen_text_store": "",
+            "pid": "73",
+            "query": "Who was the commander for the space mission that had the first spacewalk?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "74",
+        "input": "Who is the predecessor of the longest-reigning British monarch?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "George VI\n",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "George VI\n",
+        "target": "George VI\n",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "George VI\n",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 74,
+            "question": "Who is the predecessor of the longest-reigning British monarch?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "George VI\n"
+            ],
+            "gen_text_store": "",
+            "pid": "74",
+            "query": "Who is the predecessor of the longest-reigning British monarch?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "75",
+        "input": "In 2016, who was the host of the longest running talk show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Jimmy Fallon",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jimmy Fallon",
+        "target": "Jimmy Fallon",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jimmy Fallon",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 75,
+            "question": "In 2016, who was the host of the longest running talk show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Jimmy Fallon"
+            ],
+            "gen_text_store": "",
+            "pid": "75",
+            "query": "In 2016, who was the host of the longest running talk show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "76",
+        "input": "In 2016, who was the host of the longest running American game show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Drew Carey",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Drew Carey",
+        "target": "Drew Carey",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Drew Carey",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 76,
+            "question": "In 2016, who was the host of the longest running American game show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Drew Carey"
+            ],
+            "gen_text_store": "",
+            "pid": "76",
+            "query": "In 2016, who was the host of the longest running American game show?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "77",
+        "input": "Who wrote the novel on which the longest running show in Broadway history is based on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Gaston Leroux",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Gaston Leroux",
+        "target": "Gaston Leroux",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Gaston Leroux",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 77,
+            "question": "Who wrote the novel on which the longest running show in Broadway history is based on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Gaston Leroux"
+            ],
+            "gen_text_store": "",
+            "pid": "77",
+            "query": "Who wrote the novel on which the longest running show in Broadway history is based on?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "78",
+        "input": "In what country was the only cruise line that flies the American flag incorporated in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Bermuda",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Bermuda",
+        "target": "Bermuda",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Bermuda",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 78,
+            "question": "In what country was the only cruise line that flies the American flag incorporated in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Bermuda"
+            ],
+            "gen_text_store": "",
+            "pid": "78",
+            "query": "In what country was the only cruise line that flies the American flag incorporated in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "79",
+        "input": "In what year did work begin on the second longest road tunnel in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "1992",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1992",
+        "target": "1992",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1992",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 79,
+            "question": "In what year did work begin on the second longest road tunnel in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "1992"
+            ],
+            "gen_text_store": "",
+            "pid": "79",
+            "query": "In what year did work begin on the second longest road tunnel in the world?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "80",
+        "input": "What is the official color of the third oldest surviving university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Cambridge Blue",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Cambridge Blue",
+        "target": "Cambridge Blue",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Cambridge Blue",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 80,
+            "question": "What is the official color of the third oldest surviving university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Cambridge Blue"
+            ],
+            "gen_text_store": "",
+            "pid": "80",
+            "query": "What is the official color of the third oldest surviving university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "81",
+        "input": "Who succeeded the longest reigning Roman emperor?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Tiberius",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Tiberius",
+        "target": "Tiberius",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Tiberius",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 81,
+            "question": "Who succeeded the longest reigning Roman emperor?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Tiberius"
+            ],
+            "gen_text_store": "",
+            "pid": "81",
+            "query": "Who succeeded the longest reigning Roman emperor?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "82",
+        "input": "Who preceded the Roman emperor that declared war on the sea?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Tiberius",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Tiberius",
+        "target": "Tiberius",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Tiberius",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 82,
+            "question": "Who preceded the Roman emperor that declared war on the sea?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Tiberius"
+            ],
+            "gen_text_store": "",
+            "pid": "82",
+            "query": "Who preceded the Roman emperor that declared war on the sea?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "83",
+        "input": "Who produced the longest running video game franchise?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "MECC",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "MECC",
+        "target": "MECC",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "MECC",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 83,
+            "question": "Who produced the longest running video game franchise?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "MECC"
+            ],
+            "gen_text_store": "",
+            "pid": "83",
+            "query": "Who produced the longest running video game franchise?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "84",
+        "input": "Who was the father of the father of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Jacob Freud",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jacob Freud",
+        "target": "Jacob Freud",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jacob Freud",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 84,
+            "question": "Who was the father of the father of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Jacob Freud"
+            ],
+            "gen_text_store": "",
+            "pid": "84",
+            "query": "Who was the father of the father of psychoanalysis?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "85",
+        "input": "Who was the father of the father of empiricism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Sir Nicholas Bacon",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Sir Nicholas Bacon",
+        "target": "Sir Nicholas Bacon",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Sir Nicholas Bacon",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 85,
+            "question": "Who was the father of the father of empiricism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Sir Nicholas Bacon"
+            ],
+            "gen_text_store": "",
+            "pid": "85",
+            "query": "Who was the father of the father of empiricism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "86",
+        "input": "Who is the father of the father of observational astronomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Vincenzo Galilei",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Vincenzo Galilei",
+        "target": "Vincenzo Galilei",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Vincenzo Galilei",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 86,
+            "question": "Who is the father of the father of observational astronomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Vincenzo Galilei"
+            ],
+            "gen_text_store": "",
+            "pid": "86",
+            "query": "Who is the father of the father of observational astronomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "87",
+        "input": "Who is the father of the father of modern Hebrew?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Yehuda Leib",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Yehuda Leib",
+        "target": "Yehuda Leib",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Yehuda Leib",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 87,
+            "question": "Who is the father of the father of modern Hebrew?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Yehuda Leib"
+            ],
+            "gen_text_store": "",
+            "pid": "87",
+            "query": "Who is the father of the father of modern Hebrew?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "88",
+        "input": "Who is the father of the father of modern experimental psychology?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Maximilian Wundt",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Maximilian Wundt",
+        "target": "Maximilian Wundt",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Maximilian Wundt",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 88,
+            "question": "Who is the father of the father of modern experimental psychology?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Maximilian Wundt"
+            ],
+            "gen_text_store": "",
+            "pid": "88",
+            "query": "Who is the father of the father of modern experimental psychology?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "89",
+        "input": "Who is the father of the originator of cybernetics?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Leo Wiener",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Leo Wiener",
+        "target": "Leo Wiener",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Leo Wiener",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 89,
+            "question": "Who is the father of the originator of cybernetics?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Leo Wiener"
+            ],
+            "gen_text_store": "",
+            "pid": "89",
+            "query": "Who is the father of the originator of cybernetics?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "90",
+        "input": "Who is the father of the father of the hydrogen bomb?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Max Teller",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Max Teller",
+        "target": "Max Teller",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Max Teller",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 90,
+            "question": "Who is the father of the father of the hydrogen bomb?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Max Teller"
+            ],
+            "gen_text_store": "",
+            "pid": "90",
+            "query": "Who is the father of the father of the hydrogen bomb?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "91",
+        "input": "Who was the father of the father of computer science?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Julius Mathison Turing",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Julius Mathison Turing",
+        "target": "Julius Mathison Turing",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Julius Mathison Turing",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 91,
+            "question": "Who was the father of the father of computer science?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Julius Mathison Turing"
+            ],
+            "gen_text_store": "",
+            "pid": "91",
+            "query": "Who was the father of the father of computer science?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "92",
+        "input": "Who was the father of the father of behaviorism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Pickens Butler Watson",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Pickens Butler Watson",
+        "target": "Pickens Butler Watson",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Pickens Butler Watson",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 92,
+            "question": "Who was the father of the father of behaviorism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Pickens Butler Watson"
+            ],
+            "gen_text_store": "",
+            "pid": "92",
+            "query": "Who was the father of the father of behaviorism?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "93",
+        "input": "Who was the father of the founder of modern human anatomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Anders van Wesel",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Anders van Wesel",
+        "target": "Anders van Wesel",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Anders van Wesel",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 93,
+            "question": "Who was the father of the founder of modern human anatomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Anders van Wesel"
+            ],
+            "gen_text_store": "",
+            "pid": "93",
+            "query": "Who was the father of the founder of modern human anatomy?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "94",
+        "input": "What was the father of the last surviving Canadian father of Confederation?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Charles Tupper Sr.",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Charles Tupper Sr.",
+        "target": "Charles Tupper Sr.",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Charles Tupper Sr.",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 94,
+            "question": "What was the father of the last surviving Canadian father of Confederation?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Charles Tupper Sr."
+            ],
+            "gen_text_store": "",
+            "pid": "94",
+            "query": "What was the father of the last surviving Canadian father of Confederation?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "95",
+        "input": "When was the person who said “Now, I am become Death, the destroyer of worlds.” born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "April 22, 1904",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 22, 1904",
+        "target": "April 22, 1904",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 22, 1904",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 95,
+            "question": "When was the person who said “Now, I am become Death, the destroyer of worlds.” born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "April 22, 1904"
+            ],
+            "gen_text_store": "",
+            "pid": "95",
+            "query": "When was the person who said “Now, I am become Death, the destroyer of worlds.” born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "96",
+        "input": "Who was the father of the father of information theory?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Claude Sr.",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Claude Sr.",
+        "target": "Claude Sr.",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Claude Sr.",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 96,
+            "question": "Who was the father of the father of information theory?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Claude Sr."
+            ],
+            "gen_text_store": "",
+            "pid": "96",
+            "query": "Who was the father of the father of information theory?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "97",
+        "input": "When was the person who delivered the \"Quit India\" speech born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "October 2, 1869",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "October 2, 1869",
+        "target": "October 2, 1869",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "October 2, 1869",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 97,
+            "question": "When was the person who delivered the \"Quit India\" speech born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "October 2, 1869"
+            ],
+            "gen_text_store": "",
+            "pid": "97",
+            "query": "When was the person who delivered the \"Quit India\" speech born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "98",
+        "input": "When did the president who warned about the military industrial complex die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "March 28, 1969",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "March 28, 1969",
+        "target": "March 28, 1969",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "March 28, 1969",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 98,
+            "question": "When did the president who warned about the military industrial complex die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "March 28, 1969"
+            ],
+            "gen_text_store": "",
+            "pid": "98",
+            "query": "When did the president who warned about the military industrial complex die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "99",
+        "input": "When did the president who said Tear Down This Wall die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "June 5, 2004",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "June 5, 2004",
+        "target": "June 5, 2004",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "June 5, 2004",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 99,
+            "question": "When did the president who said Tear Down This Wall die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "June 5, 2004"
+            ],
+            "gen_text_store": "",
+            "pid": "99",
+            "query": "When did the president who said Tear Down This Wall die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "100",
+        "input": "What is the lowest elevation of the longest railway tunnel?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "312 m",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "312 m",
+        "target": "312 m",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "312 m",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 100,
+            "question": "What is the lowest elevation of the longest railway tunnel?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "312 m"
+            ],
+            "gen_text_store": "",
+            "pid": "100",
+            "query": "What is the lowest elevation of the longest railway tunnel?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "101",
+        "input": "When did the person who said \"Cogito, ergo sum.\" die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "February 11, 1650",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "February 11, 1650",
+        "target": "February 11, 1650",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "February 11, 1650",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 101,
+            "question": "When did the person who said \"Cogito, ergo sum.\" die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "February 11, 1650"
+            ],
+            "gen_text_store": "",
+            "pid": "101",
+            "query": "When did the person who said \"Cogito, ergo sum.\" die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "102",
+        "input": "When did the person who delivered the Gettysburg Address die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "April 15, 1865",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 15, 1865",
+        "target": "April 15, 1865",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 15, 1865",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 102,
+            "question": "When did the person who delivered the Gettysburg Address die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "April 15, 1865"
+            ],
+            "gen_text_store": "",
+            "pid": "102",
+            "query": "When did the person who delivered the Gettysburg Address die?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "103",
+        "input": "Who was governor of Florida during Hurricane Irma?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Rick Scott",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Rick Scott",
+        "target": "Rick Scott",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Rick Scott",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 103,
+            "question": "Who was governor of Florida during Hurricane Irma?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Rick Scott"
+            ],
+            "gen_text_store": "",
+            "pid": "103",
+            "query": "Who was governor of Florida during Hurricane Irma?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "104",
+        "input": "For which club did the winner of the 2007 Ballon d'Or play for in 2012?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Real Madrid",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Real Madrid",
+        "target": "Real Madrid",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Real Madrid",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 104,
+            "question": "For which club did the winner of the 2007 Ballon d'Or play for in 2012?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Real Madrid"
+            ],
+            "gen_text_store": "",
+            "pid": "104",
+            "query": "For which club did the winner of the 2007 Ballon d'Or play for in 2012?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "105",
+        "input": "What's the capital city of the country that was the champion of the 2010 World Cup?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Madrid",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Madrid",
+        "target": "Madrid",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Madrid",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 105,
+            "question": "What's the capital city of the country that was the champion of the 2010 World Cup?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Madrid"
+            ],
+            "gen_text_store": "",
+            "pid": "105",
+            "query": "What's the capital city of the country that was the champion of the 2010 World Cup?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "106",
+        "input": "When was the anime studio that made Sword Art Online founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "May 9, 2005",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "May 9, 2005",
+        "target": "May 9, 2005",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "May 9, 2005",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 106,
+            "question": "When was the anime studio that made Sword Art Online founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "May 9, 2005"
+            ],
+            "gen_text_store": "",
+            "pid": "106",
+            "query": "When was the anime studio that made Sword Art Online founded?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "107",
+        "input": "Who was the first king of the longest Chinese dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "King Wu of Zhou",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "King Wu of Zhou",
+        "target": "King Wu of Zhou",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "King Wu of Zhou",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 107,
+            "question": "Who was the first king of the longest Chinese dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "King Wu of Zhou"
+            ],
+            "gen_text_store": "",
+            "pid": "107",
+            "query": "Who was the first king of the longest Chinese dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "108",
+        "input": "Who was the last emperor of the dynasty that succeeded the Song dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Toghon Temür",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Toghon Temür",
+        "target": "Toghon Temür",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Toghon Temür",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 108,
+            "question": "Who was the last emperor of the dynasty that succeeded the Song dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Toghon Temür"
+            ],
+            "gen_text_store": "",
+            "pid": "108",
+            "query": "Who was the last emperor of the dynasty that succeeded the Song dynasty?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "109",
+        "input": "What's the motto of the oldest California State university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Powering Silicon Valley",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Powering Silicon Valley",
+        "target": "Powering Silicon Valley",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Powering Silicon Valley",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 109,
+            "question": "What's the motto of the oldest California State university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Powering Silicon Valley"
+            ],
+            "gen_text_store": "",
+            "pid": "109",
+            "query": "What's the motto of the oldest California State university?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "110",
+        "input": "What's the capital of the state that the College of William & Mary is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Richmond",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Richmond",
+        "target": "Richmond",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Richmond",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 110,
+            "question": "What's the capital of the state that the College of William & Mary is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Richmond"
+            ],
+            "gen_text_store": "",
+            "pid": "110",
+            "query": "What's the capital of the state that the College of William & Mary is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "111",
+        "input": "What's the capital of the state that Washington University in St. Louis is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Jefferson City",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jefferson City",
+        "target": "Jefferson City",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jefferson City",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 111,
+            "question": "What's the capital of the state that Washington University in St. Louis is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Jefferson City"
+            ],
+            "gen_text_store": "",
+            "pid": "111",
+            "query": "What's the capital of the state that Washington University in St. Louis is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "112",
+        "input": "What's the capital of the state that Harvard University is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Boston",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Boston",
+        "target": "Boston",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Boston",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 112,
+            "question": "What's the capital of the state that Harvard University is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Boston"
+            ],
+            "gen_text_store": "",
+            "pid": "112",
+            "query": "What's the capital of the state that Harvard University is in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "113",
+        "input": "What's the capital of the state that the Space Needle is at?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Olympia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Olympia",
+        "target": "Olympia",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Olympia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 113,
+            "question": "What's the capital of the state that the Space Needle is at?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Olympia"
+            ],
+            "gen_text_store": "",
+            "pid": "113",
+            "query": "What's the capital of the state that the Space Needle is at?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "114",
+        "input": "Which team won in women's volleyball in the most recent Summer Olympics that was held in London?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Brazil",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Brazil",
+        "target": "Brazil",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Brazil",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 114,
+            "question": "Which team won in women's volleyball in the most recent Summer Olympics that was held in London?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Brazil"
+            ],
+            "gen_text_store": "",
+            "pid": "114",
+            "query": "Which team won in women's volleyball in the most recent Summer Olympics that was held in London?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "115",
+        "input": "What is the nickname of the easternmost U.S. state?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Pine Tree State",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Pine Tree State",
+        "target": "Pine Tree State",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Pine Tree State",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 115,
+            "question": "What is the nickname of the easternmost U.S. state?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Pine Tree State"
+            ],
+            "gen_text_store": "",
+            "pid": "115",
+            "query": "What is the nickname of the easternmost U.S. state?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "116",
+        "input": "What is the nickname for the state that is the home to the “Avocado Capital of the World\"?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Golden State",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Golden State",
+        "target": "Golden State",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Golden State",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 116,
+            "question": "What is the nickname for the state that is the home to the “Avocado Capital of the World\"?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Golden State"
+            ],
+            "gen_text_store": "",
+            "pid": "116",
+            "query": "What is the nickname for the state that is the home to the “Avocado Capital of the World\"?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "117",
+        "input": "What rocket was used for the mission that landed the first humans on the moon?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Saturn V",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Saturn V",
+        "target": "Saturn V",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Saturn V",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 117,
+            "question": "What rocket was used for the mission that landed the first humans on the moon?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Saturn V"
+            ],
+            "gen_text_store": "",
+            "pid": "117",
+            "query": "What rocket was used for the mission that landed the first humans on the moon?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "118",
+        "input": "When did the war that Neil Armstrong served in end?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "July 27, 1953",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "July 27, 1953",
+        "target": "July 27, 1953",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "July 27, 1953",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 118,
+            "question": "When did the war that Neil Armstrong served in end?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "July 27, 1953"
+            ],
+            "gen_text_store": "",
+            "pid": "118",
+            "query": "When did the war that Neil Armstrong served in end?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "119",
+        "input": "What is the nickname for the state that Mount Rainier is located in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Evergreen State",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Evergreen State",
+        "target": "Evergreen State",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Evergreen State",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 119,
+            "question": "What is the nickname for the state that Mount Rainier is located in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Evergreen State"
+            ],
+            "gen_text_store": "",
+            "pid": "119",
+            "query": "What is the nickname for the state that Mount Rainier is located in?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "120",
+        "input": "When was the composer of Carol of the Bells born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "December 13, 1877",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "December 13, 1877",
+        "target": "December 13, 1877",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "December 13, 1877",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 120,
+            "question": "When was the composer of Carol of the Bells born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "December 13, 1877"
+            ],
+            "gen_text_store": "",
+            "pid": "120",
+            "query": "When was the composer of Carol of the Bells born?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "121",
+        "input": "Who is the father of the scientist at MIT that won the Queen Elizabeth Prize for Engineering in 2013?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Conway Berners-Lee",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Conway Berners-Lee",
+        "target": "Conway Berners-Lee",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Conway Berners-Lee",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 121,
+            "question": "Who is the father of the scientist at MIT that won the Queen Elizabeth Prize for Engineering in 2013?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Conway Berners-Lee"
+            ],
+            "gen_text_store": "",
+            "pid": "121",
+            "query": "Who is the father of the scientist at MIT that won the Queen Elizabeth Prize for Engineering in 2013?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "122",
+        "input": "Who was the mother of the emperor of Japan during World War I?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Yanagiwara Naruko",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Yanagiwara Naruko",
+        "target": "Yanagiwara Naruko",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Yanagiwara Naruko",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 122,
+            "question": "Who was the mother of the emperor of Japan during World War I?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Yanagiwara Naruko"
+            ],
+            "gen_text_store": "",
+            "pid": "122",
+            "query": "Who was the mother of the emperor of Japan during World War I?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "123",
+        "input": "Which element has an atomic number that is double that of hydrogen?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "Helium",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Helium",
+        "target": "Helium",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Helium",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 123,
+            "question": "Which element has an atomic number that is double that of hydrogen?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "Helium"
+            ],
+            "gen_text_store": "",
+            "pid": "123",
+            "query": "Which element has an atomic number that is double that of hydrogen?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "124",
+        "input": "What was the motto of the Olympics that had Fuwa as the mascots?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+        "gt_answer": "One World, One Dream",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "One World, One Dream",
+        "target": "One World, One Dream",
+        "data_source": "bamboogle",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "One World, One Dream",
+            "style": "rule"
+        },
+        "extra_info": {
+            "idx": 124,
+            "question": "What was the motto of the Olympics that had Fuwa as the mascots?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "answer": [
+                "One World, One Dream"
+            ],
+            "gen_text_store": "",
+            "pid": "124",
+            "query": "What was the motto of the Olympics that had Fuwa as the mascots?When ready, output the final answer enclosed in <answer> and </answer> tags. Do not generate any content after the </answer> tag.",
+            "image": null,
+            "split": "validation"
+        }
+    }
+]

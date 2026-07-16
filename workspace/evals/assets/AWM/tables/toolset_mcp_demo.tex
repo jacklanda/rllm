@@ -1,0 +1,74 @@
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}{0.97\textwidth}
+\begin{lstlisting}[style=pythonstyle, numbers=none]
+Available MCP Tools (45 tools):
+================================================================================
+
+1. mcp_tool_search_artists
+   Description: Search artists by name
+   Search artists by partial or full name, optionally sorted by name.
+   Parameters:
+      - query: string (required)
+        Description: Case-insensitive partial artist name to search
+      - limit: integer (optional, default: 20)
+        Description: Maximum number of artists to return
+      - offset: integer (optional, default: 0)
+        Description: Number of artists to skip for pagination
+   Response Example:
+      {"artists": [{"id": 1, "name": "Name"}]}
+
+2. mcp_tool_get_artist_by_id
+   Description: Get artist by ID
+   Retrieve a single artist by its ID.
+   Parameters:
+      - artist_id: integer (required)
+        Description: Artist ID to retrieve
+
+3. mcp_tool_get_artist_top_tracks
+   Description: Get top tracks for an artist
+   Return the most popular tracks for a specific artist ordered by popularity.
+   Parameters:
+      - artist_id: integer (required)
+        Description: Artist ID whose top tracks to retrieve
+      - limit: integer (optional, default: 10)
+        Description: Maximum number of top tracks to return
+   Response Example:
+      {"tracks": [{"id": 1, "title": "Title", "is_podcast_episode": true}]}
+
+..... omitted 18 tools (follow_artist, search_tracks, get_track_by_id, etc.) .....
+
+22. mcp_tool_create_playlist
+   Description: Create a new playlist
+   Create a new playlist owned by the current user.
+   Parameters:
+      - name: string (required)
+        Description: Playlist name (unique per user)
+      - description: string (optional)
+        Description: Playlist description text
+      - is_collaborative: boolean (optional, default: False)
+      - is_personalized: boolean (optional, default: False)
+      - is_podcast_mixed: boolean (optional, default: False)
+
+..... omitted 19 tools (playlist management, mood, recommendations, etc.) .....
+
+45. mcp_tool_get_top_tracks_grouped_by_genre
+   Description: Get top streamed tracks grouped by genre
+   Return user's top tracks over a period grouped by primary genre.
+   Parameters:
+      - months: integer (optional)
+        Description: Lookback period in months from now
+      - limit: integer (required)
+        Description: Total number of top tracks to consider
+   Response Example:
+      {"genres": [{"genre_id": 1, "genre_name": "Genre Name",
+                   "tracks": [{"track_id": 1, "title": "Title",
+                               "play_count": 1, "total_listened_ms": 1}]}]}
+\end{lstlisting}
+\end{minipage}
+\caption{The example of the unified MCP interface for the ``Spotify'' environment.
+Each tool includes a descriptive name, natural language description, typed parameters with defaults, and example response schemas.
+The agent discovers these tools dynamically via the \texttt{list\_tools} at the beginning of interaction.}
+\label{fig:toolset-demo}
+\end{figure*}

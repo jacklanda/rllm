@@ -1,0 +1,41 @@
+
+\lstdefinestyle{apischema}{
+	basicstyle=\ttfamily\footnotesize,
+	frame=single,
+	breaklines=true,
+	breakatwhitespace=true,
+	columns=fullflexible,
+	keepspaces=true,
+	showstringspaces=false,
+	tabsize=1,
+	escapechar=@,
+	xleftmargin=0pt,
+	xrightmargin=0pt,
+	aboveskip=0pt,
+	belowskip=0pt,
+	framexleftmargin=0pt,
+	framexrightmargin=0pt,
+	framextopmargin=0pt,
+	framexbottommargin=0pt
+}
+
+\begin{table}[t]
+	\centering
+	\caption{Example of interface schema snippet with rich annotations and explicit database constraints. 
+	}
+	\label{tab:demo_api_schema}
+	\small
+
+	\begin{minipage}{0.95\columnwidth}
+\begin{lstlisting}[style=apischema]
+@\textcolor{blue}{"operation\_id"}@: "get_product_by_id",
+@\textcolor{blue}{"request\_params"}@: {"product_id": {"type": "integer", "required": true}},
+@\textcolor{blue}{"response"}@: {
+  "product": {"id": {"type": "integer"}, "title": {"type": "string"}, ....},
+  "aggregates": {"average_rating": {"type": "float"}, ....}, ....},
+@\textcolor{blue}{"required\_tables"}@: ["products", "product_aggregates", "product_offers"],
+@\textcolor{blue}{"required\_fields"}@: {
+  "products": ["id", "title", "category_id", ....], ....}\end{lstlisting}
+	\end{minipage}
+\end{table}
+

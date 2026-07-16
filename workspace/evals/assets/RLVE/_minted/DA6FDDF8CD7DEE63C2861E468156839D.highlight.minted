@@ -1,0 +1,143 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Conduct a \PYG{g+gs}{**Question Quality Assessment**} of a tool use question across six key dimensions to ensure it meets high standards for realistic tool usage scenarios.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided tool use question and assess its quality across six primary dimensions:
+\PYG{k}{1.} \PYG{g+gs}{**Tool Selection Difficulty**} \PYGZhy{} How challenging it is to determine which tools to use giving all available tools
+\PYG{k}{2.} \PYG{g+gs}{**Tool Selection Uniqueness**} \PYGZhy{} How unique and necessary the selected tools are for this specific task giving all available tools
+\PYG{k}{3.} \PYG{g+gs}{**Question Quality**} \PYGZhy{} Overall clarity, specificity, and effectiveness
+\PYG{k}{4.} \PYG{g+gs}{**Scenario Realism**} \PYGZhy{} How authentic and believable the scenario is
+\PYG{k}{5.} \PYG{g+gs}{**Verifiable**} \PYGZhy{} How easy it is to verify the correctness of the final model answer
+\PYG{k}{6.} \PYG{g+gs}{**Stability**} \PYGZhy{} How stable the answer will be when requested under different time and geolocation
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Assessment Criteria}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 1. Tool Selection Difficulty}
+\PYG{g+gs}{**What to Evaluate**}: How difficult it would be for a user to determine which specific tools are needed to solve this question.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**very easy**}: Question explicitly mentions tool names or makes tool selection obvious
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**easy**}: Tool selection is straightforward with clear indicators
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**medium**}: Requires some reasoning but tool needs are fairly apparent
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**hard**}: Requires careful analysis to determine appropriate tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**very hard**}: Requires extensive expertise and deep reasoning to identify the correct tools
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 2. Tool Selection Uniqueness}
+\PYG{g+gs}{**What to Evaluate**}: How unique and necessary the selected tools are for accomplishing this specific task, and whether the task can only be completed with these tools in the specified sequence.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**not unique**}: Many alternative tool combinations could accomplish the same task equally well
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**somewhat unique**}: Some alternative approaches exist, but selected tools offer advantages
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**moderately unique**}: Selected tools are well\PYGZhy{}suited, with limited alternative approaches
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**quite unique**}: Selected tools are particularly well\PYGZhy{}matched to the task requirements
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**highly unique**}: Task can only be accomplished effectively with these specific tools in this sequence
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 3. Question Quality}
+\PYG{g+gs}{**What to Evaluate**}: Overall quality, clarity, and effectiveness of the question as a realistic user query.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**very poor**}: Unclear, ambiguous, or poorly constructed question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**poor**}: Some clarity issues, missing important context
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**average**}: Clear and understandable, but could be more specific or engaging
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**good**}: Well\PYGZhy{}constructed, clear, specific, and realistic
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**excellent**}: Exceptionally clear, detailed, engaging, and professionally written
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 4. Scenario Realism}
+\PYG{g+gs}{**What to Evaluate**}: How authentic, believable, and true\PYGZhy{}to\PYGZhy{}life the described scenario is.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**unrealistic**}: Artificial, contrived, or implausible scenario
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**somewhat unrealistic**}: Some realistic elements but feels forced or unlikely
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**moderately realistic**}: Believable scenario with minor authenticity issues
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**realistic**}: Authentic scenario that represents genuine use cases
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**highly realistic**}: Completely natural, authentic scenario indistinguishable from real user needs
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 5. Verifiable}
+\PYG{g+gs}{**What to Evaluate**}: How easy it is to verify the correctness of the final model answer.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**hard to verify**}: Fully free\PYGZhy{}form answer that requires extensive human judgment
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**somewhat hard**}: Mostly subjective answer with some verifiable elements
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**moderately verifiable**}: Short sentence that can be verified by LLM comparison
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**mostly verifiable**}: Answer with clear, objective components and some subjective elements
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**easy to verify**}: Answer can be verified by simple rules, exact matches, or clear success criteria
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 6. Stability (1\PYGZhy{}5 Scale)}
+\PYG{g+gs}{**What to Evaluate**}: How stable and consistent the answer will be when the question is asked under different environmental conditions and system contexts. Consider factors like temporal dependency, geographical variations, operating system differences, network environments, and software version variations.
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**highly unstable**}: Answer changes significantly across different conditions (real\PYGZhy{}time data, location\PYGZhy{}specific, system\PYGZhy{}dependent)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**somewhat unstable**}: Answer may vary moderately based on environmental or system factors
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**moderately stable**}: Answer mostly consistent with minor variations due to context
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**mostly stable**}: Answer remains largely consistent across different conditions
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**highly stable**}: Answer is completely independent of environmental and system factors
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Question Analysis}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} All Available Tools```}
+\PYGZob{}ALL\PYGZus{}SERVER\PYGZus{}AND\PYGZus{}TOOL\PYGZus{}INFORMATION\PYGZcb{}
+\PYG{l+s+sb}{```}
+
+\PYG{l+s+sb}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Content}
+\PYG{l+s+sb}{```}
+\PYGZob{}QUESTION\PYGZus{}CONTENT\PYGZcb{}
+\PYG{l+s+sb}{```}
+
+\PYG{l+s+sb}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Intended Tool for This Question}
+\PYG{l+s+sb}{```}
+\PYGZob{}INTENDED\PYGZus{}TOOL\PYGZcb{}
+```
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output Requirements}
+
+Provide analysis with detailed reasoning BEFORE scores for each of the six metrics.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}tool\PYGZus{}selection\PYGZus{}difficulty\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation including ambiguity level, domain knowledge required, and alternative solutions giving all available tools \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: very easy, easy, medium, hard, very hard \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/tool\PYGZus{}selection\PYGZus{}difficulty\PYGZgt{}
+
+  \PYGZlt{}tool\PYGZus{}selection\PYGZus{}uniqueness\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation of tool necessity, sequential dependencies, and alternative tool viability giving all available tools \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: not unique, somewhat unique, moderately unique, quite unique, highly unique \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/tool\PYGZus{}selection\PYGZus{}uniqueness\PYGZgt{}
+
+  \PYGZlt{}question\PYGZus{}quality\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation covering linguistic quality, information architecture, and actionability \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: very poor, poor, average, good, excellent \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/question\PYGZus{}quality\PYGZgt{}
+
+  \PYGZlt{}scenario\PYGZus{}realism\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation of industry authenticity, workflow accuracy, and stakeholder behavior \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: unrealistic, somewhat unrealistic, moderately realistic, realistic, highly realistic \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/scenario\PYGZus{}realism\PYGZgt{}
+
+  \PYGZlt{}verifiable\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation of answer format, objective criteria, and ground truth availability \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: hard to verify, somewhat hard, moderately verifiable, mostly verifiable, easy to verify \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/verifiable\PYGZgt{}
+
+  \PYGZlt{}stability\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Detailed explanation of temporal/geographical/system dependencies and environmental factors \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: highly unstable, somewhat unstable, moderately stable, mostly stable, highly stable \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/stability\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+
+\end{MintedVerbatim}

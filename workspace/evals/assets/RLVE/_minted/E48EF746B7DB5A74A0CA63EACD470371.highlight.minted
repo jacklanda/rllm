@@ -1,0 +1,29 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} What ENS (Ethereum Name Service) Represents in Transactions}
+
+ENS stands for \PYG{g+gs}{**Ethereum Name Service**}, and it functions much like \PYGZdq{}DNS for Ethereum addresses.\PYGZdq{} It allows users to register human\PYGZhy{}readable names (like \PYGZdq{}blockscout.eth\PYGZdq{}) that map to complex hexadecimal blockchain addresses.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Key Points About ENS:}
+
+\PYG{k}{1.} \PYG{g+gs}{**Human\PYGZhy{}Readable Names for Complex Addresses**}
+\PYG{+w}{   }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Instead of displaying \PYG{l+s+sb}{`0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975`} (which is the raw address for blockscout.eth), interfaces show the friendly \PYGZdq{}blockscout.eth\PYGZdq{}
+\PYG{+w}{   }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }This reduces errors from copy/pasting long hex addresses
+
+\PYG{k}{2.} \PYG{g+gs}{**Reverse Resolution**}
+\PYG{+w}{   }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }When you see \PYGZdq{}blockscout.eth\PYGZdq{} in transaction data, wallet labels, or block explorers, it means:
+\PYG{+w}{     }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }ENS has been configured with this name
+\PYG{+w}{     }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The system has performed a reverse lookup to find the name associated with the address
+
+\PYG{k}{3.} \PYG{g+gs}{**Self\PYGZhy{}Sovereign Identity**}
+\PYG{+w}{   }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }ENS names are owned and controlled by users through smart contracts
+\PYG{+w}{   }\PYG{k}{\PYGZhy{}}\PYG{+w}{ }They can be transferred, updated, or associated with additional metadata (social profiles, avatars, etc.)
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Why \PYGZdq{}blockscout.eth\PYGZdq{} Appears Instead of Raw Address:}
+
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**User Experience**}: \PYGZdq{}blockscout.eth\PYGZdq{} is immediately recognizable and memorable
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Trust Verification**}: Users can verify they\PYGZsq{}re interacting with the legitimate Blockscout entity rather than a random address
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Branding**}: Organizations use ENS names for consistent branding across DeFi protocols and wallet interfaces
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Error Prevention**}: Reduces costly mistakes when users verify transaction recipients
+
+Every time you see an ENS name like \PYGZdq{}blockscout.eth\PYGZdq{} in a transaction, the underlying system has actually resolved this to the precise blockchain address \PYG{l+s+sb}{`0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975`}\PYGZhy{}the ENS simply provides a human\PYGZhy{}friendly layer on top of the raw cryptographic identity.
+\end{MintedVerbatim}

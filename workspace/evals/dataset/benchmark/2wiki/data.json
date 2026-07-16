@@ -1,0 +1,4402 @@
+[
+    {
+        "task_id": "0",
+        "input": "Which film has the director who is older than the other, Let'S Make Money or Short Term 12?",
+        "gt_answer": "Let'S Make Money",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Let'S Make Money",
+        "target": "Let'S Make Money",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Let'S Make Money",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Let'S Make Money or Short Term 12?",
+            "image": null,
+            "answer": "Let'S Make Money",
+            "pid": 0,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "1",
+        "input": "When is the director of film Les Tuche 2 's birthday?",
+        "gt_answer": "5 January 1964",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "5 January 1964",
+        "target": "5 January 1964",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "5 January 1964",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When is the director of film Les Tuche 2 's birthday?",
+            "image": null,
+            "answer": "5 January 1964",
+            "pid": 1,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "2",
+        "input": "Are Brian Part and John Mosca both from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are Brian Part and John Mosca both from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 2,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "3",
+        "input": "Do director of film East Of Sudan and director of film Passing Strange (Disambiguation) have the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do director of film East Of Sudan and director of film Passing Strange (Disambiguation) have the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 3,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "4",
+        "input": "Who is the mother-in-law of Olivera Despina?",
+        "gt_answer": "Gülçiçek Hatun",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Gülçiçek Hatun",
+        "target": "Gülçiçek Hatun",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Gülçiçek Hatun",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the mother-in-law of Olivera Despina?",
+            "image": null,
+            "answer": "Gülçiçek Hatun",
+            "pid": 4,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "5",
+        "input": "Which film whose director is younger, Khoon Ka Khoon or Idaho Transfer?",
+        "gt_answer": "Idaho Transfer",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Idaho Transfer",
+        "target": "Idaho Transfer",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Idaho Transfer",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film whose director is younger, Khoon Ka Khoon or Idaho Transfer?",
+            "image": null,
+            "answer": "Idaho Transfer",
+            "pid": 5,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "6",
+        "input": "Do both films: Illusion (1929 Film) and Melancholie Der Engel have the directors from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films: Illusion (1929 Film) and Melancholie Der Engel have the directors from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 6,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "7",
+        "input": "What is the award that the director of film Pugachev (1978 Film) received?",
+        "gt_answer": "People's Artist of the RSFSR",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "People's Artist of the RSFSR",
+        "target": "People's Artist of the RSFSR",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "People's Artist of the RSFSR",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the award that the director of film Pugachev (1978 Film) received?",
+            "image": null,
+            "answer": "People's Artist of the RSFSR",
+            "pid": 7,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "8",
+        "input": "Did the movies The Bond Boy and Mad Dogs And Englishmen (Film), originate from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Did the movies The Bond Boy and Mad Dogs And Englishmen (Film), originate from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 8,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "9",
+        "input": "Are both Sailing Along and Island Of Terror from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both Sailing Along and Island Of Terror from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 9,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "10",
+        "input": "Who is the paternal grandmother of Lady Harriet Mary Montagu?",
+        "gt_answer": "Lady Mary Henrietta Powlett",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Lady Mary Henrietta Powlett",
+        "target": "Lady Mary Henrietta Powlett",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Lady Mary Henrietta Powlett",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandmother of Lady Harriet Mary Montagu?",
+            "image": null,
+            "answer": "Lady Mary Henrietta Powlett",
+            "pid": 10,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "11",
+        "input": "Which film has the director who was born earlier, Battling Jane or Paris Belongs To Us?",
+        "gt_answer": "Battling Jane",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Battling Jane",
+        "target": "Battling Jane",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Battling Jane",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born earlier, Battling Jane or Paris Belongs To Us?",
+            "image": null,
+            "answer": "Battling Jane",
+            "pid": 11,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "12",
+        "input": "Who is Charles Howard, Viscount Morpeth's paternal grandfather?",
+        "gt_answer": "Charles Howard, 3rd Earl of Carlisle",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Charles Howard, 3rd Earl of Carlisle",
+        "target": "Charles Howard, 3rd Earl of Carlisle",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Charles Howard, 3rd Earl of Carlisle",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Charles Howard, Viscount Morpeth's paternal grandfather?",
+            "image": null,
+            "answer": "Charles Howard, 3rd Earl of Carlisle",
+            "pid": 12,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "13",
+        "input": "Which one was established first, Seagate Technology or Gartnerhallen?",
+        "gt_answer": "Gartnerhallen",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Gartnerhallen",
+        "target": "Gartnerhallen",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Gartnerhallen",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which one was established first, Seagate Technology or Gartnerhallen?",
+            "image": null,
+            "answer": "Gartnerhallen",
+            "pid": 13,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "14",
+        "input": "Who is Salin Mibaya's maternal grandmother?",
+        "gt_answer": "Saw Myat Lay",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Saw Myat Lay",
+        "target": "Saw Myat Lay",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Saw Myat Lay",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Salin Mibaya's maternal grandmother?",
+            "image": null,
+            "answer": "Saw Myat Lay",
+            "pid": 14,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "15",
+        "input": "Who is the paternal grandmother of Lady Charlotte Finch?",
+        "gt_answer": "Lady Sophia Osborne",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Lady Sophia Osborne",
+        "target": "Lady Sophia Osborne",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Lady Sophia Osborne",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandmother of Lady Charlotte Finch?",
+            "image": null,
+            "answer": "Lady Sophia Osborne",
+            "pid": 15,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "16",
+        "input": "Where did Marie I De Coucy, Countess Of Soissons's husband die?",
+        "gt_answer": "Treviso",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Treviso",
+        "target": "Treviso",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Treviso",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where did Marie I De Coucy, Countess Of Soissons's husband die?",
+            "image": null,
+            "answer": "Treviso",
+            "pid": 16,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "17",
+        "input": "Do director of film The Bamboo Blonde and director of film Nightingale (Film) share the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do director of film The Bamboo Blonde and director of film Nightingale (Film) share the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 17,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "18",
+        "input": "Who is the uncle of Qiubo Of Han?",
+        "gt_answer": "Zhuang Bo of Quwo",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Zhuang Bo of Quwo",
+        "target": "Zhuang Bo of Quwo",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Zhuang Bo of Quwo",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the uncle of Qiubo Of Han?",
+            "image": null,
+            "answer": "Zhuang Bo of Quwo",
+            "pid": 18,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "19",
+        "input": "Who is Claude De La Trémoille's paternal grandfather?",
+        "gt_answer": "François II de La Trémoille",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "François II de La Trémoille",
+        "target": "François II de La Trémoille",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "François II de La Trémoille",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Claude De La Trémoille's paternal grandfather?",
+            "image": null,
+            "answer": "François II de La Trémoille",
+            "pid": 19,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "20",
+        "input": "Did the movies Cock Of The Roost and Nobody'S Perfect, originate from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Did the movies Cock Of The Roost and Nobody'S Perfect, originate from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 20,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "21",
+        "input": "What is the place of birth of the director of film Yoogan?",
+        "gt_answer": "Kovilpatti",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Kovilpatti",
+        "target": "Kovilpatti",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Kovilpatti",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of the director of film Yoogan?",
+            "image": null,
+            "answer": "Kovilpatti",
+            "pid": 21,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "22",
+        "input": "Which film has the director died later, The Hole (1960 Film) or Nootrukku Nooru?",
+        "gt_answer": "Nootrukku Nooru",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Nootrukku Nooru",
+        "target": "Nootrukku Nooru",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Nootrukku Nooru",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director died later, The Hole (1960 Film) or Nootrukku Nooru?",
+            "image": null,
+            "answer": "Nootrukku Nooru",
+            "pid": 22,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "23",
+        "input": "Which film has the director who is older than the other, Ebar Shabor or Circle Of Deception?",
+        "gt_answer": "Circle Of Deception",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Circle Of Deception",
+        "target": "Circle Of Deception",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Circle Of Deception",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Ebar Shabor or Circle Of Deception?",
+            "image": null,
+            "answer": "Circle Of Deception",
+            "pid": 23,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "24",
+        "input": "Do both films: State Fair (1933 Film) and The Charmer (1925 Film) have the directors from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films: State Fair (1933 Film) and The Charmer (1925 Film) have the directors from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 24,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "25",
+        "input": "Where was the director of film Wagtails Army born?",
+        "gt_answer": "Smolensk Governorate",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Smolensk Governorate",
+        "target": "Smolensk Governorate",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Smolensk Governorate",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the director of film Wagtails Army born?",
+            "image": null,
+            "answer": "Smolensk Governorate",
+            "pid": 25,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "26",
+        "input": "When did Bud Roper's father die?",
+        "gt_answer": "April 30, 1971",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "April 30, 1971",
+        "target": "April 30, 1971",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "April 30, 1971",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did Bud Roper's father die?",
+            "image": null,
+            "answer": "April 30, 1971",
+            "pid": 26,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "27",
+        "input": "Where was the place of burial of Osthryth's father?",
+        "gt_answer": "Whitby Abbey",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Whitby Abbey",
+        "target": "Whitby Abbey",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Whitby Abbey",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the place of burial of Osthryth's father?",
+            "image": null,
+            "answer": "Whitby Abbey",
+            "pid": 27,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "28",
+        "input": "Which film has the director died later, Cheyenne Wildcat or Muqaddar Ka Faisla?",
+        "gt_answer": "Muqaddar Ka Faisla",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Muqaddar Ka Faisla",
+        "target": "Muqaddar Ka Faisla",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Muqaddar Ka Faisla",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director died later, Cheyenne Wildcat or Muqaddar Ka Faisla?",
+            "image": null,
+            "answer": "Muqaddar Ka Faisla",
+            "pid": 28,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "29",
+        "input": "What is the place of birth of Kamures Kadın's husband?",
+        "gt_answer": "Istanbul",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Istanbul",
+        "target": "Istanbul",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Istanbul",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of Kamures Kadın's husband?",
+            "image": null,
+            "answer": "Istanbul",
+            "pid": 29,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "30",
+        "input": "Where was the mother of Maria Of Jülich-Berg born?",
+        "gt_answer": "Ansbach",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ansbach",
+        "target": "Ansbach",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ansbach",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the mother of Maria Of Jülich-Berg born?",
+            "image": null,
+            "answer": "Ansbach",
+            "pid": 30,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "31",
+        "input": "Who is the maternal grandfather of Henry Of Nassau-Dillenburg?",
+        "gt_answer": "Bodo VIII, Count of Stolberg-Wernigerode",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Bodo VIII, Count of Stolberg-Wernigerode",
+        "target": "Bodo VIII, Count of Stolberg-Wernigerode",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Bodo VIII, Count of Stolberg-Wernigerode",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the maternal grandfather of Henry Of Nassau-Dillenburg?",
+            "image": null,
+            "answer": "Bodo VIII, Count of Stolberg-Wernigerode",
+            "pid": 31,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "32",
+        "input": "Where was the father of Bonne Of Bourbon born?",
+        "gt_answer": "Poitiers",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Poitiers",
+        "target": "Poitiers",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Poitiers",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the father of Bonne Of Bourbon born?",
+            "image": null,
+            "answer": "Poitiers",
+            "pid": 32,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "33",
+        "input": "What is the date of death of Augusta Leigh's father?",
+        "gt_answer": "2 August 1791",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "2 August 1791",
+        "target": "2 August 1791",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "2 August 1791",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Augusta Leigh's father?",
+            "image": null,
+            "answer": "2 August 1791",
+            "pid": 33,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "34",
+        "input": "Which film has the director who was born earlier, Dokuzuncu Hariciye Koğuşu or An Open Secret?",
+        "gt_answer": "Dokuzuncu Hariciye Koğuşu",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Dokuzuncu Hariciye Koğuşu",
+        "target": "Dokuzuncu Hariciye Koğuşu",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Dokuzuncu Hariciye Koğuşu",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born earlier, Dokuzuncu Hariciye Koğuşu or An Open Secret?",
+            "image": null,
+            "answer": "Dokuzuncu Hariciye Koğuşu",
+            "pid": 34,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "35",
+        "input": "Who is the mother of Olaf (Ii) Haraldsen?",
+        "gt_answer": "Ragnild Magnusdotter",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ragnild Magnusdotter",
+        "target": "Ragnild Magnusdotter",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ragnild Magnusdotter",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the mother of Olaf (Ii) Haraldsen?",
+            "image": null,
+            "answer": "Ragnild Magnusdotter",
+            "pid": 35,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "36",
+        "input": "Who is Archduchess Rosa Of Austria's mother-in-law?",
+        "gt_answer": "Archduchess Margarete Sophie of Austria",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Archduchess Margarete Sophie of Austria",
+        "target": "Archduchess Margarete Sophie of Austria",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Archduchess Margarete Sophie of Austria",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Archduchess Rosa Of Austria's mother-in-law?",
+            "image": null,
+            "answer": "Archduchess Margarete Sophie of Austria",
+            "pid": 36,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "37",
+        "input": "When did the composer of song On A Clear Day (You Can See Forever) die?",
+        "gt_answer": "January 5, 1997",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "January 5, 1997",
+        "target": "January 5, 1997",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "January 5, 1997",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did the composer of song On A Clear Day (You Can See Forever) die?",
+            "image": null,
+            "answer": "January 5, 1997",
+            "pid": 37,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "38",
+        "input": "Which film was released more recently, Assignment To Kill or Pachakuthira?",
+        "gt_answer": "Pachakuthira",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Pachakuthira",
+        "target": "Pachakuthira",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Pachakuthira",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released more recently, Assignment To Kill or Pachakuthira?",
+            "image": null,
+            "answer": "Pachakuthira",
+            "pid": 38,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "39",
+        "input": "Which film has the director who was born later, Oklahoma Justice or See This Movie?",
+        "gt_answer": "See This Movie",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "See This Movie",
+        "target": "See This Movie",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "See This Movie",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born later, Oklahoma Justice or See This Movie?",
+            "image": null,
+            "answer": "See This Movie",
+            "pid": 39,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "40",
+        "input": "Which film has the director who died first, Bawarchi or Manhattan Romance?",
+        "gt_answer": "Manhattan Romance",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Manhattan Romance",
+        "target": "Manhattan Romance",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Manhattan Romance",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who died first, Bawarchi or Manhattan Romance?",
+            "image": null,
+            "answer": "Manhattan Romance",
+            "pid": 40,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "41",
+        "input": "Do both films: Gammat Jammat and Ready (2011 Film) have the directors from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films: Gammat Jammat and Ready (2011 Film) have the directors from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 41,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "42",
+        "input": "Are the movies Je Suis Né D'Une Cigogne and La Chair De L'Orchidée, from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are the movies Je Suis Né D'Une Cigogne and La Chair De L'Orchidée, from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 42,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "43",
+        "input": "Which film has the director who is older than the other, The Secret Witness or Mentioned In Confidence?",
+        "gt_answer": "Mentioned In Confidence",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mentioned In Confidence",
+        "target": "Mentioned In Confidence",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mentioned In Confidence",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, The Secret Witness or Mentioned In Confidence?",
+            "image": null,
+            "answer": "Mentioned In Confidence",
+            "pid": 43,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "44",
+        "input": "Where was the place of burial of John Stafford, 1St Earl Of Wiltshire's father?",
+        "gt_answer": "Northampton",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Northampton",
+        "target": "Northampton",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Northampton",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the place of burial of John Stafford, 1St Earl Of Wiltshire's father?",
+            "image": null,
+            "answer": "Northampton",
+            "pid": 44,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "45",
+        "input": "Which film was released more recently, Mandyada Gandu or Love In Limbo?",
+        "gt_answer": "Mandyada Gandu",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mandyada Gandu",
+        "target": "Mandyada Gandu",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mandyada Gandu",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released more recently, Mandyada Gandu or Love In Limbo?",
+            "image": null,
+            "answer": "Mandyada Gandu",
+            "pid": 45,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "46",
+        "input": "Who was born earlier, Achraf Tadili or Diego De Miguel?",
+        "gt_answer": "Achraf Tadili",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Achraf Tadili",
+        "target": "Achraf Tadili",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Achraf Tadili",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born earlier, Achraf Tadili or Diego De Miguel?",
+            "image": null,
+            "answer": "Achraf Tadili",
+            "pid": 46,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "47",
+        "input": "Who is Alexandra Of Lithuania's father-in-law?",
+        "gt_answer": "Siemowit III, Duke of Masovia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Siemowit III, Duke of Masovia",
+        "target": "Siemowit III, Duke of Masovia",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Siemowit III, Duke of Masovia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Alexandra Of Lithuania's father-in-law?",
+            "image": null,
+            "answer": "Siemowit III, Duke of Masovia",
+            "pid": 47,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "48",
+        "input": "Who died later, Nükhetsezâ Hanım or Henry W. Oliver?",
+        "gt_answer": "Henry W. Oliver",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Henry W. Oliver",
+        "target": "Henry W. Oliver",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Henry W. Oliver",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who died later, Nükhetsezâ Hanım or Henry W. Oliver?",
+            "image": null,
+            "answer": "Henry W. Oliver",
+            "pid": 48,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "49",
+        "input": "Which film has the director who was born later, Carmen, Baby or The Little Gypsy?",
+        "gt_answer": "Carmen, Baby",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Carmen, Baby",
+        "target": "Carmen, Baby",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Carmen, Baby",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born later, Carmen, Baby or The Little Gypsy?",
+            "image": null,
+            "answer": "Carmen, Baby",
+            "pid": 49,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "50",
+        "input": "Where did Edward Of Middleham, Prince Of Wales's mother die?",
+        "gt_answer": "Westminster",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Westminster",
+        "target": "Westminster",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Westminster",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where did Edward Of Middleham, Prince Of Wales's mother die?",
+            "image": null,
+            "answer": "Westminster",
+            "pid": 50,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "51",
+        "input": "Where does the composer of film The Top Of His Head work at?",
+        "gt_answer": "Mills College",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mills College",
+        "target": "Mills College",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mills College",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where does the composer of film The Top Of His Head work at?",
+            "image": null,
+            "answer": "Mills College",
+            "pid": 51,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "52",
+        "input": "Where was the husband of Anna Of Saxony born?",
+        "gt_answer": "Dillenburg",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Dillenburg",
+        "target": "Dillenburg",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Dillenburg",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the husband of Anna Of Saxony born?",
+            "image": null,
+            "answer": "Dillenburg",
+            "pid": 52,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "53",
+        "input": "Who is the child of the performer of song This Jesus Must Die?",
+        "gt_answer": "Kyla Brox",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Kyla Brox",
+        "target": "Kyla Brox",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Kyla Brox",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the child of the performer of song This Jesus Must Die?",
+            "image": null,
+            "answer": "Kyla Brox",
+            "pid": 53,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "54",
+        "input": "Are the directors of both films The Snake Brothers and Kooky from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are the directors of both films The Snake Brothers and Kooky from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 54,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "55",
+        "input": "What is the date of death of Euphemia Of Münsterberg's father?",
+        "gt_answer": "13 June 1410",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "13 June 1410",
+        "target": "13 June 1410",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "13 June 1410",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Euphemia Of Münsterberg's father?",
+            "image": null,
+            "answer": "13 June 1410",
+            "pid": 55,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "56",
+        "input": "Which film has the director died earlier, Not My Sister or La Prima Notte Di Quiete?",
+        "gt_answer": "Not My Sister",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Not My Sister",
+        "target": "Not My Sister",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Not My Sister",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director died earlier, Not My Sister or La Prima Notte Di Quiete?",
+            "image": null,
+            "answer": "Not My Sister",
+            "pid": 56,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "57",
+        "input": "Who is the paternal grandmother of John Tzelepes Komnenos?",
+        "gt_answer": "Irene Doukaina",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Irene Doukaina",
+        "target": "Irene Doukaina",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Irene Doukaina",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandmother of John Tzelepes Komnenos?",
+            "image": null,
+            "answer": "Irene Doukaina",
+            "pid": 57,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "58",
+        "input": "Who is the paternal grandfather of William St George Nugent, 10Th Earl Of Westmeath?",
+        "gt_answer": "William Thomas Nugent, 5th Baron Nugent of Riverston",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "William Thomas Nugent, 5th Baron Nugent of Riverston",
+        "target": "William Thomas Nugent, 5th Baron Nugent of Riverston",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "William Thomas Nugent, 5th Baron Nugent of Riverston",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of William St George Nugent, 10Th Earl Of Westmeath?",
+            "image": null,
+            "answer": "William Thomas Nugent, 5th Baron Nugent of Riverston",
+            "pid": 58,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "59",
+        "input": "What is the date of birth of the director of film Moguds Pellams?",
+        "gt_answer": "1949",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1949",
+        "target": "1949",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1949",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of birth of the director of film Moguds Pellams?",
+            "image": null,
+            "answer": "1949",
+            "pid": 59,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "60",
+        "input": "Which film has the director born later, Hum Dil De Chuke Sanam or The Greyhound Limited?",
+        "gt_answer": "Hum Dil De Chuke Sanam",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Hum Dil De Chuke Sanam",
+        "target": "Hum Dil De Chuke Sanam",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Hum Dil De Chuke Sanam",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director born later, Hum Dil De Chuke Sanam or The Greyhound Limited?",
+            "image": null,
+            "answer": "Hum Dil De Chuke Sanam",
+            "pid": 60,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "61",
+        "input": "Who is the mother-in-law of Princess Clotilde Of Saxe-Coburg And Gotha?",
+        "gt_answer": "Duchess Maria Dorothea of Württemberg",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Duchess Maria Dorothea of Württemberg",
+        "target": "Duchess Maria Dorothea of Württemberg",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Duchess Maria Dorothea of Württemberg",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the mother-in-law of Princess Clotilde Of Saxe-Coburg And Gotha?",
+            "image": null,
+            "answer": "Duchess Maria Dorothea of Württemberg",
+            "pid": 61,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "62",
+        "input": "Do both films Across The Badlands and A Gutter Magdalene have the directors that share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films Across The Badlands and A Gutter Magdalene have the directors that share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 62,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "63",
+        "input": "Who died first, Paul Gleason or Huneric?",
+        "gt_answer": "Huneric",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Huneric",
+        "target": "Huneric",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Huneric",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who died first, Paul Gleason or Huneric?",
+            "image": null,
+            "answer": "Huneric",
+            "pid": 63,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "64",
+        "input": "Which film was released earlier, Karla'S World or Dharti?",
+        "gt_answer": "Dharti",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Dharti",
+        "target": "Dharti",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Dharti",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released earlier, Karla'S World or Dharti?",
+            "image": null,
+            "answer": "Dharti",
+            "pid": 64,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "65",
+        "input": "Where was the director of film Oosaravelli born?",
+        "gt_answer": "Karimnagar",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Karimnagar",
+        "target": "Karimnagar",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Karimnagar",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the director of film Oosaravelli born?",
+            "image": null,
+            "answer": "Karimnagar",
+            "pid": 65,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "66",
+        "input": "Who is younger, Meisam Mostafa-Jokar or Samuel Minturn Peck?",
+        "gt_answer": "Meisam Mostafa-Jokar",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Meisam Mostafa-Jokar",
+        "target": "Meisam Mostafa-Jokar",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Meisam Mostafa-Jokar",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is younger, Meisam Mostafa-Jokar or Samuel Minturn Peck?",
+            "image": null,
+            "answer": "Meisam Mostafa-Jokar",
+            "pid": 66,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "67",
+        "input": "Which film was released earlier, Mazhai or Hiling?",
+        "gt_answer": "Hiling",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Hiling",
+        "target": "Hiling",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Hiling",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released earlier, Mazhai or Hiling?",
+            "image": null,
+            "answer": "Hiling",
+            "pid": 67,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "68",
+        "input": "Which film has the director who was born later, Cats & Dogs or Road To Morocco?",
+        "gt_answer": "Cats & Dogs",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Cats & Dogs",
+        "target": "Cats & Dogs",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Cats & Dogs",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born later, Cats & Dogs or Road To Morocco?",
+            "image": null,
+            "answer": "Cats & Dogs",
+            "pid": 68,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "69",
+        "input": "Do both films Hoots Mon! (1940 Film) and Don Juan Demarco have the directors that share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films Hoots Mon! (1940 Film) and Don Juan Demarco have the directors that share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 69,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "70",
+        "input": "Which film has the director who is older than the other, Handsome Siblings or 5 Flights Up?",
+        "gt_answer": "5 Flights Up",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "5 Flights Up",
+        "target": "5 Flights Up",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "5 Flights Up",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Handsome Siblings or 5 Flights Up?",
+            "image": null,
+            "answer": "5 Flights Up",
+            "pid": 70,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "71",
+        "input": "Where did Louis Of Nassau's mother die?",
+        "gt_answer": "Dillenburg",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Dillenburg",
+        "target": "Dillenburg",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Dillenburg",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where did Louis Of Nassau's mother die?",
+            "image": null,
+            "answer": "Dillenburg",
+            "pid": 71,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "72",
+        "input": "Who was born first, Leander J. Pierson or Gyula Illyés?",
+        "gt_answer": "Leander J. Pierson",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Leander J. Pierson",
+        "target": "Leander J. Pierson",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Leander J. Pierson",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born first, Leander J. Pierson or Gyula Illyés?",
+            "image": null,
+            "answer": "Leander J. Pierson",
+            "pid": 72,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "73",
+        "input": "Do both films The Dust Of Naples and Col Cuore In Gola have the directors that share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films The Dust Of Naples and Col Cuore In Gola have the directors that share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 73,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "74",
+        "input": "Who is Charles Iii Of Navarre's paternal grandmother?",
+        "gt_answer": "Joan II of Navarre",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Joan II of Navarre",
+        "target": "Joan II of Navarre",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Joan II of Navarre",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Charles Iii Of Navarre's paternal grandmother?",
+            "image": null,
+            "answer": "Joan II of Navarre",
+            "pid": 74,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "75",
+        "input": "Who is Gisela Of Hungary's mother-in-law?",
+        "gt_answer": "Sarolt",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Sarolt",
+        "target": "Sarolt",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Sarolt",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Gisela Of Hungary's mother-in-law?",
+            "image": null,
+            "answer": "Sarolt",
+            "pid": 75,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "76",
+        "input": "Who died first, Albertus Seba or Ali Dinar?",
+        "gt_answer": "Albertus Seba",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Albertus Seba",
+        "target": "Albertus Seba",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Albertus Seba",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who died first, Albertus Seba or Ali Dinar?",
+            "image": null,
+            "answer": "Albertus Seba",
+            "pid": 76,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "77",
+        "input": "Who is Gnaeus Pompeius Magnus (Husband Of Claudia Antonia)'s maternal grandmother?",
+        "gt_answer": "Cornelia Pompeia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Cornelia Pompeia",
+        "target": "Cornelia Pompeia",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Cornelia Pompeia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Gnaeus Pompeius Magnus (Husband Of Claudia Antonia)'s maternal grandmother?",
+            "image": null,
+            "answer": "Cornelia Pompeia",
+            "pid": 77,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "78",
+        "input": "Who is the paternal grandmother of Jean D'Armagnac, Duke Of Nemours?",
+        "gt_answer": "Eleanor of Bourbon-La Marche",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Eleanor of Bourbon-La Marche",
+        "target": "Eleanor of Bourbon-La Marche",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Eleanor of Bourbon-La Marche",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandmother of Jean D'Armagnac, Duke Of Nemours?",
+            "image": null,
+            "answer": "Eleanor of Bourbon-La Marche",
+            "pid": 78,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "79",
+        "input": "Who is the father-in-law of Damat Gürcü Halil Rifat Pasha?",
+        "gt_answer": "Mahmud II",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mahmud II",
+        "target": "Mahmud II",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mahmud II",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the father-in-law of Damat Gürcü Halil Rifat Pasha?",
+            "image": null,
+            "answer": "Mahmud II",
+            "pid": 79,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "80",
+        "input": "Are It’S A Matter Of Love and The Trusted Outlaw from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are It’S A Matter Of Love and The Trusted Outlaw from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 80,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "81",
+        "input": "When was Prince Nikolai Of Denmark's mother born?",
+        "gt_answer": "30 June 1964",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "30 June 1964",
+        "target": "30 June 1964",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "30 June 1964",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When was Prince Nikolai Of Denmark's mother born?",
+            "image": null,
+            "answer": "30 June 1964",
+            "pid": 81,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "82",
+        "input": "When is Anne Calthorpe, Countess Of Sussex's husband's birthday?",
+        "gt_answer": "1507",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1507",
+        "target": "1507",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1507",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When is Anne Calthorpe, Countess Of Sussex's husband's birthday?",
+            "image": null,
+            "answer": "1507",
+            "pid": 82,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "83",
+        "input": "Which film has the director died earlier, I As In Icarus or Move Over, Darling?",
+        "gt_answer": "Move Over, Darling",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Move Over, Darling",
+        "target": "Move Over, Darling",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Move Over, Darling",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director died earlier, I As In Icarus or Move Over, Darling?",
+            "image": null,
+            "answer": "Move Over, Darling",
+            "pid": 83,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "84",
+        "input": "Which film has the director who is older than the other, My Old Duchess or Crainquebille?",
+        "gt_answer": "Crainquebille",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Crainquebille",
+        "target": "Crainquebille",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Crainquebille",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, My Old Duchess or Crainquebille?",
+            "image": null,
+            "answer": "Crainquebille",
+            "pid": 84,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "85",
+        "input": "Who is the spouse of the director of film La Belle Captive?",
+        "gt_answer": "Catherine Robbe-Grillet",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Catherine Robbe-Grillet",
+        "target": "Catherine Robbe-Grillet",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Catherine Robbe-Grillet",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the spouse of the director of film La Belle Captive?",
+            "image": null,
+            "answer": "Catherine Robbe-Grillet",
+            "pid": 85,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "86",
+        "input": "Who is the maternal grandmother of Mithridates Ii Of Commagene?",
+        "gt_answer": "Athenais Philostorgos I",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Athenais Philostorgos I",
+        "target": "Athenais Philostorgos I",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Athenais Philostorgos I",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the maternal grandmother of Mithridates Ii Of Commagene?",
+            "image": null,
+            "answer": "Athenais Philostorgos I",
+            "pid": 86,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "87",
+        "input": "Do Sherry Ball and Gordon William Hanson have the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do Sherry Ball and Gordon William Hanson have the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 87,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "88",
+        "input": "Who is John, Count Of Brienne's paternal grandmother?",
+        "gt_answer": "Elvira of Sicily",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Elvira of Sicily",
+        "target": "Elvira of Sicily",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Elvira of Sicily",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is John, Count Of Brienne's paternal grandmother?",
+            "image": null,
+            "answer": "Elvira of Sicily",
+            "pid": 88,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "89",
+        "input": "Do both films Kalloori Vaasal and Lakshmi'S Ntr have the directors that share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films Kalloori Vaasal and Lakshmi'S Ntr have the directors that share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 89,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "90",
+        "input": "Who is the father of Alessandro Torlonia, 5Th Prince Of Civitella-Cesi?",
+        "gt_answer": "Marino Torlonia, 4th Prince of Civitella-Cesi",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Marino Torlonia, 4th Prince of Civitella-Cesi",
+        "target": "Marino Torlonia, 4th Prince of Civitella-Cesi",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Marino Torlonia, 4th Prince of Civitella-Cesi",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the father of Alessandro Torlonia, 5Th Prince Of Civitella-Cesi?",
+            "image": null,
+            "answer": "Marino Torlonia, 4th Prince of Civitella-Cesi",
+            "pid": 90,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "91",
+        "input": "Where was the father of Iacopo Iii Appiani born?",
+        "gt_answer": "Pisa",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Pisa",
+        "target": "Pisa",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Pisa",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the father of Iacopo Iii Appiani born?",
+            "image": null,
+            "answer": "Pisa",
+            "pid": 91,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "92",
+        "input": "Are director of film Auto Driver and director of film Kahani Hum Sab Ki both from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are director of film Auto Driver and director of film Kahani Hum Sab Ki both from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 92,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "93",
+        "input": "Where was the place of death of Maria Of Jülich-Berg's mother?",
+        "gt_answer": "Kaster",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Kaster",
+        "target": "Kaster",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Kaster",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the place of death of Maria Of Jülich-Berg's mother?",
+            "image": null,
+            "answer": "Kaster",
+            "pid": 93,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "94",
+        "input": "Which film has the director who is older than the other, Outlaws Of Sonora or Passkey To Danger?",
+        "gt_answer": "Passkey To Danger",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Passkey To Danger",
+        "target": "Passkey To Danger",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Passkey To Danger",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Outlaws Of Sonora or Passkey To Danger?",
+            "image": null,
+            "answer": "Passkey To Danger",
+            "pid": 94,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "95",
+        "input": "When did Manuel Bulnes Pinto's mother die?",
+        "gt_answer": "1904",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1904",
+        "target": "1904",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1904",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did Manuel Bulnes Pinto's mother die?",
+            "image": null,
+            "answer": "1904",
+            "pid": 95,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "96",
+        "input": "Who is younger, Nicolas Görtler or Michel De Salzmann?",
+        "gt_answer": "Nicolas Görtler",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Nicolas Görtler",
+        "target": "Nicolas Görtler",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Nicolas Görtler",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is younger, Nicolas Görtler or Michel De Salzmann?",
+            "image": null,
+            "answer": "Nicolas Görtler",
+            "pid": 96,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "97",
+        "input": "Are Big Pal and The Invisible Man Attacks from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are Big Pal and The Invisible Man Attacks from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 97,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "98",
+        "input": "Do director of film Stop Thief! (1915 Film) and director of film Beaches (Film) share the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do director of film Stop Thief! (1915 Film) and director of film Beaches (Film) share the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 98,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "99",
+        "input": "Are both Dos Patos River (Ivaí River) and Jaguarizinho River located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both Dos Patos River (Ivaí River) and Jaguarizinho River located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 99,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "100",
+        "input": "Who was born earlier, Tom Grebis or Emily Rapp Black?",
+        "gt_answer": "Tom Grebis",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Tom Grebis",
+        "target": "Tom Grebis",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Tom Grebis",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born earlier, Tom Grebis or Emily Rapp Black?",
+            "image": null,
+            "answer": "Tom Grebis",
+            "pid": 100,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "101",
+        "input": "Do director of film Excalibur (Film) and director of film The Day They Robbed The Bank Of England share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do director of film Excalibur (Film) and director of film The Day They Robbed The Bank Of England share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 101,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "102",
+        "input": "Who is the father of the performer of song Don'T Touch My Hair?",
+        "gt_answer": "Mathew Knowles",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mathew Knowles",
+        "target": "Mathew Knowles",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mathew Knowles",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the father of the performer of song Don'T Touch My Hair?",
+            "image": null,
+            "answer": "Mathew Knowles",
+            "pid": 102,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "103",
+        "input": "Who is the paternal grandmother of Eric I Of Denmark?",
+        "gt_answer": "Estrid Svendsdatter",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Estrid Svendsdatter",
+        "target": "Estrid Svendsdatter",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Estrid Svendsdatter",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandmother of Eric I Of Denmark?",
+            "image": null,
+            "answer": "Estrid Svendsdatter",
+            "pid": 103,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "104",
+        "input": "Who was born later, Wolfgang Vondey or Bubacarr Sanneh?",
+        "gt_answer": "Bubacarr Sanneh",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Bubacarr Sanneh",
+        "target": "Bubacarr Sanneh",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Bubacarr Sanneh",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born later, Wolfgang Vondey or Bubacarr Sanneh?",
+            "image": null,
+            "answer": "Bubacarr Sanneh",
+            "pid": 104,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "105",
+        "input": "Who is Sir William Lowther, 1St Baronet, Of Marske's paternal grandfather?",
+        "gt_answer": "Robert Lowther",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Robert Lowther",
+        "target": "Robert Lowther",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Robert Lowther",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Sir William Lowther, 1St Baronet, Of Marske's paternal grandfather?",
+            "image": null,
+            "answer": "Robert Lowther",
+            "pid": 105,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "106",
+        "input": "Are both villages, Rogozikha and Turbaza \"Katun\", located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both villages, Rogozikha and Turbaza \"Katun\", located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 106,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "107",
+        "input": "Are both The Bo-Weevils and Kulcha (Band) from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both The Bo-Weevils and Kulcha (Band) from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 107,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "108",
+        "input": "Who is the paternal grandfather of Alexandre Berthier, 3Rd Prince Of Wagram?",
+        "gt_answer": "Louis-Alexandre Berthier",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Louis-Alexandre Berthier",
+        "target": "Louis-Alexandre Berthier",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Louis-Alexandre Berthier",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Alexandre Berthier, 3Rd Prince Of Wagram?",
+            "image": null,
+            "answer": "Louis-Alexandre Berthier",
+            "pid": 108,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "109",
+        "input": "Which film came out earlier, Der Wixxer or The Butterfly Room?",
+        "gt_answer": "Der Wixxer",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Der Wixxer",
+        "target": "Der Wixxer",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Der Wixxer",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film came out earlier, Der Wixxer or The Butterfly Room?",
+            "image": null,
+            "answer": "Der Wixxer",
+            "pid": 109,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "110",
+        "input": "Who is Elisabeth Raiser's paternal grandfather?",
+        "gt_answer": "Ernst von Weizsäcker",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ernst von Weizsäcker",
+        "target": "Ernst von Weizsäcker",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ernst von Weizsäcker",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Elisabeth Raiser's paternal grandfather?",
+            "image": null,
+            "answer": "Ernst von Weizsäcker",
+            "pid": 110,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "111",
+        "input": "Which film has the director born earlier, Cattle King or Janma Janmada Anubandha?",
+        "gt_answer": "Cattle King",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Cattle King",
+        "target": "Cattle King",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Cattle King",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director born earlier, Cattle King or Janma Janmada Anubandha?",
+            "image": null,
+            "answer": "Cattle King",
+            "pid": 111,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "112",
+        "input": "Do both directors of films American Dragons and The Spender (1919 Film) share the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both directors of films American Dragons and The Spender (1919 Film) share the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 112,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "113",
+        "input": "Who is the uncle of Empress Huo Chengjun?",
+        "gt_answer": "Huo Qubing",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Huo Qubing",
+        "target": "Huo Qubing",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Huo Qubing",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the uncle of Empress Huo Chengjun?",
+            "image": null,
+            "answer": "Huo Qubing",
+            "pid": 113,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "114",
+        "input": "Which film was released more recently, Beneath The 12-Mile Reef or Jawani Phir Nahi Ani?",
+        "gt_answer": "Jawani Phir Nahi Ani",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jawani Phir Nahi Ani",
+        "target": "Jawani Phir Nahi Ani",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jawani Phir Nahi Ani",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released more recently, Beneath The 12-Mile Reef or Jawani Phir Nahi Ani?",
+            "image": null,
+            "answer": "Jawani Phir Nahi Ani",
+            "pid": 114,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "115",
+        "input": "Who is María De Las Mercedes, Princess Of Asturias's mother-in-law?",
+        "gt_answer": "Princess Maria Antonietta of Bourbon-Two Sicilies",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Princess Maria Antonietta of Bourbon-Two Sicilies",
+        "target": "Princess Maria Antonietta of Bourbon-Two Sicilies",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Princess Maria Antonietta of Bourbon-Two Sicilies",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is María De Las Mercedes, Princess Of Asturias's mother-in-law?",
+            "image": null,
+            "answer": "Princess Maria Antonietta of Bourbon-Two Sicilies",
+            "pid": 115,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "116",
+        "input": "Which film has the director who was born earlier, 16 Blocks or The Third Page?",
+        "gt_answer": "16 Blocks",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "16 Blocks",
+        "target": "16 Blocks",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "16 Blocks",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born earlier, 16 Blocks or The Third Page?",
+            "image": null,
+            "answer": "16 Blocks",
+            "pid": 116,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "117",
+        "input": "Was Guillermo Matías Fernández or Chris Grundy born first?",
+        "gt_answer": "Chris Grundy",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Chris Grundy",
+        "target": "Chris Grundy",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Chris Grundy",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Was Guillermo Matías Fernández or Chris Grundy born first?",
+            "image": null,
+            "answer": "Chris Grundy",
+            "pid": 117,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "118",
+        "input": "Are director of film Garbo (Film) and director of film Souls At Sea both from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are director of film Garbo (Film) and director of film Souls At Sea both from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 118,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "119",
+        "input": "Which film has the director who died first, Kris Mataram or A Peasant On A Bicycle?",
+        "gt_answer": "Kris Mataram",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Kris Mataram",
+        "target": "Kris Mataram",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Kris Mataram",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who died first, Kris Mataram or A Peasant On A Bicycle?",
+            "image": null,
+            "answer": "Kris Mataram",
+            "pid": 119,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "120",
+        "input": "Where did Evelyn Cecil, 1St Baron Rockley's father graduate from?",
+        "gt_answer": "Royal Military College, Sandhurst",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Royal Military College, Sandhurst",
+        "target": "Royal Military College, Sandhurst",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Royal Military College, Sandhurst",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where did Evelyn Cecil, 1St Baron Rockley's father graduate from?",
+            "image": null,
+            "answer": "Royal Military College, Sandhurst",
+            "pid": 120,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "121",
+        "input": "What is the date of death of Francisco De Benavides's father?",
+        "gt_answer": "March 19, 1666",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "March 19, 1666",
+        "target": "March 19, 1666",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "March 19, 1666",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Francisco De Benavides's father?",
+            "image": null,
+            "answer": "March 19, 1666",
+            "pid": 121,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "122",
+        "input": "Was Paul Antoine Brunel or George Markham Giffard born first?",
+        "gt_answer": "George Markham Giffard",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "George Markham Giffard",
+        "target": "George Markham Giffard",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "George Markham Giffard",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Was Paul Antoine Brunel or George Markham Giffard born first?",
+            "image": null,
+            "answer": "George Markham Giffard",
+            "pid": 122,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "123",
+        "input": "Are Comrades (1921 Film) and Céleste (1982 Film) from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are Comrades (1921 Film) and Céleste (1982 Film) from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 123,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "124",
+        "input": "What is the place of birth of Aleksey Greig's father?",
+        "gt_answer": "Inverkeithing",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Inverkeithing",
+        "target": "Inverkeithing",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Inverkeithing",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of Aleksey Greig's father?",
+            "image": null,
+            "answer": "Inverkeithing",
+            "pid": 124,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "125",
+        "input": "Are A Land Imagined and The Story Of A Three-Day Pass both from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are A Land Imagined and The Story Of A Three-Day Pass both from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 125,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "126",
+        "input": "Which film has the director died later, Five Deadly Venoms or Asthram?",
+        "gt_answer": "Asthram",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Asthram",
+        "target": "Asthram",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Asthram",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director died later, Five Deadly Venoms or Asthram?",
+            "image": null,
+            "answer": "Asthram",
+            "pid": 126,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "127",
+        "input": "Are the movies Blood: The Last Vampire (2009 Film) and Jamesy Boy, from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are the movies Blood: The Last Vampire (2009 Film) and Jamesy Boy, from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 127,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "128",
+        "input": "Who was born earlier, Salomėja Zaksaitė or Nataliya Rusnachenko?",
+        "gt_answer": "Nataliya Rusnachenko",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Nataliya Rusnachenko",
+        "target": "Nataliya Rusnachenko",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Nataliya Rusnachenko",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born earlier, Salomėja Zaksaitė or Nataliya Rusnachenko?",
+            "image": null,
+            "answer": "Nataliya Rusnachenko",
+            "pid": 128,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "129",
+        "input": "Which film was released first, The First 7Th Night or Aansoo Ban Gaye Phool?",
+        "gt_answer": "Aansoo Ban Gaye Phool",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Aansoo Ban Gaye Phool",
+        "target": "Aansoo Ban Gaye Phool",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Aansoo Ban Gaye Phool",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released first, The First 7Th Night or Aansoo Ban Gaye Phool?",
+            "image": null,
+            "answer": "Aansoo Ban Gaye Phool",
+            "pid": 129,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "130",
+        "input": "Do both films, Chasing Fortune and Love Is Blind (1925 Film), have the directors who are from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both films, Chasing Fortune and Love Is Blind (1925 Film), have the directors who are from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 130,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "131",
+        "input": "Which film has the director born later, That'S Cricket or All Is True?",
+        "gt_answer": "All Is True",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "All Is True",
+        "target": "All Is True",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "All Is True",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director born later, That'S Cricket or All Is True?",
+            "image": null,
+            "answer": "All Is True",
+            "pid": 131,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "132",
+        "input": "Who died first, Mikiel Anton Vassalli or William Henry Carr?",
+        "gt_answer": "Mikiel Anton Vassalli",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Mikiel Anton Vassalli",
+        "target": "Mikiel Anton Vassalli",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Mikiel Anton Vassalli",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who died first, Mikiel Anton Vassalli or William Henry Carr?",
+            "image": null,
+            "answer": "Mikiel Anton Vassalli",
+            "pid": 132,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "133",
+        "input": "What is the place of birth of the composer of film The Charming Young Lady (Film)?",
+        "gt_answer": "Moravské Budějovice",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Moravské Budějovice",
+        "target": "Moravské Budějovice",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Moravské Budějovice",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of the composer of film The Charming Young Lady (Film)?",
+            "image": null,
+            "answer": "Moravské Budějovice",
+            "pid": 133,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "134",
+        "input": "Who is the paternal grandfather of Walter Aston, 4Th Lord Aston Of Forfar?",
+        "gt_answer": "Walter Aston, 2nd Lord Aston of Forfar",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Walter Aston, 2nd Lord Aston of Forfar",
+        "target": "Walter Aston, 2nd Lord Aston of Forfar",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Walter Aston, 2nd Lord Aston of Forfar",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Walter Aston, 4Th Lord Aston Of Forfar?",
+            "image": null,
+            "answer": "Walter Aston, 2nd Lord Aston of Forfar",
+            "pid": 134,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "135",
+        "input": "Who is the spouse of the director of film Cross Country Cruise?",
+        "gt_answer": "Ona Munson",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ona Munson",
+        "target": "Ona Munson",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ona Munson",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the spouse of the director of film Cross Country Cruise?",
+            "image": null,
+            "answer": "Ona Munson",
+            "pid": 135,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "136",
+        "input": "Who is the paternal grandfather of Henrique Da Veiga De Nápoles?",
+        "gt_answer": "João Esteves da Veiga de Nápoles",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "João Esteves da Veiga de Nápoles",
+        "target": "João Esteves da Veiga de Nápoles",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "João Esteves da Veiga de Nápoles",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Henrique Da Veiga De Nápoles?",
+            "image": null,
+            "answer": "João Esteves da Veiga de Nápoles",
+            "pid": 136,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "137",
+        "input": "Who is Alexandre Berthier, 3Rd Prince Of Wagram's paternal grandmother?",
+        "gt_answer": "Duchess Maria Elisabeth in Bavaria",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Duchess Maria Elisabeth in Bavaria",
+        "target": "Duchess Maria Elisabeth in Bavaria",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Duchess Maria Elisabeth in Bavaria",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Alexandre Berthier, 3Rd Prince Of Wagram's paternal grandmother?",
+            "image": null,
+            "answer": "Duchess Maria Elisabeth in Bavaria",
+            "pid": 137,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "138",
+        "input": "Who was born later, Victor Bangert or Simone Fontecchio?",
+        "gt_answer": "Simone Fontecchio",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Simone Fontecchio",
+        "target": "Simone Fontecchio",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Simone Fontecchio",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born later, Victor Bangert or Simone Fontecchio?",
+            "image": null,
+            "answer": "Simone Fontecchio",
+            "pid": 138,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "139",
+        "input": "Where was the place of death of John Manners Tollemache's mother?",
+        "gt_answer": "Ham House",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ham House",
+        "target": "Ham House",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ham House",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the place of death of John Manners Tollemache's mother?",
+            "image": null,
+            "answer": "Ham House",
+            "pid": 139,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "140",
+        "input": "Are Signes Extérieurs De Richesse and Hellé (Film) from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are Signes Extérieurs De Richesse and Hellé (Film) from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 140,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "141",
+        "input": "When did Prince Aage, Count Of Rosenborg's father die?",
+        "gt_answer": "14 January 1939",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "14 January 1939",
+        "target": "14 January 1939",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "14 January 1939",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did Prince Aage, Count Of Rosenborg's father die?",
+            "image": null,
+            "answer": "14 January 1939",
+            "pid": 141,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "142",
+        "input": "Where was the husband of Hayranidil Kadın born?",
+        "gt_answer": "Constantinople",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Constantinople",
+        "target": "Constantinople",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Constantinople",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the husband of Hayranidil Kadın born?",
+            "image": null,
+            "answer": "Constantinople",
+            "pid": 142,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "143",
+        "input": "Does Divyenndu have the same nationality as Jitendra Nath Mohanty?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Does Divyenndu have the same nationality as Jitendra Nath Mohanty?",
+            "image": null,
+            "answer": "yes",
+            "pid": 143,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "144",
+        "input": "When did Publius Aelius Hadrianus Afer's father die?",
+        "gt_answer": "91",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "91",
+        "target": "91",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "91",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did Publius Aelius Hadrianus Afer's father die?",
+            "image": null,
+            "answer": "91",
+            "pid": 144,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "145",
+        "input": "Who lived longer, Alexander Jeremiah Orenstein or Lydia Flood Jackson?",
+        "gt_answer": "Lydia Flood Jackson",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Lydia Flood Jackson",
+        "target": "Lydia Flood Jackson",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Lydia Flood Jackson",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who lived longer, Alexander Jeremiah Orenstein or Lydia Flood Jackson?",
+            "image": null,
+            "answer": "Lydia Flood Jackson",
+            "pid": 145,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "146",
+        "input": "Did Inga Broberg and Erik Gabrielsson Emporagrius share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Did Inga Broberg and Erik Gabrielsson Emporagrius share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 146,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "147",
+        "input": "Where was the performer of song Det Brinner Ett Ljus born?",
+        "gt_answer": "Hagfors",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Hagfors",
+        "target": "Hagfors",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Hagfors",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the performer of song Det Brinner Ett Ljus born?",
+            "image": null,
+            "answer": "Hagfors",
+            "pid": 147,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "148",
+        "input": "Where was the husband of Vera Cosgrave born?",
+        "gt_answer": "Castleknock",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Castleknock",
+        "target": "Castleknock",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Castleknock",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the husband of Vera Cosgrave born?",
+            "image": null,
+            "answer": "Castleknock",
+            "pid": 148,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "149",
+        "input": "Do director of film La Neve Nel Bicchiere and director of film Lucia'S Grace have the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do director of film La Neve Nel Bicchiere and director of film Lucia'S Grace have the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 149,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "150",
+        "input": "When was Mary, Crown Princess Of Denmark's husband born?",
+        "gt_answer": "26 May 1968",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "26 May 1968",
+        "target": "26 May 1968",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "26 May 1968",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When was Mary, Crown Princess Of Denmark's husband born?",
+            "image": null,
+            "answer": "26 May 1968",
+            "pid": 150,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "151",
+        "input": "What is the date of death of Doamna Chiajna's husband?",
+        "gt_answer": "21 September 1559",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "21 September 1559",
+        "target": "21 September 1559",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "21 September 1559",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Doamna Chiajna's husband?",
+            "image": null,
+            "answer": "21 September 1559",
+            "pid": 151,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "152",
+        "input": "Are Copatana River and Faria Timbó River located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are Copatana River and Faria Timbó River located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 152,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "153",
+        "input": "What is the date of death of Philibert I, Duke Of Savoy's mother?",
+        "gt_answer": "23 August 1478",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "23 August 1478",
+        "target": "23 August 1478",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "23 August 1478",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Philibert I, Duke Of Savoy's mother?",
+            "image": null,
+            "answer": "23 August 1478",
+            "pid": 153,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "154",
+        "input": "Who is the maternal grandmother of Janusz Aleksander Sanguszko?",
+        "gt_answer": "Teofila Ludwika Zasławska",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Teofila Ludwika Zasławska",
+        "target": "Teofila Ludwika Zasławska",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Teofila Ludwika Zasławska",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the maternal grandmother of Janusz Aleksander Sanguszko?",
+            "image": null,
+            "answer": "Teofila Ludwika Zasławska",
+            "pid": 154,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "155",
+        "input": "Who is the father of the director of film Power Of Women (Film)?",
+        "gt_answer": "Jayavarman I",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jayavarman I",
+        "target": "Jayavarman I",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jayavarman I",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the father of the director of film Power Of Women (Film)?",
+            "image": null,
+            "answer": "Jayavarman I",
+            "pid": 155,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "156",
+        "input": "Who was born first out of Emerson Duarte and C. J. Pascoe?",
+        "gt_answer": "Emerson Duarte",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Emerson Duarte",
+        "target": "Emerson Duarte",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Emerson Duarte",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who was born first out of Emerson Duarte and C. J. Pascoe?",
+            "image": null,
+            "answer": "Emerson Duarte",
+            "pid": 156,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "157",
+        "input": "When was Princess Karoline Mathilde Of Schleswig-Holstein-Sonderburg-Augustenburg's father born?",
+        "gt_answer": "July 6, 1829",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "July 6, 1829",
+        "target": "July 6, 1829",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "July 6, 1829",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When was Princess Karoline Mathilde Of Schleswig-Holstein-Sonderburg-Augustenburg's father born?",
+            "image": null,
+            "answer": "July 6, 1829",
+            "pid": 157,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "158",
+        "input": "Which film was released first, S*P*Y*S or Why Would I Lie??",
+        "gt_answer": "S*P*Y*S",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "S*P*Y*S",
+        "target": "S*P*Y*S",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "S*P*Y*S",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released first, S*P*Y*S or Why Would I Lie??",
+            "image": null,
+            "answer": "S*P*Y*S",
+            "pid": 158,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "159",
+        "input": "Which film has the director who is older than the other, Who'S Singin' Over There? or Hoppet (Film)?",
+        "gt_answer": "Who'S Singin' Over There?",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Who'S Singin' Over There?",
+        "target": "Who'S Singin' Over There?",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Who'S Singin' Over There?",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Who'S Singin' Over There? or Hoppet (Film)?",
+            "image": null,
+            "answer": "Who'S Singin' Over There?",
+            "pid": 159,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "160",
+        "input": "Are both Seal Island (Victoria) and Adolphus Island located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both Seal Island (Victoria) and Adolphus Island located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 160,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "161",
+        "input": "Are the directors of films C-Man (Film) and Greencastle (Film) both from the same country?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are the directors of films C-Man (Film) and Greencastle (Film) both from the same country?",
+            "image": null,
+            "answer": "no",
+            "pid": 161,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "162",
+        "input": "When did Princess María De La Esperanza Of Bourbon-Two Sicilies's father die?",
+        "gt_answer": "11 November 1949",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "11 November 1949",
+        "target": "11 November 1949",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "11 November 1949",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "When did Princess María De La Esperanza Of Bourbon-Two Sicilies's father die?",
+            "image": null,
+            "answer": "11 November 1949",
+            "pid": 162,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "163",
+        "input": "Who is Prince Alexander Romanov's paternal grandfather?",
+        "gt_answer": "Grand Duke Alexander Mikhailovich of Russia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Grand Duke Alexander Mikhailovich of Russia",
+        "target": "Grand Duke Alexander Mikhailovich of Russia",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Grand Duke Alexander Mikhailovich of Russia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Prince Alexander Romanov's paternal grandfather?",
+            "image": null,
+            "answer": "Grand Duke Alexander Mikhailovich of Russia",
+            "pid": 163,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "164",
+        "input": "Who is the spouse of the director of film Jimmy Gallu?",
+        "gt_answer": "B. V. Radha",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "B. V. Radha",
+        "target": "B. V. Radha",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "B. V. Radha",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the spouse of the director of film Jimmy Gallu?",
+            "image": null,
+            "answer": "B. V. Radha",
+            "pid": 164,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "165",
+        "input": "Are the directors of both films How Do I Become Rich And Happy? and No Sin On The Alpine Pastures (1915 Film) from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are the directors of both films How Do I Become Rich And Happy? and No Sin On The Alpine Pastures (1915 Film) from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 165,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "166",
+        "input": "Who is the spouse of the director of film Aladdin Aur Jadui Chirag?",
+        "gt_answer": "Fearless Nadia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Fearless Nadia",
+        "target": "Fearless Nadia",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Fearless Nadia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the spouse of the director of film Aladdin Aur Jadui Chirag?",
+            "image": null,
+            "answer": "Fearless Nadia",
+            "pid": 166,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "167",
+        "input": "Which film was released more recently, Sister Act or Petticoat Politics?",
+        "gt_answer": "Sister Act",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Sister Act",
+        "target": "Sister Act",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Sister Act",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released more recently, Sister Act or Petticoat Politics?",
+            "image": null,
+            "answer": "Sister Act",
+            "pid": 167,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "168",
+        "input": "Which film whose director is younger, Jeedar or The Rebel Set?",
+        "gt_answer": "Jeedar",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Jeedar",
+        "target": "Jeedar",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Jeedar",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film whose director is younger, Jeedar or The Rebel Set?",
+            "image": null,
+            "answer": "Jeedar",
+            "pid": 168,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "169",
+        "input": "Where was the place of death of the composer of film Last Known Address?",
+        "gt_answer": "Tenerife",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Tenerife",
+        "target": "Tenerife",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Tenerife",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where was the place of death of the composer of film Last Known Address?",
+            "image": null,
+            "answer": "Tenerife",
+            "pid": 169,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "170",
+        "input": "Who is the spouse of the director of film Dharam Karam?",
+        "gt_answer": "Babita",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Babita",
+        "target": "Babita",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Babita",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the spouse of the director of film Dharam Karam?",
+            "image": null,
+            "answer": "Babita",
+            "pid": 170,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "171",
+        "input": "Do both directors of films Almost Friends (2014 Film) and Our Better Selves share the same nationality?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do both directors of films Almost Friends (2014 Film) and Our Better Selves share the same nationality?",
+            "image": null,
+            "answer": "yes",
+            "pid": 171,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "172",
+        "input": "Did Cooper K. Watson and Jimmy Van Ostrand have the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Did Cooper K. Watson and Jimmy Van Ostrand have the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 172,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "173",
+        "input": "Did Frederick Mulder and Thomas Lee (South Carolina) have the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Did Frederick Mulder and Thomas Lee (South Carolina) have the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 173,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "174",
+        "input": "Who is younger, Harald Ludvig Westergaard or Brackin Karauria-Henry?",
+        "gt_answer": "Brackin Karauria-Henry",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Brackin Karauria-Henry",
+        "target": "Brackin Karauria-Henry",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Brackin Karauria-Henry",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is younger, Harald Ludvig Westergaard or Brackin Karauria-Henry?",
+            "image": null,
+            "answer": "Brackin Karauria-Henry",
+            "pid": 174,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "175",
+        "input": "Who died first, Frederick Williams-Taylor or Maurino Richton?",
+        "gt_answer": "Frederick Williams-Taylor",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Frederick Williams-Taylor",
+        "target": "Frederick Williams-Taylor",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Frederick Williams-Taylor",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who died first, Frederick Williams-Taylor or Maurino Richton?",
+            "image": null,
+            "answer": "Frederick Williams-Taylor",
+            "pid": 175,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "176",
+        "input": "Are David Wants To Fly and The Three From The Filling Station (1955 Film) both from the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are David Wants To Fly and The Three From The Filling Station (1955 Film) both from the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 176,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "177",
+        "input": "Which film has the director who died later, Paper Bullets or Karakolda Ayna Var?",
+        "gt_answer": "Karakolda Ayna Var",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Karakolda Ayna Var",
+        "target": "Karakolda Ayna Var",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Karakolda Ayna Var",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who died later, Paper Bullets or Karakolda Ayna Var?",
+            "image": null,
+            "answer": "Karakolda Ayna Var",
+            "pid": 177,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "178",
+        "input": "What is the date of death of Sobhuza Ii's father?",
+        "gt_answer": "10 December 1899",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "10 December 1899",
+        "target": "10 December 1899",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "10 December 1899",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Sobhuza Ii's father?",
+            "image": null,
+            "answer": "10 December 1899",
+            "pid": 178,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "179",
+        "input": "Which film has the director who is older than the other, Adieu Bonaparte or Naked Harbour?",
+        "gt_answer": "Adieu Bonaparte",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Adieu Bonaparte",
+        "target": "Adieu Bonaparte",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Adieu Bonaparte",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who is older than the other, Adieu Bonaparte or Naked Harbour?",
+            "image": null,
+            "answer": "Adieu Bonaparte",
+            "pid": 179,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "180",
+        "input": "Are both mountains, Poncione Della Marcia and Plattenhörner, located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both mountains, Poncione Della Marcia and Plattenhörner, located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 180,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "181",
+        "input": "Who is the paternal grandfather of Fenenna Of Kuyavia?",
+        "gt_answer": "Casimir I of Kuyavia",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Casimir I of Kuyavia",
+        "target": "Casimir I of Kuyavia",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Casimir I of Kuyavia",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Fenenna Of Kuyavia?",
+            "image": null,
+            "answer": "Casimir I of Kuyavia",
+            "pid": 181,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "182",
+        "input": "Which film was released more recently, My Dear Muthachan or Tüzolto Utca 25?",
+        "gt_answer": "My Dear Muthachan",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "My Dear Muthachan",
+        "target": "My Dear Muthachan",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "My Dear Muthachan",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film was released more recently, My Dear Muthachan or Tüzolto Utca 25?",
+            "image": null,
+            "answer": "My Dear Muthachan",
+            "pid": 182,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "183",
+        "input": "Which award the director of film The Seagull (2018 Film) won?",
+        "gt_answer": "Tony Award for Best Direction of a Musical",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Tony Award for Best Direction of a Musical",
+        "target": "Tony Award for Best Direction of a Musical",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Tony Award for Best Direction of a Musical",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which award the director of film The Seagull (2018 Film) won?",
+            "image": null,
+            "answer": "Tony Award for Best Direction of a Musical",
+            "pid": 183,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "184",
+        "input": "What is the place of birth of Giovanni Malatesta's wife?",
+        "gt_answer": "Ravenna",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ravenna",
+        "target": "Ravenna",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ravenna",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of Giovanni Malatesta's wife?",
+            "image": null,
+            "answer": "Ravenna",
+            "pid": 184,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "185",
+        "input": "Where did Arthur Plantagenet, 1St Viscount Lisle's father die?",
+        "gt_answer": "Westminster",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Westminster",
+        "target": "Westminster",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Westminster",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Where did Arthur Plantagenet, 1St Viscount Lisle's father die?",
+            "image": null,
+            "answer": "Westminster",
+            "pid": 185,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "186",
+        "input": "What is the date of death of Konoe Nobuhiro's mother?",
+        "gt_answer": "August 11, 1630",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "August 11, 1630",
+        "target": "August 11, 1630",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "August 11, 1630",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Konoe Nobuhiro's mother?",
+            "image": null,
+            "answer": "August 11, 1630",
+            "pid": 186,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "187",
+        "input": "What is the date of death of Alfonso Pérez De Guzmán, 5Th Duke Of Medina Sidonia's father?",
+        "gt_answer": "1507",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "1507",
+        "target": "1507",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "1507",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Alfonso Pérez De Guzmán, 5Th Duke Of Medina Sidonia's father?",
+            "image": null,
+            "answer": "1507",
+            "pid": 187,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "188",
+        "input": "Which film came out first, Amman Kovil Thiruvizha or Like Minds?",
+        "gt_answer": "Amman Kovil Thiruvizha",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Amman Kovil Thiruvizha",
+        "target": "Amman Kovil Thiruvizha",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Amman Kovil Thiruvizha",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film came out first, Amman Kovil Thiruvizha or Like Minds?",
+            "image": null,
+            "answer": "Amman Kovil Thiruvizha",
+            "pid": 188,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "189",
+        "input": "Are both airports, Nanaimo Harbour Water Aerodrome and Muskeg Tower Airport, located in the same country?",
+        "gt_answer": "yes",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "yes",
+        "target": "yes",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "yes",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Are both airports, Nanaimo Harbour Water Aerodrome and Muskeg Tower Airport, located in the same country?",
+            "image": null,
+            "answer": "yes",
+            "pid": 189,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "190",
+        "input": "What is the date of death of Henry St John, 18Th Baron St John Of Bletso's father?",
+        "gt_answer": "10 May 1912",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "10 May 1912",
+        "target": "10 May 1912",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "10 May 1912",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the date of death of Henry St John, 18Th Baron St John Of Bletso's father?",
+            "image": null,
+            "answer": "10 May 1912",
+            "pid": 190,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "191",
+        "input": "Who is Hawise, Duchess Of Brittany's maternal grandfather?",
+        "gt_answer": "Odo II, Count of Blois",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Odo II, Count of Blois",
+        "target": "Odo II, Count of Blois",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Odo II, Count of Blois",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is Hawise, Duchess Of Brittany's maternal grandfather?",
+            "image": null,
+            "answer": "Odo II, Count of Blois",
+            "pid": 191,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "192",
+        "input": "Which film has the director who was born first, Bone Breaker or Sadiyaan?",
+        "gt_answer": "Sadiyaan",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Sadiyaan",
+        "target": "Sadiyaan",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Sadiyaan",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film has the director who was born first, Bone Breaker or Sadiyaan?",
+            "image": null,
+            "answer": "Sadiyaan",
+            "pid": 192,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "193",
+        "input": "Do Arthur Goodrich and Robert Guillard have the same nationality?",
+        "gt_answer": "no",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "no",
+        "target": "no",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "no",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Do Arthur Goodrich and Robert Guillard have the same nationality?",
+            "image": null,
+            "answer": "no",
+            "pid": 193,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "194",
+        "input": "Which film whose director is younger, Dagudu Moothalu or Port Of Seven Seas?",
+        "gt_answer": "Dagudu Moothalu",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Dagudu Moothalu",
+        "target": "Dagudu Moothalu",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Dagudu Moothalu",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film whose director is younger, Dagudu Moothalu or Port Of Seven Seas?",
+            "image": null,
+            "answer": "Dagudu Moothalu",
+            "pid": 194,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "195",
+        "input": "Which film whose director is younger, Lovers In Araby or Hero No. 1?",
+        "gt_answer": "Hero No. 1",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Hero No. 1",
+        "target": "Hero No. 1",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Hero No. 1",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Which film whose director is younger, Lovers In Araby or Hero No. 1?",
+            "image": null,
+            "answer": "Hero No. 1",
+            "pid": 195,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "196",
+        "input": "Who is the paternal grandfather of Peter Grubb Jr.?",
+        "gt_answer": "John Grubb",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "John Grubb",
+        "target": "John Grubb",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "John Grubb",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Peter Grubb Jr.?",
+            "image": null,
+            "answer": "John Grubb",
+            "pid": 196,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "197",
+        "input": "Who is the paternal grandfather of Bernhard Vii, Prince Of Anhalt-Zerbst?",
+        "gt_answer": "Ernest I, Prince of Anhalt-Dessau",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Ernest I, Prince of Anhalt-Dessau",
+        "target": "Ernest I, Prince of Anhalt-Dessau",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Ernest I, Prince of Anhalt-Dessau",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is the paternal grandfather of Bernhard Vii, Prince Of Anhalt-Zerbst?",
+            "image": null,
+            "answer": "Ernest I, Prince of Anhalt-Dessau",
+            "pid": 197,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "198",
+        "input": "Who is James Tuchet, 5Th Earl Of Castlehaven's paternal grandmother?",
+        "gt_answer": "Elizabeth Barnham",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Elizabeth Barnham",
+        "target": "Elizabeth Barnham",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Elizabeth Barnham",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "Who is James Tuchet, 5Th Earl Of Castlehaven's paternal grandmother?",
+            "image": null,
+            "answer": "Elizabeth Barnham",
+            "pid": 198,
+            "split": "validation"
+        }
+    },
+    {
+        "task_id": "199",
+        "input": "What is the place of birth of George Linnaeus Banks's wife?",
+        "gt_answer": "Manchester",
+        "subject": "General Knowledge",
+        "ground_truth_answer": "Manchester",
+        "target": "Manchester",
+        "data_source": "2wiki",
+        "prompt": null,
+        "ability": "search",
+        "reward_model": {
+            "ground_truth": "Manchester",
+            "style": "rule"
+        },
+        "extra_info": {
+            "query": "What is the place of birth of George Linnaeus Banks's wife?",
+            "image": null,
+            "answer": "Manchester",
+            "pid": 199,
+            "split": "validation"
+        }
+    }
+]

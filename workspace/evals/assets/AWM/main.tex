@@ -1,0 +1,548 @@
+
+\documentclass{article}
+
+\usepackage[tracking=true]{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs} %
+
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\def\UrlBreaks{\do\/\do-\do_\do.\do=\do?\do&}
+
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+\let\savedaddcontentsline\addcontentsline
+
+\usepackage[preprint]{icml2026}
+
+\let\addcontentsline\savedaddcontentsline
+
+\hypersetup{
+  bookmarks=true,
+  bookmarksnumbered=true,
+  pdfpagemode=UseOutlines,
+}
+
+
+
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\usepackage[textsize=tiny]{todonotes}
+
+\usepackage{listings}
+\usepackage{xcolor}  %
+\usepackage{colortbl}  %
+\usepackage{xurl} %
+
+\newcommand{\normallink}[2]{%
+  \href{#1}{\small{\nolinkurl{#2}}}%
+}
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{gray}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=5pt,
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    frame=single,
+    framesep=2pt,
+    xleftmargin=15pt,
+    framexleftmargin=15pt,
+    tabsize=4,
+    columns=flexible,
+    keepspaces=true,
+}
+
+
+
+
+\usepackage{xspace}
+\usepackage{multirow}
+\SetTracking[no ligatures = f]{encoding = * , shape = sc}{-80}
+\newcommand{\synth}{\textls{\textsc{AWM}}\xspace}
+
+
+\newcommand{\RETURN}{\STATE \textbf{return} }
+
+
+\newcommand{\taubench}{$\tau^2$-bench\xspace}
+
+\definecolor{benchgray}{HTML}{EEF1F6}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\newcommand{\myparagraph}[1]{\noindent\textbf{#1}}
+
+
+\icmltitlerunning{Infinity Synthetic Environments for Agentic Reinforcement Learning}
+
+
+\begin{document}
+
+\twocolumn[
+  \icmltitle{\texorpdfstring{\raisebox{-0.8ex}[0pt][0pt]{\includegraphics[width=0.063\linewidth]{figures/logo8.png}}\hspace{0.3em}}{}Agent World Model:\texorpdfstring{\\}{ }Infinity Synthetic Environments for Agentic Reinforcement Learning}
+
+
+
+  \icmlsetsymbol{equal}{*}
+
+  \begin{icmlauthorlist}
+    \icmlauthor{Zhaoyang Wang}{unc}
+    \icmlauthor{Canwen Xu}{snow}
+    \icmlauthor{Boyi Liu}{snow}
+    \icmlauthor{Yite Wang}{snow}
+    \icmlauthor{Siwei Han}{unc} \\
+    \icmlauthor{Zhewei Yao}{snow}
+    \icmlauthor{Huaxiu Yao}{equal,unc}
+    \icmlauthor{Yuxiong He}{equal,snow}
+  \end{icmlauthorlist}
+
+  \icmlaffiliation{unc}{University of North Carolina at Chapel Hill}
+  \icmlaffiliation{snow}{Snowflake}
+
+  \icmlcorrespondingauthor{Canwen Xu}{canwen.xu@snowflake.com}
+
+  \icmlkeywords{Machine Learning, ICML, Agent, Data Synthesis, Reinforcement Learning, Environment Synthesis, Tool-use}
+
+  \vskip 0.3in
+]
+
+
+
+\printAffiliationsAndNotice{$^*$These authors contributed equally and share last authorship. Work done during Zhaoyang Wang's internship at Snowflake.}
+
+\begin{abstract}
+  Recent advances in large language model (LLM) have empowered autonomous agents to perform complex tasks that require multi-turn interactions with tools and environments. However, scaling such agent training is limited by the lack of diverse and reliable environments.
+  In this paper, we propose \textbf{A}gent \textbf{W}orld \textbf{M}odel (\textbf{\synth}), a fully synthetic environment generation pipeline. Using this pipeline, we scale to 1,000 environments covering everyday scenarios, in which agents can interact with rich toolsets (35 tools per environment on average) and obtain high-quality observations.
+  Notably, these environments are code-driven and backed by databases, providing more reliable and consistent state transitions than environments simulated by LLMs. Moreover, they enable more efficient agent interaction compared with collecting trajectories from realistic environments.
+  To demonstrate the effectiveness of this resource, we perform large-scale reinforcement learning for multi-turn tool-use agents. Thanks to the fully executable environments and accessible database states, we can also design reliable reward functions.
+  Experiments on three benchmarks show that training exclusively in synthetic environments, rather than benchmark-specific ones, yields strong out-of-distribution generalization.
+  The code is available at \normallink{https://github.com/Snowflake-Labs/agent-world-model}{https://github.com/Snowflake-Labs/agent-world-model}.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:intro}
+Large language models (LLMs) have achieved remarkable performance in instruction following, reasoning, code generation, and tool-use~\citep{humaneval,schick2023toolformer,openai_gpt5_2025,claude45,gemini2.5,deepseek-r1}. Agents powered by LLMs emerge as a promising paradigm for handling multi-step complex tasks in realistic environments~\citep{nakano2021webgpt,react,sweagent,qin2024toolllm}. However, training such agents often requires performing large-scale reinforcement learning (RL) on diverse environments that are relatively resource-scarce and expensive to scale.
+
+Using real-world environments for training is prohibitively expensive and hard to scale, since many scenarios do not expose public APIs and RL training often requires agents to interact with them thousands of times in a stable and efficient manner~\citep{rlchallengesinrealworld,qin2024toolllm,agentcompany,mcpuniverse}.
+Human-created environments are hard to scale and often lack diversity. For example, \taubench~\citep{taubench2} and TheMCPCompany~\citep{themcpcompany} only contain three and five environments, respectively, which is far from enough for training generic AI agents.
+Most existing synthetic research on agents focuses on task synthesis~\citep{selfinstruct,chen2024agent,agentsynth,patil2024gorilla,wang2026adapting} and trajectory collection~\citep{xu2024agenttrek,li2025websailor,song-etal-2024-agentbank} rather than environment synthesis.
+Another line of research simulates the tool response or even the environment, where each state transition is generated by LLMs~\citep{liu2024apigen,lu-etal-2025-toolsandbox,li2025simulatingenvironmentsreasoningmodels,li2025wordworldlargelanguage,chen2025scalingagentlearningexperience}. However, this approach is not reliable or efficient due to the hallucination issue~\citep{wang-etal-2024-language,kalai2025languagemodelshallucinate} and LLM's high inference cost.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/teaser.pdf}
+  \caption{Agent World Model (\synth) is a synthetic environment generation pipeline that synthesizes 1,000 diverse code-driven agentic environments with databases for training tool-use agents.}
+  \label{fig:teaser}
+  \vspace{-14pt}
+\end{figure}
+These limitations highlight a missing piece: scalable environment synthesis. In particular, The challenge is to synthesize executable, reliable environments at scale, enabling replicable agent interaction and learning.
+In recent months, DeepSeek-V3.2~\citep{deepseek-v3.2} introduces a synthesis pipeline to create thousands of executable environments for general agents, while Qwen Tongyi~\citep{tongyi-environment} also describes an environment synthesis pipeline but for supervised fine-tuning (SFT) rather than RL training. The adopted code-based approach is promising to build such environments at scale, since it can control the state transition and ensure the consistency of the environment. However, neither of them releases the generation pipeline nor open-sources their environments.
+Several concurrent community efforts~\citep{feng2025webworldmodels,sullivan-etal-2025-procedural,autoforge,autoenv,envscaler} explore environment synthesis through programming. However, they either target game-like environments, rely on human priors (e.g., code documentation), lack strong guarantees of state consistency, or remain limited in scale.
+
+To address this, we propose Agent World Model (\textbf{\synth}), an open-source pipeline that synthesizes executable tool-use environments at scale. The key insight is that agent environments share a common structure: a stateful backend, a tools interface layer, and task-specific success criteria. 
+By decomposing synthesis into these three components, we can leverage LLMs to generate each part systematically while maintaining consistency. Our \synth mirrors how software is built in practice. Starting from a high-level scenario description (e.g., ``an online shopping platform''), we first generate common user requirements (i.e., tasks) that users are likely to perform in this scenario.
+Then, we generate the database schema to define what entities and relations exist to fulfill these user requirements. This schema can guide the design of exposed interfaces (toolset) and help generate the backend code for the interfaces, ensuring each tool has a clear data model to operate on. The interface is exposed via Model Context Protocol (MCP)~\citep{anthropic_mcp_2024} for unified agent tool interaction with the environment.
+Finally, we generate verification code that compares the database state before and after agent execution, which augments an LLM-as-a-Judge to provide robust reward signals for RL training.
+Critically, each stage includes automated execution and simple self-correction: if generated code fails to run, we feed the error information back to the LLM for correction.
+
+This pipeline enables us to scale to 1,000 unique environments spanning most real-world scenarios such as shopping, social media, finance, and travel. Each environment provides an executable sandbox where agents can interact with dozens of tools, and they fully support parallel isolated instances and are easy to reset or restart, which are important for efficient online RL.
+To validate \synth, we perform large-scale RL (each step with 1,024 environment instances) to train agents to use MCP tools to complete the task.
+In contrast to some works performing training on test environments, our environments and tasks are not tailored for any benchmarks or specific scenarios.
+Experimental results on three tool-use benchmarks demonstrate the generalization performance of our framework.
+In summary, our contributions are three-fold: (1) \synth, an open-source pipeline for automatic generation of executable tool-use environments with database-backed state consistency, (2) 1,000 ready-to-use diverse environments suitable for large-scale RL training, and (3) empirical results show that agents trained on \synth generalize to out-of-distribution environments.
+
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figures/main.pdf}
+  \caption{Overview of \synth. Starting from scenario synthesis, we progressively generate tasks, database, interface and verification to obtain fully executable environments. Then, we perform multi-turn RL training for tool-use agents in our synthesized environments.}
+  \label{fig:main}
+\end{figure*}
+
+
+\section{Related Work}
+\label{sec:related}
+
+\myparagraph{Tool-use Agents.}
+Recent work shows that LLMs can use external tools to solve complex tasks~\citep{qin2024toolllm,openai_gpt5_2025,deepseek-v3.2,kimik2}.
+Toolformer~\citep{schick2023toolformer} trains tool-use LLMs by supervised learning.
+ToolLLM~\citep{qin2024toolllm} curates real-world APIs and trains on LLM-generated trajectories, but uses simulated responses instead of tool execution.
+Gorilla~\citep{patil2024gorilla} fine-tunes with API documentation to improve tool-use accuracy.
+ReAct~\citep{react} and SWE-agent~\citep{sweagent} alternate reasoning and acting in interactive environments.
+However, most training data remains static or comes from small-scale environments.
+Existing benchmarks~\citep{taubench,taubench2,themcpcompany,mcpuniverse,fan2025mcptoolbenchlargescaleai,mo2025livemcpbenchagentsnavigateocean} either use real-world APIs or provide small-scale environments. This makes them hard to use as large-scale RL training grounds.
+The gap is the lack of diverse and executable environments that are efficient enough for RL.
+Such training needs extensive agent interactions, and it benefits from fast interactions and reliable state transitions.
+
+\myparagraph{Agent Data Synthesis.}
+Synthetic data is widely used to scale agent training~\citep{patil2024gorilla,schick2023toolformer,qin2024toolllm,liu2024apigen,toolace}.
+Self-Instruct~\citep{selfinstruct} popularizes using LLMs to generate data for fine-tuning.
+Subsequent work uses LLMs to synthesize tasks, tools specifications, and agent trajectories~\citep{agentsynth,xu2024agenttrek,li2025websailor,song-etal-2024-agentbank,liu2024apigen,toolace,wang2026adapting,apigen-mt}.
+These methods provide diverse tasks and tool-use demonstrations, but do not offer executable environments for agent interaction.
+The key limitation is that they treat the environment as given or simulate tool responses with LLMs.
+Without environment synthesis, agents cannot explore alternative actions or receive grounded feedback from state changes, which limits applicability to RL.
+
+
+\myparagraph{Environment Synthesis.}
+As agentic RL grows, the need for diverse and executable environments becomes more urgent.
+Environment synthesis largely follows two directions: LLM-based simulation~\citep{wang-etal-2024-language,li2025wordworldlargelanguage,chen2025scalingagentlearningexperience,li2025simulatingenvironmentsreasoningmodels} and programming-based synthesis~\citep{tang2024worldcoder,sullivan-etal-2025-procedural,autoforge,autoenv,envscaler}.
+LLM-based simulation often simulates the environment by prompting reasoning model to generate state transition and observation. However, it suffers from hallucinations in state transition~\citep{kalai2025languagemodelshallucinate,wang-etal-2024-language}. It is also expensive and inefficient for RL, since each environment step may require an LLM call.
+Programming-based synthesis builds environments through programming and database, where each state transition and observation are driven by the code.
+Some methods extract tool graphs from documentation and sample tool call sequences to build environments~\citep{tongyi-environment,autoforge}.
+Procedural generation has also been explored, for example with human designed type systems~\citep{sullivan-etal-2025-procedural}.
+AutoEnv~\citep{autoenv} creates 36 game-like environments (e.g., maze navigation) for simulating heterogeneous worlds. 
+EnvScaler~\citep{envscaler} is a concurrent work that synthesizes 191 interactive environments via code generation given existing task sets.
+
+The proposed \synth differs in three aspects:
+(1) We synthesize environments from scratch without assuming predefined task sets or API documentation. This avoids human priors and enables scalable synthesis.
+(2) We use database-backed state management to enforce consistency and enable code-augmented verification for RL.
+(3) With 1,000 environments, 35,062 tools and 10,000 tasks paired with verification code synthesized, to the best of our knowledge, \synth is the largest open-source tool-use environment set to date.
+
+
+\section{Agent World Model}
+\label{sec:method}
+In this section, we describe \synth in details, as shown in Figure~\ref{fig:main}.
+We synthesize environments as partially observable Markov decision processes (POMDPs) suitable for agentic RL training.
+Each environment $E_i$ comprises five components: a state space $\mathcal{S}_{E_i}$, an action space $\mathcal{A}_{E_i}$, an observation space $\mathcal{O}_{E_i}$, a transition function $T_{E_i}: \mathcal{S}_{E_i} \times \mathcal{A}_{E_i} \rightarrow \mathcal{S}_{E_i} \times \mathcal{O}_{E_i}$, and task-specific reward functions $R_{\tau}$ for each $\tau \in \mathcal{T}_{E_i}$ that is the task set for the environment.
+The goal of the agent is to complete tasks by interacting with the environment through multi-turn tool interactions.
+The synthesis pipeline in Sec.~\ref{sec:environment} would instantiate: the \textbf{database} defines $\mathcal{S}_{E_i}$, the \textbf{interface} layer defines $\mathcal{A}_{E_i}$, $\mathcal{O}_{E_i}$, and $T_{E_i}$, while \textbf{verification} provides $R_{\tau}$ for each user task.
+
+\subsection{Scenario Generation}
+We leverage the vast world knowledge of modern LLMs to generate diverse scenario descriptions (websites, apps, or common tools collection), seeded with 100 popular domain names.
+Unlike general web agents that navigate static content sites (e.g., news, wikis), we focus on stateful applications (e.g., e-commerce, CRM, management) that necessitate database interactions instead of information retrieval.
+To ensure quality, we employ a filtering pipeline: an LLM-based classifier selects scenarios involving core CRUD operations (create, read, update, delete), while embedding-based deduplication ensures diversity.
+We also cap over-represented categories to prevent the collection from collapsing to a few dominant types.
+This process yields 1,000 unique scenarios spanning finance, travel, retail, social media, and more, as shown in Figure~\ref{fig:domain_distribution} and Table~\ref{tab:scenarios_demo}.
+\subsection{Task Generation} \label{sec:task_gen}
+Following software engineering principles, we then synthesize user tasks to serve as functional requirements for the environment.
+These tasks would dictate the necessary database entities and API endpoints in subsequent synthesis steps.
+For each scenario, we prompt the LLM to generate $k=10$ different tasks $\mathcal{T}_{E_i} = \{\tau_{i,j}\}^k_{j=1}$ covering diverse functionalities of the scenario.
+We enforce two design principles: (1) \textit{API-solvability}, avoiding purely UI-dependent actions (e.g., clicking, page navigation), and (2) \textit{post-authentication context}, assuming login is completed to focus on deep functionalities rather than access control, because such authentication is typically handled by human in realistic settings.
+This results in 10,000 executable tasks that would drive the synthesis of the environment backends.
+
+
+
+
+\subsection{Environment Synthesis} 
+Given a scenario description and its task set $\mathcal{T}_{E_i}$, we synthesize an executable environment $E_i$ by instantiating POMDP components.
+First, we construct the state space $\mathcal{S}_{E_i}$ and initial state by generating a SQLite~\citep{sqlite} schema and populating it with synthetic sample data that supports the entities and constraints implied by $\mathcal{T}_{E_i}$.
+Then, we generate an MCP~\citep{anthropic_mcp_2024} interface layer that exposes a toolset in Python, which defines the action space $\mathcal{A}_{E_i}$ as tool calls and the observation space $\mathcal{O}_{E_i}$ as tool responses. Calling a tool runs database operations that read and write, which implements the environment transition function $T_{E_i}$.
+Finally, we synthesize verification logic to define the task-specific reward functions $R_{\tau}$.
+This design grounds environment state in structures, while ensuring agents interact with $E_i$ only via a unified MCP interface.
+
+\subsubsection{Environment} \label{sec:environment}
+
+\myparagraph{Database.} \label{sec:database_synthesis}
+The database grounds each environment in a concrete and persistent state.
+We use SQLite~\citep{sqlite} as the state backend for structured relational state, unlike the simplified NoSQL or key-value stores used in concurrent works~\citep{autoenv,autoforge,envscaler}.
+Given the scenario and task set $\mathcal{T}_{E_i}$, the LLM infers required entities/attributes/relations to make every task feasible, generating tables only when required by the tasks.
+We exclude authentication-related fields to align with the task generation step.
+The schema defines the state space $\mathcal{S}_{E_i}$ and constrains all transitions through explicit keys and constraints.
+However, schema alone is insufficient, as many tasks require querying or updating existing records.
+We therefore synthesize sample data that instantiates a realistic initial state $s_0$, ensuring every task in $\mathcal{T}_{E_i}$ is executable from the start.
+The LLM analyzes preconditions for each task and creates records satisfying these constraints, including variation data needed for robust execution.
+
+\myparagraph{Interface.} \label{sec:env_synthesis}
+Agents cannot directly manipulate the database without breaking abstraction.
+We introduce a Python interface layer exposed via MCP~\citep{anthropic_mcp_2024} that defines the action space $\mathcal{A}_{E_i}$ and observation space $\mathcal{O}_{E_i}$.
+We use two stages: first toolset schema design, then code generation.
+Pilot experiments show that environments may require over 3,000 lines of code, making direct generation challenging without schema guidance.
+Given the task set and database schema, the LLM infers the minimal set of operations required to make every task executable, generating endpoints only when necessary.
+The schema also serves as documentation for agents through summaries, typed parameters, and response schemas, as shown in Table~\ref{tab:demo_api_schema}.
+We then generate an executable Python file where each endpoint becomes an MCP tool.
+Tool execution triggers database operations, implementing the transition function $T_{E_i}$.
+
+\myparagraph{Verification.} \label{sec:verification_synthesis}
+To complete the POMDP specification, we define task-specific reward functions $R_{\tau}$ to enable RL training.
+We design a task-associated verification module for each task $\tau$ that grounds evaluation in the environment state.
+Specifically, this module inspects the database state before and after agent execution, extracting task-relevant signals and success or failure criteria that describe how to interpret state differences.
+However, because our environments are fully synthetic, verification can occasionally be affected by environment imperfections, such as incomplete state updates, unexpected execution failures, or infrastructure-related issues (e.g., timeouts).
+To improve reward robustness, the ultimate decision is made by an LLM-as-a-Judge~\citep{llmasajudge}, which combines the agent trajectory with structured verification signals.
+LLM-as-a-Judge complements code-based checks by leveraging trajectory-level context which helps mitigate misjudgments caused by imperfect environment signals.
+Finally, the verification step returns one of \{\texttt{Completed}, \texttt{Partially Completed}, \texttt{Agent Error}, \texttt{Environment Error}\}.
+
+A natural question arises: \textit{why not rely entirely on code-driven verification}? 
+While appealing, this approach assumes that task success is perfectly specifiable and reliably observable from state alone.
+In practice, this assumption is fragile.
+Even realistic services exhibit imperfect behavior due to transient failures, partial executions, or infrastructure issues; synthetic environments are no exception.
+In general task settings, brittle verification logic can introduce false positives or negatives, an issue that has surfaced repeatedly in existing benchmarks such as WebArena, \taubench, and SWE-Bench, which were later revised to correct earlier misjudgments~\citep{hattami2025webarena,verified_tau2,openai2024swebenchverified}.
+Our code-augmented LLM-as-a-Judge addresses this by combining the precision of code-based verification with the flexibility and context-awareness of LLM reasoning.
+Specifically, structured verification signals ground the LLM in concrete evidence, enabling it to resolve ambiguities that rigid code alone cannot handle.
+We also prepare the code-driven verification for \synth, providing the community with both options, though our analysis in Sec.~\ref{sec:ablation_verification} and case study of verification failure cases in Appendix~\ref{appendix:case_study_for_verification} confirm that code-augmented LLM-as-a-Judge is more robust.
+
+
+
+
+
+\myparagraph{Execution-based Self-Correction.}
+Across all synthesis steps described above, we employ a simple self-correction mechanism to handle generation errors.
+After generating each component of the environment, we attempt to run it in an isolated environment and test the functionality.
+If any error occurs (e.g., runtime exceptions), we capture the error message and feed it back to the LLM together with the problematic code snippet, prompting the LLM to regenerate a corrected version.
+This process is repeated for up to five iterations or until the component executes successfully. In practice, we often find that this lightweight retry strategy is effective in repairing generated code, without requiring a more complex correction mechanism.
+
+\subsubsection{Pipeline Results and Analysis}
+Through \synth, we synthesize 1,000 executable environments along with 10,000 tasks.
+Table~\ref{tab:synthesis_statistics} shows the statistics of the synthesis process.
+The pipeline achieves over 85\% success rates, and the self-correction mechanism requires only 1.13 iterations on average to repair, confirming the rationality of the pipeline design.
+Table~\ref{tab:env_complexity} reports the complexity of synthesized environments.
+These statistics further show that each stage generates non-trivial artifacts, far exceeding toy environments.
+Table~\ref{tab:bench_cmp} compares \synth with existing environment sets.
+Our method achieves the largest scale, with 5$\times$ more environments than the closest concurrent work EnvScaler~\citep{envscaler}, while requiring minimal human participation beyond 100 scenario names.
+This indicates that large-scale synthesis of executable environments is both feasible and cost-effective via \synth.
+
+\input{tables/stat_pipeline.tex}
+\input{tables/bench_cmp.tex}
+
+
+
+
+\section{Agentic Reinforcement Learning}
+With the synthesized environments, we perform online reinforcement learning for tool-use agents using Group Relative Policy Optimization (GRPO)~\citep{shao2024deepseekmath}. Agentic interaction involves long-horizon trajectories with interleaved observations and tool calls, requiring both careful reward design and alignment between training and inference.
+
+\subsection{Reward Design} \label{sec:reward_design}
+Purely outcome-based rewards have shown success in mathematical reasoning~\citep{deepseek-r1}; however, in agentic environments, they may be insufficient and inefficient to regularize tool-use behavior.
+We therefore adopt a hybrid reward design that combines step-level format correctness with task-level outcome verification.
+At each step $t$, we check whether the tool call follows the required format (see Appendix~\ref{appendix:tool_call_format}). Any violation triggers early termination of the rollout and an immediate negative reward. This both discourages invalid actions and saves computation in long-horizon multi-turn settings. After a rollout terminates normally, we evaluate the task-level outcome via our code-augmented LLM-as-a-Judge, defining the final reward as:
+\begin{equation}
+R_\tau =
+\left\{
+\begin{array}{@{}l@{\,}l@{}}
+1.0, & \text{ if task }\tau\ \texttt{Completed},\\
+0.1, & \text{ if task }\tau\ \texttt{Partially Completed},\\
+0.0, & \text{ otherwise}.
+\end{array}
+\right.
+\end{equation}
+The step-level reward $r_t$ follows: if early termination occurs at step $t$, $r_t=-1.0$; if the rollout terminates normally, $r_t=R_\tau$ is broadcast to all action steps; otherwise $r_t=0$. This design encourages syntactically valid tool usage while preserving outcome-driven optimization.
+
+\subsection{History-Aware Training} \label{sec:history_aware_training}
+When deploying agents, history context is often managed by a dedicated framework that strategically truncates long interaction histories to avoid attention sink and improve efficiency~\citep{liu-etal-2024-lost,claude_ce,zhang2025agenticcontextengineeringevolving}. However, existing RL training pipelines may optimize policies using full histories, creating a distribution mismatch issue between training and inference.
+
+Let $h_t = (o_1, a_1, o_2, a_2, \ldots, o_t)$ denote the full interaction history. In practice, many RL frameworks~\citep{verl,openrlhf} optimize all actions from a completed rollout in one model forward pass for efficiency:
+\begin{equation}
+\begin{split}
+\mathcal{L} = &-r \log \pi_\theta(\underbrace{o_1, a_1, o_2, a_2, \ldots, o_T, a_T}_{\text{one forward pass}}) \\
+&\cdot \underbrace{[0, 1, 0, 1, \ldots, 0, 1]}_{\text{loss mask}},
+\end{split}
+\end{equation}
+where $\pi_\theta$ is the agent parameterized by $\theta$, and the mask selects action tokens while ignoring observations.
+At inference time, however, the agent may condition on a truncated history
+$
+h_t^{\text{trunc}} = (o_{\max(1, t-w+1)}, a_{\max(1, t-w+1)}, \ldots, o_t),
+$
+which results in a distribution shift if training always uses full history. To address this issue, we align training with inference by applying the same truncation during optimization. Under GRPO, for each task $\tau$ in environment $E_i$, we sample a group of $G$ rollout trajectories $\{y^{(k)}\}_{k=1}^G$, where $y^{(k)} = (a_1^{(k)}, \ldots, a_{T_k}^{(k)})$, and optimize:
+\begin{equation}
+\resizebox{0.91\columnwidth}{!}{$\displaystyle
+\mathcal{L}_{\text{GRPO}} = \mathbb{E}_{\tau, E_i, \{y^{(k)}\}} \left[
+\frac{1}{G} \sum_{k=1}^{G} A^{(k)} \sum_{t=1}^{T_k}
+\log \pi_\theta(a_t^{(k)} \mid h_t^{\text{trunc},(k)})
+\right],
+$}
+\end{equation}
+where $A^{(k)} = (R^{(k)} - \bar{R}) / \sigma_R$ is the group-relative advantage computed from the rollout rewards $\{R^{(j)}\}_{j=1}^G$. This objective splits the trajectory into multiple individual sub-trajectories, each conditioned on its own truncated history, ensuring consistency with inference-time execution. 
+
+
+\section{Experiments}
+
+
+\subsection{Experimental Setup}
+\myparagraph{Benchmarks.}
+We evaluate agents on three tool-use and MCP benchmarks to assess out-of-distribution generalization:
+(1) The verified version of \taubench~\citep{taubench2,verified_tau2}, which consists of multi-turn conversational agentic tasks across three representative scenarios: airline, retail, and telecom;
+(2) BFCLv3~\citep{bfcl}, a comprehensive benchmark for function-calling ability evaluation, covering single-turn, multi-turn (long-context), synthetic tools, real-world tools, and hallucination tests, resulting in four evaluation categories: non-live, live, multi-turn, and hallucination;
+(3) MCP-Universe~\citep{mcpuniverse}, a collection of real-world MCP servers spanning location navigation, financial analysis, browser automation, web search, and multi-server workflows. We exclude 3D design tasks that require GUI and repository management tasks that require authenticated access to GitHub or Notion.
+
+\myparagraph{Baselines.}
+We compare against the following baselines:
+(1) Base: the original LLMs equipped with reasoning and tool-use capabilities, without additional training;
+(2) Simulator~\citep{li2025simulatingenvironmentsreasoningmodels,chen2025scalingagentlearningexperience}: agents trained with RL in LLM-simulated environments, where GPT-5~\citep{openai_gpt5_2025} serves as the environment transition model, using the same tasks and toolsets as \synth, to highlight the advantage of executable environments over simulated ones;
+(3) EnvScaler~\citep{envscaler}: a concurrent method that synthesizes 191 programming-based environments for SFT and RL, included to compare the synthesis quality.
+
+
+\myparagraph{Implementation Details.}
+The \synth pipeline is instantiated using GPT-5~\citep{openai_gpt5_2025}, which is also used as the code-augmented LLM-as-a-Judge for task verification.
+We select Qwen3 thinking models~\citep{qwen3} across 4B, 8B, and 14B scales as base agents due to their popular community adoption.
+Multi-turn RL training is implemented on top of AgentFly~\citep{wang2025agentfly} and verl~\citep{verl}.
+Due to limited computation budget, we train agents on a subset of \synth consisting of 526 environments and 3,315 tasks.
+Each model is trained for up to 96 optimization steps with a fixed learning rate of $7\times10^{-7}$.
+We use a batch size of 64 and 16 rollouts, resulting in 1,024 isolated environment instances launched per step.
+The sliding window size and maximum interaction turn are set to $w=3$ and $20$, respectively.
+More details are in Appendix~\ref{appendix:full_implementation_details}.
+
+\subsection{Main Results}
+
+\input{tables/res_all.tex}
+Table~\ref{tab:res_all} presents results on three out-of-distribution benchmarks.
+\synth does not target conversational interaction, whereas \taubench requires multi-turn dialogue. \synth omits refusal scenarios, while BFCLv3 stresses hallucination resistance. \synth also excludes browser automation and information retrieval, both central to MCP-Universe.
+
+On BFCLv3, \synth improves performance across all models.
+For 8B model, the overall score increases from 53.83 to 65.94, surpassing Simulator and EnvScaler.
+Gains are broadly distributed, with a modest weakness on hallucination, likely due to our format correctness reward that always encourages tool use and penalizes refusals (Appendix~\ref{appendix:tool_call_format}).
+On \taubench, \synth is competitive with EnvScaler and consistently exceeds Simulator.
+Notably, EnvScaler regresses on BFCLv3 (-8.93) and MCP-Universe (-1.39) on average, whereas ours improves over Base across all benchmarks; plausibly because EnvScaler relies on existing tasks for synthesis that may overlap with \taubench.
+On MCP-Universe, \synth achieves the best overall results, with large gains in Financial and Location.
+These results indicate that training on our synthetic environments builds robust tool-use capabilities that transfer to real-world scenarios. 
+Moreover, the comparison with Simulator suggests that programming-based state consistency provides a more stable learning signal than LLM-generated interactions, while substantially reducing RL latency, since Simulator requires an LLM call at each interaction step.
+Overall, \synth shows the strongest generalization, validating the effectiveness of our synthesis.
+
+\section{Analysis}
+
+
+\subsection{Quality of Synthesized Environments}
+
+\input{tables/ana_quality.tex}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{figures/diversity_analysis_azure_1x2.pdf}
+  \caption{Diversity analysis of 1,000 synthesized environments. (a) Embedding diversity is calculated by encoding the scenario description, database schema and toolset schema.  (b) Category coverage counts the number of unique topics of scenarios. 
+  }
+  \label{fig:diversity_analysis}
+  \vspace{-0.1in}
+\end{figure}
+
+We evaluate synthesized environments based on two critical criteria for scalable agentic RL: \emph{quality} (tasks are executable with coherent schema and tool interfaces) and \emph{diversity} (training does not collapse to near-duplicate environments). 
+
+\myparagraph{Quality.}
+Table~\ref{tab:ana_quality} reports LLM-as-a-Judge scores on Task Feasibility (whether tasks are executable within the environment), Data Alignment (whether the data schema is coherent with the task), and Toolset Completeness (whether the toolset is complete and usable), where \synth consistently outperforms EnvScaler, indicating stronger end-to-end consistency from tasks $\rightarrow$ database $\rightarrow$ interface. 
+Despite our environments containing roughly 3x more code than those generated by EnvScaler (see Table~\ref{tab:bench_cmp}), this increase in scale results in only a moderate rise in bugs, highlighting effective scalability.
+Both methods exhibit implementation issues at this scale, manual inspection on our environments attributes 44\% of bugs to not handling edge input cases and 14\% to operations conflicting with database constraints. During RL training, the environment error rate consistently remains low, around 4\%, indicating overall reliability and usability of our environments.
+\synth yields fewer blocked tasks than EnvScaler, which is critical for RL because blocked tasks truncate exploration and inject systematically incorrect negative signals. 
+To mitigate such imperfect environment issue, we design \texttt{Environment Error} reward in Sec.~\ref{sec:verification_synthesis}. 
+
+\myparagraph{Diversity.}
+Figure~\ref{fig:diversity_analysis} analyzes diversity from semantic and topical perspectives. Embedding diversity remains stable as pool size grows, suggesting newly generated environments continue to add novel content rather than forming duplicates. 
+Meanwhile, category coverage steadily increases, showing that \synth globally expands into new regions instead of collapsing to a few dominant domains.
+Overall, quality and diversity results suggest that \synth can scale to thousands of high-quality environments while maintaining diversity.
+
+
+\subsection{Analysis on Verification Design} \label{sec:ablation_verification}
+
+\input{tables/ana_verification}
+
+Table~\ref{tab:ana_verification} compares three verification strategies.
+LLM-only verification relies on trajectory without being grounded in database state changes, which makes the reward signal unreliable. Consequently, it yields the weakest performance.
+Replacing the judge with code-only verification improves over LLM-only, but it can be brittle: when environment imperfections occur, rigid checks may incorrectly assign false negatives, as discussed in Sec.~\ref{sec:verification_synthesis}.
+In contrast, our code-augmented strategy combines structured verification signals (from state diffs and rule-based checks) with an advanced reasoning LLM, allowing the judge to use grounded evidence while remaining tolerant to imperfect environment signals.
+This hybrid design consistently achieves the best results across model scales and benchmarks, indicating that it provides a more robust reward for RL training in imperfect synthetic environments.
+Finally, the extra cost of invoking GPT-5 as the judge is about \$1.80 on average per training step (at most 1,024 samples), and the asynchronous setting makes augmented judge introduce negligible latency.
+We also study the format correctness reward in Appendix~\ref{appendix:analysis_on_step_level}.
+
+
+
+
+
+\subsection{Analysis on History-Aware Training}
+
+\input{tables/ana_history_align.tex}
+
+Table~\ref{tab:ana_history_align} compares our history-aware training against a variant using full history (w/o HL), under aligned and misaligned inference settings.
+When aligned, \synth w/ HL achieves the best results among all settings, indicating benefits from optimizing directly under truncated histories.
+In contrast, the full-history variant is relatively insensitive to misalignment. When truncated at inference, it even shows a slight improvement in $\tau^2$, consistent with truncation suppressing interference from earlier irrelevant turns.
+We believe history management should be treated as part of policy optimization rather than a purely inference-time heuristic.
+
+
+\subsection{Environment Scaling Curve}
+
+Figure~\ref{fig:scaling_bar} shows how agent scales with the number of training environments.
+10 environments lead to severe performance degradation across all benchmarks, likely due to overfitting to the limited environment distribution.
+Scaling to 100 environments yields substantial gains, and further scaling to 526 environments continues to improve performance.
+This monotonic improvement highlights the importance of environment diversity for agentic RL.
+Due to compute constraints, we train on 526 environments rather than the full synthesized set.
+However, the aforementioned analysis confirms that diversity remains stable as the environment pool expands, suggesting that \synth can support scaling well beyond 1,000 environments with sustained benefits.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.84\columnwidth]{figures/scaling_bar.pdf}
+  \caption{Scaling of \synth over environment sizes with 4B model.}
+  \label{fig:scaling_bar}
+\end{figure}
+
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper, we propose Agent World Model, a scalable pipeline that synthesizes executable agentic environments by mirroring practical software development.
+Using \synth, we successfully scale to 1,000 environments with 35,062 tools and 10,000 tasks.
+These environments are code-driven and backed by SQL databases exposed through a unified MCP interface, supporting parallel isolated instances for large-scale agentic RL.
+Experiments on three benchmarks show that agents trained on our synthetic environments generalize well to out-of-distribution domains, outperforming both LLM-simulated training and concurrent synthesis methods. We believe \synth's 1,000 synthesized environments and its scalable pipeline are valuable resources to the community.
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section*{Impact Statement}
+This work presents an open-source pipeline for synthesizing executable environments to train tool-use agents.
+By releasing both the generation pipeline and the synthesized environments, we aim to lower the barrier for the research community to study agentic systems.
+However, synthetic environments may not fully reflect real-world scenarios, thus we encourage the community to apply safeguards when deploying agents trained on \synth to real-world scenarios.
+
+
+\section*{Limitations}
+
+\myparagraph{Opportunities for Self-Evolving.}
+Our \synth pipeline synthesizes environments through a fixed generation process, inherently limiting the model's ability to autonomously improve and evolve beyond the initial capabilities.
+While this approach has shown improvements in our experiments, incorporating a self-evolving paradigm where a trained agent contributes to synthesizing new environments allows the model to continuously adapt and improve its capabilities. We leave this as a promising direction for future work.
+
+\myparagraph{Synthesis Pipeline Optimization.}
+Current \synth pipeline provides opportunities for further optimization.
+For example, self-correction currently operates primarily through trial-and-error, addressing runtime errors without deeper semantic validation. Integrating an LLM to proactively detect logical inconsistencies or subtle bugs not caught by runtime checks could enhance the robustness and semantic coherence of generated environments. It is also valuable to take human inspection to further improve the quality of synthesized environments if resources are available.
+Moreover, synthesizing tasks that span multiple scenarios or environments represents another promising area for extension. Both enhancements are readily compatible with our existing architecture, offering clear pathways for future improvements.
+
+\myparagraph{Training Scale and Model Coverage.}
+Due to limited computing resources, we train agents on 526 of the 1,000 synthesized environments.
+We also mainly focus on Qwen3 model family~\citep{qwen3} across 4B, 8B, and 14B scales.
+Despite these limitations, the experiments already demonstrate consistent out-of-distribution generalization across three benchmarks, suggesting that even a subset of \synth provides a strong training signal.
+Importantly, the core contribution of this paper is the synthesis pipeline itself. The released environments and pipeline are model-agnostic and can benefit the broader community regardless of the specific models used in our experiments.
+
+
+\section*{Use of AI Assistants}
+We acknowledge the use of AI assistants in the writing of this paper, primarily for polishing text and creating figure icons.  
+All generated content is reviewed by the authors, and necessary corrections are made.
+
+
+\section*{Acknowledgment}
+We would like to thank Jeff Rasley for valuable discussions and for helping organize relevant resources.
+
+
+\bibliography{custom}
+\bibliographystyle{icml2026}
+
+\input{appendix.tex}
+
+\end{document}

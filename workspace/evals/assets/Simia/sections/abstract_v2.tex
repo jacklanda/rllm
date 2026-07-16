@@ -1,0 +1,8 @@
+
+
+
+
+
+
+LLM agents excel in compact environments requiring deep reasoning but remain brittle when operating in broader, more complex contexts that demand robustness across diverse tools and schemas. Building bespoke environments for training is heavy, brittle, and limits progress. In this paper, we demonstrate that LLMs can simulate realistic environment feedback without access to actual testbed data or APIs. Inspired by this capability, we propose two frameworks: \textbf{Simia-SFT}, a pipeline that synthesizes SFT data by amplifying small seed sets into diverse trajectories in an environment-agnostic manner, and \textbf{Simia-RL}, a framework that enables RL training without real environment implementations through LLM-simulated feedback. Fine-tuning open models yields consistent improvements across multiple benchmarks, surpassing GPT-4o and approaching o4-mini on $\tau^2$-Bench. Together, Simia-SFT and Simia-RL enable scalable agent training without environment engineering, replacing heavy and brittle implementations with flexible LLM-based simulation.
+

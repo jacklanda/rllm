@@ -1,0 +1,204 @@
+\begin{thebibliography}{36}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Anthropic(2025)]{mcp-antrophic-blog}
+Anthropic.
+\newblock Introducing the model context protocol.
+\newblock \url{https://www.anthropic.com/news/model-context-protocol}, 2025.
+\newblock Accessed: 2025-08-18.
+
+\bibitem[Barres et~al.(2025)Barres, Dong, Ray, Si, and Narasimhan]{barres2025tau2benchevaluatingconversationalagents}
+Victor Barres, Honghua Dong, Soham Ray, Xujie Si, and Karthik Narasimhan.
+\newblock $\tau^2$-bench: Evaluating conversational agents in a dual-control environment, 2025.
+\newblock URL \url{https://arxiv.org/abs/2506.07982}.
+
+\bibitem[Basu et~al.(2024)Basu, Abdelaziz, Chaudhury, Dan, Crouse, Munawar, Kumaravel, Muthusamy, Kapanipathi, and Lastras]{basu2024apiblendcomprehensivecorporatraining}
+Kinjal Basu, Ibrahim Abdelaziz, Subhajit Chaudhury, Soham Dan, Maxwell Crouse, Asim Munawar, Sadhana Kumaravel, Vinod Muthusamy, Pavan Kapanipathi, and Luis~A. Lastras.
+\newblock Api-blend: A comprehensive corpora for training and benchmarking api llms, 2024.
+\newblock URL \url{https://arxiv.org/abs/2402.15491}.
+
+\bibitem[Bousetouane(2025)]{bousetouane2025agenticsystemsguidetransforming}
+Fouad Bousetouane.
+\newblock Agentic systems: A guide to transforming industries with vertical ai agents, 2025.
+\newblock URL \url{https://arxiv.org/abs/2501.00881}.
+
+\bibitem[Chen et~al.(2025)Chen, Hao, Liu, Huang, Zeng, Yu, Li, Wang, Gan, Huang, Liu, Wang, Lian, Yin, Wang, and Liu]{chen_acebench_2025}
+Chen Chen, Xinlong Hao, Weiwen Liu, Xu~Huang, Xingshan Zeng, Shuai Yu, Dexun Li, Shuai Wang, Weinan Gan, Yuefeng Huang, Wulong Liu, Xinzhi Wang, Defu Lian, Baoqun Yin, Yasheng Wang, and Wu~Liu.
+\newblock {ACEBench}: {Who} {Wins} the {Match} {Point} in {Tool} {Usage}?, July 2025.
+\newblock URL \url{http://arxiv.org/abs/2501.12851}.
+\newblock arXiv:2501.12851 [cs].
+
+\bibitem[DeepSeek-AI et~al.(2025)DeepSeek-AI, Liu, Feng, Xue, Wang, Wu, Lu, Zhao, Deng, Zhang, Ruan, Dai, Guo, Yang, Chen, Ji, Li, Lin, Dai, Luo, Hao, Chen, Li, Zhang, Bao, Xu, Wang, Zhang, Ding, Xin, Gao, Li, Qu, Cai, Liang, Guo, Ni, Li, Wang, Chen, Chen, Yuan, Qiu, Li, Song, Dong, Hu, Gao, Guan, Huang, Yu, Wang, Zhang, Xu, Xia, Zhao, Wang, Zhang, Li, Wang, Zhang, Zhang, Tang, Li, Tian, Huang, Wang, Zhang, Wang, Zhu, Chen, Du, Chen, Jin, Ge, Zhang, Pan, Wang, Xu, Zhang, Chen, Li, Lu, Zhou, Chen, Wu, Ye, Ye, Ma, Wang, Zhou, Yu, Zhou, Pan, Wang, Yun, Pei, Sun, Xiao, Zeng, Zhao, An, Liu, Liang, Gao, Yu, Zhang, Li, Jin, Wang, Bi, Liu, Wang, Shen, Chen, Zhang, Chen, Nie, Sun, Wang, Cheng, Liu, Xie, Liu, Yu, Song, Shan, Zhou, Yang, Li, Su, Lin, Li, Wang, Wei, Zhu, Zhang, Xu, Xu, Huang, Li, Zhao, Sun, Li, Wang, Yu, Zheng, Zhang, Shi, Xiong, He, Tang, Piao, Wang, Tan, Ma, Liu, Guo, Wu, Ou, Zhu, Wang, Gong, Zou, He, Zha, Xiong, Ma, Yan, Luo, You, Liu, Zhou, Wu, Ren, Ren, Sha, Fu, Xu, Huang, Zhang, Xie, Zhang, Hao,
+  Gou, Ma, Yan, Shao, Xu, Wu, Zhang, Li, Gu, Zhu, Liu, Li, Xie, Song, Gao, and Pan]{deepseekai2025deepseekv3technicalreport}
+DeepSeek-AI, Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan, Damai Dai, Daya Guo, Dejian Yang, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao, Guanting Chen, Guowei Li, H.~Zhang, Han Bao, Hanwei Xu, Haocheng Wang, Haowei Zhang, Honghui Ding, Huajian Xin, Huazuo Gao, Hui Li, Hui Qu, J.~L. Cai, Jian Liang, Jianzhong Guo, Jiaqi Ni, Jiashi Li, Jiawei Wang, Jin Chen, Jingchang Chen, Jingyang Yuan, Junjie Qiu, Junlong Li, Junxiao Song, Kai Dong, Kai Hu, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Lei Xu, Leyi Xia, Liang Zhao, Litong Wang, Liyue Zhang, Meng Li, Miaojun Wang, Mingchuan Zhang, Minghua Zhang, Minghui Tang, Mingming Li, Ning Tian, Panpan Huang, Peiyi Wang, Peng Zhang, Qiancheng Wang, Qihao Zhu, Qinyu Chen, Qiushi Du, R.~J. Chen, R.~L. Jin, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, Runxin Xu, Ruoyu Zhang, Ruyi Chen, S.~S. Li, Shanghao Lu, Shangyan Zhou, Shanhuang
+  Chen, Shaoqing Wu, Shengfeng Ye, Shengfeng Ye, Shirong Ma, Shiyu Wang, Shuang Zhou, Shuiping Yu, Shunfeng Zhou, Shuting Pan, T.~Wang, Tao Yun, Tian Pei, Tianyu Sun, W.~L. Xiao, Wangding Zeng, Wanjia Zhao, Wei An, Wen Liu, Wenfeng Liang, Wenjun Gao, Wenqin Yu, Wentao Zhang, X.~Q. Li, Xiangyue Jin, Xianzu Wang, Xiao Bi, Xiaodong Liu, Xiaohan Wang, Xiaojin Shen, Xiaokang Chen, Xiaokang Zhang, Xiaosha Chen, Xiaotao Nie, Xiaowen Sun, Xiaoxiang Wang, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xingkai Yu, Xinnan Song, Xinxia Shan, Xinyi Zhou, Xinyu Yang, Xinyuan Li, Xuecheng Su, Xuheng Lin, Y.~K. Li, Y.~Q. Wang, Y.~X. Wei, Y.~X. Zhu, Yang Zhang, Yanhong Xu, Yanhong Xu, Yanping Huang, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Li, Yaohui Wang, Yi~Yu, Yi~Zheng, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Ying Tang, Yishi Piao, Yisong Wang, Yixuan Tan, Yiyang Ma, Yiyuan Liu, Yongqiang Guo, Yu~Wu, Yuan Ou, Yuchen Zhu, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia He, Yukun Zha, Yunfan Xiong, Yunxian Ma, Yuting Yan, Yuxiang
+  Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Z.~F. Wu, Z.~Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhen Huang, Zhen Zhang, Zhenda Xie, Zhengyan Zhang, Zhewen Hao, Zhibin Gou, Zhicheng Ma, Zhigang Yan, Zhihong Shao, Zhipeng Xu, Zhiyu Wu, Zhongyu Zhang, Zhuoshu Li, Zihui Gu, Zijia Zhu, Zijun Liu, Zilin Li, Ziwei Xie, Ziyang Song, Ziyi Gao, and Zizheng Pan.
+\newblock Deepseek-v3 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2412.19437}.
+
+\bibitem[Ferrag et~al.(2025)Ferrag, Tihanyi, and Debbah]{ferrag2025llmreasoningautonomousai}
+Mohamed~Amine Ferrag, Norbert Tihanyi, and Merouane Debbah.
+\newblock From llm reasoning to autonomous ai agents: A comprehensive review, 2025.
+\newblock URL \url{https://arxiv.org/abs/2504.19678}.
+
+\bibitem[Gao et~al.(2025)Gao, Xie, Zhai, Ma, and Shen]{gao2025mcpradarmultidimensionalbenchmarkevaluating}
+Xuanqi Gao, Siyi Xie, Juan Zhai, Shqing Ma, and Chao Shen.
+\newblock Mcp-radar: A multi-dimensional benchmark for evaluating tool use capabilities in large language models, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.16700}.
+
+\bibitem[Guo et~al.(2025{\natexlab{a}})Guo, Soria, Sun, Shen, and Panda]{guo2025apipackmassivemultiprogramming}
+Zhen Guo, Adriana~Meza Soria, Wei Sun, Yikang Shen, and Rameswar Panda.
+\newblock Api pack: A massive multi-programming language dataset for api call generation, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2402.09615}.
+
+\bibitem[Guo et~al.(2025{\natexlab{b}})Guo, Xu, Zhu, Hong, Wang, and Mao]{guo2025mcpagentbenchevaluatingrealworldlanguage}
+Zikang Guo, Benfeng Xu, Chiwei Zhu, Wentao Hong, Xiaorui Wang, and Zhendong Mao.
+\newblock Mcp-agentbench: Evaluating real-world language agent performance with mcp-mediated tools, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2509.09734}.
+
+\bibitem[interstellarninja()]{Hermes-Function-Calling-Dataset-V1}
+Teknium interstellarninja.
+\newblock Hermes function calling dataset v1.
+\newblock URL \url{https://huggingface.co/NousResearch/hermes-function-calling-v1}.
+
+\bibitem[Li et~al.(2024)Li, Wang, Zeng, et~al.]{li2024llm}
+X.~Li, S.~Wang, S.~Zeng, et~al.
+\newblock A survey on llm-based multi-agent systems: workflow, infrastructure, and challenges.
+\newblock \emph{Vicinagearth}, 1:\penalty0 9, 2024.
+\newblock \doi{10.1007/s44336-024-00009-2}.
+\newblock URL \url{https://doi.org/10.1007/s44336-024-00009-2}.
+
+\bibitem[Liu et~al.(2025{\natexlab{a}})Liu, Huang, Zeng, Hao, Yu, Li, Wang, Gan, Liu, Yu, Wang, Wang, Ning, Hou, Wang, Wu, Wang, Liu, Wang, Tang, Tu, Shang, Jiang, Tang, Lian, Liu, and Chen]{liu2025toolacewinningpointsllm}
+Weiwen Liu, Xu~Huang, Xingshan Zeng, Xinlong Hao, Shuai Yu, Dexun Li, Shuai Wang, Weinan Gan, Zhengying Liu, Yuanqing Yu, Zezhong Wang, Yuxian Wang, Wu~Ning, Yutai Hou, Bin Wang, Chuhan Wu, Xinzhi Wang, Yong Liu, Yasheng Wang, Duyu Tang, Dandan Tu, Lifeng Shang, Xin Jiang, Ruiming Tang, Defu Lian, Qun Liu, and Enhong Chen.
+\newblock Toolace: Winning the points of llm function calling, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2409.00920}.
+
+\bibitem[Liu et~al.(2025{\natexlab{b}})Liu, Qiu, Wang, Zhang, Liu, Ram, Chen, Yao, Heinecke, Savarese, Wang, and Xiong]{liu2025mcpevalautomaticmcpbaseddeep}
+Zhiwei Liu, Jielin Qiu, Shiyu Wang, Jianguo Zhang, Zuxin Liu, Roshan Ram, Haolin Chen, Weiran Yao, Shelby Heinecke, Silvio Savarese, Huan Wang, and Caiming Xiong.
+\newblock Mcpeval: Automatic mcp-based deep evaluation for ai agent models, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2507.12806}.
+
+\bibitem[Liu et~al.(2024)Liu, Hoang, Zhang, Zhu, Lan, Kokane, Tan, Yao, Liu, Feng, Murthy, Yang, Savarese, Niebles, Wang, Heinecke, and Xiong]{liu2024apigenautomatedpipelinegenerating}
+Zuxin Liu, Thai Hoang, Jianguo Zhang, Ming Zhu, Tian Lan, Shirley Kokane, Juntao Tan, Weiran Yao, Zhiwei Liu, Yihao Feng, Rithesh Murthy, Liangwei Yang, Silvio Savarese, Juan~Carlos Niebles, Huan Wang, Shelby Heinecke, and Caiming Xiong.
+\newblock Apigen: Automated pipeline for generating verifiable and diverse function-calling datasets, 2024.
+\newblock URL \url{https://arxiv.org/abs/2406.18518}.
+
+\bibitem[Luo et~al.(2025)Luo, Shen, Yang, Zhao, Jwalapuram, Saha, Sahoo, Savarese, Xiong, and Li]{mcpuniverse}
+Ziyang Luo, Zhiqi Shen, Wenzhuo Yang, Zirui Zhao, Prathyusha Jwalapuram, Amrita Saha, Doyen Sahoo, Silvio Savarese, Caiming Xiong, and Junnan Li.
+\newblock Mcp-universe: Benchmarking large language models with real-world model context protocol servers, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.14704}.
+
+\bibitem[McInnes \& Healy(2018)McInnes and Healy]{McInnes2018UMAPUM}
+Leland McInnes and John Healy.
+\newblock Umap: Uniform manifold approximation and projection for dimension reduction.
+\newblock \emph{ArXiv}, abs/1802.03426, 2018.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:3641284}.
+
+\bibitem[Nathawani et~al.(2025)Nathawani, Gitman, Majumdar, Bakhturina, Sunil~Mahabaleshwarkar, , Zhang, and Polak~Scowcroft]{NemotronPostTrainingDatasetV1}
+Dhruv Nathawani, Igor Gitman, Somshubra Majumdar, Evelina Bakhturina, Ameya Sunil~Mahabaleshwarkar, , Jian Zhang, and Jane Polak~Scowcroft.
+\newblock {Nemotron-Post-Training-Dataset-v1}, 2025.
+\newblock URL \url{https://huggingface.co/datasets/nvidia/Nemotron-Post-Training-Dataset-v1}.
+
+\bibitem[Patil et~al.(2023)Patil, Zhang, Wang, and Gonzalez]{patil2023gorillalargelanguagemodel}
+Shishir~G. Patil, Tianjun Zhang, Xin Wang, and Joseph~E. Gonzalez.
+\newblock Gorilla: Large language model connected with massive apis, 2023.
+\newblock URL \url{https://arxiv.org/abs/2305.15334}.
+
+\bibitem[Patil et~al.(2025)Patil, Mao, Cheng-Jie~Ji, Yan, Suresh, Stoica, and E.~Gonzalez]{patil2025bfcl}
+Shishir~G. Patil, Huanzhi Mao, Charlie Cheng-Jie~Ji, Fanjia Yan, Vishnu Suresh, Ion Stoica, and Joseph E.~Gonzalez.
+\newblock The berkeley function calling leaderboard (bfcl): From tool use to agentic evaluation of large language models.
+\newblock In \emph{Forty-second International Conference on Machine Learning}, 2025.
+
+\bibitem[Prabhakar et~al.(2025)Prabhakar, Liu, Zhu, Zhang, Awalgaonkar, Wang, Liu, Chen, Hoang, Niebles, Heinecke, Yao, Wang, Savarese, and Xiong]{prabhakar2025apigenmtagenticpipelinemultiturn}
+Akshara Prabhakar, Zuxin Liu, Ming Zhu, Jianguo Zhang, Tulika Awalgaonkar, Shiyu Wang, Zhiwei Liu, Haolin Chen, Thai Hoang, Juan~Carlos Niebles, Shelby Heinecke, Weiran Yao, Huan Wang, Silvio Savarese, and Caiming Xiong.
+\newblock Apigen-mt: Agentic pipeline for multi-turn data generation via simulated agent-human interplay, 2025.
+\newblock URL \url{https://arxiv.org/abs/2504.03601}.
+
+\bibitem[Qin et~al.(2023)Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian, Zhao, Hong, Tian, Xie, Zhou, Gerstein, Li, Liu, and Sun]{qin2023toolllmfacilitatinglargelanguage}
+Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang, Bill Qian, Sihan Zhao, Lauren Hong, Runchu Tian, Ruobing Xie, Jie Zhou, Mark Gerstein, Dahai Li, Zhiyuan Liu, and Maosong Sun.
+\newblock Toolllm: Facilitating large language models to master 16000+ real-world apis, 2023.
+\newblock URL \url{https://arxiv.org/abs/2307.16789}.
+
+\bibitem[Ren et~al.(2025)Ren, Hohman, and Moritz]{ren2025scalable}
+Donghao Ren, Fred Hohman, and Dominik Moritz.
+\newblock A scalable approach to clustering embedding projections, 2025.
+\newblock URL \url{https://arxiv.org/abs/2504.07285}.
+
+\bibitem[Tang et~al.(2023)Tang, Deng, Lin, Han, Liang, Cao, and Sun]{tang_toolalpaca_2023}
+Qiaoyu Tang, Ziliang Deng, Hongyu Lin, Xianpei Han, Qiao Liang, Boxi Cao, and Le~Sun.
+\newblock {ToolAlpaca}: {Generalized} {Tool} {Learning} for {Language} {Models} with 3000 {Simulated} {Cases}, September 2023.
+\newblock URL \url{http://arxiv.org/abs/2306.05301}.
+\newblock arXiv:2306.05301 [cs].
+
+\bibitem[Team et~al.(2025{\natexlab{a}})Team, Zeng, Lv, Zheng, Hou, Chen, Xie, Wang, Yin, Zeng, Zhang, Wang, Zhong, Liu, Lu, Cao, Zhang, Huang, Wei, Cheng, An, Niu, Wen, Bai, Du, Wang, Zhu, Zhang, Wen, Wu, Xu, Huang, Zhao, Cai, Yu, Li, Ge, Huang, Zhang, Xu, Zhu, Li, Yin, Lin, Yang, Jiang, Ai, Zhu, Wang, Pan, Wang, Sun, Li, Li, Hu, Zhang, Peng, Tai, Zhang, Wang, Yang, Liu, Zhao, Liu, Yan, Liu, Chen, Li, Zhao, Ren, Jiao, Zhao, Yan, Wang, Gui, Zhao, Liu, Li, Li, Lu, Wang, Yuan, Li, Du, Du, Liu, Zhi, Gao, Wang, Yang, Xu, Fan, Wu, Ding, Wang, Zhang, Li, Xu, Zhao, Zhai, Du, Dong, Lei, Tu, Yang, Lu, Li, Li, Shuang-Li, Yang, Yi, Yu, Tian, Wang, Yu, Tam, Liang, Liu, Wang, Jia, Gu, Ling, Wang, Fan, Pan, Zhang, Zhang, Fu, Zhang, Xu, Wu, Lu, Wang, Zhou, Pan, Zhang, Wang, Li, Su, Geng, Zhu, Yang, Li, Wu, Li, Liu, Wang, Li, Zhang, Liu, Yang, Zhou, Qiao, Feng, Liu, Zhang, Wang, Yao, Wang, Liu, Chai, Li, Zhao, Chen, Zhai, Xu, Huang, Wang, Li, Dong, and Tang]{5team2025glm45agenticreasoningcoding}
+5~Team, Aohan Zeng, Xin Lv, Qinkai Zheng, Zhenyu Hou, Bin Chen, Chengxing Xie, Cunxiang Wang, Da~Yin, Hao Zeng, Jiajie Zhang, Kedong Wang, Lucen Zhong, Mingdao Liu, Rui Lu, Shulin Cao, Xiaohan Zhang, Xuancheng Huang, Yao Wei, Yean Cheng, Yifan An, Yilin Niu, Yuanhao Wen, Yushi Bai, Zhengxiao Du, Zihan Wang, Zilin Zhu, Bohan Zhang, Bosi Wen, Bowen Wu, Bowen Xu, Can Huang, Casey Zhao, Changpeng Cai, Chao Yu, Chen Li, Chendi Ge, Chenghua Huang, Chenhui Zhang, Chenxi Xu, Chenzheng Zhu, Chuang Li, Congfeng Yin, Daoyan Lin, Dayong Yang, Dazhi Jiang, Ding Ai, Erle Zhu, Fei Wang, Gengzheng Pan, Guo Wang, Hailong Sun, Haitao Li, Haiyang Li, Haiyi Hu, Hanyu Zhang, Hao Peng, Hao Tai, Haoke Zhang, Haoran Wang, Haoyu Yang, He~Liu, He~Zhao, Hongwei Liu, Hongxi Yan, Huan Liu, Huilong Chen, Ji~Li, Jiajing Zhao, Jiamin Ren, Jian Jiao, Jiani Zhao, Jianyang Yan, Jiaqi Wang, Jiayi Gui, Jiayue Zhao, Jie Liu, Jijie Li, Jing Li, Jing Lu, Jingsen Wang, Jingwei Yuan, Jingxuan Li, Jingzhao Du, Jinhua Du, Jinxin Liu, Junkai Zhi, Junli
+  Gao, Ke~Wang, Lekang Yang, Liang Xu, Lin Fan, Lindong Wu, Lintao Ding, Lu~Wang, Man Zhang, Minghao Li, Minghuan Xu, Mingming Zhao, Mingshu Zhai, Pengfan Du, Qian Dong, Shangde Lei, Shangqing Tu, Shangtong Yang, Shaoyou Lu, Shijie Li, Shuang Li, Shuang-Li, Shuxun Yang, Sibo Yi, Tianshu Yu, Wei Tian, Weihan Wang, Wenbo Yu, Weng~Lam Tam, Wenjie Liang, Wentao Liu, Xiao Wang, Xiaohan Jia, Xiaotao Gu, Xiaoying Ling, Xin Wang, Xing Fan, Xingru Pan, Xinyuan Zhang, Xinze Zhang, Xiuqing Fu, Xunkai Zhang, Yabo Xu, Yandong Wu, Yida Lu, Yidong Wang, Yilin Zhou, Yiming Pan, Ying Zhang, Yingli Wang, Yingru Li, Yinpei Su, Yipeng Geng, Yitong Zhu, Yongkun Yang, Yuhang Li, Yuhao Wu, Yujiang Li, Yunan Liu, Yunqing Wang, Yuntao Li, Yuxuan Zhang, Zezhen Liu, Zhen Yang, Zhengda Zhou, Zhongpei Qiao, Zhuoer Feng, Zhuorui Liu, Zichen Zhang, Zihan Wang, Zijun Yao, Zikang Wang, Ziqiang Liu, Ziwei Chai, Zixuan Li, Zuodong Zhao, Wenguang Chen, Jidong Zhai, Bin Xu, Minlie Huang, Hongning Wang, Juanzi Li, Yuxiao Dong, and Jie Tang.
+\newblock Glm-4.5: Agentic, reasoning, and coding (arc) foundation models, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2508.06471}.
+
+\bibitem[Team et~al.(2025{\natexlab{b}})Team, Bai, Bao, Chen, Chen, Chen, Chen, Chen, Chen, Chen, Chen, Cui, Ding, Dong, Du, Du, Du, Du, Fan, Feng, Fu, Gao, Gao, Gao, Gao, Gu, Guan, Guo, Guo, Hu, Hao, He, He, He, Hong, Hu, Hu, Huang, Huang, Huang, Jiang, Jiang, Jin, Kang, Lai, Li, Li, Li, Li, Li, Li, Li, Li, Li, Lin, Lin, Lin, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Liu, Lu, Lu, Ma, Ma, Ma, Mao, Mei, Men, Miao, Pan, Peng, Qin, Qu, Shang, Shi, Shi, Song, Su, Su, Sun, Sung, Tang, Tao, Teng, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wang, Wei, Wei, Wu, Wu, Wu, Xiao, Xie, Xiong, Xu, Xu, Xu, Xu, Xu, Xu, Xu, Xu, Xu, Xu, Yan, Yan, Yang, Yang, Yang, Yang, Yang, Yao, Yao, Ye, Ye, Yin, Yu, Yuan, Yuan, Yuan, Zhan, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhang, Zhao, Zhao, Zheng, Zheng, Zhou, Zhou, Zhou, Zhu, Zhuang, and Zu]{kimiteam2025kimik2openagentic}
+Kimi Team, Yifan Bai, Yiping Bao, Guanduo Chen, Jiahao Chen, Ningxin Chen, Ruijue Chen, Yanru Chen, Yuankun Chen, Yutian Chen, Zhuofu Chen, Jialei Cui, Hao Ding, Mengnan Dong, Angang Du, Chenzhuang Du, Dikang Du, Yulun Du, Yu~Fan, Yichen Feng, Kelin Fu, Bofei Gao, Hongcheng Gao, Peizhong Gao, Tong Gao, Xinran Gu, Longyu Guan, Haiqing Guo, Jianhang Guo, Hao Hu, Xiaoru Hao, Tianhong He, Weiran He, Wenyang He, Chao Hong, Yangyang Hu, Zhenxing Hu, Weixiao Huang, Zhiqi Huang, Zihao Huang, Tao Jiang, Zhejun Jiang, Xinyi Jin, Yongsheng Kang, Guokun Lai, Cheng Li, Fang Li, Haoyang Li, Ming Li, Wentao Li, Yanhao Li, Yiwei Li, Zhaowei Li, Zheming Li, Hongzhan Lin, Xiaohan Lin, Zongyu Lin, Chengyin Liu, Chenyu Liu, Hongzhang Liu, Jingyuan Liu, Junqi Liu, Liang Liu, Shaowei Liu, T.~Y. Liu, Tianwei Liu, Weizhou Liu, Yangyang Liu, Yibo Liu, Yiping Liu, Yue Liu, Zhengying Liu, Enzhe Lu, Lijun Lu, Shengling Ma, Xinyu Ma, Yingwei Ma, Shaoguang Mao, Jie Mei, Xin Men, Yibo Miao, Siyuan Pan, Yebo Peng, Ruoyu Qin, Bowen Qu, Zeyu
+  Shang, Lidong Shi, Shengyuan Shi, Feifan Song, Jianlin Su, Zhengyuan Su, Xinjie Sun, Flood Sung, Heyi Tang, Jiawen Tao, Qifeng Teng, Chensi Wang, Dinglu Wang, Feng Wang, Haiming Wang, Jianzhou Wang, Jiaxing Wang, Jinhong Wang, Shengjie Wang, Shuyi Wang, Yao Wang, Yejie Wang, Yiqin Wang, Yuxin Wang, Yuzhi Wang, Zhaoji Wang, Zhengtao Wang, Zhexu Wang, Chu Wei, Qianqian Wei, Wenhao Wu, Xingzhe Wu, Yuxin Wu, Chenjun Xiao, Xiaotong Xie, Weimin Xiong, Boyu Xu, Jing Xu, Jinjing Xu, L.~H. Xu, Lin Xu, Suting Xu, Weixin Xu, Xinran Xu, Yangchuan Xu, Ziyao Xu, Junjie Yan, Yuzi Yan, Xiaofei Yang, Ying Yang, Zhen Yang, Zhilin Yang, Zonghan Yang, Haotian Yao, Xingcheng Yao, Wenjie Ye, Zhuorui Ye, Bohong Yin, Longhui Yu, Enming Yuan, Hongbang Yuan, Mengjie Yuan, Haobing Zhan, Dehao Zhang, Hao Zhang, Wanlu Zhang, Xiaobin Zhang, Yangkun Zhang, Yizhi Zhang, Yongting Zhang, Yu~Zhang, Yutao Zhang, Yutong Zhang, Zheng Zhang, Haotian Zhao, Yikai Zhao, Huabin Zheng, Shaojie Zheng, Jianren Zhou, Xinyu Zhou, Zaida Zhou, Zhen Zhu,
+  Weiyu Zhuang, and Xinxing Zu.
+\newblock Kimi k2: Open agentic intelligence, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2507.20534}.
+
+\bibitem[Team(2024)]{qwen2.5}
+Qwen Team.
+\newblock Qwen2.5: A party of foundation models, September 2024.
+\newblock URL \url{https://qwenlm.github.io/blog/qwen2.5/}.
+
+\bibitem[Team(2025{\natexlab{a}})]{mcpmark_2025}
+The~MCPMark Team.
+\newblock Mcpmark: Stress-testing comprehensive mcp use.
+\newblock \url{https://github.com/eval-sys/mcpmark}, 2025{\natexlab{a}}.
+
+\bibitem[Team(2025{\natexlab{b}})]{scale2025mcp}
+The Scale~Research Team.
+\newblock Actions, not words: Mcp-atlas raises the bar for agentic evaluation.
+\newblock \url{https://scale.com/blog/mcp-atlas}, September 2025{\natexlab{b}}.
+\newblock Accessed: YYYY-MM-DD.
+
+\bibitem[Wang et~al.(2025)Wang, Chang, Patel, Biju, Wu, Liu, Ding, Rezazadeh, Shah, Bao, and Siow]{wang2025mcpbenchbenchmarkingtoolusingllm}
+Zhenting Wang, Qi~Chang, Hemani Patel, Shashank Biju, Cheng-En Wu, Quan Liu, Aolin Ding, Alireza Rezazadeh, Ankit Shah, Yujia Bao, and Eugene Siow.
+\newblock Mcp-bench: Benchmarking tool-using llm agents with complex real-world tasks via mcp servers, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.20453}.
+
+\bibitem[Xu et~al.(2025{\natexlab{a}})Xu, Huang, Gao, and Shang]{xu2025llm}
+Weikai Xu, Chengrui Huang, Shen Gao, and Shuo Shang.
+\newblock Llm-based agents for tool learning: A survey.
+\newblock \emph{Data Science and Engineering}, 2025{\natexlab{a}}.
+\newblock \doi{10.1007/s41019-025-00296-9}.
+\newblock URL \url{https://link.springer.com/article/10.1007/s41019-025-00296-9}.
+
+\bibitem[Xu et~al.(2025{\natexlab{b}})Xu, Liu, Yin, Zhou, and Poovendran]{Xu2025KodCodeAD}
+Zhangchen Xu, Yang Liu, Yueqin Yin, Mingyuan Zhou, and Radha Poovendran.
+\newblock Kodcode: A diverse, challenging, and verifiable synthetic dataset for coding.
+\newblock \emph{ArXiv}, abs/2503.02951, 2025{\natexlab{b}}.
+\newblock URL \url{https://api.semanticscholar.org/CorpusID:276782338}.
+
+\bibitem[Yan et~al.(2025)Yan, Wang, Du, Yang, Shan, Qiu, Jia, Wang, Yuan, Han, Qin, Chen, Peng, Wang, and Xu]{yan2025mcpworldunifiedbenchmarkingtestbed}
+Yunhe Yan, Shihe Wang, Jiajun Du, Yexuan Yang, Yuxuan Shan, Qichen Qiu, Xianqing Jia, Xinge Wang, Xin Yuan, Xu~Han, Mao Qin, Yinxiao Chen, Chen Peng, Shangguang Wang, and Mengwei Xu.
+\newblock Mcpworld: A unified benchmarking testbed for api, gui, and hybrid computer use agents, 2025.
+\newblock URL \url{https://arxiv.org/abs/2506.07672}.
+
+\bibitem[Yang et~al.(2025)Yang, Li, Yang, Zhang, Hui, Zheng, Yu, Gao, Huang, Lv, Zheng, Liu, Zhou, Huang, Hu, Ge, Wei, Lin, Tang, Yang, Tu, Zhang, Yang, Yang, Zhou, Zhou, Lin, Dang, Bao, Yang, Yu, Deng, Li, Xue, Li, Zhang, Wang, Zhu, Men, Gao, Liu, Luo, Li, Tang, Yin, Ren, Wang, Zhang, Ren, Fan, Su, Zhang, Zhang, Wan, Liu, Wang, Cui, Zhang, Zhou, and Qiu]{yang2025qwen3technicalreport}
+An~Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo~Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Dayiheng Liu, Fan Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, Jian Yang, Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jing Zhou, Jingren Zhou, Junyang Lin, Kai Dang, Keqin Bao, Kexin Yang, Le~Yu, Lianghao Deng, Mei Li, Mingfeng Xue, Mingze Li, Pei Zhang, Peng Wang, Qin Zhu, Rui Men, Ruize Gao, Shixuan Liu, Shuang Luo, Tianhao Li, Tianyi Tang, Wenbiao Yin, Xingzhang Ren, Xinyu Wang, Xinyu Zhang, Xuancheng Ren, Yang Fan, Yang Su, Yichang Zhang, Yinger Zhang, Yu~Wan, Yuqiong Liu, Zekun Wang, Zeyu Cui, Zhenru Zhang, Zhipeng Zhou, and Zihan Qiu.
+\newblock Qwen3 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.09388}.
+
+\bibitem[Yao et~al.(2024)Yao, Shinn, Razavi, and Narasimhan]{yao2024taubenchbenchmarktoolagentuserinteraction}
+Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan.
+\newblock $\tau$-bench: A benchmark for tool-agent-user interaction in real-world domains, 2024.
+\newblock URL \url{https://arxiv.org/abs/2406.12045}.
+
+\bibitem[Yin et~al.(2025)Yin, Shen, Xu, Han, Dong, Zhang, Hu, Liu, Ma, Wang, et~al.]{yin2025livemcp}
+Ming Yin, Dinghan Shen, Silei Xu, Jianbing Han, Sixun Dong, Mian Zhang, Yebowen Hu, Shujian Liu, Simin Ma, Song Wang, et~al.
+\newblock Livemcp-101: Stress testing and diagnosing mcp-enabled agents on challenging queries.
+\newblock \emph{arXiv preprint arXiv:2508.15760}, 2025.
+
+\end{thebibliography}

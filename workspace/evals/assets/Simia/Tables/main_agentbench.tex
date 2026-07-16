@@ -1,0 +1,60 @@
+
+
+
+\definecolor{ourmodel}{RGB}{0, 0, 0}  % Black for our model
+\definecolor{lightblue}{RGB}{220, 240, 255}  % Light blue background
+\definecolor{gray}{RGB}{128, 128, 128}
+\definecolor{lightgray}{RGB}{240, 240, 240}
+\begin{table}
+    \centering
+    \caption{
+        Performance on Webshop, Mind2Web and Operating System~\citep{liu2023agentbench} across proprietary models, open baselines, and models fine-tuned on simulated trajectories.
+        *GPT-4 results are reported from \citep{liu2023agentbench} and GPT-4o results are reported from leaderboard of SuperBench \citep{superbench_modeldetail}. 
+    }
+    \label{tab:agentbench_comparison}
+    \resizebox{\linewidth}{!}{
+        \begin{tabular}{l|ccc|c}
+            \toprule
+            \textbf{Model} & \textbf{Mind2Web} & \textbf{OS} & \textbf{Webshop} & \textbf{Average} \\
+            \midrule
+            \multicolumn{5}{c}{\textit{GPT Models}} \\
+            \midrule
+            GPT-4* & \underline{29} & \textbf{42.4} & \textbf{61.1} & \textbf{44.2} \\
+            GPT-4o* & \textbf{32} & \underline{33.3} & \underline{48.9} & \underline{38.1} \\
+            \midrule
+            \multicolumn{5}{c}{\textit{$\geq$7B Models}} \\
+            \midrule
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Qwen3-8B)}} & \underline{25} & \textbf{34.5} & 67.3 & \textbf{42.6} \\
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Qwen2.5-Coder-7B)}} & \textbf{29} & \underline{33} & 66 & \underline{42.6} \\
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Qwen2.5-7B)}} & 23 & 32.6 & \underline{69.2} & 41.6 \\
+            Qwen3-8B-seed & 22 & 31.3 & 68.6 & 40.6 \\
+            Qwen2.5-7B-Instruct-seed & 12 & 29.1 & 68.2 & 36.4 \\
+            AgentLM-70B & 13.5 & 21.5 & 64.9 & 33.3 \\
+            Qwen3-8B & 21 & 27.8 & 49.5 & 32.8 \\
+            AgentLM-13B & 8.4 & 18.1 & \textbf{70.8} & 32.4 \\
+            Qwen2.5-7B-Instruct & 7 & 27.8 & 58.8 & 31.2 \\
+            Llama-3.1-8B-Instruct & 18 & 19.4 & 54.9 & 30.8 \\
+            Qwen2.5-Coder-7B-Instruct & 17 & 22 & 53 & 30.5 \\
+            AgentLM-7B & 6.4 & 17.4 & 63.6 & 29.1 \\
+            \midrule
+            \multicolumn{5}{c}{\textit{3B Models}} \\
+            \midrule
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Llama-3.2-3B)}} & \textbf{26} & \underline{28} & \textbf{69} & \textbf{40.9} \\
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Qwen2.5-3B)}} & \underline{23} & \textbf{31} & \underline{65} & \underline{39.9} \\
+            Qwen2.5-3B-Instruct & 16 & 24 & 49 & 29.5 \\
+            Llama-3.2-3B-Instruct & 15 & 17 & 49 & 27.0 \\
+            \midrule
+            \multicolumn{5}{c}{\textit{1.5B Models}} \\
+            \midrule
+            \rowcolor{lightblue}
+            \textbf{\textcolor{ourmodel}{Simia-AB (Qwen2.5-1.5B)}} & \underline{17} & \textbf{15} & \textbf{54} & \textbf{28.5} \\
+            Qwen2.5-1.5B-Instruct & \textbf{20} & \underline{13} & \underline{40} & \underline{24.0} \\
+            \bottomrule
+        \end{tabular}
+    }
+\end{table}

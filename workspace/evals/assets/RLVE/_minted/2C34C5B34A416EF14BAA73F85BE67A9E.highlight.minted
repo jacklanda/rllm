@@ -1,0 +1,81 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Generate \PYG{g+gs}{**Server Labels**} to categorize the provided MCP Server based on its description and available tools.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided MCP Server\PYGZsq{}s description and available tools, then assign appropriate category labels that best describe its primary functionality and use cases.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Guidelines}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Label Selection}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Analyze the MCP Server\PYGZsq{}s core functionality and purpose
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider the types of tools it provides and the problems it solves
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Select labels that accurately represent the server\PYGZsq{}s primary use cases
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Choose from predefined categories when applicable, but also consider custom labels for unique functionality
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Predefined Categories}
+Choose from these established categories when appropriate:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Web Search \PYGZam{} Research**}: Tools for searching the web, gathering information, academic research
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Browser Automation**}: Web scraping, automated browsing, page interaction
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Memory Management**}: Data storage, retrieval, knowledge bases, note\PYGZhy{}taking
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Operating System**}: File operations, system commands, process management
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Data Analysis \PYGZam{} Processing**}: Analytics, data transformation, statistical analysis
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Cryptocurrency \PYGZam{} Blockchain**}: Trading, wallet management, DeFi, blockchain interaction
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Daily Productivity**}: Task management, scheduling, personal organization
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**File Management**}: File operations, document handling, storage management
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Database Operations**}: Data querying, database management, SQL operations
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**API Integration**}: Third\PYGZhy{}party service integration, webhook handling
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Communication Tools**}: Messaging, email, notifications, social interaction
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Development Tools**}: Code analysis, debugging, version control, CI/CD
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Security \PYGZam{} Authentication**}: Password management, encryption, access control
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Cloud Services**}: Cloud platform integration, serverless functions
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**AI/ML Tools**}: Machine learning, model interaction, AI\PYGZhy{}powered features
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Content Creation**}: Writing, editing, media generation, publishing
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Social Media**}: Social platform integration, posting, analytics
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Financial Services**}: Banking, payments, financial data, accounting
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**E\PYGZhy{}commerce**}: Shopping, product management, order processing
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Gaming**}: Game\PYGZhy{}related tools, entertainment, interactive features
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Education**}: Learning tools, course management, educational content
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Health \PYGZam{} Fitness**}: Health monitoring, fitness tracking, medical tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Travel \PYGZam{} Maps**}: Location services, travel planning, navigation
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**News \PYGZam{} Media**}: News aggregation, media consumption, journalism tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Weather**}: Weather data, forecasting, climate information
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Time \PYGZam{} Calendar**}: Scheduling, time management, calendar integration
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Custom Labels}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }If the server doesn\PYGZsq{}t fit well into predefined categories, create a custom label
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Custom labels should be descriptive and specific to the server\PYGZsq{}s unique functionality
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Use clear, concise terminology that would be useful for clustering and organization
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Output Requirements}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Primary Label**}: The main category that best describes the server (from predefined list or custom)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Secondary Labels**}: Additional relevant categories (0\PYGZhy{}2 labels)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }\PYG{g+gs}{**Custom Label**}: A free\PYGZhy{}form descriptive label if the server has unique functionality not covered by predefined categories
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} MCP Server Description}
+\PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}NAME\PYGZcb{}: \PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}DESCRIPTION\PYGZcb{}
+
+Available Tools:
+\PYGZob{}TOOL\PYGZus{}LIST\PYGZcb{}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}analysis\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Briefly analyze the MCP Server\PYGZsq{}s core functionality and the types of problems it solves based on its description and available tools. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/analysis\PYGZgt{}
+  \PYGZlt{}reasoning\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Brief explanation of why these labels were chosen and how they represent the server\PYGZsq{}s functionality \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/reasoning\PYGZgt{}
+  \PYGZlt{}primary\PYGZus{}label\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} The main category that best describes this server\PYGZsq{}s primary functionality \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/primary\PYGZus{}label\PYGZgt{}
+  \PYGZlt{}secondary\PYGZus{}labels\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Additional relevant categories (0\PYGZhy{}2 labels), separated by commas if multiple \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/secondary\PYGZus{}labels\PYGZgt{}
+  \PYGZlt{}custom\PYGZus{}label\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} A free\PYGZhy{}form descriptive label if the server has unique functionality not covered by predefined categories. Leave empty if not needed. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/custom\PYGZus{}label\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

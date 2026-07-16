@@ -1,0 +1,25 @@
+# LLM Model Configuration for reproducing vitabench evals.
+# Routes all three agents (assistant/user/evaluator) through the shared
+# litellm_http gateway since no local GPU is available to serve a vLLM
+# engine in this environment.
+
+default:
+  backend: litellm_http
+  api_key: sk-8UdjlB0JCiItilvBFMRgVA
+  base_url: https://litellm.mybigai.ac.cn/
+  temperature: 0.0
+  max_tokens: 4096
+  max_input_tokens: 32768
+  headers:
+    Authorization: "Bearer "
+    Content-Type: "application/json"
+
+models:
+  - name: assistant-agent
+    model: gpt-4.1
+
+  - name: user-agent
+    model: gpt-4.1
+
+  - name: evaluator-agent
+    model: gpt-4.1

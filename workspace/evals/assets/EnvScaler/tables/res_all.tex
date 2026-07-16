@@ -1,0 +1,94 @@
+
+\begin{table}[t!]
+  \caption{Results across BFCLv3, \taubench, and MCP-Universe benchmarks. Best performance is in \textbf{bold}. For BFCLv3, ``Hall.'' refers to the hallucination category. For \taubench, Pass@k denotes task success rate allowing $k$ attempts, with Pass@1 averaged over 4 runs. For MCP-Universe, we report task success rates. Note that EnvScaler did not release the 14B model. 
+  }
+  \label{tab:res_all}
+  \centering
+
+  \begingroup
+  \setlength{\tabcolsep}{4.2pt}
+  \renewcommand{\arraystretch}{1.10}
+  \small
+
+  \resizebox{0.95\columnwidth}{!}{%
+  \begin{tabular}{@{}cl|cccccc@{}}
+    \toprule
+
+    \rowcolor{benchgray}
+    \multicolumn{8}{c}{\textbf{\textsc{BFCLv3 Leaderboard}}} \\
+    \midrule
+    & Method & Non-Live & Live & Multi-Turn & \multicolumn{1}{c|}{Hall.} & \multicolumn{2}{c}{\textbf{Overall}} \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{4B}}
+    & Base       & 61.44 & 63.95 & 39.38 & \multicolumn{1}{c|}{73.93} & \multicolumn{2}{c}{54.92} \\
+    & Simulator  & 66.10 & 62.69 & 37.75 & \multicolumn{1}{c|}{75.48} & \multicolumn{2}{c}{55.52} \\
+    & EnvScaler  & 60.31 & 64.25 & 37.63 & \multicolumn{1}{c|}{\textbf{85.25}} & \multicolumn{2}{c}{54.06} \\
+    & \textbf{\synth}    & \textbf{78.60} & \textbf{76.91} & \textbf{39.38} & \multicolumn{1}{c|}{73.70} & \multicolumn{2}{c}{\textbf{64.50}} \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{8B}}
+    & Base       & 59.58 & 58.03 & 43.88 & \multicolumn{1}{c|}{76.42} & \multicolumn{2}{c}{53.83} \\
+    & Simulator  & 56.35 & 59.36 & 41.88 & \multicolumn{1}{c|}{74.06} & \multicolumn{2}{c}{52.53} \\
+    & EnvScaler  & 33.67 & 31.83 & \textbf{45.00} & \multicolumn{1}{c|}{\textbf{90.30}} & \multicolumn{2}{c}{36.83} \\
+    & \textbf{\synth}    & \textbf{80.44} & \textbf{72.39} & \textbf{45.00} & \multicolumn{1}{c|}{70.80} & \multicolumn{2}{c}{\textbf{65.94}} \\
+    \midrule
+    \multirow{3}{*}{\rotatebox[origin=c]{90}{14B}}
+    & Base       & 69.48 & 67.28 & 47.00 & \multicolumn{1}{c|}{77.94} & \multicolumn{2}{c}{61.25} \\
+    & Simulator  & 77.23 & 73.43 & \textbf{52.38} & \multicolumn{1}{c|}{76.91} & \multicolumn{2}{c}{67.68} \\
+    & \textbf{\synth}    & \textbf{81.46} & \textbf{77.20} & 51.88 & \multicolumn{1}{c|}{\textbf{78.37}} & \multicolumn{2}{c}{\textbf{70.18}} \\
+
+    \addlinespace[0.35em]
+    \midrule
+
+    \rowcolor{benchgray}
+    \multicolumn{8}{c}{\textbf{\textsc{\taubench}}} \\
+    \midrule
+    & & \multicolumn{3}{c|}{Domain (Pass@1)} & \multicolumn{3}{c}{\textbf{Overall}} \\
+    \cmidrule(lr){3-5}\cmidrule(lr){6-8}
+    & Method & Airline & Retail & \multicolumn{1}{c|}{Telecom} & \multicolumn{2}{c}{Pass@1} & Pass@4 \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{4B}}
+    & Base       & 21.00 & 19.96 & \multicolumn{1}{c|}{ 9.43} & \multicolumn{2}{c}{15.83} & 34.89 \\
+    & Simulator  & 15.50 & 18.64 & \multicolumn{1}{c|}{ 7.90} & \multicolumn{2}{c}{13.67} & 35.25 \\
+    & EnvScaler  & \textbf{31.50} & \textbf{44.30} & \multicolumn{1}{c|}{\textbf{12.50}} & \multicolumn{2}{c}{\textbf{28.96}} & \textbf{51.80} \\
+    & \textbf{\synth}     & 19.00 & 30.26 & \multicolumn{1}{c|}{16.45} & \multicolumn{2}{c}{22.57} & 43.89 \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{8B}}
+    & Base       & 26.50 & 34.43 & \multicolumn{1}{c|}{18.42} & \multicolumn{2}{c}{26.44} & 50.72 \\
+    & Simulator  & 34.00 & 32.24 & \multicolumn{1}{c|}{29.17} & \multicolumn{2}{c}{31.30} & 54.32 \\
+    & EnvScaler  & 31.50 & \textbf{49.56} & \multicolumn{1}{c|}{\textbf{32.68}} & \multicolumn{2}{c}{\textbf{39.39}} & \textbf{63.31} \\
+    & \textbf{\synth}     & \textbf{38.50} & 41.23 & \multicolumn{1}{c|}{23.47} & \multicolumn{2}{c}{33.45} & 55.40 \\
+    \midrule
+    \multirow{3}{*}{\rotatebox[origin=c]{90}{14B}}
+    & Base       & 27.00 & \textbf{65.35} & \multicolumn{1}{c|}{12.28} & \multicolumn{2}{c}{36.69} & 55.40 \\
+    & Simulator  & 21.50 & 48.90 & \multicolumn{1}{c|}{\textbf{18.20}} & \multicolumn{2}{c}{31.39} & 55.40 \\
+    & \textbf{\synth}     & \textbf{31.50} & 63.60 & \multicolumn{1}{c|}{17.76} & \multicolumn{2}{c}{\textbf{39.03}} & \textbf{57.19} \\
+
+    \addlinespace[0.35em]
+    \midrule
+
+    \rowcolor{benchgray}
+    \multicolumn{8}{c}{\textbf{\textsc{MCP-Universe}}} \\
+    \midrule
+    & Method & Location & Financial & Browser & Web & \multicolumn{1}{c|}{Multi} & \textbf{Overall} \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{4B}}
+    & Base       & \textbf{2.86} & \textbf{25.00} & 0.00 & 0.00 & \multicolumn{1}{c|}{0.00} & 6.15 \\
+    & Simulator  & 0.00 & 15.00 & \textbf{5.88} & \textbf{2.00} & \multicolumn{1}{c|}{0.00} & 6.15 \\
+    & EnvScaler  & 0.00 & 17.50 & 2.94 & 0.00 & \multicolumn{1}{c|}{0.00} & 4.47 \\
+    & \textbf{\synth}     & 0.00 & 22.50 & 2.94 & \textbf{2.00} & \multicolumn{1}{c|}{\textbf{5.00}} & \textbf{6.70} \\
+    \midrule
+    \multirow{4}{*}{\rotatebox[origin=c]{90}{8B}}
+    & Base       & 0.00 & 22.50 & 5.88 & 2.00 & \multicolumn{1}{c|}{0.00} & 6.70 \\
+    & Simulator  & 5.71 & 10.00 & \textbf{8.82} & \textbf{4.00} & \multicolumn{1}{c|}{0.00} & 6.15 \\
+    & EnvScaler  & 0.00 & 17.50 & 5.88 & 2.00 & \multicolumn{1}{c|}{0.00} & 5.59 \\
+    & \textbf{\synth}     & \textbf{8.57} & \textbf{35.00} & \textbf{8.82} & 0.00 & \multicolumn{1}{c|}{\textbf{5.00}} & \textbf{11.17} \\
+    \midrule
+    \multirow{3}{*}{\rotatebox[origin=c]{90}{14B}}
+    & Base       & 0.00 & 27.50 & 5.88 & 2.00 & \multicolumn{1}{c|}{\textbf{5.00}} & 8.38 \\
+    & Simulator  & 2.86 & 30.00 & 8.82 & \textbf{6.00} & \multicolumn{1}{c|}{0.00} & 10.62 \\
+    & \textbf{\synth}     & \textbf{8.57} & \textbf{32.50} & \textbf{11.77} & 4.00 & \multicolumn{1}{c|}{0.00} & \textbf{12.29} \\
+    \bottomrule
+  \end{tabular}%
+  }
+  \endgroup
+\end{table}

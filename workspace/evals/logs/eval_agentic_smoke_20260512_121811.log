@@ -1,0 +1,27 @@
+[eval_agentic] vLLM server NOT serving /share/nlp/share/plm/Qwen3-4B-Thinking-2507 at https://litellm.mybigai.ac.cn/v1/models — auto-deploying.
+[eval_agentic] Launching: vllm serve /share/nlp/share/plm/Qwen3-4B-Thinking-2507 --host litellm.mybigai.ac.cn --port 30000 --api-key sk-8UdjlB0JCiItilvBFMRgVA --tensor-parallel-size 1 --data-parallel-size 8 --gpu-memory-utilization 0.6
+[eval_agentic] Logs: /share/nlp/liuyang/workspace/gem/logs/vllm_serve_20260512_121811.log
+[eval_agentic] Waiting up to 1800s for vLLM to become ready...
+[eval_agentic] ERROR: vLLM process exited before becoming ready. See /share/nlp/liuyang/workspace/gem/logs/vllm_serve_20260512_121811.log
+INFO 05-12 12:18:19 [__init__.py:235] Automatically detected platform cuda.
+INFO 05-12 12:18:23 [api_server.py:1755] vLLM API server version 0.10.0
+INFO 05-12 12:18:23 [cli_args.py:261] non-default args: {'model_tag': '/share/nlp/share/plm/Qwen3-4B-Thinking-2507', 'host': 'litellm.mybigai.ac.cn', 'port': 30000, 'api_key': 'sk-8UdjlB0JCiItilvBFMRgVA', 'model': '/share/nlp/share/plm/Qwen3-4B-Thinking-2507', 'data_parallel_size': 8, 'gpu_memory_utilization': 0.6}
+Traceback (most recent call last):
+  File "/home/liuyang/app/anaconda3/envs/rllm/bin/vllm", line 7, in <module>
+    sys.exit(main())
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/vllm/entrypoints/cli/main.py", line 54, in main
+    args.dispatch_function(args)
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/vllm/entrypoints/cli/serve.py", line 52, in cmd
+    uvloop.run(run_server(args))
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/uvloop/__init__.py", line 69, in run
+    return loop.run_until_complete(wrapper())
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/uvloop/__init__.py", line 48, in wrapper
+    return await main
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/vllm/entrypoints/openai/api_server.py", line 1790, in run_server
+    listen_address, sock = setup_server(args)
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/vllm/entrypoints/openai/api_server.py", line 1767, in setup_server
+    sock = create_server_socket(sock_addr)
+  File "/home/liuyang/app/anaconda3/envs/rllm/lib/python3.10/site-packages/vllm/entrypoints/openai/api_server.py", line 1731, in create_server_socket
+    sock.bind(addr)
+OSError: [Errno 99] Cannot assign requested address

@@ -1,0 +1,73 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \footnotesize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8.5pt}
+
+        \textbf{User Prompt (Part 2/2):}\\[4pt]
+
+        \texttt{Response Schema Requirements:}\\
+        \texttt{- Define complete response structure with all fields}\\
+        \texttt{- Each field MUST include: type, description, example}\\
+        \texttt{- For array types, include ``items'' with full field definitions}\\
+        \texttt{- Use consistent naming conventions across all endpoints}\\[6pt]
+
+        \texttt{Output format:}\\
+        \texttt{\{}\\
+        \texttt{~~~~``api\_groups'': [}\\
+        \texttt{~~~~~~~~\{}\\
+        \texttt{~~~~~~~~~~~~``group\_name'': ``Products'',}\\
+        \texttt{~~~~~~~~~~~~``endpoints'': [}\\
+        \texttt{~~~~~~~~~~~~~~~~\{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``path'': ``/api/products'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``method'': ``GET'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``summary'': ``List all products with optional filters'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``description'': ``Retrieve a paginated list of products. Use this endpoint to browse or search the product catalog.'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``operation\_id'': ``list\_products'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``tags'': [``products''],}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``request\_params'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~``category'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``type'': ``string'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``param\_type'': ``query'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``required'': false,}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``description'': ``Filter products by category name'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``example'': ``Electronics''}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~\},}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~``min\_price'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``type'': ``float'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``param\_type'': ``query'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``required'': false,}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``description'': ``Minimum price filter in USD'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``example'': 10.0}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~\}}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~\},}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``response'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~``products'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``type'': ``array'',}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~``items'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``id'': \{``type'': ``integer'', ``description'': ``Unique product identifier'', ``example'': 1\},}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``name'': \{``type'': ``string'', ``description'': ``Product display name'', ``example'': ``iPhone 15 Pro''\},}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``price'': \{``type'': ``float'', ``description'': ``Product price in USD'', ``example'': 999.99\}}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~~~~~\}}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~\}}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~\},}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``required\_tables'': [``products''],}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~``required\_fields'': \{}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~~~~~``products'': [``id'', ``name'', ``price'', ``category'']}\\
+        \texttt{~~~~~~~~~~~~~~~~~~~~\}}\\
+        \texttt{~~~~~~~~~~~~~~~~\}}\\
+        \texttt{~~~~~~~~~~~~]}\\
+        \texttt{~~~~~~~~\}}\\
+        \texttt{~~~~]}\\
+        \texttt{\}}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for interface specification generation (part 2 of 2).}
+    \label{fig:gen-api-2}
+\end{figure*}

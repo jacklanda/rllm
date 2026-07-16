@@ -1,0 +1,68 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \footnotesize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \textbf{User Prompt (Part 3/3):}\\[4pt]
+
+        \texttt{- When returning ORM objects, configure models for Pydantic v2 using model\_config, for example:}\\[2pt]
+        \texttt{~~~~class SomeModel(BaseModel):}\\
+        \texttt{~~~~~~~~model\_config = ConfigDict(from\_attributes=True)}\\
+        \texttt{~~~~~~~~...}\\[2pt]
+        \texttt{- Do NOT use the old Pydantic v1 Config with orm\_mode = True}\\
+        \texttt{- Do NOT use Annotated or other advanced type tricks that might cause unevaluable type annotations}\\
+        \texttt{- Use ONLY standard typing types: int, float, str, bool, Optional[T], List[T], Dict[str, T]}\\
+        \texttt{- Field names MUST NEVER be identical (case-sensitive or case-insensitive) to the name of their own type annotation. If it is required}\\
+        \texttt{~~by the API spec or database schema, always choose a different snake\_case field name (e.g. `schedule\_date: date`, `event\_datetime:}\\
+        \texttt{~~datetime`), and configure a serialization alias, for example: `schedule\_date: date = Field(..., serialization\_alias=``date'', ...)`}\\
+        \texttt{- Ensure that no Pydantic field name clashes with a type name or class name used in the same module}\\[4pt]
+
+        \texttt{Agent-Friendly Enhancements (REQUIRED on every endpoint decorator):}\\
+        \texttt{- summary: a one-line purpose (<= 80 chars)}\\
+        \texttt{- description: SINGLE LINE (<= 200 chars; no line breaks)}\\
+        \texttt{- tags: logical grouping array (e.g., [``products''], [``orders''])}\\
+        \texttt{- operation\_id: unique, snake\_case identifier}\\
+        \texttt{- response\_model: a concrete Pydantic model class (or typing such as List[Model]) that directly corresponds to the returned value}\\[4pt]
+
+        \texttt{Code Style (MANDATORY):}\\
+        \texttt{- app = FastAPI(...) MUST appear before any @app.get/post/put/patch/delete decorators}\\
+        \texttt{- Use Query/Path/Body/Depends from fastapi where appropriate}\\
+        \texttt{- Use relationship for ORM relations only when they are unambiguous OR explicitly specify foreign\_keys to avoid SQLAlchemy}\\
+        \texttt{~~AmbiguousForeignKeysError}\\
+        \texttt{- For SELECT: session.query(Model).filter(...).all()/first()}\\
+        \texttt{- For INSERT: session.add(...); session.commit()}\\
+        \texttt{- For UPDATE: fetch the ORM objects, modify attributes, then session.commit()}\\
+        \texttt{- For DELETE: session.delete(obj); session.commit()}\\
+        \texttt{- Return Python dicts/lists or Pydantic models that conform exactly to the declared response\_model}\\
+        \texttt{- Do NOT use Python reserved keywords as attribute names, function parameters, or keyword argument names. If the schema or API}\\
+        \texttt{~~uses such names, use a safe Python name with a trailing underscore and map it via Column(``name'', ...) or Field(..., alias=``name'')}\\
+        \texttt{- No comments, no exception handlers, no defensive programming, no placeholder code, and no dynamic hacks around FastAPI or Pydantic}\\[4pt]
+
+        \texttt{Output Format (CRITICAL):}\\
+        \texttt{- You MUST return ONLY complete and valid Python source code of the FastAPI app}\\
+        \texttt{- The response MUST consist of Python code only. Do NOT include any Markdown, prose, explanations, JSON wrappers, keys, or code fences}\\
+        \texttt{- Do NOT wrap the code in JSON. Do NOT add any outer structure. The response itself is the file content}\\
+        \texttt{- The FIRST line of your response MUST be a valid Python statement such as `import` or `from` (e.g. `import os` or `from fastapi import FastAPI`)}\\
+        \texttt{- Do NOT escape newlines. Output the code exactly as it would appear in a .py file}\\
+        \texttt{- If you include ANY non-Python text (such as ``Here is the code:'', backticks, or JSON), the output will be INVALID}\\
+        \texttt{- Your entire reply must be a single, self-contained Python module that can be saved directly as a .py file and executed}\\[4pt]
+
+        \texttt{Reminder:}\\
+        \texttt{- Use only entities present in the provided database schema. The API spec is only for reference. If the API spec conflicts with the database}\\
+        \texttt{~~schema, prioritize the database schema. If following the API spec as written would cause bugs, you MUST use the database schema as}\\
+        \texttt{~~the source of truth. Prioritize making the code executable without errors over following the API spec text}\\
+        \texttt{- Ensure all endpoints run without undefined names, missing imports, or missing models}\\
+        \texttt{- Ensure the code creates the SQLite database specified by the environment variable DATABASE\_PATH on first run and successfully serves}\\
+        \texttt{~~all endpoints with the specified response models}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for interface implementation generation (part 3 of 3).}
+    \label{fig:gen-env-3}
+\end{figure*}

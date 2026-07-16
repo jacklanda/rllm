@@ -1,0 +1,45 @@
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+──────────────────────── bamboogle  (n=125, samples=1) ─────────────────────────
+No tokenizer provided to OpenAIEngine, will use the chat completions endpoint.
+Generating trajectories:   0%|          | 0/125 [00:00<?, ?it/s][33m[bamboogle-87:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   1%|          | 1/125 [00:41<1:25:31, 41.38s/it][33m[bamboogle-89:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:   2%|▏         | 2/125 [01:07<1:06:46, 32.57s/it][33m[bamboogle-88:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   2%|▏         | 3/125 [01:14<41:52, 20.60s/it]  [33m[bamboogle-17:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   3%|▎         | 4/125 [01:20<29:48, 14.78s/it][33m[bamboogle-15:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:   4%|▍         | 5/125 [01:28<24:40, 12.34s/it][33m[bamboogle-16:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:   5%|▍         | 6/125 [01:42<25:51, 13.04s/it][33m[bamboogle-90:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:   6%|▌         | 7/125 [01:47<20:13, 10.28s/it][33m[bamboogle-19:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:   6%|▋         | 8/125 [01:52<16:51,  8.65s/it][33m[bamboogle-91:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   7%|▋         | 9/125 [01:58<15:23,  7.96s/it][33m[bamboogle-20:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   8%|▊         | 10/125 [02:13<19:03,  9.95s/it][33m[bamboogle-21:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:   9%|▉         | 11/125 [02:21<17:47,  9.37s/it][33m[bamboogle-18:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  10%|▉         | 12/125 [02:25<14:35,  7.75s/it][33m[bamboogle-94:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:  10%|█         | 13/125 [02:56<27:59, 14.99s/it][33m[bamboogle-95:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:  11%|█         | 14/125 [03:03<23:21, 12.63s/it][33m[bamboogle-93:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  12%|█▏        | 15/125 [03:20<25:18, 13.81s/it][33m[bamboogle-22:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  13%|█▎        | 16/125 [03:31<23:35, 12.99s/it][33m[bamboogle-92:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  14%|█▎        | 17/125 [03:38<20:22, 11.32s/it][33m[bamboogle-24:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  14%|█▍        | 18/125 [03:42<16:07,  9.05s/it][33m[bamboogle-25:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.MAX_RESPONSE_LENGTH_EXCEEDED[0m
+Generating trajectories:  15%|█▌        | 19/125 [03:56<18:26, 10.44s/it][33m[bamboogle-96:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  16%|█▌        | 20/125 [04:27<29:09, 16.66s/it][33m[bamboogle-97:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  17%|█▋        | 21/125 [04:30<21:41, 12.51s/it][33m[bamboogle-23:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  18%|█▊        | 22/125 [04:32<15:53,  9.26s/it][33m[bamboogle-26:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  18%|█▊        | 23/125 [04:33<11:58,  7.04s/it][33m[bamboogle-27:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  19%|█▉        | 24/125 [04:39<11:20,  6.73s/it][33m[bamboogle-98:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  20%|██        | 25/125 [04:43<09:27,  5.67s/it][33m[bamboogle-28:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  21%|██        | 26/125 [05:16<22:49, 13.83s/it][33m[bamboogle-99:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  22%|██▏       | 27/125 [05:47<31:11, 19.10s/it][33m[bamboogle-30:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  22%|██▏       | 28/125 [05:48<21:54, 13.56s/it][33m[bamboogle-29:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  23%|██▎       | 29/125 [05:59<20:38, 12.90s/it][33m[bamboogle-102:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  24%|██▍       | 30/125 [06:00<14:56,  9.44s/it][33m[bamboogle-101:0] Rollout completed. Rewards: agent: 0.0, Termination: TerminationReason.ENV_DONE[0m
+Generating trajectories:  25%|██▍       | 31/125 [06:07<13:35,  8.68s/it]2026-05-12 12:48:58,167 - openai._base_client - INFO - Retrying request to /chat/completions in 0.463636 seconds
+2026-05-12 12:49:05,407 - openai._base_client - INFO - Retrying request to /chat/completions in 0.394839 seconds
+2026-05-12 12:49:10,651 - openai._base_client - INFO - Retrying request to /chat/completions in 0.405749 seconds
+2026-05-12 12:49:16,787 - openai._base_client - INFO - Retrying request to /chat/completions in 0.403029 seconds
+2026-05-12 12:49:18,127 - openai._base_client - INFO - Retrying request to /chat/completions in 0.411447 seconds
+2026-05-12 12:49:20,337 - openai._base_client - INFO - Retrying request to /chat/completions in 0.423442 seconds
+2026-05-12 12:49:23,808 - openai._base_client - INFO - Retrying request to /chat/completions in 0.429683 seconds
+2026-05-12 12:49:25,045 - openai._base_client - INFO - Retrying request to /chat/completions in 0.446152 seconds

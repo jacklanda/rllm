@@ -1,0 +1,52 @@
+\begin{figure*}[t]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \normalsize
+        \vspace{2pt}
+        \setlength{\baselineskip}{9pt}
+
+        \texttt{\# MCP Tools}\\[6pt]
+
+        \texttt{You are at a MCP environment. You need to call MCP tools to assist with the user query. At each step, you can only call one function. You have already logged in, and your user id is 1 if required for the MCP tool.}\\[6pt]
+
+        \texttt{You are provided with TWO functions within <tools></tools> XML tags:}\\
+        \texttt{<tools>}\\
+        \texttt{1. list\_tools}\\
+        \texttt{~~~~- Description: List all available MCP tools for the current environment to help you finish the user task.}\\
+        \texttt{~~~~- Arguments: None}\\
+        \texttt{~~~~- Output: A list of MCP environment-specific tools and their descriptions}\\[4pt]
+
+        \texttt{2. call\_tool}\\
+        \texttt{~~~~- Description: Call a MCP environment-specific tool}\\
+        \texttt{~~~~- Arguments:}\\
+        \texttt{~~~~~~~~- tool\_name: str, required, the tool name in the list\_tools output}\\
+        \texttt{~~~~~~~~- arguments: str, required, the arguments for calling <tool\_name>. You must pass a valid JSON string without any markdown fences or additional commentary. This JSON str will be parsed by the tool and executed. You can pass an empty JSON str if no arguments are required by <tool\_name>.}\\
+        \texttt{~~~~- Output: The result of the <tool\_name> tool call}\\
+        \texttt{</tools>}\\[6pt]
+
+        \texttt{You should always call list\_tools function first to get the available tools, and should only call it once. You should always directly output the answer or summary at the final step instead of calling any function.}\\[6pt]
+
+        \texttt{For each function call, return a json object with function name and arguments within <tool\_call></tool\_call> XML tags:}\\
+        \texttt{<tool\_call>}\\
+        \texttt{\{"name": <function-name>, "arguments": <args-json-object>\}}\\
+        \texttt{</tool\_call>}\\[6pt]
+
+        \texttt{Example Function Call \#1:}\\
+        \texttt{<tool\_call>}\\
+        \texttt{\{"name": "list\_tools", "arguments": null\}}\\
+        \texttt{</tool\_call>}\\[4pt]
+
+        \texttt{Example Function Call \#2:}\\
+        \texttt{<tool\_call>}\\
+        \texttt{\{"name": "call\_tool", "arguments": \{"tool\_name": "get\_weather", "arguments": "\{"city": "Beijing"\}"\}\}}\\
+        \texttt{</tool\_call>}\\[2pt]
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Table}
+    \caption{System prompt for agent in MCP environments.}
+    \label{fig:agent-system-prompt}
+\end{figure*}

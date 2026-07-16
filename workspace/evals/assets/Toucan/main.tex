@@ -1,0 +1,1690 @@
+
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} %
+
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framerule=0pt,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=1em,
+  xrightmargin=1em,
+  breakindent=0pt,
+  postbreak=\mbox{}
+}
+
+
+\usepackage{hyperref}
+
+\input{header}
+
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+
+\usepackage[accepted]{icml2025}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{subcaption}
+\usepackage{subfigure}
+\usepackage{graphicx}
+
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\usepackage[textsize=tiny]{todonotes}
+
+
+
+\icmltitlerunning{\ours{}: Scaling Up Reinforcement Learning for Language Models with Adaptive Verifiable Environments}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{\ours{}: Scaling Up Reinforcement Learning for Language Models\\with Adaptive Verifiable Environments}
+
+
+
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+\icmlauthor{Zhiyuan Zeng}{equal,UW,Ai2}
+\icmlauthor{Hamish Ivison}{equal,UW,Ai2}
+\icmlauthor{Yiping Wang}{equal,UW}
+\icmlauthor{Lifan Yuan}{equal,UIUC}
+\\
+\icmlauthor{Shuyue Stella Li}{UW}
+\icmlauthor{Zhuorui Ye}{Princeton}
+\icmlauthor{Siting Li}{UW}
+\icmlauthor{Jacqueline He}{UW}
+\icmlauthor{Runlong Zhou}{UW}
+\icmlauthor{Tong Chen}{UW}
+\icmlauthor{Chenyang Zhao}{LMSYS}
+\\
+\icmlauthor{Yulia Tsvetkov}{UW}
+\icmlauthor{Simon Shaolei Du}{UW}
+\icmlauthor{Natasha Jaques}{UW}
+\icmlauthor{Hao Peng}{UIUC}
+\icmlauthor{Pang Wei Koh}{UW,Ai2}
+\icmlauthor{Hannaneh Hajishirzi}{UW,Ai2}
+\end{icmlauthorlist}
+
+\icmlaffiliation{UW}{University of Washington}
+\icmlaffiliation{Ai2}{Allen Institute for Artificial Intelligence}
+\icmlaffiliation{UIUC}{University of Illinois Urbana-Champaign}
+\icmlaffiliation{Princeton}{Princeton University}
+\icmlaffiliation{LMSYS}{LMSYS Org}
+
+\icmlcorrespondingauthor{Zhiyuan Zeng}{zyzeng@cs.washington.edu}
+
+\icmlkeywords{Machine Learning, ICML}
+
+\vskip 0.3in
+]
+
+
+
+\printAffiliationsAndNotice{\icmlEqualContribution} %
+
+
+\begin{abstract}
+We introduce \textbf{R}einforcement \textbf{L}earning (RL) with Adaptive \textbf{V}erifiable \textbf{E}nvironments (\textbf{\ours{}}), an approach using verifiable environments that procedurally generate problems and provide algorithmically verifiable rewards, to scale up RL for language models (LMs).
+\ours{} enables each verifiable environment to dynamically adapt its problem difficulty distribution to the policy model's capabilities as training progresses.
+In contrast, static data distributions often lead to vanishing learning signals when problems are either too easy or too hard for the policy.
+To implement \ours{}, we create \textbf{\suite{}}, a large-scale suite of 400 verifiable environments carefully developed through manual environment engineering.
+Using \suite{}, we show that environment scaling, i.e., expanding the collection of training environments, consistently improves generalizable reasoning capabilities.
+\ours{} with joint training across all 400 environments in~\suite{} yields a 3.37\% absolute average improvement across six reasoning benchmarks, starting from one of the strongest 1.5B reasoning LMs.
+By comparison, continuing this LM's original RL training yields only a 0.49\% average absolute gain despite using over 3$\times$ more compute.
+We release our code publicly.\footnote{\url{https://github.com/Zhiyuan-Zeng/RLVE}}
+\end{abstract}
+
+
+\section{Introduction}
+
+Scaling up reinforcement learning (RL) has shown strong potential to improve language models (LMs)~\citep{ouyang2022instructgpt,o1,deepseek-r1,gemini2.5}, but models' improvement increasingly saturates on finite training data~\citep{kumar2024big-world-simulator,hu2025brorl,khatri2025scalerl}.
+Scaling up RL data presents two challenges.
+First, collecting a large number of problems along with their ground-truth answers, which are commonly required for verifiable reward computations~\citep{tulu3,deepseek-r1}, can be expensive.
+Second, RL training can completely stall when problems are either too easy or too difficult for the policy model~\citep{razin2024vanishing-rft,razin2025rm-good-teacher}, since too easy ones provide no meaningful learning signal, whereas overly difficult ones yield consistently poor rewards that impede gradient-based updates.
+In typical LM RL training, the problem distribution is predetermined by a specific dataset and remains static, preventing adaptation to the policy model’s evolving capabilities (Figure~\ref{fig:teaser}(a)).
+
+
+
+\begin{figure*}[t]
+\begin{center}
+\centerline{\includegraphics[width=\linewidth]{figures/RLVE.pdf}}
+\vskip -1.8in
+\caption{
+(a) During RL training, some array-sorting problems that were appropriately challenging become too easy, while others that were too hard become learnable as the policy improves (given the upward movement of the {\color[HTML]{305090} dark region} containing many problems for which some rollouts are correct, and others are not).
+(b) \ours{} trains an LM on verifiable environments that dynamically adjust problem difficulty based on its performance over time.
+(c) Starting from \texttt{ProRL-1.5B-v2}~\citep{hu2025prorlv2}, {\color[HTML]{5073AF} continuing training with \ours{}} yields a 3.37\% absolute average improvement across six reasoning benchmarks, whereas {\color[HTML]{D79A20} continuing the original RLVR training} achieves a 0.49\% average absolute gain using more than 3$\times$ the compute.
+}
+
+\label{fig:teaser}
+\end{center}
+\vskip -0.2in
+\end{figure*}
+
+To address these challenges, we introduce \textbf{\ours{}} (Reinforcement Learning with Adaptive Verifiable Environments), an approach that scales up LM RL training by using verifiable environments whose difficulty dynamically adapts to the policy model’s capabilities
+(Figure~\ref{fig:teaser}(b)).
+A verifiable environment (1) procedurally generates an unbounded number of problems with configurable difficulty, and (2) provides algorithmically verifiable rewards to model outputs.
+For example, an environment for an array-sorting task can sample an array and verify an output by comparing it with the result produced by a sorting program, overcoming the non-scalability of collecting problems individually;
+we can increase the difficulty by increasing the array length.
+
+\ours{} enables \textbf{adaptive} verifiable environments, in which the difficulty distribution shifts toward harder problems once the policy model performs well on the current distribution.
+\ours{} thus addresses the limitations of static environments, whose distribution of generated problems remains constant throughout training.
+Empirically, after the model masters the hardest problems, the static environment becomes uninformative for further improvement;
+even if the model does not ultimately achieve this within a limited compute budget, learning efficiency remains suboptimal when the difficulty of most problems is inappropriate for the policy model.
+By contrast, our experiments in Section~\ref{sec:exp-adaptivity} show that adaptive difficulty continuously maintains a high proportion of appropriately challenging problems, leading to superior performance and higher learning efficiency.
+
+To implement~\ours{}, we construct \textbf{\suite{}}, a large-scale suite of 400 verifiable environments developed through our expert \textbf{environment engineering} efforts, following two principles.
+First, the environments are designed as pedagogical tools for developing reasoning capabilities.
+This procedure is analogous to teaching a pupil to perform integer multiplication by hand, although using a calculator is more efficient and reliable.
+Second, the environments enable output verification via two advantages:
+(1) the environment can execute programs while the LM is not allowed to do so,
+and (2) the environment is responsible only for verifying outputs rather than solving the problems, and verification is sometimes much easier than solving in terms of computational complexity, e.g., in NP-complete problems.
+Using \suite{}, Section~\ref{sec:env-scaling} shows that \textbf{environment scaling}, i.e., expanding the training collection of verifiable environments, consistently improves the model performance on held-out environments, underscoring its importance for developing generalizable reasoning capabilities.
+
+
+
+We show that \ours{} with joint training across all 400 environments in \suite{} effectively scales up LM RL training in two scenarios, as reflected by performance on six reasoning benchmarks covering mathematics, code generation, and logical reasoning.
+The first is a data-saturation scenario.
+Section~\ref{sec:prorl-exp} demonstrates that \ours{} further scales up RL training for one of the current strongest 1.5B RL LMs, \texttt{ProRL-1.5B-v2}~\citep{hu2025prorlv2} (Figure~\ref{fig:teaser}(c)).
+This LM was originally trained with RLVR (RL with verifiable rewards) for over 20{,}000 H100 GPU hours to saturation on ProRL, a large-scale, diverse dataset~\citep{liu2025prorl}.
+
+The second is a compute-constrained scenario, where training starts from an LM that has not undergone reasoning RL.
+Section~\ref{sec:openthinker-exp} shows that \ours{} outperforms training on a strong RLVR dataset, DeepMath-103K~\citep{he2025deepmath}, by about 2\% in absolute improvement, when both initialized from \texttt{OpenThinker3-1.5B}~\citep{guha2025openthoughts}, one of the current strongest 1.5B SFT LMs, and following an identical training setup.
+Notably, \ours{} requires no benchmark-specific data, whereas DeepMath-103K was explicitly designed for mathematical reasoning.
+In addition, constructing \suite{} is substantially more cost-efficient, as DeepMath-103K required roughly \$138{,}000 USD and 127{,}000 GPU hours to build~\citep{he2025deepmath}.
+
+
+
+
+We call on the community to advance research on adaptive environments, where data collection is inherently scalable and the difficulty is unbounded, with supervision signals continuously adapting right at the model’s capability frontier.
+We believe that environment engineering will become as foundational to LM development as feature, data, and prompt engineering, and that this work is part of a broader effort to scale RL training through adaptive environments.
+
+
+
+
+
+
+\section{Methodology}
+
+We introduce \textbf{\ours{}} (\textbf{R}einforcement \textbf{L}earning with Adaptive \textbf{V}erifiable \textbf{E}nvironments), an approach for scaling up LM RL training using procedurally generated data from verifiable environments, as defined in Section~\ref{sec:def-ve}.
+\ours{} dynamically generates problems from these environments during training and can be paired with any RL algorithm that uses environment-supplied rewards.
+Importantly, \ours{} makes each environment adaptive, adjusting its problem difficulty distribution based on the evolving capabilities of the trained policy model, as detailed in Section~\ref{sec:algorithm}.
+
+
+
+
+
+
+\subsection{Verifiable Environment}
+\label{sec:def-ve}
+We define a \textit{verifiable environment} as a tuple $E = (I, \mathcal{P}, R)$, where $I$ is an \textit{input template}, $\mathcal{P}$ is a \textit{problem generator}, and $R$ is a \textit{verifier (reward function)}.
+The problem generator $\mathcal{P}$ procedurally samples problems that instantiate the input template $I$ to produce inputs.
+The verifier $R$ is algorithmically defined, ensuring verifiable reward computation.
+Both $\mathcal{P}$ and $R$ are implemented as programs.
+Figure~\ref{fig:teaser}(b) illustrates an example of a verifiable environment that asks the LM to sort a given array in ascending order.
+We also define an integer difficulty level $d \in [0, +\infty)$ for each environment to control the expected reasoning complexity for solving the generated problems.
+For example, in the sorting environment, a larger $d$ results in a longer array, as sorting a longer array typically requires stronger long-horizon reasoning.
+
+Formally, a concrete problem is specified by parameters $p$ with environment-specific components, e.g., the length and elements of the array to be sorted in a specific problem.
+The parameters $p$ are randomly generated by the problem generator $\mathcal{P}_d$ conditioned on a specific difficulty level $d$, written as $p \sim \mathcal{P}_d$ as the program $\mathcal{P}_d$ defines an implicit parameter distribution.
+How $d$ influences the parameters $p$ sampled from $\mathcal{P}_d$ is specific to each environment.
+We denote this specific problem by $E_{p} = (I_{p}, R_{p})$, where $I_{p}$ is the instantiated input obtained by filling the template with $p$, and $R_{p}$ is the corresponding verifier that computes a scalar reward $R_{p}(o) \in \mathbb{R}$ for an output $o$ to this specific problem.
+
+The verifier extends the range of rewards adopted in prior works on RLVR~\citep{tulu3,deepseek-r1,kimi1.5}, as each environment independently defines its own verifier.
+For example, in an environment that asks the LM to solve a Sudoku puzzle, the verifier checks that the output satisfies all Sudoku constraints, rather than comparing it against a pre-computed correct solution, of which multiple, and sometimes many, may exist.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/adaptive-difficulty.pdf}
+\vskip -0.1in
+\caption{Illustration of adaptive difficulty enabled by \ours{} when training a policy model $\pi$ on the \texttt{Sorting} environment. %
+Shown are the {\color[HTML]{787c7d} adaptive difficulty level $h_\pi$} and the model $\pi$’s {\color[HTML]{5073AF} accuracy on problems generated from this level} at each step.
+Whenever the accuracy exceeds the threshold $\tau_{\mathrm{acc}}$ (90\%), \ours{} increments $h_\pi$ by 1, shifting the difficulty distribution to harder problems.
+}
+    \label{fig:adaptive-difficulty}
+\vskip -0.2in
+\end{figure}
+
+\begin{table*}[t]
+\caption{Six representative environment sources in \suite{}, with one example environment per source.
+}
+\vskip -0.15in
+\label{tab:example-environments}
+\begin{center}
+\begin{small}
+\begin{sc}
+\begin{tabular}{lp{0.65\linewidth}}
+\toprule
+Environment Source & Description of Example Environment \\
+\midrule
+Programming Competition &
+\verb|Count the permutations p of 1..{N} whose bubble-sort swap| \newline
+\verb|count equals a given lower bound, and that are| \newline
+\verb|lexicographically greater than {given_permutation}.| \\[2pt]
+
+Mathematical Operation &
+\verb|Find an antiderivative F(x) such that F'(x) = {f_prime}.| \\[2pt]
+
+Optimization &
+\verb|Given f(x) = {polynomial}, find x0 that minimizes f(x).| \\[2pt]
+
+Classical Algorithmic Problem &
+\verb|Sort the {N} numbers in ascending order: {array}.| \\[2pt]
+
+Logical Puzzle &
+\verb|Solve the {NM}x{NM} Sudoku so every row, column, and each| \newline
+\verb|{N}x{M} subgrid contains 1..{NM}. Grid: {sudoku_puzzle}.| \\[2pt]
+
+NP-complete Problem &
+\verb|Given a directed graph with {N} vertices and edges {edges},| \newline
+\verb|find a Hamiltonian path visiting every vertex exactly once.| \\
+\bottomrule
+\end{tabular}
+\end{sc}
+\end{small}
+\end{center}
+\vskip -0.2in
+\end{table*}
+
+\subsection{RL with Adaptive Verifiable Environments}
+\label{sec:algorithm}
+When training a policy model $\pi$, \ours{} maintains a difficulty range $[\ell_\pi, h_\pi]$ that governs problem generation within a specific verifiable environment, and dynamically adjusts this range based on the current performance of $\pi$.
+When $\pi$ performs well at the difficulty level $h_\pi$, $h_\pi$ is incremented to shift the difficulty distribution, as shown in Figure~\ref{fig:adaptive-difficulty}.
+
+
+Specifically, we initially set $\ell_\pi = h_\pi = 0$, so training begins with the simplest problems available in the environment.
+When generating a new problem, a difficulty level $d$ is uniformly sampled from $[\ell_\pi, h_\pi]$, and the environment’s problem generator samples parameters $p \sim \mathcal{P}_{d}$ to instantiate a concrete problem.
+We track two quantities: the number of correct rollouts~$a$, and the total number of attempted rollouts~$b$ across all problems sampled from $\mathcal{P}_{h_\pi}$.
+Whenever $b$ exceeds a minimum sample threshold~$\tau_{\mathrm{num}}$, \ours{} compares the observed accuracy $a / b$ against a predefined performance threshold~$\tau_{\mathrm{acc}}$.
+If $a / b \ge \tau_{\mathrm{acc}}$, the model $\pi$ is considered proficient at this difficulty level, and the upper bound is incremented by one, i.e., $h_\pi \leftarrow h_\pi + 1$, thereby introducing more challenging problems.
+After this check, the statistics $(a, b)$ are reset, and the process continues.
+
+\ours{} does not impose a predefined cap on the upper bound $h_\pi$:
+within the available compute budget, $h_\pi$ naturally increases as long as~$\pi$ continues to satisfy the performance criterion at successively higher difficulty levels.
+To prevent unbounded expansion of the difficulty range, which would reduce exposure to harder problems, \ours{} uses a sliding window of difficulty levels by capping $\ell_\pi$ with a hyperparameter $d_{\Delta} > 1$:
+after each update of the upper bound $h_\pi$, we set the lower bound to $\ell_\pi = h_\pi - d_{\Delta} + 1$ whenever the range $h_{\pi} - l_{\pi}+1$ exceeds $d_{\Delta}$. 
+Intuitively, \ours{} exposes $\pi$ to problems that are neither too easy nor too hard, since it has performed well on $\mathcal{P}_{h_\pi-1}$ but not yet on $\mathcal{P}_{h_\pi}$.
+
+\ours{} naturally extends training from a single verifiable environment to multiple environments jointly (Algorithm~\ref{alg:rlve}).
+Specifically, given a collection of $n$ verifiable environments $\{E^{(1)}, E^{(2)}, \dots, E^{(n)}\}$, \ours{} first draws an environment $E^{(i)}$ uniformly from this collection when generating a new training problem;
+\ours{} then follows the identical algorithm described above for the selected environment $E^{(i)}$.
+For each adaptive environment, \ours{} maintains an independent difficulty range $[\ell_\pi^{(i)}, h_\pi^{(i)}]$, along with the statistics $(a^{(i)},b^{(i)})$ for monitoring the model’s performance at its current upper bound difficulty level $h_\pi^{(i)}$.
+In Section~\ref{sec:gym}, we describe how the verifiable environments are constructed.
+
+\subsection{RL Algorithm}
+
+\ours{} has no special restrictions on the RL algorithm; therefore, any algorithm applicable to RLVR can be directly applied to \ours{}.
+We adopt the DAPO algorithm~\citep{yu2025dapo}, which is a variant of the GRPO algorithm~\citep{shao2024grpo}.
+We use the standard practice of DAPO's dynamic sampling:
+at each rollout step, we oversample rollouts using a prompt batch size larger than the training batch size and discard prompts with identical rollout rewards across all outputs;
+this process repeats until the training batch is fully populated.
+Additional details are provided in Appendix~\ref{app:rl-details}.
+
+In this context, we define the \textit{effective prompt ratio} as the percentage of prompts whose rollouts yield non-identical rewards (and are therefore not discarded by DAPO’s dynamic sampling).
+A high effective prompt ratio indicates that a large portion of problems are appropriately challenging for the policy.
+A lower ratio increases the time per training step, as dynamic sampling requires sending more prompts to the inference engine to obtain a single one that contributes to parameter updates;
+a higher ratio improves learning efficiency by reducing wasted rollouts from the inference engine, which typically constitutes the computational bottleneck in LM RL training~\citep{hu2024openrlhf}.
+
+
+\section{\suite{}: A Suite of 400 Environments Created through Environment Engineering}
+\label{sec:gym}
+To implement~\ours{}, we carefully construct a suite of 400 verifiable environments, named~\suite{}.
+We give some representative sources of environments from~\suite{} and corresponding example environments in Table~\ref{tab:example-environments}.
+We next introduce the principles and insights used in our \textbf{environment engineering}, with more details in Appendix~\ref{app:suite}.
+
+
+\begin{figure*}[tb]
+\begin{center}
+\centerline{\includegraphics[width=\linewidth]{figures/static-difficulty/static-difficulty.pdf}}
+\vskip -0.1in
+\caption{
+Comparison of \ours{} (using dynamically adjusted difficulty range) against three types of static difficulty ranges.
+(a) reports the effective prompt ratio, defined as the percentage of prompts retained after dynamic sampling whose rollouts yield non-identical rewards;
+a higher ratio indicates fewer wasted rollouts and thus generally better learning efficiency.
+(b) shows in-distribution (ID) accuracies on the same training environment, and (c) shows out-of-distribution (OOD) accuracies on the 50 held-out verifiable environments.
+\textbf{Adaptive difficulty maintains the highest effective prompt ratio and achieves superior ID and OOD performance,} whereas static difficulty suffers from either early saturation or inefficient learning.
+}
+\label{fig:static-difficulty}
+\end{center}
+\vskip -0.2in
+\end{figure*}
+
+\subsection{Environments as Pedagogical Tools}
+
+The first principle we used in environment engineering is to build pedagogical tools for developing reasoning capabilities.
+For example, if our goal were purely to obtain a sorted array, we would execute a sorting program, which is reliable and far more efficient than relying on the model’s error-prone reasoning.
+Instead, we train the model to learn the reasoning process that underlies array sorting, rather than aiming to replace the sorting program with the model.
+
+As a concrete example, many environments in~\suite{} are adapted from programming competition problems.
+In the original problem setting, competitors are asked to write programs that correctly solve the provided test cases.
+Thus, if the goal were merely to obtain the correct output, one could simply execute such a program on the test case.
+Instead, the model is required to manually produce the correct outputs without executing code.
+Through this process, the model could learn reasoning capabilities that can generalize to broader tasks.
+For example, even manually simulating a simple recursive function for brute force could involve problem decomposition, self-verification, and backtracking~\citep{gandhi2025cognitive-rl}, not to mention that successful manual solving often requires more sophisticated reasoning to complete a problem within a reasonable time.
+
+
+
+
+
+
+
+\subsection{Verification via Environment Advantages}
+The second principle we used in environment engineering is to verify model outputs by exploiting the advantages of the environment over the LM.
+In environments constructed under the first principle, writing problem-solving programs is usually easier and more reliable than solving problems manually.
+As the environment can execute programs while the LM is not allowed to do so, we can exploit this advantage by using such programs (e.g., those originally designed to solve programming problems) for output verification.
+
+ 
+
+Another advantage is that the environment is responsible only for verifying outputs, whereas the LM is tasked with solving the problems.
+We exploit this advantage when building some environments that exhibit inherent asymmetry between solving and verification in computational complexity, allowing us to eliminate the need for implementing time-consuming solvers altogether.
+For example, in a Sudoku environment, generation can be performed by masking cells in a randomly sampled complete solution to form a valid puzzle;
+verification is straightforward using Sudoku rules, whereas solving the puzzle itself requires intractable time complexity, which the environment does not need to implement.
+NP-complete problems such as SAT~\citep{cook1971sat} or Hamiltonian path detection~\citep{garey1979npc,karp1972reducibility} typically exhibit this asymmetry.
+Another example is an environment where the model computes the integral of a function: the generator creates an elementary function $f$ and asks the model to compute the definite integral of $f'$;
+the verifier then simply checks whether the output corresponds to $f$, without computing the integral itself.
+Exploiting this advantage provides supervision signals that are otherwise infeasible to obtain through imitation learning, offering the long-term potential to train LMs on highly complex tasks that humans cannot easily solve themselves.
+
+
+
+
+\subsection{Designing Configurable Difficulty}
+
+We design how incrementing the difficulty level $d$ leads to harder sampled problems for each environment independently.
+We achieve this by ensuring that solving any lower-difficulty problem is reducible to, or a subproblem of, solving a higher-difficulty one from the same environment.
+
+For example, in sorting, increasing the array length naturally increases difficulty:
+if a model can sort arrays of length $(N+1)$, it must also be able to sort any array of length $N$, since inserting the smallest element at the beginning of a length-$N$ array produces a length-$(N+1)$ array whose solution implies the former.
+Similarly, integrating all functions whose expression trees have $(N+1)$ nodes presupposes the ability to handle all functions with $N$ nodes (e.g., solving $\int (f + 1)$ implies solving $\int f$).
+Thus, in these two environments, a larger difficulty level $d$ corresponds to a longer array length and a larger expression tree size, respectively.
+
+
+
+
+
+
+
+
+
+
+\begin{figure*}[tb]
+\begin{center}
+\centerline{\includegraphics[width=\linewidth]{figures/static-difficulty/static-256env.pdf}}
+\vskip -0.1in
+\caption{
+(a) shows the frequency distribution of the upper-bound difficulty levels $h_\pi^{(i)}$ reached by adaptive environments at step 400.
+(b) compares training jointly on 256 environments with {\color[HTML]{5073AF} adaptive} versus {\color[HTML]{d79a20} static} difficulty distributions.
+\textbf{Despite covering all adaptive environments’ distributions, training on the static environments consistently underperforms.}
+}
+\label{fig:static-256env}
+\end{center}
+\vskip -0.2in
+\end{figure*}
+
+
+
+
+\section{Analyzing Components of \ours{}} %
+\label{sec:analysis}
+In Sections~\ref{sec:exp-adaptivity} and~\ref{sec:env-scaling}, we study (1) the comparison between adaptive and static environments and (2) the effect of scaling the collection of training environments, respectively.
+
+To facilitate our study, we build our own test set as a controlled evaluation setup.
+Specifically, we randomly select 50 environments as held-out test environments from~\suite{} and sample 50 distinct problems per environment, resulting in a fixed test set $\mathcal{D}_{\text{ood}}$ of 2{,}500 problems in total.
+From the remaining 350 environments, we randomly select 256 environments to form a collection $\mathcal{C}_{256}$.
+In all following experiments, every training problem used by \ours{} is generated from $\mathcal{C}_{256}$ or its subsets, depending on the specific experiment.
+This setup ensures that the constructed test set $\mathcal{D}_{\text{ood}}$ serves as an explicit out-of-distribution (OOD) evaluation that focuses on evaluating generalizable reasoning capabilities.
+Further details are provided in Appendix~\ref{app:eval-details}.
+
+We experiment with four models under three distinct categories of LM training stages:
+(1) base model: \texttt{Qwen2.5-7B-Base}~\citep{qwen2.5};
+(2) SFT model: \texttt{R1-Distill-Qwen-1.5B}~\citep{deepseek-r1};
+(3) RL models: \texttt{DeepScaleR-1.5B}~\citep{luo2025deepscaler} and \texttt{ProRL-1.5B-v2}~\citep{hu2025prorlv2}.
+These categories correspond to three scenarios studied in LM RL research:
+(1) training directly from a base model (i.e., so-called ``zero RL'')~\citep{deepseek-r1,pan2025tinyzero,zeng2025simplerl-zoo};
+(2) training from an SFT model~\citep{kimi-k2,qwen3,glm-4.5};
+and (3) continued RL training with new data~\citep{liu2025prorl}.
+
+
+\begin{figure*}[tb]
+\begin{center}
+\centerline{\includegraphics[width=\linewidth]{figures/environment-scaling/environment-scaling.pdf}}
+\vskip -0.1in
+\caption{
+Comparison of \ours{} with joint training on collections of four different sizes of verifiable environments, all under identical training setups.
+Each larger collection strictly contains all smaller ones.
+Shown are the accuracies on 50 held-out verifiable environments throughout training.
+\textbf{Expanding the collection of training environments consistently leads to better performance on held-out environments (unseen during training) across all model types.}
+}
+\label{fig:environment-scaling}
+\end{center}
+\vskip -0.2in
+\end{figure*}
+
+
+
+
+\subsection{Adaptivity for Unstalled and Efficient Learning}
+\label{sec:exp-adaptivity}
+To examine the effect of adaptive difficulty enabled by \ours{}, we compare training on the same verifiable environment with adaptive difficulty against training with static difficulty, where the difficulty distribution remains constant throughout training.
+We study three types of static difficulty distributions, where problem difficulty is uniformly sampled from $d \sim [0, 1]$, $d \sim [0, 20]$, and $d \sim [0, 100]$, respectively.
+
+
+As a case study, we focus on training \texttt{Qwen2.5-7B-Base} (1) on \texttt{Sorting}, where the model is asked to sort a given array, and (2) on \texttt{Multiplication}, where the model is asked to compute the product of two integers, and higher difficulty corresponds to operands with more digits.
+For evaluation, we measure both in-distribution (ID) performance on a fixed set of held-out 4{,}000 problems generated from the same training environment with difficulty evenly sampled from $[0, 20)$, and OOD performance on $\mathcal{D}_{\text{ood}}$.
+
+From Figure~\ref{fig:static-difficulty}, we observe that when the static environment has a relatively low upper-bound difficulty, the effective prompt ratio 
+eventually drops to zero, indicating that the model masters the hardest problems within the environment's static difficulty distribution after a certain amount of compute and subsequently becomes saturated.
+As a result, both ID and OOD accuracies plateau, suggesting that learning stalls once the environment ceases to provide learning signals.
+Prior works that train LMs on data procedurally generated by static verifiable environments have similarly been observed to suffer from early saturation~\citep{li2025internbootcamp}.
+
+When the static environment instead has a high upper-bound difficulty such that the model cannot master all problems within a limited compute budget, the effective prompt ratio remains nonzero.
+However, the ratio drops substantially below that of adaptive difficulty, indicating only a small fraction of problems from the static environment are appropriately challenging.
+Empirically, this discrepancy significantly impairs both learning efficiency on ID performance and generalization on OOD performance.
+
+It is worth noting that training with the static difficulty distribution $d \sim [0, 20]$ confers an oracle advantage, as its difficulty distribution coincides with that of the ID evaluation.
+In realistic scenarios, finding such an oracle is infeasible.
+Even without such an oracle advantage, \ours{} achieves comparable or even superior ID performance.
+
+
+In conclusion, adaptive difficulty both (1) prevents learning from stalling due to overly easy problems and (2) avoids learning inefficiency caused by a large proportion of problems that are inappropriately challenging for the policy.
+
+
+One might argue that an optimal static difficulty distribution could be manually tuned for a given compute budget.
+However, this manual tuning becomes infeasible when training jointly across many verifiable environments.
+To illustrate this, we train \texttt{Qwen2.5-7B-Base}, \texttt{R1-Distill-Qwen-1.5B}, \texttt{DeepScaleR-1.5B}, and \texttt{ProRL-1.5B-v2} using \ours{} jointly across $\mathcal{C}_{256}$.
+Figure~\ref{fig:static-256env}(a) shows the distribution of upper-bound difficulty levels reached by adaptive environments at step 400, revealing a broad range from 0 to 12.
+Using this distribution as oracle information, which would not even be available beforehand without adaptive difficulty, we train the same models on all environments from $\mathcal{C}_{256}$ using a static difficulty range of $[0, 20]$.
+As shown in Figure~\ref{fig:static-256env}(b), although this static range covers every adaptive environment’s difficulty distribution, training with such static environments is consistently outperformed by \ours{}.
+These results suggest that the difficulty of each environment must be individually tuned to match the policy, as each environment defines its own notion of problem difficulty level;
+such a tuning arises naturally with adaptive environments enabled by~\ours{}, but is impractical to achieve with static environments.
+
+
+
+
+
+
+
+
+\subsection{Environment Scaling as a Key Driver of Generalizable Reasoning Capabilities}
+\label{sec:env-scaling}
+We investigate the effect of scaling up the collection of verifiable environments used during training.
+Within $\mathcal{C}_{256}$, we construct three fixed environment collections: $\mathcal{C}_1$, $\mathcal{C}_4$, and $\mathcal{C}_{16}$, containing 1, 4, and 16 distinct verifiable environments, respectively;
+each larger collection contains all smaller ones, i.e., $\mathcal{C}_1 \subset \mathcal{C}_4 \subset \mathcal{C}_{16} \subset \mathcal{C}_{256}$.
+We train the same four models as in Section~\ref{sec:exp-adaptivity} separately on each environment collection under an identical setup, and evaluate checkpoints on $\mathcal{D}_{\text{ood}}$, which is constructed from the 50 held-out environments.
+Additional details are provided in Appendix~\ref{app:analysis}.
+
+As shown in Figure~\ref{fig:environment-scaling}, expanding the collection of training environments consistently leads to better performance on held-out environments;
+this trend holds across all model types.
+From another perspective, merely increasing the volume of RL training data remains insufficient for improving generalizable reasoning capabilities, given that a single environment can already generate an unbounded amount of data.
+Instead, scaling along the environment dimension emerges as a critical direction for future LM RL training.
+This insight echoes previous findings from classical RL research~\citep{cobbe2020proceduralgeneration}, and also resonates with observations from other LM training stages, such as SFT~\citep{wang2022supernaturalinstructions} and embedding learning~\citep{su2023instructor}, where expanding the collection of environments or tasks matters much more than increasing the sheer volume of data.
+
+
+
+
+
+
+
+
+\section{Scaling Up RL Training with \ours{}}
+\label{sec:main-exp}
+After analyzing components of \ours{},
+we evaluate~\ours{} with joint training on all 400 verifiable environments from~\suite{} in two representative scenarios for scaling up RL training of LMs:
+(1) a data saturation scenario, where the model has already saturated on a strong RLVR dataset (Section~\ref{sec:prorl-exp}); and
+(2) a compute-constrained scenario, where training starts from a model without prior reasoning RL and the choice of RL data is crucial (Section~\ref{sec:openthinker-exp}).
+
+In experiments for these two scenarios, we evaluate models on six representative reasoning benchmarks covering mathematics (AIME 2024/2025~\citep{aime}, OMEGA-500~\citep{sun2025omega}, and OlympiadBench~\citep{he2024olympiadbench}), code generation (LiveCodeBench~\citep{jain2025lcb}), and logical reasoning (BBEH~\citep{kazemi2025bbeh}). 
+Further evaluation details are provided in Appendix~\ref{app:eval-details}.
+
+\subsection{Scaling beyond Data Saturation}
+\label{sec:prorl-exp}
+
+\begin{figure}[t]
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{figures/ProRL-1.5B-v2/ProRL-1.5B-v2_average.pdf}}
+\vskip -0.1in
+\caption{
+Comparison of RL training using {\color[HTML]{5073AF} \ours{} (jointly across all 400 verifiable environments in~\suite{})} versus {\color[HTML]{d79a20} continuing original RLVR training}.
+They both start from \texttt{ProRL-1.5B-v2}~\citep{hu2025prorlv2}, which was originally trained to saturation with RLVR on the ProRL dataset~\citep{liu2025prorl}.
+The checkpoint for continued original training, provided by~\citet{hu2025brorl}, was obtained by further training on the same ProRL dataset.
+Shown is the average performance across six reasoning benchmarks throughout training.
+\textbf{\ours{} effectively scales RL training when the model has already saturated on a strong RLVR dataset.}
+}
+\label{fig:ProRL-1.5B-v2_average}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+
+
+We first evaluate to what extent \ours{} enables further improvement beyond a model that represents one of the best open-sourced efforts to train an LM with RLVR at the time of our study.
+Specifically, we start from the checkpoint \texttt{ProRL-1.5B-v2}~\citep{hu2025prorlv2}.
+This starting checkpoint was originally trained from \texttt{R1-Distill-Qwen-1.5B}~\citep{deepseek-r1} using over 20{,}000 H100 GPU hours of RLVR, reaching performance saturation~\citep{hu2025brorl} on its large and diverse training dataset of approximately 136{,}000 problems spanning mathematics, coding, logical reasoning, STEM, and instruction-following domains~\citep{liu2025prorl};
+we refer to this dataset as the ProRL dataset for simplicity.
+
+As a comparison, we also evaluate the checkpoint obtained by continuing the original RLVR training on the ProRL dataset, also initialized from \texttt{ProRL-1.5B-v2}.
+As shown in Figures~\ref{fig:ProRL-1.5B-v2_average} and~\ref{fig:ProRL-1.5B-v2_appendix}, within approximately 1{,}100 H100 GPU hours, \ours{} improves the average performance across the six reasoning benchmarks by an absolute 3.37\%;
+in contrast, continuing the original RL training on the ProRL dataset yields only a marginal absolute improvement of 0.49\% (7$\times$ smaller), even after using more than three times the compute (3{,}600 H100 GPU hours).
+Therefore, \ours{} effectively scales up RL training beyond the data-saturation point of a model from one of the strongest open-sourced RLVR efforts to date.
+Importantly, the verifiable environments in~\suite{} are designed as pedagogical tools for developing generalizable reasoning capabilities rather than to resemble real LM tasks, and the resulting performance demonstrates effective transfer to real-world reasoning benchmarks.
+
+\subsection{Compute-Efficient Scaling}
+\label{sec:openthinker-exp}
+We next evaluate to what extent \ours{} improves model performance in a compute-constrained scenario, where the available compute budget is fixed and the choice of RL data plays a crucial role.
+Specifically, we start from \texttt{OpenThinker3-1.5B}~\citep{guha2025openthoughts}, which is currently the strongest open-sourced SFT model at the 1.5B scale and has not undergone any reasoning RL training.
+For comparison, we also train the LM on DeepMath-103K~\citep{he2025deepmath} under an identical training setup.
+DeepMath-103K is an RLVR dataset consisting of approximately 103K high-quality mathematical reasoning problems that are generally more challenging than those in comparable reasoning RLVR datasets, e.g., \citet{luo2025deepscaler,yu2025dapo}.
+
+\begin{figure}[t]
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{figures/OpenThinker3-1.5B/OpenThinker3-1.5B_average.pdf}}
+\vskip -0.1in
+\caption{
+Comparison of RL training using {\color[HTML]{5073AF} \ours{} jointly on all 400 verifiable environments in~\suite{}} against {\color[HTML]{d79a20} RLVR on the strong dataset DeepMath-103K}~\citep{he2025deepmath}, both starting from the same strong SFT model \texttt{OpenThinker3-1.5B}~\citep{guha2025openthoughts}.
+Shown is the average performance across six reasoning benchmarks throughout training.
+\textbf{Training with \ours{} consistently outperforms training on this existing high-quality RLVR dataset under the identical training setup.}
+}
+\label{fig:OpenThinker3-1.5B_average}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+As shown in Figures~\ref{fig:OpenThinker3-1.5B_average} and~\ref{fig:OpenThinker3-1.5B_appendix}, training with \ours{} consistently outperforms training on this existing high-quality RLVR dataset for the same number of steps.
+The model trained with \ours{} consistently achieves higher performance on non-mathematical benchmarks (LiveCodeBench and BBEH) and most mathematical benchmarks (OMEGA-500 and OlympiadBench);
+\ours{} also achieves comparable results on AIME 2024/2025, with peak performance exceeding DeepMath-103K by roughly one point.
+Thus, despite not targeting any specific benchmark domains, \ours{} can significantly foster generalizable reasoning capabilities.
+Given that constructing DeepMath-103K required about \$138{,}000 USD and 127{,}000 GPU hours~\citep{he2025deepmath}, we offer a far more cost-efficient way to achieve stronger performance.
+Practically, these experiments also simulate the standard LM development pipeline, where LMs are first trained via SFT and subsequently via RL~\citep{deepseek-r1,kimi-k2,qwen3,glm-4.5}.
+
+
+
+
+
+\section{Related Work}
+\paragraph{RL training of LMs on procedurally generated data.}
+Prior works have trained game agents~\citep{cobbe2020proceduralgeneration} and, more recently, LMs~\citep{hu2025beyondaha,chen2025enigmata,liu2025synlogic,stojanovski2025reasoning-gym,li2025internbootcamp} via RL on procedurally generated data.
+However, they employ verifiable environments with static problem difficulty distributions.
+As shown in our experiments, static environments either suffer from early saturation (as in \citet{li2025internbootcamp}) or inefficient learning.
+Among these works,~\citet{li2025internbootcamp} also observed that adding more environments improves performance, but their evaluations do not guarantee that test problems come from environments unseen during training;
+we additionally show that such improvements generalize to entirely unseen environments.
+\citet{liu2025saturn} also trains LMs to solve SAT problems~\citep{cook1971sat} with adaptive difficulty evolving with model performance.
+However, one single environment is insufficient for developing generalizable reasoning capabilities, as shown by our experiments.
+We therefore construct~\suite{} to scale up the collection of training environments.
+
+\paragraph{RL training of LMs with adaptive difficulty.}
+Curriculum learning has long been applied to improve RL learning efficiency by adjusting the data difficulty in increasing order throughout training~\citep{Baker2019EmergentTU,Wang2019PairedOT,Portelas2020AutomaticCL,Jiang2020PrioritizedLR,gao2025prompt-curriculum}, and has recently been extended to LMs~\citep{kimi1.5,shi2025adarft,chen2025self-evolving-curriculum}.
+These approaches operate on a finite dataset by reordering existing problems post hoc, whereas \ours{} predefines difficulty levels over an infinite problem set from each verifiable environment and progresses successively through them.
+\citet{Cui2025ProcessRT,yu2025dapo} dynamically filter out prompts that do not contribute to parameter updates.
+These approaches operate based on the results obtained after the rollout, complementing \ours{}, which adapts the problems before being sent to the inference engine.
+LM-driven adaptive difficulty has also been recently explored, where the trained and increasingly stronger LM makes the environment progressively more challenging in a self-play manner~\citep{Zhao2025AbsoluteZR,liu2025spiral,liu2025spice}.
+In contrast, \ours{} grounds environment adaptation in controllable manual construction, avoiding potentially incorrect LM-generated problems or verifiers.
+
+
+
+
+
+
+
+\section{Discussion on Future Work}
+\paragraph{Model-based automatic environment engineering.}
+In our preliminary explorations, we tried employing frontier LMs to perform automatic environment engineering.
+However, we found that maintaining high environment quality in an LM-based fully automated pipeline without human intervention proved nontrivial, particularly in ensuring (1) the unambiguity of the input template, (2) the reliability and efficiency of the problem generator in producing valid and diverse problems, and (3) the robustness of verifiers against diverse model outputs.
+For example, LMs often struggle to design environments that exploit the asymmetry between solving and verification in computational complexity, as such designs typically requires expert knowledge and deliberate engineering.
+We therefore consider the substantial human effort our authors devoted to manually engineering all 400 environments to be worthwhile.
+\suite{} can serve as a prototype for future research on LM-based automatic environment engineering, analogous to how prior studies employed LMs for automatic data generation starting from a seed dataset~\citep{wang2023self-instruct}.
+
+\paragraph{Scaling up RL with adaptive non-verifiable environments.}
+While this work focuses on verifiable environments, an equally important direction is to explore adaptive non-verifiable environments, such as creative writing or deep research~\citep{openai2025deepresearch}, where rewards cannot be algorithmically defined.
+Non-verifiable environments tend to lack clear structure, which complicates difficulty control and constitutes an open direction for future research.
+Future work should also develop systematic principles for engineering non-verifiable environments.
+We believe that environment engineering will become as foundational to LM development as feature, data, and prompt engineering.
+
+
+
+
+
+
+\section*{Acknowledgements}
+
+We thank Xiaoyu Chen, Zirui Cheng, Nouha Dziri, Scott Geng, Victoria Graf, Ronan Le Bras, Rulin Shao, Yijia Shao, Yizhong Wang, Teng Xiao, and Rui Xin for the helpful discussions.
+We thank Jiajun Li, Yuzhen Zhou, and Zilin Zhu for their help with implementing our experiments using the \texttt{slime} framework.
+We also thank Shizhe Diao and Jian Hu for providing the checkpoint obtained by continuing the original RLVR training of \texttt{ProRL-1.5B-v2} on the ProRL dataset.
+ZZ and YW are supported by Amazon AI Ph.D. Fellowships.
+SSL is supported by the Meta AI Mentorship program.
+JH is supported by an NSF Graduate Research Fellowship and the Meta AI Mentorship program.
+This work is also supported by NSF Grant Nos. IIS2142739, IIS2044660, and CHE2505932; by the Defense Advanced Research Projects Agency's (DARPA) SciFy program (Agreement No. HR00112520300); by the Singapore National Research Foundation and the National AI Group in the Singapore Ministry of Digital Development and Information under the AI Visiting Professorship Programme (award number AIVP-2024-001); by the AI2050 program at Schmidt Sciences; by a Google ML and Systems Junior Faculty Award; by gift funding from Ai2; by an Amazon AICE award; by the UW–Amazon Science Gift Hub; and by the UW–Tsukuba Amazon NVIDIA Cross Pacific AI Initiative (XPAI).
+
+
+
+
+
+
+
+\bibliography{main}
+\bibliographystyle{icml2025}
+
+
+\newpage
+\appendix
+\onecolumn
+
+\begin{figure}[htbp]
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{figures/ProRL-1.5B-v2/ProRL-1.5B-v2_appendix.pdf}}
+\vskip -0.1in
+\caption{Results of Figure~\ref{fig:ProRL-1.5B-v2_average} shown separately for each of the six reasoning benchmarks, as detailed in Section~\ref{sec:main-exp}.
+For clarity, each curve has a corresponding horizontal line indicating its highest point.}
+\label{fig:ProRL-1.5B-v2_appendix}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{figures/OpenThinker3-1.5B/OpenThinker3-1.5B_appendix.pdf}}
+\vskip -0.1in
+\caption{Results of Figure~\ref{fig:OpenThinker3-1.5B_average} shown separately for each of the six reasoning benchmarks, as detailed in Section~\ref{sec:main-exp}. For clarity, each curve has a corresponding dotted horizontal line indicating its highest point.}
+\label{fig:OpenThinker3-1.5B_appendix}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+\section{Details of \ours{}}
+\label{app:rlve}
+\begin{algorithm}[htbp]
+\caption{Pseudocode for \ours{} (Reinforcement Learning with Adaptive Verifiable Environments). We focus on problem sampling, performance monitoring, and difficulty updates; any RL algorithm can be used to update the policy.}
+\label{alg:rlve}
+\begin{algorithmic}[1]
+\REQUIRE policy model $\pi$, batch size $B$
+\REQUIRE collection of $n$ verifiable environments $\{E^{(1)}, \ldots, E^{(n)}\}$ with $E^{(i)}=(I^{(i)}, \mathcal{P}^{(i)}, R^{(i)})$
+\REQUIRE (hyperparameters) accuracy threshold $\tau_{\mathrm{acc}}$, minimum sample threshold $\tau_{\mathrm{num}}$, sliding window size $d_{\Delta}>1$
+\STATE \textbf{Initialize:} For each $i \in \{1,\ldots,n\}$, set $\ell_\pi^{(i)} \gets 0$, $h_\pi^{(i)} \gets 0$, $a^{(i)} \gets 0$, $b^{(i)} \gets 0$
+\STATE
+\WHILE{training}
+    \STATE $\mathcal{B} \gets [\ ]$ \COMMENT{Initialize empty batch (list)}
+    \FOR{$j = 1$ to $B$}
+        \STATE Sample environment index $i \sim \text{UniformInt}(\{1,\ldots,n\})$
+        \STATE Sample difficulty $d \sim \text{UniformInt}\big(\ell_\pi^{(i)},\, h_\pi^{(i)}\big)$
+        \STATE Generate problem: $p \sim \mathcal{P}^{(i)}_{d}$
+        \STATE Instantiate: $I_p \gets I^{(i)}_p$,$R_p \gets R^{(i)}_p$
+        \STATE Generate rollouts: $\mathcal{O} \gets \text{GenerateRollouts}(\pi, I_p)$
+        \STATE Compute rewards: $\{r_o \gets R_p(o) \mid o \in \mathcal{O}\}$
+        \STATE Append to batch: $\mathcal{B}.\text{append}\big((I_p, \mathcal{O}, \{r_o\})\big)$
+        \IF{$d = h_\pi^{(i)}$}
+            \FOR{each $o \in \mathcal{O}$}
+                \STATE $b^{(i)} \gets b^{(i)} + 1$
+                \IF{$\text{IsCorrect}(r_o)$}
+                    \STATE $a^{(i)} \gets a^{(i)} + 1$
+                \ENDIF
+            \ENDFOR
+        \ENDIF
+    \ENDFOR
+    \STATE Update policy: $\pi \gets \text{UpdatePolicy}(\pi, \mathcal{B})$
+    \FOR{each environment $i = 1, \ldots, n$}
+        \STATE \COMMENT{Check and update difficulty}
+        \IF{$b^{(i)} \geq \tau_{\mathrm{num}}$}
+            \IF{$a^{(i)} / b^{(i)} \geq \tau_{\mathrm{acc}}$}
+                \STATE $h_\pi^{(i)} \gets h_\pi^{(i)} + 1$
+                \IF{$h_\pi^{(i)} - \ell_\pi^{(i)} + 1 > d_{\Delta}$}
+                    \STATE $\ell_\pi^{(i)} \gets h_\pi^{(i)} - d_{\Delta} + 1$
+                \ENDIF
+            \ENDIF
+            \STATE $a^{(i)} \gets 0$, $b^{(i)} \gets 0$
+        \ENDIF
+    \ENDFOR
+\ENDWHILE
+\STATE
+\textbf{return} trained policy $\pi$
+\end{algorithmic}
+\end{algorithm}
+
+The pseudocode for \ours{} is provided in Algorithm~\ref{alg:rlve}.
+By default, we set the accuracy threshold $\tau_{\mathrm{acc}}$ to 0.9, the minimum sample threshold $\tau_{\mathrm{num}}$ to 8 times the number of rollouts per problem, and the sliding window size $d_{\Delta}$ to 4.
+
+
+
+
+
+\section{Details of \suite{}}
+\label{app:suite}
+\subsection{Representative Sources of Verifiable Environments with Example Environments in \suite{}}
+\label{app:environment-example}
+
+In this subsection, we present six representative sources of verifiable environments from \suite{}, providing one example for each source.
+Note that the reward range is always $[-1.0,+1.0]$ for each of the 400 verifiable environments.
+
+\paragraph{Verifiable environments inspired by programming competition problems.}
+A considerable portion of our verifiable environments is inspired by programming competition problems.
+We introduce the verifiable environment \texttt{BubbleSwapLowerBound\_PermutationCounting} as an example, which is adapted from a programming problem in the Chinese National Olympiad in Informatics 2018 (CNOI 2018)\footnote{\url{https://noi.cn}}.
+The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+Consider bubble sort on a permutation p[1..{N}] using the standard double loop:
+```
+for i = 1 to N:
+  for j = 1 to N-1:
+    if p[j] > p[j+1]: swap p[j], p[j+1]
+```
+It is known that the number of swaps performed by this algorithm is at least
+LB(p) = (abs(1 - p[1]) + abs(2 - p[2]) + ... + abs(N - p[N])) / 2.
+Tell me the number of permutations p of 1, 2, ..., {N} that satisfy BOTH:
+1) The bubble sort swap count equals the lower bound: swaps(p) = LB(p).
+2) p is lexicographically strictly greater than the given permutation P: {P}.
+\end{lstlisting}
+In this environment, the problem specification parameters $p$ include the length $\textit{\{N\}}$ and the given permutation $\textit{\{P\}}$ used for the lexicographic constraint.
+The problem generator $\mathcal{P}_d$ sets the permutation length as $N = d + 3$, where $d\geq 0$ is the difficulty level, and uniformly samples a permutation $P$ of $\{1, 2, \dots, N\}$.
+The verifier $R_{p}$ computes the correct answer using the algorithm that solves the original programming problem.
+Given a model output $o$, the verifier first attempts to extract a numeric answer from $o$.
+If the output format is invalid or the parsed answer is not a non-negative integer, the verifier assigns a reward of $-1.0$;
+otherwise, letting $x$ denote the correct answer and $y$ the model’s predicted answer, the verifier computes the reward as $R_{p}(o) = (\min(x, y)/\max(x, y))^{10},$
+which smoothly penalizes deviations from the correct answer.
+
+\paragraph{Verifiable environments of mathematical operations.}
+Some verifiable environments in \suite{} focus on performing fundamental mathematical operations.
+As an illustrative example, we introduce the verifiable environment \texttt{Integral}, which asks the model to compute the indefinite integral of an elementary function.
+The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+You are given the derivative of a function: F'(x) = {f_prime}
+
+Your task is to find **an antiderivative** F(x) such that its derivative is equal to the given expression.
+
+**Output Format:** Your answer should be the expression for F(x), written in **SymPy syntax**. Do not omit any symbols (e.g., always use `*` for multiplication).
+Example: `sin(2*x)/2` (do **NOT** include quotes or backticks).
+\end{lstlisting}
+In this environment, the problem generator $\mathcal{P}_{d}$ (conditioned on the difficulty level $d$) randomly generates an elementary function $F(x)$ by recursively constructing an expression tree whose node count equals $d+2$.
+It then uses the \texttt{SymPy}\footnote{\url{https://www.sympy.org/en/index.html}} Python package to compute its derivative $F'(x)$, which is substituted into the input template to obtain the instantiated input $I_{p}$.
+The verifier $R_{p}$ parses the model’s output $o$ into an expression and checks whether the derivative of the predicted function equals the provided $F'(x)$.
+If the output cannot be parsed into a valid expression, the verifier assigns a reward of $-1.0$;
+if the parsed expression correctly satisfies the condition, the reward is $+1.0$; otherwise, it is $0.0$.
+Note that this environment exploits the solving–verification asymmetry: we never need to compute the integral ourselves.
+If we were to instead randomly sample an elementary function $f(x)$ and attempt to compute its integral $\int f(x)\,dx$ directly, the resulting antiderivative might not admit a closed-form expression in terms of elementary functions;
+consequently, even symbolic solvers such as \texttt{SymPy} may be unable to produce an exact expression, whereas our verification is straightforward.
+
+\paragraph{Verifiable environments of optimization problems.}
+Some verifiable environments in \suite{} are designed as optimization problems. 
+We introduce the verifiable environment \texttt{PolynomialMinimum}.
+The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+Given f(x) = {polynomial}, find the value of x0 that minimizes f(x).
+Your final answer should be a single real number in decimal form, representing the value of x0.
+\end{lstlisting}
+
+The problem generator $\mathcal{P}_{d}$ (conditioned on the difficulty level $d$) randomly generates a polynomial of degree $2(d+1)$, ensuring that the coefficient of the highest-order term $x^{2(d+1)}$ is positive so that $f(x)$ admits a global minimum. 
+The verifier $R_{p}$ first attempts to extract a numeric value from the model’s output $o$; if parsing fails, it assigns a reward of $-1.0$.
+Otherwise, let $x_0$ denote the model’s predicted minimizer and $x_0'$ the true minimizer computed analytically or via a numerical solver.
+The verifier then evaluates both $f(x_0)$ and $f(x_0')$ and computes the reward as $R_{p}(o) = ((f(x_{\mathrm{trivial}}) - f(x_0))/(f(x_{\mathrm{trivial}}) - f(x_0')))^5$,
+where $x_{\mathrm{trivial}}$ denotes a simple reference point (e.g., $x=0$).
+This formulation smoothly rewards outputs that approach the true minimum, encouraging the model to identify increasingly accurate minima.
+
+\paragraph{Verifiable environments of classical algorithmic problems.}
+Some verifiable environments in \suite{} are designed based on classical algorithmic problems. 
+As an illustrative example, we introduce the verifiable environment \texttt{Sorting}, which asks the model to sort a given array of numbers in ascending order.
+The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+You are given the following list of numbers:
+{array}
+Please sort them in **ascending order**.
+
+**Output Format:**
+Your final answer should be a single line containing the sorted numbers, separated by spaces.
+Example: 1 2 3 4 5
+\end{lstlisting}
+The problem generator $\mathcal{P}_{d}$ (conditioned on the difficulty level $d$) samples parameters $p$ such that the array length $N$ is roughly proportional to $3\times1.1^d$, and randomly generates the array elements.
+The verifier $R_{p}$ first checks the output format; if the model’s output cannot be parsed into a valid list of numbers, it assigns a reward of $-1.0$.
+If the output array has an incorrect length, the reward is $-0.5$.
+Otherwise, let $x$ denote the number of positions where the predicted array elements match the array correctly sorted by a program.
+The verifier then computes the reward as $R_{p}(o) = (x / N)^{10}$.
+
+\paragraph{Verifiable environments of logical puzzles.}
+Some verifiable environments in \suite{} are designed as logical puzzles.
+As an illustrative example, we introduce the verifiable environment \texttt{Sudoku}. The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+Solve the following Sudoku puzzle of size ({N} x {M}) x ({M} x {N}) = {NM} x {NM}.
+Each number is in the range from 1 to {NM}, and empty cells are represented by 0.
+Here is the input grid:
+{sudoku}
+
+Rules of Sudoku:
+1. Each **row** must contain all digits from 1 to {NM}, without repetition.
+2. Each **column** must contain all digits from 1 to {NM}, without repetition.
+3. The grid is divided into {M} x {N} **subgrids**, each of size {N} x {M}.
+   Each subgrid must also contain all digits from 1 to {NM}, without repetition.
+
+**Output Format:**
+Your final answer should contain {NM} lines, each with {NM} numbers separated by spaces.
+The numbers should represent the completed Sudoku grid in **row-major order**, matching the format of the given input (i.e., the first number on the first line corresponds to the top-left cell of the grid).
+\end{lstlisting}
+The problem generator $\mathcal{P}_{d}$ (conditioned on the difficulty level $d$) samples parameters $p$ such that the larger of $N$ and $M$ does not exceed $d + 2$.
+It exploits the solving–verification asymmetry: instead of solving Sudoku puzzles from scratch, the generator first generates a complete valid Sudoku solution by applying a sequence of random equivalence transformations (e.g., row and column swaps within bands or stacks, symbol relabeling) to a canonical solved grid.
+It then masks a subset of cells randomly to form the partially filled puzzle.
+The verifier $R_{p}$ first checks the output format; if the model’s output cannot be parsed into a valid grid of the expected dimensions, a reward of $-1.0$ is assigned.
+Otherwise, if the filled grid satisfies all Sudoku rules, the verifier returns a reward of $+1.0$; if any rule is violated, the reward is $0.0$.
+The implementations of some other puzzle environments reference existing works~\citep{xie2024memorization-reasoning,chen2025enigmata}.
+
+\paragraph{Verifiable environments of NP-complete problems.}
+Some verifiable environments in \suite{} are designed based on NP-complete problems.
+Here, we present an example, \texttt{HamiltonianPathExistence}, that asks the model to find a Hamiltonian path in a given directed graph, which guarantees the existence of a Hamiltonian path.
+The input template $I$ is:
+\begin{lstlisting}[language={},caption={},label={}]
+You are given a **directed graph** with {N} vertices labeled from `0` to `{N_minus_1}`.
+The graph contains the following directed edges.
+Each edge is represented as a tuple `(s, t)`, meaning there is a directed edge **from vertex `s` to vertex `t`**:
+{edges}
+
+Please find a path `p_1, p_2, ..., p_{N}` such that the path **visits every vertex exactly once** (revisiting vertices is NOT allowed).
+
+**Output Format:**
+Your final answer should be a single line containing the path in order: `p_1, p_2, ..., p_{N}`, separated by **spaces**.
+Example: `0 2 1` (do **NOT** include backticks or quotes); this means the path starts at vertex 0, then goes to vertex 2, and finally to vertex 1 (assuming 3 vertices in total).
+\end{lstlisting}
+
+The problem generator $\mathcal{P}_{d}$ (conditioned on the difficulty level $d$) samples parameters $p$ such that the number of vertices is $N = d + 3$.
+It then exploits the solving–verification asymmetry: 
+it first samples a random permutation of all vertices and adds directed edges between every pair of adjacent vertices in this permutation, thereby guaranteeing that the generated graph contains at least one Hamiltonian path;
+additional edges are then randomly added to the graph.
+The verifier $R_{p}$ first checks whether the model’s output can be parsed into a valid list of integers; if not, it assigns a reward of $-1.0$.
+If the output sequence is not a valid permutation of all vertices, the reward is $-0.5$.
+Otherwise, let $x$ denote the number of consecutive vertex pairs in the predicted path whose corresponding directed edges actually exist in the graph;
+the verifier then computes the reward as $R_{p}(o) = (x / (N - 1))^{5}$, which equals $1.0$ if and only if the path is a valid Hamiltonian path.
+We frequently exploit this solving–verification asymmetry when constructing verifiable environments of NP-complete problems, given that verification can be performed efficiently, while finding a valid solution remains intractable within current human knowledge.
+
+\subsection{Full List of 400 Verifiable Environments from~\suite{}}
+\label{app:environment-list}
+
+We provide the complete list of all 400 verifiable environments included in \suite{} in this subsection.
+Their detailed implementations are available in our public repository.
+We list the unique symbolic names of all 400 environments below.
+
+\begin{flushleft}
+(1)~\texttt{ABProgramSimulation},
+(2)~\texttt{AddMultiple\_Divisible\_Counting},
+(3)~\texttt{AdditionTable},
+(4)~\texttt{AlmostCompleteGraphCycleCounting},
+(5)~\texttt{AndOr\_Sequence\_Counting},
+(6)~\texttt{AntiPalindromicSubstringCounting},
+(7)~\texttt{Axis\_KCenter},
+(8)~\texttt{BAJBytecomputer},
+(9)~\texttt{BEZMinimalistSecurity},
+(10)~\texttt{BannedPointSupersetPathCounting},
+(11)~\texttt{BanyanHeart},
+(12)~\texttt{BezoutIdentity},
+(13)~\texttt{Binario},
+(14)~\texttt{Binario\_NoAdjacencyRequirement},
+(15)~\texttt{BinaryAlternation},
+(16)~\texttt{BinaryLinearEquation\_SolutionCounting},
+(17)~\texttt{BinaryTreeLeafNumExpectation},
+(18)~\texttt{BitAndZero\_PathCounting},
+(19)~\texttt{BitEquationCounting},
+(20)~\texttt{BitwiseOperationSequenceCounting},
+(21)~\texttt{BlockImage},
+(22)~\texttt{BoundedAdjacencyDifference\_Permutation\_Counting},
+(23)~\texttt{BoundedIntervalIntersection},
+(24)~\texttt{BoundedMeanSubarrayCounting},
+(25)~\texttt{BoundedSubarrayCounting},
+(26)~\texttt{BoxScheduling},
+(27)~\texttt{Bridge},
+(28)~\texttt{BubbleSwapLowerBound\_PermutationCounting},
+(29)~\texttt{BucketSorting},
+(30)~\texttt{CRT},
+(31)~\texttt{CampfireParty},
+(32)~\texttt{CampsitePuzzle},
+(33)~\texttt{Canon},
+(34)~\texttt{CantorExpansion},
+(35)~\texttt{CapitalCityEffect},
+(36)~\texttt{CardColoringCounting},
+(37)~\texttt{CatalanNumberMod},
+(38)~\texttt{CheckAllCycleXorZero},
+(39)~\texttt{ChoHamsters},
+(40)~\texttt{Cinema},
+(41)~\texttt{Circuit},
+(42)~\texttt{CirculatingDecimalCounting},
+(43)~\texttt{CirculatingGrid},
+(44)~\texttt{CleaningUp},
+(45)~\texttt{ClearSymmetry},
+(46)~\texttt{Clique\_IndependentSet\_Partitioning\_Counting},
+(47)~\texttt{CoinSquareGame},
+(48)~\texttt{ColoringCounting},
+(49)~\texttt{CombinationOddSubsequenceCounting},
+(50)~\texttt{ConcatenationPartitionCountingSum},
+(51)~\texttt{CongruentEquation},
+(52)~\texttt{ConstructHackInterval},
+(53)~\texttt{ConvexHull},
+(54)~\texttt{Cornfield},
+(55)~\texttt{CountdownClose},
+(56)~\texttt{CountdownEqual},
+(57)~\texttt{CowDanceShow},
+(58)~\texttt{Cryptarithmetic},
+(59)~\texttt{Cube\_FixedLocalMaximumCounting},
+(60)~\texttt{CycleCounting},
+(61)~\texttt{DecreasingDigitCounting},
+(62)~\texttt{DegreeFixed\_SpanningTree},
+(63)~\texttt{DeltaMinPopcount},
+(64)~\texttt{DeltaNimGame},
+(65)~\texttt{DerangementExtension},
+(66)~\texttt{DifferenceConstraintSystem},
+(67)~\texttt{DifferenceConstraintSystemDAG},
+(68)~\texttt{DifferentColorPairing},
+(69)~\texttt{Differentiate},
+(70)~\texttt{DigitLISCounting},
+(71)~\texttt{DiscreteLogarithm},
+(72)~\texttt{Disinfection},
+(73)~\texttt{DistinctArrayPermutation},
+(74)~\texttt{DistinctEdgeColoredCompleteGraphCounting},
+(75)~\texttt{Division},
+(76)~\texttt{DivisorFlipExpectation},
+(77)~\texttt{DoubleCrossCounting},
+(78)~\texttt{DoublePalindromicStringCounting},
+(79)~\texttt{DoubleStackSorting},
+(80)~\texttt{DynDynamite},
+(81)~\texttt{EightDigitPuzzle},
+(82)~\texttt{EmperorWorries},
+(83)~\texttt{EnergyStorageMeter},
+(84)~\texttt{EuclidGame},
+(85)~\texttt{EvenDegreeGraphPartitioning},
+(86)~\texttt{Expression\_AddingParenthese\_Counting},
+(87)~\texttt{FBI\_BinaryTree},
+(88)~\texttt{FaceRightWay},
+(89)~\texttt{FactorialTrailingZeroCount},
+(90)~\texttt{Fibonacci},
+(91)~\texttt{FibonacciContainingCounting},
+(92)~\texttt{Fibtrain},
+(93)~\texttt{FireworkShow},
+(94)~\texttt{FixedModK\_Selection\_Counting},
+(95)~\texttt{FixedOneEdgeNum\_SpanningTree},
+(96)~\texttt{FractionalProgramming},
+(97)~\texttt{FractionalProgramming\_BipartiteGraphMatching},
+(98)~\texttt{FutoshikiPuzzle},
+(99)~\texttt{GCDFibonacciProduct},
+(100)~\texttt{GCDOne\_Counting},
+(101)~\texttt{GCDPrime\_Counting},
+(102)~\texttt{GasFireExtinguishers},
+(103)~\texttt{GaussianElimination},
+(104)~\texttt{GcdLcmCounting},
+(105)~\texttt{GoldWashing},
+(106)~\texttt{GraMinimaGame},
+(107)~\texttt{GradeRankingCounting},
+(108)~\texttt{GraphContainTreeCounting},
+(109)~\texttt{GraphIsomorphism},
+(110)~\texttt{GridBFS},
+(111)~\texttt{GridColoringCounting},
+(112)~\texttt{GridComponent},
+(113)~\texttt{GridLocalMinimumCounting},
+(114)~\texttt{GridParityConstruction},
+(115)~\texttt{GridTriangleCounting},
+(116)~\texttt{HURWarehouseStore},
+(117)~\texttt{HalvingChainCounting},
+(118)~\texttt{HamiltonianPath},
+(119)~\texttt{HamiltonianPathExistence},
+(120)~\texttt{HeapCounting},
+(121)~\texttt{HitoriPuzzle},
+(122)~\texttt{HungryRabbit},
+(123)~\texttt{ImpParty},
+(124)~\texttt{IndividualSumBounded\_SequenceCounting},
+(125)~\texttt{IntegerFactorizationCounting},
+(126)~\texttt{IntegerProgramming},
+(127)~\texttt{Integral},
+(128)~\texttt{InversionPair},
+(129)~\texttt{InversionPairK\_Counting},
+(130)~\texttt{Josephus},
+(131)~\texttt{JugPuzzle},
+(132)~\texttt{KPartition},
+(133)~\texttt{KUR},
+(134)~\texttt{Kakurasu},
+(135)~\texttt{KiddingMe},
+(136)~\texttt{KingSorting},
+(137)~\texttt{KloBlocks},
+(138)~\texttt{Knapsack},
+(139)~\texttt{KnightsAndKnaves},
+(140)~\texttt{KosDicing},
+(141)~\texttt{KthSubsequence},
+(142)~\texttt{Kth\_BinaryTree},
+(143)~\texttt{Kth\_SemiBalancedBracketSequence},
+(144)~\texttt{LAS},
+(145)~\texttt{LASLaser},
+(146)~\texttt{LCM},
+(147)~\texttt{LDSTwo\_Counting},
+(148)~\texttt{LIS\_LDS\_Concatenation},
+(149)~\texttt{LIZ\_Lollipop},
+(150)~\texttt{LampChanging},
+(151)~\texttt{LandAcquisition},
+(152)~\texttt{LandformGenerationCounting},
+(153)~\texttt{LargestConvexPolygon},
+(154)~\texttt{LargestRectangle\_AmongPoints},
+(155)~\texttt{LightUpPuzzle},
+(156)~\texttt{LinkBeads},
+(157)~\texttt{LongestMaxDiffBoundedInterval},
+(158)~\texttt{LongestPath},
+(159)~\texttt{Longest\_DoublePalindrome},
+(160)~\texttt{Longest\_MatchingSubsequence},
+(161)~\texttt{Longest\_RepeatedPalindrome},
+(162)~\texttt{MYJ},
+(163)~\texttt{MafMafia},
+(164)~\texttt{MagicSquarePuzzle},
+(165)~\texttt{MakingGrade},
+(166)~\texttt{MatrixPermutationEquivalence},
+(167)~\texttt{MatrixPermutation\_BothDiagonalOne},
+(168)~\texttt{MatrixPermutation\_MainDiagonalOne},
+(169)~\texttt{MatrixPooling},
+(170)~\texttt{MatrixRMQCounting},
+(171)~\texttt{Matrix\_BinaryExponentiation},
+(172)~\texttt{MaxDifferentGroupPairDivision},
+(173)~\texttt{MaxGridPathIntersection},
+(174)~\texttt{MaxMinimum\_AfterIntervalAddition},
+(175)~\texttt{MaxMultSplit},
+(176)~\texttt{MaxMultiplicationFixedSum},
+(177)~\texttt{MaxNoConflictingBombs},
+(178)~\texttt{MaxPermutation},
+(179)~\texttt{MaxRMQExpectation},
+(180)~\texttt{MaxSegmentCoverageConstraint},
+(181)~\texttt{MaxSumLDS},
+(182)~\texttt{MaxThreeSquareSum},
+(183)~\texttt{MaxTreeXorPath},
+(184)~\texttt{MaxTree\_KPathCoverage},
+(185)~\texttt{MaxWeightPalindromicSubstring},
+(186)~\texttt{MaxXorPath},
+(187)~\texttt{MaxXorSet},
+(188)~\texttt{Max\_NonAdjacent\_KElementSum},
+(189)~\texttt{Max\_TreeConstrainedPermutation\_Weight},
+(190)~\texttt{MaximumAchromaticNumber},
+(191)~\texttt{MaximumClique},
+(192)~\texttt{MaximumDivisor},
+(193)~\texttt{MaximumIndependentSetGrid},
+(194)~\texttt{MaximumLexicographicalOrderSubsequence},
+(195)~\texttt{MaximumPointSegmentMatching},
+(196)~\texttt{MaximumWeightMatching},
+(197)~\texttt{Maximum\_IndependentSet\_Tree},
+(198)~\texttt{Maximum\_SubsequenceNum},
+(199)~\texttt{Maze},
+(200)~\texttt{MinConversionToCycleCost},
+(201)~\texttt{MinCostReducingLNDS},
+(202)~\texttt{MinCostTreeCoverage},
+(203)~\texttt{MinCubeAssignment},
+(204)~\texttt{MinDivisionSumXor},
+(205)~\texttt{MinInorderBinaryTree},
+(206)~\texttt{MinKDivisorNumber},
+(207)~\texttt{MinNoSolutionLinearDiophantineEquation},
+(208)~\texttt{MinNonsubstring},
+(209)~\texttt{MinPairSumMultiplicationPermutation},
+(210)~\texttt{MinPathCover\_DAG},
+(211)~\texttt{MinSumChebyshevDistance},
+(212)~\texttt{MinSumDistanceSquare},
+(213)~\texttt{MinSumPreXor},
+(214)~\texttt{MinSwapTwoPermutations},
+(215)~\texttt{MinXorPair},
+(216)~\texttt{Minesweeping},
+(217)~\texttt{MinimalCyclicShift},
+(218)~\texttt{MinimumChromaticNumber},
+(219)~\texttt{MinimumChromaticNumber\_SegmentOverlap},
+(220)~\texttt{MinimumCost\_MaximumFlow},
+(221)~\texttt{MinimumDirectedSpanningTree},
+(222)~\texttt{MinimumFibonacciRepresentation},
+(223)~\texttt{MinimumHarmoniousChromaticNumber},
+(224)~\texttt{MinimumIntervalCoverage},
+(225)~\texttt{MinimumRatioPath},
+(226)~\texttt{MinimumSpanningTree},
+(227)~\texttt{MinimumSpanningTreeCounting},
+(228)~\texttt{MinimumSteinerTree},
+(229)~\texttt{MinimumSumDifferenceSubmatrix},
+(230)~\texttt{MinimumTreeWeightedDominatingAncestor},
+(231)~\texttt{MinimumUnconflictedGridKMax},
+(232)~\texttt{MinimumWeightedSpanningTree},
+(233)~\texttt{Minimum\_CrossingEdges\_GraphPartition},
+(234)~\texttt{Minimum\_DominatingInterval},
+(235)~\texttt{Minimum\_DominatingSet},
+(236)~\texttt{Minimum\_DominatingSet\_Grid},
+(237)~\texttt{Minimum\_MaxAbsSlicer},
+(238)~\texttt{Minimum\_MaxSlicer},
+(239)~\texttt{Minimum\_VertexCover},
+(240)~\texttt{MitterTransportation},
+(241)~\texttt{MixedGraphEulerianCircuit},
+(242)~\texttt{MoneyChargingGame},
+(243)~\texttt{MonochromeBlockCounting},
+(244)~\texttt{MonotonicStack},
+(245)~\texttt{MostComponentTreeRemovingTwoPaths},
+(246)~\texttt{MostNumEdge\_NonSelfIsomorphism},
+(247)~\texttt{MultiDrink},
+(248)~\texttt{MultipleFlippingGame},
+(249)~\texttt{Multiplication},
+(250)~\texttt{NANDResultCounting},
+(251)~\texttt{NegativeBase},
+(252)~\texttt{NewNimGame},
+(253)~\texttt{NextPalindromic},
+(254)~\texttt{NinePuzzle},
+(255)~\texttt{NoAdjacentGirlCounting},
+(256)~\texttt{NoDoubleTripleCounting},
+(257)~\texttt{NotContainingStringCounting},
+(258)~\texttt{NumberPartitionCounting},
+(259)~\texttt{Numbrix},
+(260)~\texttt{ODLDistance},
+(261)~\texttt{OddVisitation},
+(262)~\texttt{PCPPermutation},
+(263)~\texttt{POLPolarization},
+(264)~\texttt{PairMoreOneCounting},
+(265)~\texttt{PalembangBridges},
+(266)~\texttt{PalindromePartitionCounting},
+(267)~\texttt{PalindromicSubstringNumberCounting},
+(268)~\texttt{PanSolarPanels},
+(269)~\texttt{Path\_NoGoingBack\_Counting},
+(270)~\texttt{Patrol},
+(271)~\texttt{PipelineArrangement},
+(272)~\texttt{PolyaModel},
+(273)~\texttt{PolynomialFactorization},
+(274)~\texttt{PolynomialInterpolation},
+(275)~\texttt{PolynomialMinimum},
+(276)~\texttt{PolynomialRemainder},
+(277)~\texttt{PowerCycle},
+(278)~\texttt{PowerNest},
+(279)~\texttt{PowerShortcut},
+(280)~\texttt{PrefixConcatenation},
+(281)~\texttt{PrefixProductMODDistinctPermutation},
+(282)~\texttt{PrefixSumMODDistinctPermutation},
+(283)~\texttt{Prefixuffix},
+(284)~\texttt{PreorderTraversal},
+(285)~\texttt{PrimeGraph\_MinimumChromaticNumber},
+(286)~\texttt{ProtectingFlowers},
+(287)~\texttt{PythagoreanGraph\_IndependentSetCounting},
+(288)~\texttt{QuadMagicItems},
+(289)~\texttt{QuadraticFunctionSegmentation},
+(290)~\texttt{QuantumLockPuzzle},
+(291)~\texttt{QueenPlacement},
+(292)~\texttt{RandomRangeMaxExpectation},
+(293)~\texttt{RangeConstrained\_IncreasingSequence\_Counting},
+(294)~\texttt{RangeFourSequenceConstruction},
+(295)~\texttt{RangeShrinkingSequenceCounting},
+(296)~\texttt{RecursiveFunction},
+(297)~\texttt{RecursiveSequenceSumConstruction},
+(298)~\texttt{RepeatSequenceLNDS},
+(299)~\texttt{RootExtraction},
+(300)~\texttt{RoundRobin},
+(301)~\texttt{RoundTableAssignment},
+(302)~\texttt{RoyalLockCounting},
+(303)~\texttt{SAT},
+(304)~\texttt{SCC\_Sequence\_Counting},
+(305)~\texttt{SLOElephants},
+(306)~\texttt{STUWell},
+(307)~\texttt{SaladBar},
+(308)~\texttt{SalesmanFatigue},
+(309)~\texttt{SameAdjacencyCounting},
+(310)~\texttt{SecretCowCode},
+(311)~\texttt{SegmentMinLengthEqual\_Counting},
+(312)~\texttt{SegmentTreeSortingCounting},
+(313)~\texttt{SelfPowerSequenceMOD},
+(314)~\texttt{SetCover},
+(315)~\texttt{SetSplitting},
+(316)~\texttt{SharedSubstringCounting},
+(317)~\texttt{ShortestPath},
+(318)~\texttt{ShortestPathCountConstruction},
+(319)~\texttt{ShortestUnicolorSubstring},
+(320)~\texttt{SingingGirlStory},
+(321)~\texttt{SingleStackSorting},
+(322)~\texttt{SkaRockGarden},
+(323)~\texttt{SkyscraperPuzzle},
+(324)~\texttt{SkyscraperSumPuzzle},
+(325)~\texttt{SlidingWindow},
+(326)~\texttt{SmallestBinaryMultiple},
+(327)~\texttt{SmallestCircle},
+(328)~\texttt{Sorting},
+(329)~\texttt{SpiralMatrix},
+(330)~\texttt{SplittingGame},
+(331)~\texttt{SpyNetwork},
+(332)~\texttt{SquSquarks},
+(333)~\texttt{SquareUndamagedPointCounting},
+(334)~\texttt{StarBattle},
+(335)~\texttt{StirlingSecond},
+(336)~\texttt{StoneGame},
+(337)~\texttt{StoneIntervalsGame},
+(338)~\texttt{StringPartitionShuffle},
+(339)~\texttt{StringReversalConstruction},
+(340)~\texttt{StuntFlying},
+(341)~\texttt{SubarraySumXor},
+(342)~\texttt{SubarrayXorSum},
+(343)~\texttt{SubgraphIsomorphism},
+(344)~\texttt{SubmatrixSumDivisibleCounting},
+(345)~\texttt{SubsequenceReversalLNDS},
+(346)~\texttt{SubsetSum},
+(347)~\texttt{SubsetSumSequence},
+(348)~\texttt{Sudoku},
+(349)~\texttt{SumGCD},
+(350)~\texttt{SumGCDWithIndividual},
+(351)~\texttt{SumLCM},
+(352)~\texttt{SumMOD},
+(353)~\texttt{SumManhattan\_CurvedSurface},
+(354)~\texttt{SumPHIInterval},
+(355)~\texttt{SumProductDivisorNum},
+(356)~\texttt{SumPseudoEuclidean},
+(357)~\texttt{SumSetMultiplication},
+(358)~\texttt{SumSpanningTreeGCD},
+(359)~\texttt{SumTriangleArea},
+(360)~\texttt{SumXorDivisorNum},
+(361)~\texttt{Sum\_DivisorNum},
+(362)~\texttt{SurvoPuzzle},
+(363)~\texttt{TakingPrimeGame},
+(364)~\texttt{TaskArrangement},
+(365)~\texttt{TetrisAttack},
+(366)~\texttt{ThreeStringCommonSubsequenceCounting},
+(367)~\texttt{ThreeVertexCycleCounting},
+(368)~\texttt{TopologicalSort},
+(369)~\texttt{TopologicalSort\_MinimalLexicographicalOrder},
+(370)~\texttt{Tournament\_LongestPath},
+(371)~\texttt{TransmissionDelay},
+(372)~\texttt{TreeAddOneEdgeDiameter},
+(373)~\texttt{TreeCenter},
+(374)~\texttt{TreeChangeOneEdgeDiameter},
+(375)~\texttt{TreeColoring},
+(376)~\texttt{TreeDynamic\_XORZeroPath},
+(377)~\texttt{TreeElimination\_Expectation},
+(378)~\texttt{TreeEvenPartitioning},
+(379)~\texttt{TreeMaximumVisitedVertex},
+(380)~\texttt{TreeRandomWalkExpectation},
+(381)~\texttt{TreeTopologicalSequenceCounting},
+(382)~\texttt{Tree\_DistanceEqualTriad\_Counting},
+(383)~\texttt{TriumphalArch},
+(384)~\texttt{TwiddlePuzzle},
+(385)~\texttt{TwoSAT},
+(386)~\texttt{TwoSet\_AllCoprime\_Counting},
+(387)~\texttt{UndamagedSubmatrixCounting},
+(388)~\texttt{ValueDiminishingSelection},
+(389)~\texttt{Vertex\_KCenter},
+(390)~\texttt{VirusSynthesis},
+(391)~\texttt{VisibleLine},
+(392)~\texttt{WIL},
+(393)~\texttt{WYC},
+(394)~\texttt{WYRLevelingGround},
+(395)~\texttt{WarehouseConstruction},
+(396)~\texttt{WeightedBinaryTree},
+(397)~\texttt{WeightedLIS},
+(398)~\texttt{WhackAMole},
+(399)~\texttt{XorEquationCounting},
+(400)~\texttt{ZeroPrefixSubsetCounting}.
+\end{flushleft}
+
+
+
+
+
+
+
+
+
+\section{RL Training Details}
+\label{app:rl-details}
+
+We run our RL training using the \texttt{slime} framework\footnote{\url{https://github.com/THUDM/slime}} and adopt the DAPO algorithm~\citep{yu2025dapo}, a variant of GRPO~\citep{shao2024grpo}.
+Unless otherwise specified, the setup described below is consistent across all runs.
+
+During each rollout step, we employ oversampling combined with dynamic filtering to enable dynamic sampling;
+we use a training batch size of 128 and an oversampling batch size of 384.
+We enable the partial-rollout technique~\citep{kimi1.5,glm-4.5,zhou2025april}, which caches unfinished generations from the current rollout step and subsequently resumes them.
+Each prompt produces 16 rollouts with a temperature of 1.0.
+We do not use KL regularization or entropy loss.
+The clipping range is $[0.2, 0.28]$.
+We adopt off-policy importance sampling~\citep{yao2025tis} to correct for distribution mismatch between the training and inference engines.
+We perform one parameter update after each rollout step.
+We use the Adam optimizer~\citep{kingma2015adam} with a constant learning rate schedule and weight decay of 0.01.
+
+For \texttt{R1-Distill-Qwen-1.5B}, \texttt{DeepScaleR-1.5B}, \texttt{ProRL-1.5B-v2}, and \texttt{OpenThinker3-1.5B}, we use a learning rate of $2\times10^{-6}$ and a maximum rollout response length of 24,576 tokens.
+We use these models’ default chat templates and directly insert the input into the user prompt field, following these models' prompt format for training.
+
+For \texttt{Qwen2.5-7B-Base}, we use a learning rate of $1\times10^{-6}$ and a maximum rollout response length of 8,192 tokens.
+We adopt a variant of the prompt format from~\citet{deepseek-r1,pan2025tinyzero}:
+\begin{lstlisting}[language={},caption={},label={lst:qwen25-template}]
+A conversation between User and Assistant. The user asks a question, and the assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. Show your work in <think> </think> tags, and return the final answer in <answer> </answer> tags.
+User: {input}
+Assistant: Let me solve this step by step.
+<think>
+\end{lstlisting}
+
+Every training run is conducted on a single node equipped with 8$\times$ NVIDIA H100 (80GB) GPUs. 
+The total training time of one single run varies depending on the number of training steps, the distribution of rollout response lengths, and the model size, ranging from approximately 2 to 8 days, which is equivalent to roughly 350 to 1{,}500 H100 GPU hours.
+
+Details specific to \ours{} are provided in Appendix~\ref{app:rlve}.
+
+
+
+
+
+
+\section{Evaluation Details}
+\label{app:eval-details}
+We conduct all evaluations using the \texttt{SGLang} framework~\citep{sglang} as the inference engine for model generation.
+We set the sampling temperature to $0.6$ and the top-$p$ parameter to $0.95$.
+For \texttt{R1-Distill-Qwen-1.5B}, \texttt{DeepScaleR-1.5B}, \texttt{ProRL-1.5B-v2}, and \texttt{OpenThinker3-1.5B}, the maximum response length during evaluation is 32{,}768 tokens;
+for \texttt{Qwen2.5-7B-Base}, the maximum response length is 16{,}384 tokens.
+
+For AIME 2024/2025~\citep{aime}, we sample 64 outputs per problem and report Avg@64 as the evaluation metric.
+For OMEGA-500~\citep{sun2025omega}, OlympiadBench~\citep{he2024olympiadbench}, and BBEH~\citep{kazemi2025bbeh}, we sample 4 outputs per problem and report Avg@4 as the evaluation metric.
+For LiveCodeBench~\citep{jain2025lcb}, we sample 16 outputs per problem and report Pass@8 as the probability that at least one of 8 uniformly sampled outputs from the 16 outputs passes all test cases;
+we use the latest version (v6) of LiveCodeBench\footnote{\url{https://huggingface.co/datasets/livecodebench/code_generation_lite/blob/main/test6.jsonl}} available at the time of this work.
+
+
+To construct the held-out test set $\mathcal{D}_{\text{ood}}$ introduced in Section~\ref{sec:analysis}, we randomly sample 50 held-out test environments from the full suite of 400 verifiable environments from~\suite{} (listed in Appendix~\ref{app:environment-list}), which are:
+
+\begin{flushleft}
+(8)~\texttt{BAJBytecomputer},
+(10)~\texttt{BannedPointSupersetPathCounting},
+(11)~\texttt{BanyanHeart},
+(30)~\texttt{CRT},
+(33)~\texttt{Canon},
+(42)~\texttt{CirculatingDecimalCounting},
+(46)~\texttt{Clique\_IndependentSet\_Partitioning\_Counting},
+(53)~\texttt{ConvexHull},
+(55)~\texttt{CountdownClose},
+(57)~\texttt{CowDanceShow},
+(79)~\texttt{DoubleStackSorting},
+(80)~\texttt{DynDynamite},
+(85)~\texttt{EvenDegreeGraphPartitioning},
+(86)~\texttt{Expression\_AddingParenthese\_Counting},
+(89)~\texttt{FactorialTrailingZeroCount},
+(94)~\texttt{FixedModK\_Selection\_Counting},
+(98)~\texttt{FutoshikiPuzzle},
+(106)~\texttt{GraMinimaGame},
+(115)~\texttt{GridTriangleCounting},
+(117)~\texttt{HalvingChainCounting},
+(123)~\texttt{ImpParty},
+(125)~\texttt{IntegerFactorizationCounting},
+(131)~\texttt{JugPuzzle},
+(151)~\texttt{LandAcquisition},
+(152)~\texttt{LandformGenerationCounting},
+(165)~\texttt{MakingGrade},
+(167)~\texttt{MatrixPermutation\_BothDiagonalOne},
+(171)~\texttt{Matrix\_BinaryExponentiation},
+(187)~\texttt{MaxXorSet},
+(197)~\texttt{Maximum\_IndependentSet\_Tree},
+(226)~\texttt{MinimumSpanningTree},
+(234)~\texttt{Minimum\_DominatingInterval},
+(245)~\texttt{MostComponentTreeRemovingTwoPaths},
+(253)~\texttt{NextPalindromic},
+(266)~\texttt{PalindromePartitionCounting},
+(271)~\texttt{PipelineArrangement},
+(274)~\texttt{PolynomialInterpolation},
+(280)~\texttt{PrefixConcatenation},
+(287)~\texttt{PythagoreanGraph\_IndependentSetCounting},
+(315)~\texttt{SetSplitting},
+(323)~\texttt{SkyscraperPuzzle},
+(326)~\texttt{SmallestBinaryMultiple},
+(337)~\texttt{StoneIntervalsGame},
+(343)~\texttt{SubgraphIsomorphism},
+(344)~\texttt{SubmatrixSumDivisibleCounting},
+(347)~\texttt{SubsetSumSequence},
+(355)~\texttt{SumProductDivisorNum},
+(360)~\texttt{SumXorDivisorNum},
+(361)~\texttt{Sum\_DivisorNum},
+(369)~\texttt{TopologicalSort\_MinimalLexicographicalOrder}.
+\end{flushleft}
+
+For each held-out test environment, we randomly generate 50 distinct problems, 
+with the difficulty level $d$ evenly distributed within the range $[0, 4]$.
+This results in a total of 2,500 problems for the 50 held-out environments.
+
+We sample one model output per problem for all evaluations on the in-distribution (ID) test set in~\ref{sec:exp-adaptivity} and on $\mathcal{D}_{\text{ood}}$.
+
+
+
+
+
+\section{Details of Training Environment Collection}
+\label{app:analysis}
+As described in Section~\ref{sec:analysis}, we construct four collections of training environments, denoted as $\mathcal{C}_1$, $\mathcal{C}_4$, $\mathcal{C}_{16}$, and $\mathcal{C}_{256}$, and each larger collection strictly contains all smaller ones, i.e., $\mathcal{C}_1 \subset \mathcal{C}_4 \subset \mathcal{C}_{16} \subset \mathcal{C}_{256}$.
+All four collections are from the full suite of 400 verifiable environments introduced in Appendix~\ref{app:environment-example}, excluding the 50 held-out test environments.
+
+For clarity, we list below the specific composition of each collection and its incremental difference from the preceding one.
+
+$\mathcal{C}_1$ contains only a single environment (249)~\texttt{Multiplication}.
+
+$\mathcal{C}_4$ expands $\mathcal{C}_1$ by including 3 additional environments, for a total of 4. The incremental environments $\mathcal{C}_4-\mathcal{C}_1$ are:
+\begin{flushleft}
+(75)~\texttt{Division},
+(84)~\texttt{EuclidGame},
+(328)~\texttt{Sorting}.
+\end{flushleft}
+
+$\mathcal{C}_{16}$ further expands $\mathcal{C}_4$ by adding 12 more environments, for a total of 16. The incremental environments $\mathcal{C}_{16}-\mathcal{C}_4$ are:
+\begin{flushleft}
+(100)~\texttt{GCDOne\_Counting},
+(118)~\texttt{HamiltonianPath},
+(150)~\texttt{LampChanging},
+(153)~\texttt{LargestConvexPolygon},
+(262)~\texttt{PCPPermutation},
+(269)~\texttt{Path\_NoGoingBack\_Counting},
+(303)~\texttt{SAT},
+(317)~\texttt{ShortestPath},
+(329)~\texttt{SpiralMatrix},
+(345)~\texttt{SubsequenceReversalLNDS},
+(387)~\texttt{UndamagedSubmatrixCounting},
+(394)~\texttt{WYRLevelingGround}.
+\end{flushleft}
+
+$\mathcal{C}_{256}$ extends $\mathcal{C}_{16}$ by adding 240 additional environments, for a total of 256. The incremental environments $\mathcal{C}_{256}-\mathcal{C}_1$ are:
+\begin{flushleft}
+(1)~\texttt{ABProgramSimulation},
+(2)~\texttt{AddMultiple\_Divisible\_Counting},
+(3)~\texttt{AdditionTable},
+(4)~\texttt{AlmostCompleteGraphCycleCounting},
+(6)~\texttt{AntiPalindromicSubstringCounting},
+(9)~\texttt{BEZMinimalistSecurity},
+(13)~\texttt{Binario},
+(14)~\texttt{Binario\_NoAdjacencyRequirement},
+(15)~\texttt{BinaryAlternation},
+(16)~\texttt{BinaryLinearEquation\_SolutionCounting},
+(17)~\texttt{BinaryTreeLeafNumExpectation},
+(18)~\texttt{BitAndZero\_PathCounting},
+(19)~\texttt{BitEquationCounting},
+(20)~\texttt{BitwiseOperationSequenceCounting},
+(21)~\texttt{BlockImage},
+(23)~\texttt{BoundedIntervalIntersection},
+(24)~\texttt{BoundedMeanSubarrayCounting},
+(25)~\texttt{BoundedSubarrayCounting},
+(26)~\texttt{BoxScheduling},
+(27)~\texttt{Bridge},
+(31)~\texttt{CampfireParty},
+(35)~\texttt{CapitalCityEffect},
+(36)~\texttt{CardColoringCounting},
+(38)~\texttt{CheckAllCycleXorZero},
+(40)~\texttt{Cinema},
+(41)~\texttt{Circuit},
+(43)~\texttt{CirculatingGrid},
+(44)~\texttt{CleaningUp},
+(47)~\texttt{CoinSquareGame},
+(48)~\texttt{ColoringCounting},
+(50)~\texttt{ConcatenationPartitionCountingSum},
+(51)~\texttt{CongruentEquation},
+(54)~\texttt{Cornfield},
+(56)~\texttt{CountdownEqual},
+(58)~\texttt{Cryptarithmetic},
+(59)~\texttt{Cube\_FixedLocalMaximumCounting},
+(60)~\texttt{CycleCounting},
+(61)~\texttt{DecreasingDigitCounting},
+(62)~\texttt{DegreeFixed\_SpanningTree},
+(63)~\texttt{DeltaMinPopcount},
+(64)~\texttt{DeltaNimGame},
+(66)~\texttt{DifferenceConstraintSystem},
+(69)~\texttt{Differentiate},
+(71)~\texttt{DiscreteLogarithm},
+(72)~\texttt{Disinfection},
+(76)~\texttt{DivisorFlipExpectation},
+(77)~\texttt{DoubleCrossCounting},
+(78)~\texttt{DoublePalindromicStringCounting},
+(81)~\texttt{EightDigitPuzzle},
+(87)~\texttt{FBI\_BinaryTree},
+(88)~\texttt{FaceRightWay},
+(90)~\texttt{Fibonacci},
+(92)~\texttt{Fibtrain},
+(95)~\texttt{FixedOneEdgeNum\_SpanningTree},
+(96)~\texttt{FractionalProgramming},
+(97)~\texttt{FractionalProgramming\_BipartiteGraphMatching},
+(99)~\texttt{GCDFibonacciProduct},
+(102)~\texttt{GasFireExtinguishers},
+(104)~\texttt{GcdLcmCounting},
+(107)~\texttt{GradeRankingCounting},
+(108)~\texttt{GraphContainTreeCounting},
+(109)~\texttt{GraphIsomorphism},
+(110)~\texttt{GridBFS},
+(111)~\texttt{GridColoringCounting},
+(112)~\texttt{GridComponent},
+(113)~\texttt{GridLocalMinimumCounting},
+(116)~\texttt{HURWarehouseStore},
+(119)~\texttt{HamiltonianPathExistence},
+(121)~\texttt{HitoriPuzzle},
+(122)~\texttt{HungryRabbit},
+(124)~\texttt{IndividualSumBounded\_SequenceCounting},
+(126)~\texttt{IntegerProgramming},
+(127)~\texttt{Integral},
+(128)~\texttt{InversionPair},
+(129)~\texttt{InversionPairK\_Counting},
+(130)~\texttt{Josephus},
+(132)~\texttt{KPartition},
+(133)~\texttt{KUR},
+(136)~\texttt{KingSorting},
+(137)~\texttt{KloBlocks},
+(138)~\texttt{Knapsack},
+(140)~\texttt{KosDicing},
+(141)~\texttt{KthSubsequence},
+(142)~\texttt{Kth\_BinaryTree},
+(143)~\texttt{Kth\_SemiBalancedBracketSequence},
+(144)~\texttt{LAS},
+(145)~\texttt{LASLaser},
+(146)~\texttt{LCM},
+(147)~\texttt{LDSTwo\_Counting},
+(149)~\texttt{LIZ\_Lollipop},
+(154)~\texttt{LargestRectangle\_AmongPoints},
+(155)~\texttt{LightUpPuzzle},
+(156)~\texttt{LinkBeads},
+(157)~\texttt{LongestMaxDiffBoundedInterval},
+(159)~\texttt{Longest\_DoublePalindrome},
+(160)~\texttt{Longest\_MatchingSubsequence},
+(161)~\texttt{Longest\_RepeatedPalindrome},
+(164)~\texttt{MagicSquarePuzzle},
+(166)~\texttt{MatrixPermutationEquivalence},
+(169)~\texttt{MatrixPooling},
+(170)~\texttt{MatrixRMQCounting},
+(172)~\texttt{MaxDifferentGroupPairDivision},
+(173)~\texttt{MaxGridPathIntersection},
+(175)~\texttt{MaxMultSplit},
+(178)~\texttt{MaxPermutation},
+(179)~\texttt{MaxRMQExpectation},
+(180)~\texttt{MaxSegmentCoverageConstraint},
+(181)~\texttt{MaxSumLDS},
+(182)~\texttt{MaxThreeSquareSum},
+(185)~\texttt{MaxWeightPalindromicSubstring},
+(186)~\texttt{MaxXorPath},
+(188)~\texttt{Max\_NonAdjacent\_KElementSum},
+(193)~\texttt{MaximumIndependentSetGrid},
+(194)~\texttt{MaximumLexicographicalOrderSubsequence},
+(195)~\texttt{MaximumPointSegmentMatching},
+(196)~\texttt{MaximumWeightMatching},
+(198)~\texttt{Maximum\_SubsequenceNum},
+(200)~\texttt{MinConversionToCycleCost},
+(201)~\texttt{MinCostReducingLNDS},
+(202)~\texttt{MinCostTreeCoverage},
+(203)~\texttt{MinCubeAssignment},
+(204)~\texttt{MinDivisionSumXor},
+(206)~\texttt{MinKDivisorNumber},
+(207)~\texttt{MinNoSolutionLinearDiophantineEquation},
+(208)~\texttt{MinNonsubstring},
+(209)~\texttt{MinPairSumMultiplicationPermutation},
+(212)~\texttt{MinSumDistanceSquare},
+(214)~\texttt{MinSwapTwoPermutations},
+(215)~\texttt{MinXorPair},
+(216)~\texttt{Minesweeping},
+(218)~\texttt{MinimumChromaticNumber},
+(219)~\texttt{MinimumChromaticNumber\_SegmentOverlap},
+(221)~\texttt{MinimumDirectedSpanningTree},
+(222)~\texttt{MinimumFibonacciRepresentation},
+(223)~\texttt{MinimumHarmoniousChromaticNumber},
+(225)~\texttt{MinimumRatioPath},
+(227)~\texttt{MinimumSpanningTreeCounting},
+(229)~\texttt{MinimumSumDifferenceSubmatrix},
+(230)~\texttt{MinimumTreeWeightedDominatingAncestor},
+(232)~\texttt{MinimumWeightedSpanningTree},
+(233)~\texttt{Minimum\_CrossingEdges\_GraphPartition},
+(235)~\texttt{Minimum\_DominatingSet},
+(237)~\texttt{Minimum\_MaxAbsSlicer},
+(238)~\texttt{Minimum\_MaxSlicer},
+(240)~\texttt{MitterTransportation},
+(241)~\texttt{MixedGraphEulerianCircuit},
+(243)~\texttt{MonochromeBlockCounting},
+(247)~\texttt{MultiDrink},
+(248)~\texttt{MultipleFlippingGame},
+(251)~\texttt{NegativeBase},
+(255)~\texttt{NoAdjacentGirlCounting},
+(256)~\texttt{NoDoubleTripleCounting},
+(258)~\texttt{NumberPartitionCounting},
+(259)~\texttt{Numbrix},
+(260)~\texttt{ODLDistance},
+(263)~\texttt{POLPolarization},
+(264)~\texttt{PairMoreOneCounting},
+(265)~\texttt{PalembangBridges},
+(267)~\texttt{PalindromicSubstringNumberCounting},
+(268)~\texttt{PanSolarPanels},
+(270)~\texttt{Patrol},
+(273)~\texttt{PolynomialFactorization},
+(276)~\texttt{PolynomialRemainder},
+(277)~\texttt{PowerCycle},
+(278)~\texttt{PowerNest},
+(279)~\texttt{PowerShortcut},
+(281)~\texttt{PrefixProductMODDistinctPermutation},
+(282)~\texttt{PrefixSumMODDistinctPermutation},
+(283)~\texttt{Prefixuffix},
+(284)~\texttt{PreorderTraversal},
+(285)~\texttt{PrimeGraph\_MinimumChromaticNumber},
+(290)~\texttt{QuantumLockPuzzle},
+(291)~\texttt{QueenPlacement},
+(292)~\texttt{RandomRangeMaxExpectation},
+(293)~\texttt{RangeConstrained\_IncreasingSequence\_Counting},
+(294)~\texttt{RangeFourSequenceConstruction},
+(299)~\texttt{RootExtraction},
+(300)~\texttt{RoundRobin},
+(301)~\texttt{RoundTableAssignment},
+(302)~\texttt{RoyalLockCounting},
+(304)~\texttt{SCC\_Sequence\_Counting},
+(307)~\texttt{SaladBar},
+(308)~\texttt{SalesmanFatigue},
+(310)~\texttt{SecretCowCode},
+(311)~\texttt{SegmentMinLengthEqual\_Counting},
+(312)~\texttt{SegmentTreeSortingCounting},
+(313)~\texttt{SelfPowerSequenceMOD},
+(316)~\texttt{SharedSubstringCounting},
+(319)~\texttt{ShortestUnicolorSubstring},
+(321)~\texttt{SingleStackSorting},
+(324)~\texttt{SkyscraperSumPuzzle},
+(325)~\texttt{SlidingWindow},
+(327)~\texttt{SmallestCircle},
+(330)~\texttt{SplittingGame},
+(331)~\texttt{SpyNetwork},
+(332)~\texttt{SquSquarks},
+(334)~\texttt{StarBattle},
+(335)~\texttt{StirlingSecond},
+(336)~\texttt{StoneGame},
+(338)~\texttt{StringPartitionShuffle},
+(346)~\texttt{SubsetSum},
+(348)~\texttt{Sudoku},
+(350)~\texttt{SumGCDWithIndividual},
+(351)~\texttt{SumLCM},
+(352)~\texttt{SumMOD},
+(353)~\texttt{SumManhattan\_CurvedSurface},
+(354)~\texttt{SumPHIInterval},
+(356)~\texttt{SumPseudoEuclidean},
+(359)~\texttt{SumTriangleArea},
+(362)~\texttt{SurvoPuzzle},
+(363)~\texttt{TakingPrimeGame},
+(364)~\texttt{TaskArrangement},
+(365)~\texttt{TetrisAttack},
+(367)~\texttt{ThreeVertexCycleCounting},
+(370)~\texttt{Tournament\_LongestPath},
+(371)~\texttt{TransmissionDelay},
+(372)~\texttt{TreeAddOneEdgeDiameter},
+(373)~\texttt{TreeCenter},
+(374)~\texttt{TreeChangeOneEdgeDiameter},
+(375)~\texttt{TreeColoring},
+(376)~\texttt{TreeDynamic\_XORZeroPath},
+(377)~\texttt{TreeElimination\_Expectation},
+(378)~\texttt{TreeEvenPartitioning},
+(379)~\texttt{TreeMaximumVisitedVertex},
+(380)~\texttt{TreeRandomWalkExpectation},
+(381)~\texttt{TreeTopologicalSequenceCounting},
+(382)~\texttt{Tree\_DistanceEqualTriad\_Counting},
+(383)~\texttt{TriumphalArch},
+(384)~\texttt{TwiddlePuzzle},
+(385)~\texttt{TwoSAT},
+(386)~\texttt{TwoSet\_AllCoprime\_Counting},
+(388)~\texttt{ValueDiminishingSelection},
+(389)~\texttt{Vertex\_KCenter},
+(391)~\texttt{VisibleLine},
+(392)~\texttt{WIL},
+(393)~\texttt{WYC},
+(396)~\texttt{WeightedBinaryTree},
+(397)~\texttt{WeightedLIS},
+(399)~\texttt{XorEquationCounting},
+(400)~\texttt{ZeroPrefixSubsetCounting}.
+\end{flushleft}
+
+
+
+
+\end{document}

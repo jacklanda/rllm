@@ -1,0 +1,49 @@
+\section{Related Work}
+
+\begin{table}[t]
+  % \vspace{-0.1em}
+  \centering
+  \renewcommand{\arraystretch}{0.5}
+  \caption{\dataname comparison to open-source tool-agentic datasets. Comparison comprises total trajectories, tool calling scenarios ([S]ingle, [P]arallel, [M]ulti[S]tep) including no-tool-use edge case (irrelevance[IR]), number of multi-turn conversations, and other details about data generation. Note $-$ indicates information not publicly available.}
+  % \vspace{-0.5em}
+  \label{tab:comparative-datasets-table}
+  \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lccccc}
+      \toprule
+      \textbf{Dataset}& 
+      % \textbf{Tools}& 
+      % \textbf{Domains}&
+      \textbf{Trajectories}&
+      \makecell[l]{\textbf{Tool-Call}\\ \textbf{Scenarios}}& 
+      % \makecell[l]{\textbf{Single}\\ \textbf{tool-call}}&
+      % \makecell[l]{\textbf{Parallel}\\ \textbf{tool-call}}&
+      % \makecell[l]{\textbf{Multi-step}\\ \textbf{tool-call}}&
+      % \makecell[l]{\textbf{Single}\\ \textbf{turn}}&
+      \makecell[l]{\textbf{Multi}\\ \textbf{Turn}}& 
+      \textbf{Tool Specs}&
+      \textbf{Tool Response} \\ 
+      \midrule
+      \makecell[l]{APIGent-MT-5K \citep{prabhakar2025apigenmtagenticpipelinemultiturn}}  &\num{5000}   &S P MS IR&\num{5000}  &From $\tau$-Bench &Executed \\[1em] % \hline
+      \makecell[l]{ToolACE \citep{liu2025toolacewinningpointsllm}}                       &\num{11300}  &S P MS IR&\num{509}   &Synthetic         &Simulated\\[1em] % \hline
+      \makecell[l]{Hermes Function-Calling V1 \citep{Hermes-Function-Calling-Dataset-V1}} &\num{11570}  &S P MS IR&\num{1890}  &Synthetic         &Executed       \\[1em] % \hline
+      \makecell[l]{Nemotron (Tools) \citep{NemotronPostTrainingDatasetV1}}               &\num{310051} &S P MS  --&\num{199610}&--                &--       \\[1em]% \hline
+      \dataname (This Work)                                                                      &\num{1527259}&S P MS IR&\num{567262}&Real              &Executed \\ \bottomrule
+    \end{tabular}%
+    \vspace{-1em}
+  }
+\end{table}
+
+\textbf{The past: Tool-calling datasets and benchmarks for LLMs.}
+Early tool-calling datasets enabled LLMs to interact with tools like REST APIs and ML functions. The Gorilla project \citep{patil2023gorillalargelanguagemodel} demonstrated that fine-tuning on such data enhances tool-use over vanilla models, introducing the BFCL benchmark \citep{patil2025bfcl} as a standard. ToolAlpaca \citep{tang_toolalpaca_2023} offered cost-effective synthetic data with lower quality, while ToolLLM \citep{qin2023toolllmfacilitatinglargelanguage} expanded to 16,000+ APIs across domains. API Pack \citep{guo2025apipackmassivemultiprogramming} added cross-language diversity (Python, Java, C++), and API Blend \citep{basu2024apiblendcomprehensivecorporatraining} optimized dataset mixtures for robustness, laying the foundation for tool-agent advancements. \textcolor{black}{More recently, APIGen has focused on domain diversification, contributing a training dataset covering 21 domains \cite{liu2024apigenautomatedpipelinegenerating}.}
+
+\textbf{The present: Tool-calling benchmarks and datasets for LLM-agents.}
+Recent research has shifted toward training LLM agents for effective tool use, exemplified by models like Kimi-K2 \citep{kimiteam2025kimik2openagentic} and GLM-4.5 \citep{5team2025glm45agenticreasoningcoding}, with performance assessed via benchmarks such as BFCL \citep{patil2025bfcl}, $\tau$-Bench \citep{yao2024taubenchbenchmarktoolagentuserinteraction}, and ACEBench \citep{chen_acebench_2025}. BFCL covers diverse scenarios including parallel, multi-step, and multi-turn tool use, while $\tau$-Bench focuses on realistic user-agent-tool interactions. ACEBench enhances evaluation by addressing edge cases and including a subset for tool-agent trajectories. Despite these advances, open-source training data for tool-agent trajectories remains limited. \textcolor{black}{Existing datasets \citep{Hermes-Function-Calling-Dataset-V1,liu2025toolacewinningpointsllm,prabhakar2025apigenmtagenticpipelinemultiturn,NemotronPostTrainingDatasetV1} either lack dataset curation transparency, are small in size for SFT, or simulate tool responses via LLMs}. Table~\ref{tab:comparative-datasets-table} compares existing tool-agentic datasets with \datanamen, which, at 1.5 million trajectories, offers the largest dataset, featuring extensive multi-turn dialogues, all tool-use scenarios, critical edge cases, and authentic tool responses from real-world environments.
+
+\newcommand{\cmark}{\textcolor{green}{\ding{51}}}%
+\newcommand{\xmark}{\textcolor{red}{\ding{55}}}%
+
+
+\textbf{The future: MCP benchmarks and datasets.} As concurrent work, recent MCP benchmarks \citep{gao2025mcpradarmultidimensionalbenchmarkevaluating,wang2025mcpbenchbenchmarkingtoolusingllm,mcpuniverse,mcpmark_2025,guo2025mcpagentbenchevaluatingrealworldlanguage,yin2025livemcp,liu2025mcpevalautomaticmcpbaseddeep,yan2025mcpworldunifiedbenchmarkingtestbed,scale2025mcp} aim to rigorously assess LLMs in tool-use settings beyond simple correctness. For instance, MCP-Radar \citep{gao2025mcpradarmultidimensionalbenchmarkevaluating} employs a five-dimensional evaluation including accuracy, tool selection efficiency, resource usage, parameter construction, and execution speed across software engineering, math, and problem-solving tasks with 300 queries and 42 MCP servers. Similarly, MCP-Bench \citep{wang2025mcpbenchbenchmarkingtoolusingllm} evaluates multi-step reasoning over 28 MCP servers and 250 tools, while MCP-Universe \citep{mcpuniverse} focuses on execution-based metrics in six real-world domains. These advancements underscore the need for comprehensive training datasets to support the development of robust, open-source LLM agents.
+
+
+

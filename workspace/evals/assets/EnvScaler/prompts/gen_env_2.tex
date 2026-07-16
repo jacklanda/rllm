@@ -1,0 +1,61 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \footnotesize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \textbf{User Prompt (Part 2/3):}\\[4pt]
+
+        \texttt{Hard Requirements:}\\
+        \texttt{1. Implement EVERY endpoint from the API spec with COMPLETE, working code. The API spec is for reference only. The source of truth is}\\
+        \texttt{~~~the database schema.}\\
+        \texttt{2. Follow the API spec as closely as possible: paths, HTTP methods, parameters (query/path/body), and response formats.}\\
+        \texttt{3. Follow the EXACT database schema: correct table names, columns, types, and foreign keys; do not invent tables or columns.}\\
+        \texttt{4. All endpoint handler functions MUST be async and self-contained.}\\
+        \texttt{5. Use ONLY SQLAlchemy ORM (no raw SQL).}\\
+        \texttt{6. User-specific operations MUST implicitly filter by user\_id=1 where applicable.}\\
+        \texttt{7. Session lifecycle per endpoint:}\\
+        \texttt{~~~- session = SessionLocal() at the start}\\
+        \texttt{~~~- For INSERT/UPDATE/DELETE call session.commit()}\\
+        \texttt{~~~- session.close() before returning}\\
+        \texttt{8. No placeholders; write complete, executable code. Do NOT create dummy or placeholder endpoints.}\\
+        \texttt{9. Path parameters in routes (e.g., /api/products/\{product\_id\}) MUST appear as function parameters.}\\
+        \texttt{10. STRICTLY PROHIBITED in the code: comments, try/except, error handling, validation beyond types, HTTPException, JSONResponse,}\\
+        \texttt{~~~~global exception handlers, duplicate route registration for the same path and HTTP method, references to undefined models/fields/tables,}\\
+        \texttt{~~~~schema-external FTS or helper tables, or any dynamic/introspective tricks to construct response models.}\\
+        \texttt{11. Booleans must be real bool fields in Pydantic responses, not 0/1.}\\
+        \texttt{12. The FastAPI app must be defined BEFORE any route decorators.}\\
+        \texttt{13. Include the uvicorn entry point at the end, using HOST and PORT from environment variables:}\\[2pt]
+        \texttt{~~~~if \_\_name\_\_ == ``\_\_main\_\_'':}\\
+        \texttt{~~~~~~~~import uvicorn, os}\\
+        \texttt{~~~~~~~~host = os.getenv(``HOST'', ``127.0.0.1'')}\\
+        \texttt{~~~~~~~~port = int(os.getenv(``PORT'', ``8000''))}\\
+        \texttt{~~~~~~~~uvicorn.run(app, host=host, port=port)}\\[2pt]
+        \texttt{14. The generated Python file MUST be valid Python \{PYTHON\_VERSION\} with no syntax errors. Do NOT use Python reserved keywords as}\\
+        \texttt{~~~~function parameter names or keyword argument names. If a database column or API field name is a Python keyword (e.g., ``return'',}\\
+        \texttt{~~~~``class'', ``global''), use a safe Python identifier with a trailing underscore (e.g., return\_) and map it to the real column name or JSON}\\
+        \texttt{~~~~field via Column(``return'', ...) or Field(..., alias=``return'').}\\
+        \texttt{15. There MUST be exactly one route function for each (path, HTTP method) pair. Do NOT declare multiple handlers for the same path}\\
+        \texttt{~~~~and HTTP method, even temporarily.}\\[4pt]
+
+        \texttt{Pydantic Model Requirements (Pydantic v2):}\\
+        \texttt{- Import from Pydantic v2 (e.g., from pydantic import BaseModel, Field, ConfigDict)}\\
+        \texttt{- Define request and response models for ALL endpoints}\\
+        \texttt{- Use Field for EVERY field with both description and example}\\
+        \texttt{- The response\_model specified in each route decorator MUST exactly match what the function returns}\\
+        \texttt{- The response\_model argument in each route decorator MUST be a direct reference to a concrete Pydantic BaseModel subclass defined in}\\
+        \texttt{~~this file (for example, MyResponseModel, or List[MyResponseModel]), NOT a dynamically computed or introspected expression. Do NOT}\\
+        \texttt{~~use \_\_annotations\_\_, \_\_mro\_\_, .\_\_class\_\_, metaclasses, or any other tricks to generate a response\_model}\\
+        \texttt{- Endpoint return type annotations MUST be consistent with the response\_model (e.g., MyResponseModel, List[MyResponseModel]) and MUST}\\
+        \texttt{~~be valid Pydantic field types. Do NOT use Union[...] return types, Response types, or mixtures like Union[Response, dict, None]}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for interface implementation generation (part 2 of 3).}
+    \label{fig:gen-env-2}
+\end{figure*}

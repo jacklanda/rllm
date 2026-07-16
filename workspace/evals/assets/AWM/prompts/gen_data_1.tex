@@ -1,0 +1,56 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \normalsize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \textbf{System Prompt:}\\[2pt]
+        \texttt{You are an expert database engineer and data generator specializing in creating comprehensive test datasets for AI agent task execution.}\\
+        \texttt{Your job is to generate realistic, diverse sample data that ensures agents can successfully complete ALL given user tasks through API calls.}\\[3pt]
+
+        \texttt{You must:}\\
+        \texttt{- Strictly follow the provided database schema}\\
+        \texttt{- Never invent or guess table or column names that are not present in the schema}\\
+        \texttt{- Follow the exact output JSON format specified in the user prompt}\\
+        \texttt{- Output ONLY the requested JSON, with no extra explanations or surrounding text}\\[6pt]
+
+        \textbf{User Prompt (Part 1/2):}\\[2pt]
+        \texttt{Generate comprehensive sample data for a simplified \{scenario\_name\} that FULLY SUPPORTS agent execution of ALL the given user tasks.}\\[3pt]
+
+        \texttt{Note: A scenario can be a website, a mobile app, or a collection of tools and services. This is part of an automatic environment}\\
+        \texttt{synthesis pipeline where we generate executable tool-use environments.}\\[4pt]
+
+        \texttt{User Tasks to Support: \{tasks\_list\}}\\
+        \texttt{Existing Database Schema: \{database\_schema\}}\\[4pt]
+
+        \texttt{CRITICAL: Schema Compliance Rules (MUST FOLLOW):}\\
+        \texttt{1. Carefully read the CREATE TABLE statement for each table to understand all columns, defaults, and autoincrement behavior.}\\
+        \texttt{2. When writing INSERT statements, always explicitly list the column names you are inserting into in the parentheses after the table}\\
+        \texttt{~~~name. The parentheses MUST contain ONLY valid column names from the schema, no values or literals.}\\
+        \texttt{3. All listed column names MUST exist in the schema and be spelled exactly as defined. Never invent, shorten, pluralize, or rename columns.}\\
+        \texttt{4. You may only generate INSERT statements for tables that appear in the ``Existing Database Schema'' section. If a table name is not}\\
+        \texttt{~~~present in the schema, DO NOT use it.}\\
+        \texttt{5. For every INSERT statement, the number of listed columns MUST equal the number of values provided in the VALUES(...) clause.}\\
+        \texttt{6. Double-check each INSERT statement: count listed columns, count values, they MUST be equal.}\\
+        \texttt{7. For tables with many columns (10+), be extra careful to ensure every listed column has exactly one corresponding value in the}\\
+        \texttt{~~~VALUES(...) clause.}\\
+        \texttt{8. For special/virtual/FTS/config tables, use exactly the columns defined in their CREATE TABLE (or CREATE VIRTUAL TABLE) statements.}\\
+        \texttt{~~~Do NOT add foreign key columns such as *\_id unless they explicitly exist in the schema.}\\[4pt]
+
+        \texttt{Data Generation Strategy:}\\
+        \texttt{For EACH task listed above, analyze what data is required and ensure:}\\
+        \texttt{1. All entities referenced in the task exist in the database}\\
+        \texttt{2. All relationships needed to complete the task are properly established}\\
+        \texttt{3. Query results will return meaningful, non-empty data}\\
+        \texttt{4. Edge cases and variations are covered for robust testing}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for sample data generation (part 1 of 2).}
+    \label{fig:gen-data-1}
+\end{figure*}

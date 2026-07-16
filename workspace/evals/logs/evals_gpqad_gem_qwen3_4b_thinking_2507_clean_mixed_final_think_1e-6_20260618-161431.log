@@ -1,0 +1,877 @@
+=================================
+PPU SDK Version:    v2.1.0
+CUDA Wrapper:       cuda-13.0
+PyTorch Version:    2.9.0
+NGC Version:        pytorch:-py3
+Python Version:     Python 3.12.3
+=================================
+Setup environment for CUDA
+[INFO] Get Dockerfile at /Dockerfile
+Driver Version                              : 1.5.1-1d747a
+HGGC Version                                : 13.0
+SDK Version                                 : 2.1.0-a5f865
+PPU 00000000:A8:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:A7:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:A9:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:AA:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:65:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:66:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:64:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:63:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E8:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E7:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E9:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:EA:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:25:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:26:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:24:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:23:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+[eval] Effective config: backend=ray_sglang ray_replicas=16 tp=1 n_parallel=512 max_problems=99999 max_new_tokens=32768
+[eval] Prompt config: harness=gem no_system_prompt=0 enable_thinking=1 mixed_evals=1
+[eval] Tasks: gpqa_diamond 2wiki bamboogle | tools: <harness-default> | output_dir=output
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+[cyan]Initializing data-parallel SGLang pool for /data/share/SFT/final_think/clean/1e-6/mixed (replicas=16, tp_per_worker=1, mem=0.9)
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+[evals-sglang] worker 1: importing engine
+[evals-sglang] worker 0: importing engine
+[evals-sglang] worker 10: importing engine
+[evals-sglang] worker 1: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 4: importing engine
+[evals-sglang] worker 0: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 10: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 4: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 3: importing engine
+[evals-sglang] worker 8: importing engine
+[evals-sglang] worker 3: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 8: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 2: importing engine
+[evals-sglang] worker 5: importing engine
+[evals-sglang] worker 7: importing engine
+[evals-sglang] worker 2: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 5: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 7: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 6: importing engine
+[evals-sglang] worker 13: importing engine
+[evals-sglang] worker 14: importing engine
+[evals-sglang] worker 6: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 14: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 15: importing engine
+[evals-sglang] worker 13: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 11: importing engine
+[evals-sglang] worker 12: importing engine
+[evals-sglang] worker 15: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 11: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 12: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] worker 9: importing engine
+[evals-sglang] worker 9: constructing engine
+[evals-sglang] import sglang.Engine
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] preparing model path
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] loading tokenizer
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+[evals-sglang] constructing sglang.Engine
+WARNING:2026-06-18 16:26:13,183:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,185:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,185:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,186:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,188:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,189:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,189:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,199:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,201:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,203:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,214:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,215:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,216:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,217:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,217:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:13,218:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,763:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,764:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,764:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,764:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,765:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,767:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,767:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,767:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,767:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,768:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,769:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,769:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,771:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,774:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,780:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:20,780:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:26:22,832:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,832:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,832:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,832:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,837:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,837:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,837:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,837:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,842:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,842:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,848:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,848:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,850:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,851:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,851:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,851:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,853:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,853:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,855:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,855:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,856:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,856:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,856:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,857:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,857:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,857:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,857:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,857:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,858:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,858:Current acext version: 1050100
+WARNING:2026-06-18 16:26:22,858:acext token limit: 4096
+WARNING:2026-06-18 16:26:22,858:acext token limit: 4096
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_response" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/pydantic/_internal/_fields.py:160: UserWarning: Field "model_output" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+WARNING:2026-06-18 16:29:02,014:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:05,745:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[rank0]:[W618 16:29:14.308239062 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+WARNING:2026-06-18 16:29:32,310:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:33,467:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:35,615:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:36,457:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:36,985:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:37,159:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:39,664:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:39,896:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:42,094:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:42,414:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:42,447:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:42,499:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:42,784:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+WARNING:2026-06-18 16:29:43,104:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,138:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,481:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,500:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,713:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,734:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,783:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,808:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,882:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,902:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:43,928:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,012:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+[rank0]:[W618 16:29:44.386815464 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+WARNING:2026-06-18 16:29:44,198:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+WARNING:2026-06-18 16:29:44,364:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,381:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,396:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,447:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,447:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,471:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,493:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,534:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,545:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:44,863:Import deepgemm error for running mxfp4! cannot import name 'preprocess_mxfp4_scales' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+[rank0]:[W618 16:29:45.525810503 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+WARNING:2026-06-18 16:29:46,483:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:46,490:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:46,620:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:47,168:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:47,376:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:47,530:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:47,549:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:47,854:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,018:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,151:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,238:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,281:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,321:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,527:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,528:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,593:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,616:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:48,809:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+WARNING:2026-06-18 16:29:49,134:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:49,461:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+[rank0]:[W618 16:29:50.583968889 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+WARNING:2026-06-18 16:29:50,493:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+WARNING:2026-06-18 16:29:50,540:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:50,563:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:50,604:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:50,784:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+WARNING:2026-06-18 16:29:50,841:Import deepgemm error for running mxfp4! cannot import name 'uint8_padding' from 'deep_gemm' (/usr/local/lib/python3.12/site-packages/deep_gemm/__init__.py)
+[rank0]:[W618 16:29:51.996017360 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[rank0]:[W618 16:29:54.495176157 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[rank0]:[W618 16:29:54.589710353 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[rank0]:[W618 16:29:55.476755998 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[rank0]:[W618 16:29:55.222906513 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[rank0]:[W618 16:29:55.243999020 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[rank0]:[W618 16:29:55.253978328 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:219: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @custom_fwd
+/usr/local/lib/python3.12/site-packages/megatron/core/tensor_parallel/layers.py:249: FutureWarning: `torch.cuda.amp.custom_bwd(args...)` is deprecated. Please use `torch.amp.custom_bwd(args..., device_type='cuda')` instead.
+  @custom_bwd
+[rank0]:[W618 16:29:56.897703447 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[rank0]:[W618 16:29:56.290660882 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[rank0]:[W618 16:29:56.295688801 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[rank0]:[W618 16:29:56.295892751 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[rank0]:[W618 16:29:57.408626615 ProcessGroupGloo.cpp:516] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+<SAIL>: skipping nsa indexer optimization, fallback to original path
+Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards:   0% Completed | 0/1 [00:00<?, ?it/s]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.41s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.95s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.41s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.95s/it]
+
+Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.95s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:20<00:00, 20.13s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.62s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.95s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.96s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:20<00:00, 20.13s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.60s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.62s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:22<00:00, 22.96s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.65s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.60s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.65s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.22s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:18<00:00, 18.64s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.33s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.22s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.63s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.33s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:18<00:00, 18.65s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.63s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.62s/it]Multi-thread loading shards: 100% Completed | 1/1 [00:17<00:00, 17.64s/it]
+Multi-thread loading shards: 100% Completed | 1/1 [00:16<00:00, 16.62s/it]
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 9: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 11: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 5: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 14: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 13: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 1: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 0: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 4: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 6: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 2: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 3: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 15: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 12: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 7: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 8: warming up engine
+[evals-sglang] sglang.Engine constructed
+[evals-sglang] worker 10: warming up engine
+[evals-sglang] worker 9: ready
+[evals-sglang] worker 13: ready
+[evals-sglang] worker 11: ready
+[evals-sglang] worker 6: ready
+[evals-sglang] worker 0: ready
+[evals-sglang] worker 3: ready
+[evals-sglang] worker 10: ready
+[evals-sglang] worker 2: ready
+[evals-sglang] worker 5: ready
+[evals-sglang] worker 14: ready
+[evals-sglang] worker 8: ready
+[evals-sglang] worker 7: ready
+[evals-sglang] worker 15: ready
+[evals-sglang] worker 1: ready
+[evals-sglang] worker 4: ready
+[evals-sglang] worker 12: ready
+[bold green]Mixed-evals enabled: pooling rollouts across 3 benchmarks into a single workflow engine.
+
+=== [bold cyan]MIXED  [gpqa_diamond, 2wiki, bamboogle]  (n=523, samples=4) ===
+[cyan]Using LocalRetrievalTool against https://sporadically-gymnogenous-makena.ngrok-free.dev (top_k=10, summarize=True)
+Generating trajectories:   0%|          | 0/2092 [00:00<?, ?it/s]Generating trajectories:   0%|          | 1/2092 [08:08<283:34:13, 488.21s/it]Generating trajectories:   0%|          | 2/2092 [08:38<127:06:48, 218.95s/it]Generating trajectories:   0%|          | 3/2092 [11:21<112:05:57, 193.18s/it]Generating trajectories:   0%|          | 4/2092 [15:12<120:50:14, 208.34s/it]Generating trajectories:   0%|          | 5/2092 [21:16<153:20:19, 264.50s/it]Generating trajectories:   0%|          | 6/2092 [24:03<133:53:43, 231.08s/it]Generating trajectories:   0%|          | 7/2092 [27:40<131:13:14, 226.57s/it]Generating trajectories:   0%|          | 8/2092 [27:48<90:55:18, 157.06s/it] Generating trajectories:   0%|          | 9/2092 [27:51<62:57:12, 108.80s/it]

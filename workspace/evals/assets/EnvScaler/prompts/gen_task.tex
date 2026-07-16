@@ -1,0 +1,64 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \normalsize
+        \vspace{2pt}
+        \setlength{\baselineskip}{9pt}
+
+        \textbf{System Prompt:}\\[2pt]
+        \texttt{You are an expert in web automation and user task analysis. Your job is to generate realistic, diverse user tasks for scenarios.}\\[6pt]
+
+        \textbf{User Prompt:}\\[2pt]
+        \texttt{Generate \{num\_tasks\} realistic and diverse user tasks for the following scenario.}\\[3pt]
+
+        \texttt{Note: A scenario can be a website (e.g., Amazon), a mobile app (e.g., Uber), or a collection of tools and services that provide related}\\
+        \texttt{functionality (e.g., Google Workspace combining Gmail, Drive, Calendar). This is part of an automatic environment synthesis pipeline}\\
+        \texttt{where we generate executable tool-use environments.}\\[4pt]
+
+        \texttt{Scenario: \{scenario\_name\}}\\
+        \texttt{Description: \{scenario\_description\}}\\[4pt]
+
+        \texttt{Requirements:}\\
+        \texttt{1. Tasks should be specific and actionable}\\
+        \texttt{2. Cover different user scenarios (beginner to advanced)}\\
+        \texttt{3. Include both common and less common use cases}\\
+        \texttt{4. Tasks should be practical and realistic}\\
+        \texttt{5. Each task should be a single sentence including all the necessary information to complete. For example, if the task is to post}\\
+        \texttt{~~~a tweet, the task should include the tweet content. If the task is querying the weather, the task should include a specific location.}\\
+        \texttt{6. If the scenario typically requires authentication, EXCLUDE any authentication, login, logout, or user registration tasks - assume}\\
+        \texttt{~~~the user is already logged in}\\
+        \texttt{7. If the scenario typically requires authentication, all tasks should be from the perspective of the current authenticated user}\\
+        \texttt{8. Return ONLY a JSON array of tasks, no additional text or annotations}\\
+        \texttt{9. The scenario is a simplified version providing API endpoints for task completion. Avoid generating tasks that require direct}\\
+        \texttt{~~~user interaction such as download a file, open a page, etc.}\\[4pt]
+
+        \texttt{Examples:}\\
+        \texttt{- For scenario ``Amazon'', a task could be ``Search for 'laptop' and add the cheapest result to the cart''}\\
+        \texttt{- For scenario ``Reddit'', a task could be ``Get the number of posts in the 'r/python' subreddit''}\\
+        \texttt{- For scenario ``Expedia'', a task could be ``Book a flight from New York to London on October 1st''}\\
+        \texttt{- For scenario ``Twitter/X'', a task could be ``Post a tweet with a photo, add alt text ``Sunset over the city'', include the hashtag}\\
+        \texttt{~~~\#Photography, and mention @Adobe.''}\\
+        \texttt{- For scenario ``LinkedIn'', a task could be ``Update my profile headline to 'Senior Data Analyst | SQL, Python, Tableau' and rewrite}\\
+        \texttt{~~~the About section to a concise 3-paragraph summary highlighting business impact.''}\\
+        \texttt{- For scenario ``Facebook'', a task could be ``Share your latest post to your friend list.''}\\
+        \texttt{- For scenario ``Google Maps'', a task could be ``Get 5 most popular restaurants in San Francisco.''}\\[4pt]
+
+        \texttt{Output format:}\\
+        \texttt{\{}\\
+        \texttt{~~~~``tasks'': [}\\
+        \texttt{~~~~~~~~``Task 1 description'',}\\
+        \texttt{~~~~~~~~``Task 2 description'',}\\
+        \texttt{~~~~~~~~...}\\
+        \texttt{~~~~~~~~``Task \{num\_tasks\} description''}\\
+        \texttt{~~~~]}\\
+        \texttt{\}}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for task generation given a scenario description.}
+    \label{fig:gen-task}
+\end{figure*}

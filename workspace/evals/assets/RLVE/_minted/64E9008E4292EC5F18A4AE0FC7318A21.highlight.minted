@@ -1,0 +1,78 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Conduct a \PYG{g+gs}{**Response Quality Assessment**} of a tool\PYGZhy{}use conversation across two LLM\PYGZhy{}scored dimensions, with a third dimension computed automatically outside the LLM.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided conversation and assess its response quality across two primary dimensions scored by the LLM, while reserving an additional tool\PYGZhy{}call accuracy dimension for automated scoring:
+\PYG{k}{1.} Completeness \PYGZhy{} Whether the assistant fully accomplished the user\PYGZsq{}s request end\PYGZhy{}to\PYGZhy{}end
+\PYG{k}{2.} Conciseness \PYGZhy{} Whether the assistant solved the task using the minimum necessary steps and verbosity
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Assessment Criteria}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 1. Completeness}
+\PYG{g+gs}{**What to Evaluate**}: Did the assistant fully satisfy the user\PYGZsq{}s goal given the conversation context? Consider whether the assistant:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Executed all required steps end\PYGZhy{}to\PYGZhy{}end (including saving/exporting/downloading where applicable)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Provided the final deliverable or a working alternative when blocked (e.g., tool failure with a usable fallback)
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Included essential confirmations, paths, or instructions to achieve the outcome
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Avoided missing key requirements or leaving the user with unresolved gaps
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }very incomplete: Major requirements missing; no usable outcome
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }incomplete: Some key requirements missing; outcome is not directly usable
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }partially complete: Core steps attempted; outcome usable only with user effort or missing minor requirements
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }mostly complete: Meets most requirements; small omissions or minor issues remain
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }fully complete: All requirements met with a usable outcome delivered
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} 2. Conciseness}
+\PYG{g+gs}{**What to Evaluate**}: Did the assistant achieve the goal with minimal redundancy and steps? Consider whether the assistant:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Avoided repetitive or unnecessary explanations/tool calls
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Used the minimal set of steps/tools to complete the task
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Kept language concise while preserving clarity
+
+\PYG{g+gs}{**Rating Guidelines**}:
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }very redundant: Excessive repetition or unnecessary steps/tool calls
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }redundant: Noticeable verbosity or extra steps beyond what\PYGZsq{}s needed
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }average: Reasonably concise with minor extraneous content
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }concise: Efficient and to the point with minimal overhead
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }very concise: Maximally efficient while clear and complete
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Response Analysis}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Content}
+\PYG{l+s+sb}{```}
+\PYG{l+s+sb}{\PYGZob{}QUESTION\PYGZus{}CONTENT\PYGZcb{}}
+\PYG{l+s+sb}{```}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Intended Tool for This Question}
+\PYG{l+s+sb}{```}
+\PYG{l+s+sb}{\PYGZob{}INTENDED\PYGZus{}TOOL\PYGZcb{}}
+\PYG{l+s+sb}{```}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Conversation History}
+\PYG{l+s+sb}{```}
+\PYG{l+s+sb}{\PYGZob{}CONVERSATION\PYGZus{}HISTORY\PYGZcb{}}
+\PYG{l+s+sb}{```}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output Requirements}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Provide detailed reasoning BEFORE ratings for Completeness and Conciseness
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Do NOT score Tool Call Accuracy; include placeholders only
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}completeness\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Evaluate if the assistant delivered an end\PYGZhy{}to\PYGZhy{}end usable outcome, addressed all requirements, handled tool failures with alternatives, and provided necessary confirmations/paths. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: very incomplete, incomplete, partially complete, mostly complete, fully complete \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/completeness\PYGZgt{}
+
+  \PYGZlt{}conciseness\PYGZgt{}
+    \PYGZlt{}reasoning\PYGZgt{}
+      \PYGZlt{}!\PYGZhy{}\PYGZhy{} Evaluate if the assistant minimized redundant steps/explanations, avoided unnecessary tool calls, and kept messaging efficient while clear. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+    \PYGZlt{}/reasoning\PYGZgt{}
+    \PYGZlt{}rating\PYGZgt{}\PYGZlt{}!\PYGZhy{}\PYGZhy{} Rating: very redundant, redundant, average, concise, very concise \PYGZhy{}\PYGZhy{}\PYGZgt{}\PYGZlt{}/rating\PYGZgt{}
+  \PYGZlt{}/conciseness\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

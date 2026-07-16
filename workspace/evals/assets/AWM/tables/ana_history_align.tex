@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{
+    Analysis of history-aware training with aligned and misaligned inference settings with 4B model.  ``Aligned'' uses the same history limit (HL) setting for training and inference (i.e., no truncation for model w/o HL, while truncated history for model w/ HL). ``Misaligned'' uses opposite settings for training and inference.
+}
+\label{tab:ana_history_align}
+\small
+\resizebox{0.9\columnwidth}{!}{%
+\begin{tabular}{@{}l|c|cccc@{}}
+\toprule
+\textbf{Setting} & \textbf{Method} & \textbf{BFCLv3} & \textbf{$\tau^2$ P@1} & \textbf{$\tau^2$ P@4} & \textbf{MCP} \\
+\midrule
+\multirow{2}{*}{Aligned} 
+  & w/ HL & 64.50 & 22.57 & 43.89 & 6.70 \\
+  & w/o HL & 55.35 & 15.92 & 36.33 & 6.15 \\
+\midrule
+\multirow{2}{*}{Misaligned} 
+  & w/ HL & 61.85 & 9.35 & 15.11 & 5.03 \\
+  & w/o HL & 56.80 & 16.10 & 33.09 & 6.15 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

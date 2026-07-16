@@ -1,0 +1,1204 @@
+2026-05-14 13:04:50.641 | WARNING  | vita.utils.utils:<module>:21 - No .env file found
+2026-05-14 13:05:00.001 | INFO     | vita.registry:<module>:158 - Registering default components...
+2026-05-14 13:05:00.002 | INFO     | vita.registry:<module>:170 - Default components registered successfully. Registry info: {
+  "domains": [
+    "delivery",
+    "ota",
+    "instore"
+  ],
+  "agents": [
+    "llm_agent",
+    "llm_solo_agent"
+  ],
+  "users": [
+    "user_simulator",
+    "dummy_user"
+  ],
+  "task_sets": [
+    "delivery",
+    "ota",
+    "instore",
+    "cross_domain"
+  ]
+}
+Available models: ['default', 'assistant-agent', 'user-agent', 'evaluator-agent']
+╭────────────────────────── Simulation Configuration ──────────────────────────╮
+│ Domain: delivery                                                             │
+│ Task Set: Default                                                            │
+│ Task IDs: All                                                                │
+│ Number of trials: 1                                                          │
+│ Max steps: 128                                                               │
+│ Max errors: 10                                                               │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Agent Configuration ──╮╭── User Configuration ───╮╭── Additional Settings ──╮
+│ Implementation:        ││ Implementation:         ││ Save To:                │
+│ llm_agent              ││ user_simulator          ││ mcp-step40_delivery     │
+│ Model: assistant-agent ││ Model: user-agent       ││ Max Concurrency: 8      │
+│ LLM Arguments:         ││ LLM Arguments:          ││                         │
+│ {                      ││ {                       ││                         │
+│   "backend":           ││   "backend":            ││                         │
+│ "vllm_local",          ││ "litellm_http",         ││                         │
+│   "api_key":           ││   "api_key":            ││                         │
+│ "sk-8UdjlB0JCiItilvBFM ││ "sk-8UdjlB0JCiItilvBFMR ││                         │
+│ RgVA",                 ││ gVA",                   ││                         │
+│   "base_url":          ││   "base_url":           ││                         │
+╰────────────────────────╯╰─────────────────────────╯╰─────────────────────────╯
+2026-05-14 13:05:00.059 | INFO     | vita.run:run_tasks:341 - Saving simulation batch to /share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/data/simulations/mcp-step40_delivery
+
+0/100 (trial 1/1) Running task 10711001, trial 1
+2026-05-14 13:05:00.086 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10711001, Agent: llm_agent, User: user_simulator
+
+1/100 (trial 1/1) Running task 10711002, trial 1
+2026-05-14 13:05:00.087 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10711002, Agent: llm_agent, User: user_simulator
+
+2/100 (trial 1/1) Running task 10714001, trial 1
+2026-05-14 13:05:00.088 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10714001, Agent: llm_agent, User: user_simulator
+
+3/100 (trial 1/1) Running task 10716001, trial 1
+2026-05-14 13:05:00.093 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10716001, Agent: llm_agent, User: user_simulator
+
+4/100 (trial 1/1) Running task 10721001, trial 1
+2026-05-14 13:05:00.100 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10721001, Agent: llm_agent, User: user_simulator
+
+5/100 (trial 1/1) Running task 10721002, trial 1
+2026-05-14 13:05:00.116 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10721002, Agent: llm_agent, User: user_simulator
+
+6/100 (trial 1/1) Running task 10721003, trial 1
+2026-05-14 13:05:00.117 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10721003, Agent: llm_agent, User: user_simulator
+
+7/100 (trial 1/1) Running task 10721004, trial 1
+2026-05-14 13:05:00.127 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10721004, Agent: llm_agent, User: user_simulator
+
+2026-05-14 13:05:00.206 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-21 11:20:00
+
+2026-05-14 13:05:00.212 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-03 17:02:31
+
+2026-05-14 13:05:00.252 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2024-05-12 16:19:36
+
+2026-05-14 13:05:00.280 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-02-14 17:55:12
+
+2026-05-14 13:05:00.291 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-04-18 05:46:21
+
+2026-05-14 13:05:00.307 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2024-08-19 17:47:12
+
+2026-05-14 13:05:00.322 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-05-31 18:45:07
+
+2026-05-14 13:05:00.335 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-11-01 13:57:55
+
+INFO 05-14 13:05:01 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 32768, 'tensor_parallel_size': 8, 'disable_log_stats': True, 'enforce_eager': True, 'model': '/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model'}
+INFO 05-14 13:05:01 [model.py:549] Resolved architecture: Qwen3ForCausalLM
+INFO 05-14 13:05:01 [model.py:2013] Downcasting torch.float32 to torch.bfloat16.
+INFO 05-14 13:05:01 [model.py:1678] Using max model len 32768
+INFO 05-14 13:05:01 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 05-14 13:05:01 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 05-14 13:05:01 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-14 13:05:01 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-14 13:05:02 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 05-14 13:05:02 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant
+(EngineCore pid=2653080) INFO 05-14 13:05:04 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=8, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2653080) WARNING 05-14 13:05:04 [multiproc_executor.py:1014] Reducing Torch parallelism from 64 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=2653080) INFO 05-14 13:05:04 [multiproc_executor.py:134] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=10.141.0.101 (local), world_size=8, local_world_size=8
+(Worker pid=2653086) INFO 05-14 13:05:08 [parallel_state.py:1400] world_size=8 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653093) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=7 local_rank=7 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653092) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=6 local_rank=6 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653091) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=5 local_rank=5 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653090) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=4 local_rank=4 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653087) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653089) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=3 local_rank=3 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653088) INFO 05-14 13:05:09 [parallel_state.py:1400] world_size=8 rank=2 local_rank=2 distributed_init_method=tcp://127.0.0.1:50077 backend=nccl
+(Worker pid=2653092) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653086) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653090) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653089) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653088) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653087) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653093) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653092) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653086) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653090) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653089) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653088) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653087) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653093) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653091) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653091) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653086) INFO 05-14 13:05:10 [pynccl.py:111] vLLM is using nccl==2.27.5
+(Worker pid=2653086) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653092) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653091) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653087) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653093) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653090) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653089) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653088) WARNING 05-14 13:05:11 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653086) INFO 05-14 13:05:11 [parallel_state.py:1716] rank 0 in world size 8 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857] WorkerProc failed to start.
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857] Traceback (most recent call last):
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 826, in worker_main
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     worker = WorkerProc(*args, **kwargs)
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 605, in __init__
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     self.worker.init_device()
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     self.worker.init_device()  # type: ignore
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857]     raise ValueError(
+(Worker pid=2653089) ERROR 05-14 13:05:11 [multiproc_executor.py:857] ValueError: Free memory on device cuda:3 (63.41/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:12 [gpu_model_runner.py:4735] Starting to load model /share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model...
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:12 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:12 [flash_attn.py:596] Using FlashAttention version 2
+(Worker_TP6 pid=2653092) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP6 pid=2653092) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP0 pid=2653086) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(Worker_TP2 pid=2653088) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP2 pid=2653088) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP4 pid=2653090) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP7 pid=2653093) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP4 pid=2653090) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP7 pid=2653093) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP5 pid=2653091) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP5 pid=2653091) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP1 pid=2653087) INFO 05-14 13:05:12 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP1 pid=2653087) INFO 05-14 13:05:12 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2653086) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.25it/s]
+(Worker_TP0 pid=2653086) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.25it/s]
+(Worker_TP0 pid=2653086) 
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:13 [default_loader.py:384] Loading weights took 1.07 seconds
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:14 [gpu_model_runner.py:4820] Model loading took 1.0 GiB memory and 1.237744 seconds
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:14 [multiproc_executor.py:764] Parent process exited, terminating worker queues
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:16 [weight_utils.py:825] Prefetching checkpoint files: 10% (1/1)
+(Worker_TP0 pid=2653086) INFO 05-14 13:05:16 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 3.36s
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     super().__init__(
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     super().__init__(vllm_config)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     self._init_executor()
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108]     raise e from None
+(EngineCore pid=2653080) ERROR 05-14 13:05:19 [core.py:1108] Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(EngineCore pid=2653080) Process EngineCore:
+(EngineCore pid=2653080) Traceback (most recent call last):
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=2653080)     self.run()
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 108, in run
+(EngineCore pid=2653080)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=2653080)     raise e
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2653080)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653080)     return func(*args, **kwargs)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2653080)     super().__init__(
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2653080)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2653080)     super().__init__(vllm_config)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653080)     return func(*args, **kwargs)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2653080)     self._init_executor()
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2653080)     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2653080)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2653080)     raise e from None
+(EngineCore pid=2653080) Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 9 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+2026-05-14 13:05:21.174 | ERROR    | vita.utils.llm_utils:generate:626 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+INFO 05-14 13:05:21 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 32768, 'tensor_parallel_size': 8, 'disable_log_stats': True, 'enforce_eager': True, 'model': '/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model'}
+Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 627, in generate
+    raise e
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 548, in generate
+    return _generate_with_vllm(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 356, in _generate_with_vllm
+    runtime = _start_vllm_runtime(model, model_config)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 320, in _start_vllm_runtime
+    llm = LLM(model=model_name, **llm_kwargs)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/entrypoints/llm.py", line 382, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 101, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 710, in __init__
+    super().__init__(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 535, in __init__
+    with launch_core_engines(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/contextlib.py", line 142, in __exit__
+    next(self.gen)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 998, in launch_core_engines
+    wait_for_engine_startup(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 1057, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+2026-05-14 13:05:21.183 | ERROR    | vita.utils.llm_utils:generate:666 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+2026-05-14 13:05:21.185 | WARNING  | vita.run:run_task:513 - Task 10714001 failed on attempt 1/4: 'NoneType' object has no attribute 'has_text_content'. Retrying...
+
+2026-05-14 13:05:21.185 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10714001, Agent: llm_agent, User: user_simulator
+
+INFO 05-14 13:05:21 [model.py:549] Resolved architecture: Qwen3ForCausalLM
+INFO 05-14 13:05:21 [model.py:2013] Downcasting torch.float32 to torch.bfloat16.
+INFO 05-14 13:05:21 [model.py:1678] Using max model len 32768
+WARNING 05-14 13:05:21 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-14 13:05:21 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-14 13:05:21 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=2653680) INFO 05-14 13:05:21 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=8, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2653680) WARNING 05-14 13:05:21 [multiproc_executor.py:1014] Reducing Torch parallelism from 64 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=2653680) INFO 05-14 13:05:21 [multiproc_executor.py:134] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=10.141.0.101 (local), world_size=8, local_world_size=8
+(Worker pid=2653687) INFO 05-14 13:05:25 [parallel_state.py:1400] world_size=8 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653691) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=4 local_rank=4 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653692) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=5 local_rank=5 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653693) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=6 local_rank=6 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653690) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=3 local_rank=3 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653688) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653689) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=2 local_rank=2 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653694) INFO 05-14 13:05:26 [parallel_state.py:1400] world_size=8 rank=7 local_rank=7 distributed_init_method=tcp://127.0.0.1:47277 backend=nccl
+(Worker pid=2653689) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653691) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653687) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653690) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653693) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653692) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653688) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653694) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2653690) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653691) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653693) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653692) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653689) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653687) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653688) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653694) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2653687) INFO 05-14 13:05:27 [pynccl.py:111] vLLM is using nccl==2.27.5
+(Worker pid=2653692) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653694) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653691) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653693) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653687) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653689) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653690) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653688) WARNING 05-14 13:05:28 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2653687) INFO 05-14 13:05:28 [parallel_state.py:1716] rank 0 in world size 8 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857] WorkerProc failed to start.
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857] Traceback (most recent call last):
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 826, in worker_main
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     worker = WorkerProc(*args, **kwargs)
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 605, in __init__
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     self.worker.init_device()
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     self.worker.init_device()  # type: ignore
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857]     raise ValueError(
+(Worker pid=2653690) ERROR 05-14 13:05:28 [multiproc_executor.py:857] ValueError: Free memory on device cuda:3 (34.56/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:28 [gpu_model_runner.py:4735] Starting to load model /share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model...
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:29 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:29 [flash_attn.py:596] Using FlashAttention version 2
+(Worker_TP4 pid=2653691) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP4 pid=2653691) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP7 pid=2653694) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP7 pid=2653694) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP5 pid=2653692) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP5 pid=2653692) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP0 pid=2653687) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(Worker_TP6 pid=2653693) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP6 pid=2653693) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP2 pid=2653689) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP2 pid=2653689) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP1 pid=2653688) INFO 05-14 13:05:29 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP1 pid=2653688) INFO 05-14 13:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2653687) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.24it/s]
+(Worker_TP0 pid=2653687) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.24it/s]
+(Worker_TP0 pid=2653687) 
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:30 [default_loader.py:384] Loading weights took 1.01 seconds
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:31 [gpu_model_runner.py:4820] Model loading took 1.0 GiB memory and 1.172643 seconds
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:31 [multiproc_executor.py:764] Parent process exited, terminating worker queues
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:32 [weight_utils.py:825] Prefetching checkpoint files: 10% (1/1)
+(Worker_TP0 pid=2653687) INFO 05-14 13:05:32 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 3.41s
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     super().__init__(
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     super().__init__(vllm_config)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     self._init_executor()
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108]     raise e from None
+(EngineCore pid=2653680) ERROR 05-14 13:05:36 [core.py:1108] Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(EngineCore pid=2653680) Process EngineCore:
+(EngineCore pid=2653680) Traceback (most recent call last):
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=2653680)     self.run()
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 108, in run
+(EngineCore pid=2653680)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=2653680)     raise e
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2653680)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653680)     return func(*args, **kwargs)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2653680)     super().__init__(
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2653680)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2653680)     super().__init__(vllm_config)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2653680)     return func(*args, **kwargs)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2653680)     self._init_executor()
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2653680)     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2653680)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2653680)     raise e from None
+(EngineCore pid=2653680) Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 627, in generate
+    raise e
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 548, in generate
+    return _generate_with_vllm(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 356, in _generate_with_vllm
+    runtime = _start_vllm_runtime(model, model_config)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 320, in _start_vllm_runtime
+    llm = LLM(model=model_name, **llm_kwargs)
+2026-05-14 13:05:21.227 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-03 17:02:31
+
+2026-05-14 13:05:37.855 | ERROR    | vita.utils.llm_utils:generate:626 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+INFO 05-14 13:05:37 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 32768, 'tensor_parallel_size': 8, 'disable_log_stats': True, 'enforce_eager': True, 'model': '/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model'}
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/entrypoints/llm.py", line 382, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 101, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 710, in __init__
+    super().__init__(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 535, in __init__
+    with launch_core_engines(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/contextlib.py", line 142, in __exit__
+    next(self.gen)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 998, in launch_core_engines
+    wait_for_engine_startup(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 1057, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 9 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+2026-05-14 13:05:37.857 | ERROR    | vita.utils.llm_utils:generate:666 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+2026-05-14 13:05:37.857 | WARNING  | vita.run:run_task:513 - Task 10711001 failed on attempt 1/4: 'NoneType' object has no attribute 'has_text_content'. Retrying...
+
+2026-05-14 13:05:37.858 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10711001, Agent: llm_agent, User: user_simulator
+
+INFO 05-14 13:05:37 [model.py:549] Resolved architecture: Qwen3ForCausalLM
+INFO 05-14 13:05:37 [model.py:2013] Downcasting torch.float32 to torch.bfloat16.
+INFO 05-14 13:05:37 [model.py:1678] Using max model len 32768
+2026-05-14 13:05:37.887 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-21 11:20:00
+
+WARNING 05-14 13:05:37 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-14 13:05:37 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-14 13:05:37 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=2654202) INFO 05-14 13:05:38 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=8, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2654202) WARNING 05-14 13:05:38 [multiproc_executor.py:1014] Reducing Torch parallelism from 64 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=2654202) INFO 05-14 13:05:38 [multiproc_executor.py:134] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=10.141.0.101 (local), world_size=8, local_world_size=8
+(Worker pid=2654216) INFO 05-14 13:05:42 [parallel_state.py:1400] world_size=8 rank=7 local_rank=7 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654209) INFO 05-14 13:05:42 [parallel_state.py:1400] world_size=8 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654212) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=3 local_rank=3 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654215) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=6 local_rank=6 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654214) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=5 local_rank=5 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654211) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=2 local_rank=2 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654210) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654213) INFO 05-14 13:05:43 [parallel_state.py:1400] world_size=8 rank=4 local_rank=4 distributed_init_method=tcp://127.0.0.1:58457 backend=nccl
+(Worker pid=2654212) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654216) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654210) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654215) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654211) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654209) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654214) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654212) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654211) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654210) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654216) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654215) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654209) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654214) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654213) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654213) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654209) INFO 05-14 13:05:44 [pynccl.py:111] vLLM is using nccl==2.27.5
+(Worker pid=2654211) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654214) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654216) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654213) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654210) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654215) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654212) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654209) WARNING 05-14 13:05:45 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654209) INFO 05-14 13:05:45 [parallel_state.py:1716] rank 0 in world size 8 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857] WorkerProc failed to start.
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857] Traceback (most recent call last):
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 826, in worker_main
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     worker = WorkerProc(*args, **kwargs)
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 605, in __init__
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     self.worker.init_device()
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     self.worker.init_device()  # type: ignore
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     return func(*args, **kwargs)
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857]     raise ValueError(
+(Worker pid=2654212) ERROR 05-14 13:05:46 [multiproc_executor.py:857] ValueError: Free memory on device cuda:3 (34.56/79.25 GiB) on startup is less than desired GPU memory utilization (0.9, 71.33 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:46 [gpu_model_runner.py:4735] Starting to load model /share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model...
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:46 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:46 [flash_attn.py:596] Using FlashAttention version 2
+(Worker_TP2 pid=2654211) INFO 05-14 13:05:46 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP2 pid=2654211) INFO 05-14 13:05:46 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP7 pid=2654216) INFO 05-14 13:05:46 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP1 pid=2654210) INFO 05-14 13:05:46 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP7 pid=2654216) INFO 05-14 13:05:46 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP1 pid=2654210) INFO 05-14 13:05:46 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:47 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP0 pid=2654209) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(Worker_TP5 pid=2654214) INFO 05-14 13:05:47 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP4 pid=2654213) INFO 05-14 13:05:47 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP5 pid=2654214) INFO 05-14 13:05:47 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP4 pid=2654213) INFO 05-14 13:05:47 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP6 pid=2654215) INFO 05-14 13:05:47 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP6 pid=2654215) INFO 05-14 13:05:47 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2654209) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.06it/s]
+(Worker_TP0 pid=2654209) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.06it/s]
+(Worker_TP0 pid=2654209) 
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:48 [default_loader.py:384] Loading weights took 1.10 seconds
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:48 [gpu_model_runner.py:4820] Model loading took 1.0 GiB memory and 1.283472 seconds
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:48 [multiproc_executor.py:764] Parent process exited, terminating worker queues
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:50 [weight_utils.py:825] Prefetching checkpoint files: 10% (1/1)
+(Worker_TP0 pid=2654209) INFO 05-14 13:05:50 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 3.40s
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     super().__init__(
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     super().__init__(vllm_config)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     self._init_executor()
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108]     raise e from None
+(EngineCore pid=2654202) ERROR 05-14 13:05:54 [core.py:1108] Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+(EngineCore pid=2654202) Process EngineCore:
+(EngineCore pid=2654202) Traceback (most recent call last):
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=2654202)     self.run()
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 108, in run
+(EngineCore pid=2654202)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=2654202)     raise e
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=2654202)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2654202)     return func(*args, **kwargs)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=2654202)     super().__init__(
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=2654202)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 101, in __init__
+(EngineCore pid=2654202)     super().__init__(vllm_config)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=2654202)     return func(*args, **kwargs)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=2654202)     self._init_executor()
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 190, in _init_executor
+(EngineCore pid=2654202)     self.workers = WorkerProc.wait_for_ready(unready_workers)
+(EngineCore pid=2654202)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 736, in wait_for_ready
+(EngineCore pid=2654202)     raise e from None
+(EngineCore pid=2654202) Exception: WorkerProc initialization failed due to an exception in a background process. See stack trace for root cause.
+2026-05-14 13:05:55.299 | ERROR    | vita.utils.llm_utils:generate:626 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+INFO 05-14 13:05:55 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 32768, 'tensor_parallel_size': 8, 'disable_log_stats': True, 'enforce_eager': True, 'model': '/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model'}
+/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 9 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 627, in generate
+    raise e
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 548, in generate
+    return _generate_with_vllm(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 356, in _generate_with_vllm
+    runtime = _start_vllm_runtime(model, model_config)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 320, in _start_vllm_runtime
+    llm = LLM(model=model_name, **llm_kwargs)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/entrypoints/llm.py", line 382, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 177, in from_engine_args
+    return cls(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/llm_engine.py", line 111, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 101, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 710, in __init__
+    super().__init__(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core_client.py", line 535, in __init__
+    with launch_core_engines(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/contextlib.py", line 142, in __exit__
+    next(self.gen)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 998, in launch_core_engines
+    wait_for_engine_startup(
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/utils.py", line 1057, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+2026-05-14 13:05:55.303 | ERROR    | vita.utils.llm_utils:generate:666 - Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+
+2026-05-14 13:05:55.304 | WARNING  | vita.run:run_task:513 - Task 10721001 failed on attempt 1/4: 'NoneType' object has no attribute 'has_text_content'. Retrying...
+
+2026-05-14 13:05:55.304 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 10721001, Agent: llm_agent, User: user_simulator
+
+INFO 05-14 13:05:55 [model.py:549] Resolved architecture: Qwen3ForCausalLM
+INFO 05-14 13:05:55 [model.py:2013] Downcasting torch.float32 to torch.bfloat16.
+INFO 05-14 13:05:55 [model.py:1678] Using max model len 32768
+WARNING 05-14 13:05:55 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-14 13:05:55 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-14 13:05:55 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=2654786) INFO 05-14 13:05:55 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=8, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2654786) WARNING 05-14 13:05:55 [multiproc_executor.py:1014] Reducing Torch parallelism from 64 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
+(EngineCore pid=2654786) INFO 05-14 13:05:55 [multiproc_executor.py:134] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=10.141.0.101 (local), world_size=8, local_world_size=8
+(Worker pid=2654794) INFO 05-14 13:06:00 [parallel_state.py:1400] world_size=8 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654795) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654801) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=7 local_rank=7 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654798) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=4 local_rank=4 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654800) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=6 local_rank=6 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654796) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=2 local_rank=2 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654799) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=5 local_rank=5 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654797) INFO 05-14 13:06:01 [parallel_state.py:1400] world_size=8 rank=3 local_rank=3 distributed_init_method=tcp://127.0.0.1:51977 backend=nccl
+(Worker pid=2654796) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654797) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654795) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654794) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654799) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654798) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654800) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654801) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
+(Worker pid=2654795) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654796) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654797) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654801) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654799) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654794) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654800) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654798) <frozen importlib._bootstrap_external>:1184: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
+(Worker pid=2654794) INFO 05-14 13:06:02 [pynccl.py:111] vLLM is using nccl==2.27.5
+(Worker pid=2654794) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654798) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654800) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654799) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654801) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654795) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654797) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654796) WARNING 05-14 13:06:03 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
+(Worker pid=2654794) INFO 05-14 13:06:03 [parallel_state.py:1716] rank 0 in world size 8 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:04 [gpu_model_runner.py:4735] Starting to load model /share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model...
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:04 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:04 [flash_attn.py:596] Using FlashAttention version 2
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:04 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP0 pid=2654794) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(Worker_TP4 pid=2654798) INFO 05-14 13:06:04 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP4 pid=2654798) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP5 pid=2654799) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP5 pid=2654799) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP7 pid=2654801) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP3 pid=2654797) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP2 pid=2654796) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP3 pid=2654797) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP7 pid=2654801) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP2 pid=2654796) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP1 pid=2654795) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP1 pid=2654795) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP6 pid=2654800) INFO 05-14 13:06:05 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(Worker_TP6 pid=2654800) INFO 05-14 13:06:05 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 0.00s
+(Worker_TP0 pid=2654794) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.22it/s]
+(Worker_TP0 pid=2654794) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.22it/s]
+(Worker_TP0 pid=2654794) 
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:05 [default_loader.py:384] Loading weights took 1.02 seconds
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:06 [gpu_model_runner.py:4820] Model loading took 1.0 GiB memory and 1.204518 seconds
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:08 [weight_utils.py:825] Prefetching checkpoint files: 10% (1/1)
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:08 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 3.84s
+(Worker_TP0 pid=2654794) INFO 05-14 13:06:10 [gpu_worker.py:436] Available KV cache memory: 69.22 GiB
+(EngineCore pid=2654786) INFO 05-14 13:06:11 [kv_cache_utils.py:1319] GPU KV cache size: 4,032,096 tokens
+(EngineCore pid=2654786) INFO 05-14 13:06:11 [kv_cache_utils.py:1324] Maximum concurrency for 32,768 tokens per request: 123.05x
+(EngineCore pid=2654786) INFO 05-14 13:06:11 [core.py:283] init engine (profile, create kv cache, warmup model) took 4.52 seconds
+(EngineCore pid=2654786) WARNING 05-14 13:06:12 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=2654786) WARNING 05-14 13:06:12 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=2654786) INFO 05-14 13:06:12 [vllm.py:1025] Cudagraph is disabled under eager mode
+2026-05-14 13:05:55.359 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-02-14 17:55:12
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]INFO 05-14 13:06:12 [hf.py:314] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+Rendering conversations: 100%|██████████| 1/1 [00:00<00:00,  9.89it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00,  9.88it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.29s/it, est. speed input: 40.65 toks/s, output: 37.33 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.29s/it, est. speed input: 40.65 toks/s, output: 37.33 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.29s/it, est. speed input: 40.65 toks/s, output: 37.33 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 120.01it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:16<00:00, 76.34s/it, est. speed input: 46.63 toks/s, output: 38.25 toks/s]Processed prompts: 100%|██████████| 1/1 [01:16<00:00, 76.34s/it, est. speed input: 46.63 toks/s, output: 38.25 toks/s]Processed prompts: 100%|██████████| 1/1 [01:16<00:00, 76.34s/it, est. speed input: 46.63 toks/s, output: 38.25 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 73.89it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.95s/it, est. speed input: 59.05 toks/s, output: 38.36 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.95s/it, est. speed input: 59.05 toks/s, output: 38.36 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.95s/it, est. speed input: 59.05 toks/s, output: 38.36 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 121.29it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.88s/it, est. speed input: 48.21 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.88s/it, est. speed input: 48.21 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.88s/it, est. speed input: 48.21 toks/s, output: 38.52 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 121.17it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:35<00:00, 95.18s/it, est. speed input: 37.92 toks/s, output: 38.31 toks/s]Processed prompts: 100%|██████████| 1/1 [01:35<00:00, 95.18s/it, est. speed input: 37.92 toks/s, output: 38.31 toks/s]Processed prompts: 100%|██████████| 1/1 [01:35<00:00, 95.18s/it, est. speed input: 37.92 toks/s, output: 38.31 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 104.34it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.46s/it, est. speed input: 33.06 toks/s, output: 38.12 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.46s/it, est. speed input: 33.06 toks/s, output: 38.12 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.46s/it, est. speed input: 33.06 toks/s, output: 38.12 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 109.92it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.49s/it, est. speed input: 45.99 toks/s, output: 38.04 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.49s/it, est. speed input: 45.99 toks/s, output: 38.04 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.49s/it, est. speed input: 45.99 toks/s, output: 38.04 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 87.73it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.35s/it, est. speed input: 135.89 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.35s/it, est. speed input: 135.89 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.35s/it, est. speed input: 135.89 toks/s, output: 38.52 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 245, in get_response
+    resp = self.make_tool_call(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 127, in make_tool_call
+    return self.use_tool(tool_name=tool_name, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 106, in use_tool
+    return self.tools.use_tool(tool_name=tool_name, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 178, in use_tool
+    return self.tools[tool_name](**kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 146, in wrapper
+    return func(*args, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 319, in address_to_longitude_latitude
+    raise ValueError(f"Longitude and latitude not found for address {address}")
+ValueError: Longitude and latitude not found for address Hengqin
+Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.76it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.24s/it, est. speed input: 459.91 toks/s, output: 38.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.24s/it, est. speed input: 459.91 toks/s, output: 38.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.24s/it, est. speed input: 459.91 toks/s, output: 38.13 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 66.91it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.76s/it, est. speed input: 247.56 toks/s, output: 37.87 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.76s/it, est. speed input: 247.56 toks/s, output: 37.87 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.76s/it, est. speed input: 247.56 toks/s, output: 37.87 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 83.51it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.61s/it, est. speed input: 528.43 toks/s, output: 38.42 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.61s/it, est. speed input: 528.43 toks/s, output: 38.42 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.61s/it, est. speed input: 528.43 toks/s, output: 38.42 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 46.17it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.85s/it, est. speed input: 189.71 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.85s/it, est. speed input: 189.71 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.85s/it, est. speed input: 189.71 toks/s, output: 38.62 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.06it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.46s/it, est. speed input: 636.07 toks/s, output: 38.30 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.46s/it, est. speed input: 636.07 toks/s, output: 38.30 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.46s/it, est. speed input: 636.07 toks/s, output: 38.30 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 61.19it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:33<00:00, 93.34s/it, est. speed input: 82.65 toks/s, output: 38.53 toks/s]Processed prompts: 100%|██████████| 1/1 [01:33<00:00, 93.34s/it, est. speed input: 82.65 toks/s, output: 38.53 toks/s]Processed prompts: 100%|██████████| 1/1 [01:33<00:00, 93.34s/it, est. speed input: 82.65 toks/s, output: 38.53 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 72.57it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:43<00:00, 43.95s/it, est. speed input: 151.05 toks/s, output: 38.70 toks/s]Processed prompts: 100%|██████████| 1/1 [00:43<00:00, 43.95s/it, est. speed input: 151.05 toks/s, output: 38.70 toks/s]Processed prompts: 100%|██████████| 1/1 [00:43<00:00, 43.95s/it, est. speed input: 151.05 toks/s, output: 38.70 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 113.06it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.85s/it, est. speed input: 89.17 toks/s, output: 38.59 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.85s/it, est. speed input: 89.17 toks/s, output: 38.59 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.85s/it, est. speed input: 89.17 toks/s, output: 38.59 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 66.71it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.86s/it, est. speed input: 95.74 toks/s, output: 38.82 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.86s/it, est. speed input: 95.74 toks/s, output: 38.82 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.86s/it, est. speed input: 95.74 toks/s, output: 38.82 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.52it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.62s/it, est. speed input: 136.44 toks/s, output: 38.10 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.62s/it, est. speed input: 136.44 toks/s, output: 38.10 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.62s/it, est. speed input: 136.44 toks/s, output: 38.10 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.67it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.33s/it, est. speed input: 68.84 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.33s/it, est. speed input: 68.84 toks/s, output: 38.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.33s/it, est. speed input: 68.84 toks/s, output: 38.52 toks/s]
+Processing window 1/1 with 7 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 60.47it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 13:25:01.338 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: delivery, Task: 10716001, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 10716001                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 1196.55s                                                           │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: Successfully cancel the Tom Yum Soup Noodles order with id 10716001O01  │
+│ from HUHU Thai (Roosevelt Branch), the order status should be changed to     │
+│ cancelled ❌                                                                 │
+│         [2-7] The assistant has not yet performed or confirmed the           │
+│ cancellation of the Tom Yum Soup Noodles order. The conversation so far has  │
+│ only checked product availability and recommended a switch, but no           │
+│ cancellation operation was executed or confirmed.                            │
+│ - 1: The delivery address for the new order should be 5th Floor, Building 3, │
+│ Dalian Software Park, Shahekou District, Dalian, Liaoning Province ❌        │
+│         [2-7] The assistant has not placed a new order or specified any      │
+│ delivery address. The conversation is focused on checking product            │
+│ availability and recommending a switch, but no new order was created.        │
+│ - 2: The estimated delivery time for the new order should be around          │
+│ 2024-08-19 18:30 ❌                                                          │
+│         [2-7] The assistant has not placed a new order or specified any      │
+│ delivery time. The conversation is focused on checking product availability  │
+│ and recommending a switch, but no new order was created.                     │
+│ - 3: The new order should include Hot and Sour items such as Tom Yum Fried   │
+│ Rice from HUHU Thai (Roosevelt Branch) ❌                                    │
+│         [2-7] The assistant has confirmed that Tom Yum Fried Rice (Hot and   │
+│ Sour) is available and recommended it, but has not actually placed a new     │
+│ order including this item. Only a recommendation was made.                   │
+│ - 4: The new order should include refreshing caffeine-free desserts such as  │
+│ Coconut Sago Pudding ❌                                                      │
+│         [2-7] The assistant has identified Coconut Sago Pudding as a         │
+│ refreshing dessert option (from the product list), but has not actually      │
+│ placed a new order including this item or confirmed its caffeine-free status │
+│ in the order. Only product availability was checked.                         │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+8/100 (trial 1/1) Running task 20711002, trial 1
+Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.52s/it, est. speed input: 523.46 toks/s, output: 37.89 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.52s/it, est. speed input: 523.46 toks/s, output: 37.89 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.52s/it, est. speed input: 523.46 toks/s, output: 37.89 toks/s]
+2026-05-14 13:25:01.443 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 20711002, Agent: llm_agent, User: user_simulator
+
+2026-05-14 13:25:01.468 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-09-18 18:56:30
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.59it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.54s/it, est. speed input: 370.55 toks/s, output: 38.44 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.54s/it, est. speed input: 370.55 toks/s, output: 38.44 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.54s/it, est. speed input: 370.55 toks/s, output: 38.44 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 47.63it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:11<00:00, 71.71s/it, est. speed input: 170.04 toks/s, output: 38.14 toks/s]Processed prompts: 100%|██████████| 1/1 [01:11<00:00, 71.71s/it, est. speed input: 170.04 toks/s, output: 38.14 toks/s]Processed prompts: 100%|██████████| 1/1 [01:11<00:00, 71.71s/it, est. speed input: 170.04 toks/s, output: 38.14 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.31it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:16<00:00, 16.50s/it, est. speed input: 234.56 toks/s, output: 38.48 toks/s]Processed prompts: 100%|██████████| 1/1 [00:16<00:00, 16.50s/it, est. speed input: 234.56 toks/s, output: 38.48 toks/s]Processed prompts: 100%|██████████| 1/1 [00:16<00:00, 16.50s/it, est. speed input: 234.56 toks/s, output: 38.48 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.38it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.89s/it, est. speed input: 225.95 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.89s/it, est. speed input: 225.95 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.89s/it, est. speed input: 225.95 toks/s, output: 37.97 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 43.58it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:48<00:00, 108.68s/it, est. speed input: 121.91 toks/s, output: 37.69 toks/s]Processed prompts: 100%|██████████| 1/1 [01:48<00:00, 108.68s/it, est. speed input: 121.91 toks/s, output: 37.69 toks/s]Processed prompts: 100%|██████████| 1/1 [01:48<00:00, 108.68s/it, est. speed input: 121.91 toks/s, output: 37.69 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 60.74it/s]
+Processing window 1/1 with 9 messages
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 13:29:28.204 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: delivery, Task: 10721004, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 10721004                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 1462.54s                                                           │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: Cancel the order with order ID 1072104T01 ❌                            │
+│         [9] The assistant has not yet performed or confirmed the             │
+│ cancellation of order 1072104T01. The assistant only discussed the need to   │
+│ cancel and asked the user if they would like to proceed, but did not execute │
+│ the cancellation.                                                            │
+│ - 1: The reordered items should include a Jianbing for the daughter, without │
+│ egg, with sweet bean sauce flavor ❌                                         │
+│         [9] The assistant identified the correct product (Jianbing (Chinese  │
+│ Crepe) with Sweet Bean Sauce, no egg) as suitable for the daughter and       │
+│ prepared to reorder it, but has not actually placed the order yet.           │
+│ - 2: The Jianbing for the user in the reordered items should be identical to │
+│ the product in order ID 1072104T01 (with egg, tomato sauce flavor) ❌        │
+│         [9] The assistant has not addressed or mentioned reordering a        │
+│ Jianbing for the user that matches the original (with egg, tomato sauce      │
+│ flavor). Only the daughter's preference is discussed.                        │
+│ - 3: The reordered breakfast should contain 3 items in total, including 2    │
+│ Jianbings and 1 tea egg ❌                                                   │
+│         [9] The assistant has not yet addressed the total quantity of items  │
+│ or the addition of a tea egg. Only one Jianbing (for the daughter) is        │
+│ discussed.                                                                   │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+9/100 (trial 1/1) Running task 20715001, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.59s/it, est. speed input: 76.09 toks/s, output: 37.61 toks/s]Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.59s/it, est. speed input: 76.09 toks/s, output: 37.61 toks/s]Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.59s/it, est. speed input: 76.09 toks/s, output: 37.61 toks/s]
+2026-05-14 13:29:28.310 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 20715001, Agent: llm_agent, User: user_simulator
+
+2026-05-14 13:29:28.335 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-10-01 09:51:28
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 129.32it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.53s/it, est. speed input: 33.56 toks/s, output: 37.23 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.53s/it, est. speed input: 33.56 toks/s, output: 37.23 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.53s/it, est. speed input: 33.56 toks/s, output: 37.23 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 58.97it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.20s/it, est. speed input: 145.24 toks/s, output: 37.06 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.20s/it, est. speed input: 145.24 toks/s, output: 37.06 toks/s]Processed prompts: 100%|██████████| 1/1 [01:00<00:00, 60.20s/it, est. speed input: 145.24 toks/s, output: 37.06 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 57.14it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:49<00:00, 49.18s/it, est. speed input: 184.19 toks/s, output: 37.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:49<00:00, 49.18s/it, est. speed input: 184.19 toks/s, output: 37.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:49<00:00, 49.18s/it, est. speed input: 184.19 toks/s, output: 37.19 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 34.31it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:14<00:00, 14.12s/it, est. speed input: 1067.52 toks/s, output: 37.31 toks/s]Processed prompts: 100%|██████████| 1/1 [00:14<00:00, 14.12s/it, est. speed input: 1067.52 toks/s, output: 37.31 toks/s]Processed prompts: 100%|██████████| 1/1 [00:14<00:00, 14.12s/it, est. speed input: 1067.52 toks/s, output: 37.31 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 245, in get_response
+    resp = self.make_tool_call(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 127, in make_tool_call
+    return self.use_tool(tool_name=tool_name, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/environment.py", line 106, in use_tool
+    return self.tools.use_tool(tool_name=tool_name, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 178, in use_tool
+    return self.tools[tool_name](**kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 146, in wrapper
+    return func(*args, **kwargs)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/environment/toolkit.py", line 319, in address_to_longitude_latitude
+    raise ValueError(f"Longitude and latitude not found for address {address}")
+ValueError: Longitude and latitude not found for address Suzhou
+Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 96.33it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.15s/it, est. speed input: 147.88 toks/s, output: 37.17 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.15s/it, est. speed input: 147.88 toks/s, output: 37.17 toks/s]Processed prompts: 100%|██████████| 1/1 [00:32<00:00, 32.15s/it, est. speed input: 147.88 toks/s, output: 37.17 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 107.75it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.58s/it, est. speed input: 239.66 toks/s, output: 37.51 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.58s/it, est. speed input: 239.66 toks/s, output: 37.51 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.58s/it, est. speed input: 239.66 toks/s, output: 37.51 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 140.29it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:50<00:00, 110.01s/it, est. speed input: 31.99 toks/s, output: 37.23 toks/s]Processed prompts: 100%|██████████| 1/1 [01:50<00:00, 110.01s/it, est. speed input: 31.99 toks/s, output: 37.23 toks/s]Processed prompts: 100%|██████████| 1/1 [01:50<00:00, 110.01s/it, est. speed input: 31.99 toks/s, output: 37.23 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 36.55it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 13:36:58.429 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: delivery, Task: 20715001, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 20715001                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 447.21s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The ordered birthday cake must not contain mango ingredients ❌         │
+│         No discussion or action regarding cake ingredients or mango allergy  │
+│ in this window [1-3].                                                        │
+│ - 1: The ordered birthday cake should be low-sugar or xylitol type ❌        │
+│         No mention of sugar control or cake type in this window [1-3].       │
+│ - 2: The ordered birthday cake should be suitable for 2 people to share      │
+│ (such as 4-6 inch cake) ❌                                                   │
+│         No discussion of cake size or suitability for 2 people in this       │
+│ window [1-3].                                                                │
+│ - 3: The delivery address for the birthday cake order should be Chengfatou   │
+│ Zhujian Yajun, Rongning Road, Sanlitun Street, Zhengding County,             │
+│ Shijiazhuang, Hebei Province ❌                                              │
+│         No mention of delivery address or order placement in this window     │
+│ [1-3].                                                                       │
+│ - 4: The estimated delivery time for the birthday cake order should be       │
+│ before 2025-10-01 15:00:00 ❌                                                │
+│         No discussion of delivery time or order placement in this window     │
+│ [1-3].                                                                       │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+10/100 (trial 1/1) Running task 20715002, trial 1
+Processed prompts: 100%|██████████| 1/1 [00:41<00:00, 41.38s/it, est. speed input: 172.39 toks/s, output: 37.73 toks/s]Processed prompts: 100%|██████████| 1/1 [00:41<00:00, 41.38s/it, est. speed input: 172.39 toks/s, output: 37.73 toks/s]Processed prompts: 100%|██████████| 1/1 [00:41<00:00, 41.38s/it, est. speed input: 172.39 toks/s, output: 37.73 toks/s]
+2026-05-14 13:36:58.534 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: delivery, Task: 20715002, Agent: llm_agent, User: user_simulator
+
+2026-05-14 13:36:58.558 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-08-08 11:01:36
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 64.41it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.68s/it, est. speed input: 304.90 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.68s/it, est. speed input: 304.90 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.68s/it, est. speed input: 304.90 toks/s, output: 37.97 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 114.23it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.61s/it, est. speed input: 159.21 toks/s, output: 38.07 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.61s/it, est. speed input: 159.21 toks/s, output: 38.07 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.61s/it, est. speed input: 159.21 toks/s, output: 38.07 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 48.70it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.70s/it, est. speed input: 190.33 toks/s, output: 37.61 toks/s]Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.70s/it, est. speed input: 190.33 toks/s, output: 37.61 toks/s]Processed prompts: 100%|██████████| 1/1 [01:01<00:00, 61.71s/it, est. speed input: 190.33 toks/s, output: 37.61 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 36.08it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:08<00:00,  8.09s/it, est. speed input: 1932.64 toks/s, output: 38.08 toks/s]Processed prompts: 100%|██████████| 1/1 [00:08<00:00,  8.09s/it, est. speed input: 1932.64 toks/s, output: 38.08 toks/s]Processed prompts: 100%|██████████| 1/1 [00:08<00:00,  8.09s/it, est. speed input: 1932.64 toks/s, output: 38.08 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 87.15it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.35s/it, est. speed input: 271.85 toks/s, output: 37.63 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.35s/it, est. speed input: 271.85 toks/s, output: 37.63 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.35s/it, est. speed input: 271.85 toks/s, output: 37.63 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 96.75it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.69s/it, est. speed input: 227.44 toks/s, output: 37.44 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.69s/it, est. speed input: 227.44 toks/s, output: 37.44 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.69s/it, est. speed input: 227.44 toks/s, output: 37.44 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 135.88it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.04s/it, est. speed input: 62.16 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.04s/it, est. speed input: 62.16 toks/s, output: 37.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.04s/it, est. speed input: 62.16 toks/s, output: 37.97 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 101.41it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.93s/it, est. speed input: 192.56 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.93s/it, est. speed input: 192.56 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [00:26<00:00, 26.93s/it, est. speed input: 192.56 toks/s, output: 38.62 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 114.08it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:06<00:00, 66.91s/it, est. speed input: 66.24 toks/s, output: 39.05 toks/s]Processed prompts: 100%|██████████| 1/1 [01:06<00:00, 66.91s/it, est. speed input: 66.24 toks/s, output: 39.05 toks/s]Processed prompts: 100%|██████████| 1/1 [01:06<00:00, 66.91s/it, est. speed input: 66.24 toks/s, output: 39.05 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 84.68it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.54s/it, est. speed input: 62.08 toks/s, output: 38.45 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.54s/it, est. speed input: 62.08 toks/s, output: 38.45 toks/s]Processed prompts: 100%|██████████| 1/1 [01:46<00:00, 106.54s/it, est. speed input: 62.08 toks/s, output: 38.45 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 92.70it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:45<00:00, 105.47s/it, est. speed input: 52.66 toks/s, output: 38.83 toks/s]Processed prompts: 100%|██████████| 1/1 [01:45<00:00, 105.47s/it, est. speed input: 52.66 toks/s, output: 38.83 toks/s]Processed prompts: 100%|██████████| 1/1 [01:45<00:00, 105.48s/it, est. speed input: 52.66 toks/s, output: 38.83 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 35.24it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.82s/it, est. speed input: 1087.33 toks/s, output: 38.49 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.82s/it, est. speed input: 1087.33 toks/s, output: 38.49 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.82s/it, est. speed input: 1087.33 toks/s, output: 38.49 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.48it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.68s/it, est. speed input: 80.40 toks/s, output: 38.73 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.68s/it, est. speed input: 80.40 toks/s, output: 38.73 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.69s/it, est. speed input: 80.40 toks/s, output: 38.73 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 94.88it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:36<00:00, 36.01s/it, est. speed input: 138.76 toks/s, output: 38.60 toks/s]Processed prompts: 100%|██████████| 1/1 [00:36<00:00, 36.01s/it, est. speed input: 138.76 toks/s, output: 38.60 toks/s]Processed prompts: 100%|██████████| 1/1 [00:36<00:00, 36.01s/it, est. speed input: 138.76 toks/s, output: 38.60 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 75.26it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.35s/it, est. speed input: 254.39 toks/s, output: 38.50 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.35s/it, est. speed input: 254.39 toks/s, output: 38.50 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.35s/it, est. speed input: 254.39 toks/s, output: 38.50 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 81.12it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.95s/it, est. speed input: 229.24 toks/s, output: 38.27 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.95s/it, est. speed input: 229.24 toks/s, output: 38.27 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.95s/it, est. speed input: 229.24 toks/s, output: 38.27 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 67.02it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.41s/it, est. speed input: 535.50 toks/s, output: 38.26 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.41s/it, est. speed input: 535.50 toks/s, output: 38.26 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.41s/it, est. speed input: 535.50 toks/s, output: 38.26 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 37.01it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.57s/it, est. speed input: 91.44 toks/s, output: 38.08 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.57s/it, est. speed input: 91.44 toks/s, output: 38.08 toks/s]Processed prompts: 100%|██████████| 1/1 [01:47<00:00, 107.57s/it, est. speed input: 91.44 toks/s, output: 38.08 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 54.36it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 280.66 toks/s, output: 38.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 280.66 toks/s, output: 38.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 280.66 toks/s, output: 38.21 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 31.51it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.83s/it, est. speed input: 1647.83 toks/s, output: 38.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.83s/it, est. speed input: 1647.83 toks/s, output: 38.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.83s/it, est. speed input: 1647.83 toks/s, output: 38.21 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 102.74it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.17s/it, est. speed input: 174.44 toks/s, output: 38.27 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.17s/it, est. speed input: 174.44 toks/s, output: 38.27 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.17s/it, est. speed input: 174.44 toks/s, output: 38.27 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 78.38it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.10s/it, est. speed input: 635.89 toks/s, output: 38.01 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.10s/it, est. speed input: 635.89 toks/s, output: 38.01 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.10s/it, est. speed input: 635.89 toks/s, output: 38.01 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 64.96it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.27s/it, est. speed input: 417.58 toks/s, output: 38.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.27s/it, est. speed input: 417.58 toks/s, output: 38.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.27s/it, est. speed input: 417.58 toks/s, output: 38.19 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 84.01it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:33<00:00, 33.02s/it, est. speed input: 187.43 toks/s, output: 38.22 toks/s]Processed prompts: 100%|██████████| 1/1 [00:33<00:00, 33.02s/it, est. speed input: 187.43 toks/s, output: 38.22 toks/s]Processed prompts: 100%|██████████| 1/1 [00:33<00:00, 33.02s/it, est. speed input: 187.43 toks/s, output: 38.22 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.04it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.39s/it, est. speed input: 94.30 toks/s, output: 38.33 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.39s/it, est. speed input: 94.30 toks/s, output: 38.33 toks/s]Processed prompts: 100%|██████████| 1/1 [00:51<00:00, 51.39s/it, est. speed input: 94.30 toks/s, output: 38.33 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 44.23it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.74s/it, est. speed input: 713.31 toks/s, output: 38.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.74s/it, est. speed input: 713.31 toks/s, output: 38.19 toks/s]Processed prompts: 100%|██████████| 1/1 [00:19<00:00, 19.74s/it, est. speed input: 713.31 toks/s, output: 38.19 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 30.15it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.40s/it, est. speed input: 500.08 toks/s, output: 38.92 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.40s/it, est. speed input: 500.08 toks/s, output: 38.92 toks/s]Processed prompts: 100%|██████████| 1/1 [00:22<00:00, 22.41s/it, est. speed input: 500.08 toks/s, output: 38.92 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 18.10it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:12<00:00, 12.41s/it, est. speed input: 1493.05 toks/s, output: 38.76 toks/s]Processed prompts: 100%|██████████| 1/1 [00:12<00:00, 12.41s/it, est. speed input: 1493.05 toks/s, output: 38.76 toks/s]Processed prompts: 100%|██████████| 1/1 [00:12<00:00, 12.41s/it, est. speed input: 1493.05 toks/s, output: 38.76 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 50.30it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.63s/it, est. speed input: 249.94 toks/s, output: 38.89 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.63s/it, est. speed input: 249.94 toks/s, output: 38.89 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.63s/it, est. speed input: 249.94 toks/s, output: 38.89 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 80.90it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.47s/it, est. speed input: 507.12 toks/s, output: 39.06 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.47s/it, est. speed input: 507.12 toks/s, output: 39.06 toks/s]Processed prompts: 100%|██████████| 1/1 [00:13<00:00, 13.47s/it, est. speed input: 507.12 toks/s, output: 39.06 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 60.60it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.84s/it, est. speed input: 124.29 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.84s/it, est. speed input: 124.29 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.84s/it, est. speed input: 124.29 toks/s, output: 38.62 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 67.74it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:35<00:00, 35.17s/it, est. speed input: 218.69 toks/s, output: 38.81 toks/s]Processed prompts: 100%|██████████| 1/1 [00:35<00:00, 35.17s/it, est. speed input: 218.69 toks/s, output: 38.81 toks/s]Processed prompts: 100%|██████████| 1/1 [00:35<00:00, 35.17s/it, est. speed input: 218.69 toks/s, output: 38.81 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 56.44it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.60s/it, est. speed input: 394.08 toks/s, output: 39.09 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.60s/it, est. speed input: 394.08 toks/s, output: 39.09 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.60s/it, est. speed input: 394.08 toks/s, output: 39.09 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 42.47it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.10s/it, est. speed input: 528.43 toks/s, output: 38.96 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.10s/it, est. speed input: 528.43 toks/s, output: 38.96 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.10s/it, est. speed input: 528.43 toks/s, output: 38.96 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 53.69it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.75s/it, est. speed input: 551.68 toks/s, output: 38.99 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.75s/it, est. speed input: 551.68 toks/s, output: 38.99 toks/s]Processed prompts: 100%|██████████| 1/1 [00:18<00:00, 18.75s/it, est. speed input: 551.68 toks/s, output: 38.99 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 29.20it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:05<00:00,  5.35s/it, est. speed input: 3557.13 toks/s, output: 39.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:05<00:00,  5.35s/it, est. speed input: 3557.13 toks/s, output: 39.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:05<00:00,  5.35s/it, est. speed input: 3557.13 toks/s, output: 39.43 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.39it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.87s/it, est. speed input: 241.08 toks/s, output: 39.70 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.87s/it, est. speed input: 241.08 toks/s, output: 39.70 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.87s/it, est. speed input: 241.08 toks/s, output: 39.70 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 64.76it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:22<00:00, 82.49s/it, est. speed input: 89.41 toks/s, output: 38.90 toks/s]Processed prompts: 100%|██████████| 1/1 [01:22<00:00, 82.49s/it, est. speed input: 89.41 toks/s, output: 38.90 toks/s]Processed prompts: 100%|██████████| 1/1 [01:22<00:00, 82.49s/it, est. speed input: 89.41 toks/s, output: 38.90 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 45.76it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.76s/it, est. speed input: 678.50 toks/s, output: 38.90 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.76s/it, est. speed input: 678.50 toks/s, output: 38.90 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.76s/it, est. speed input: 678.50 toks/s, output: 38.90 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 73.67it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:08<00:00, 68.05s/it, est. speed input: 100.87 toks/s, output: 39.21 toks/s]Processed prompts: 100%|██████████| 1/1 [01:08<00:00, 68.05s/it, est. speed input: 100.87 toks/s, output: 39.21 toks/s]Processed prompts: 100%|██████████| 1/1 [01:08<00:00, 68.05s/it, est. speed input: 100.87 toks/s, output: 39.21 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 90.87it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.67s/it, est. speed input: 65.69 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.67s/it, est. speed input: 65.69 toks/s, output: 38.62 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.67s/it, est. speed input: 65.69 toks/s, output: 38.62 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 40.12it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s](Worker_TP3 pid=2654797) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP2 pid=2654796) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP1 pid=2654795) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP7 pid=2654801) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP0 pid=2654794) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP5 pid=2654799) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP4 pid=2654798) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+(Worker_TP6 pid=2654800) WARNING 05-14 14:04:25 [multiproc_executor.py:871] WorkerProc was terminated
+Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/run.py", line 410, in run_tasks
+    res = list(executor.map(_run, *zip(*args)))
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 621, in result_iterator
+    yield _result_or_cancel(fs.pop())
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 319, in _result_or_cancel
+    return fut.result(timeout)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 453, in result
+    self._condition.wait(timeout)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 320, in wait
+    waiter.acquire()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/run.py", line 138, in run_domain
+    simulation_results = run_tasks(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/run.py", line 409, in run_tasks
+    with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 649, in __exit__
+    self.shutdown(wait=True)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/thread.py", line 235, in shutdown
+    t.join()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 1096, in join
+    self._wait_for_tstate_lock()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 1116, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/liuyang/app/anaconda3/envs/vita/bin/vita", line 6, in <module>
+    sys.exit(main())
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/cli.py", line 252, in main
+    args.func(args)
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/cli.py", line 189, in <lambda>
+    func=lambda args: run_domain(
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/run.py", line 175, in run_domain
+    cleanup_vllm_runtimes()
+  File "/share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/src/vita/utils/llm_utils.py", line 344, in cleanup_vllm_runtimes
+    gc.collect()
+KeyboardInterrupt
+Exception ignored in: <module 'threading' from '/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py'>
+Traceback (most recent call last):
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 1537, in _shutdown
+    atexit_call()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/thread.py", line 31, in _python_exit
+    t.join()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 1096, in join
+    self._wait_for_tstate_lock()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/threading.py", line 1116, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+KeyboardInterrupt: 
+Exception ignored in atexit callback: <bound method finalize._exitfunc of <class 'weakref.finalize'>>
+Traceback (most recent call last):
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/weakref.py", line 667, in _exitfunc
+    f()
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/weakref.py", line 591, in __call__
+    return info.func(*info.args, **(info.kwargs or {}))
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/utils.py", line 347, in shutdown
+    proc.join(remaining)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/popen_fork.py", line 40, in wait
+    if not wait([self.sentinel], timeout):
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/connection.py", line 931, in wait
+    ready = selector.select(timeout)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/selectors.py", line 416, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt: 
+Exception ignored in atexit callback: <function _exit_function at 0x15539bf33c70>
+Traceback (most recent call last):
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/util.py", line 357, in _exit_function
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/popen_fork.py", line 43, in wait
+    return self.poll(os.WNOHANG if timeout == 0.0 else 0)
+  File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/popen_fork.py", line 27, in poll
+    pid, sts = os.waitpid(self.pid, flag)
+KeyboardInterrupt: 
+(EngineCore pid=2654786) INFO 05-14 14:05:26 [shm_broadcast.py:681] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(EngineCore pid=2654786) INFO 05-14 14:06:26 [shm_broadcast.py:681] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(EngineCore pid=2654786) INFO 05-14 14:07:26 [shm_broadcast.py:681] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(EngineCore pid=2654786) INFO 05-14 14:08:26 [shm_broadcast.py:681] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(EngineCore pid=2654786) INFO 05-14 14:09:25 [shm_broadcast.py:681] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [dump_input.py:72] Dumping input data for V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=8, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}, 
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [dump_input.py:79] Dumping scheduler output for model execution: SchedulerOutput(scheduled_new_reqs=[], scheduled_cached_reqs=CachedRequestData(req_ids=['75-b378946e'],resumed_req_ids=set(),new_token_ids_lens=[],all_token_ids_lens={},new_block_ids=[None],num_computed_tokens=[15932],num_output_tokens=[857]), num_scheduled_tokens={75-b378946e: 1}, total_num_scheduled_tokens=1, scheduled_spec_decode_tokens={}, scheduled_encoder_inputs={}, num_common_prefix_blocks=[996], finished_req_ids=[], free_encoder_mm_hashes=[], preempted_req_ids=[], has_structured_output_requests=false, pending_structured_output_tokens=false, num_invalid_spec_tokens=null, kv_connector_metadata=null, ec_connector_metadata=null, new_block_ids_to_zero=null)
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] EngineCore encountered a fatal error.
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] Traceback (most recent call last):
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 376, in get_response
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     status, result = mq.dequeue(timeout=dequeue_timeout)
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 755, in dequeue
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     with self.acquire_read(timeout, indefinite) as buf:
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/contextlib.py", line 135, in __enter__
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     return next(self.gen)
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 674, in acquire_read
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     self._spin_condition.wait(timeout_ms=read_timeout.timeout_ms())
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 631, in timeout_ms
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     raise TimeoutError
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] TimeoutError
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] 
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] The above exception was the direct cause of the following exception:
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] 
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] Traceback (most recent call last):
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1101, in run_engine_core
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     engine_core.run_busy_loop()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1142, in run_busy_loop
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     self._process_engine_step()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1181, in _process_engine_step
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     outputs, model_executed = self.step_fn()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 499, in step_with_batch_queue
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     model_output = future.result()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 84, in result
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     return super().result()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     return self.__get_result()
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     raise self._exception
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 88, in wait_for_response
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     response = self.aggregate(get_response())
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 378, in get_response
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110]     raise TimeoutError(f"RPC call to {method} timed out.") from e
+(EngineCore pid=2654786) ERROR 05-14 14:09:25 [core.py:1110] TimeoutError: RPC call to sample_tokens timed out.
+(Worker_TP0 pid=2654794) INFO 05-14 14:09:29 [multiproc_executor.py:764] Parent process exited, terminating worker queues
+(EngineCore pid=2654786) Process EngineCore:
+(EngineCore pid=2654786) Traceback (most recent call last):
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 376, in get_response
+(EngineCore pid=2654786)     status, result = mq.dequeue(timeout=dequeue_timeout)
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 755, in dequeue
+(EngineCore pid=2654786)     with self.acquire_read(timeout, indefinite) as buf:
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/contextlib.py", line 135, in __enter__
+(EngineCore pid=2654786)     return next(self.gen)
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 674, in acquire_read
+(EngineCore pid=2654786)     self._spin_condition.wait(timeout_ms=read_timeout.timeout_ms())
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 631, in timeout_ms
+(EngineCore pid=2654786)     raise TimeoutError
+(EngineCore pid=2654786) TimeoutError
+(EngineCore pid=2654786) 
+(EngineCore pid=2654786) The above exception was the direct cause of the following exception:
+(EngineCore pid=2654786) 
+(EngineCore pid=2654786) Traceback (most recent call last):
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=2654786)     self.run()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/process.py", line 108, in run
+(EngineCore pid=2654786)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=2654786)     raise e
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1101, in run_engine_core
+(EngineCore pid=2654786)     engine_core.run_busy_loop()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1142, in run_busy_loop
+(EngineCore pid=2654786)     self._process_engine_step()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 1181, in _process_engine_step
+(EngineCore pid=2654786)     outputs, model_executed = self.step_fn()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/engine/core.py", line 499, in step_with_batch_queue
+(EngineCore pid=2654786)     model_output = future.result()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 84, in result
+(EngineCore pid=2654786)     return super().result()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+(EngineCore pid=2654786)     return self.__get_result()
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+(EngineCore pid=2654786)     raise self._exception
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 88, in wait_for_response
+(EngineCore pid=2654786)     response = self.aggregate(get_response())
+(EngineCore pid=2654786)   File "/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/site-packages/vllm/v1/executor/multiproc_executor.py", line 378, in get_response
+(EngineCore pid=2654786)     raise TimeoutError(f"RPC call to {method} timed out.") from e
+(EngineCore pid=2654786) TimeoutError: RPC call to sample_tokens timed out.
+/home/liuyang/app/anaconda3/envs/vita/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

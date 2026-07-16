@@ -1,0 +1,52 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Generate a \PYG{g+gs}{**Tool Use Question**} based on the provided MCP Server and its tool descriptions.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided MCP Server and its available tools, then create a realistic user question that would naturally require the use of one of these tools to solve.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Guidelines}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Realism}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that represent real\PYGZhy{}world scenarios where users would need to interact with the MCP Server\PYGZsq{}s tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should sound natural and authentic, as if asked by someone genuinely needing to accomplish a task
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider common use cases, problems, or workflows that would require the functionality provided by the MCP Server\PYGZsq{}s tools
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Tool Selection}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Focus on \PYG{g+gs}{**ONE specific tool**} from the MCP Server that would be most appropriate to answer the question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Choose tools based on the core functionality they provide and how they would solve real user problems
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider each tool\PYGZsq{}s description and purpose when crafting the question
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Complexity}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that are clear and specific enough to warrant tool usage
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Avoid overly simple questions that could be answered without tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Include relevant context or constraints that make the tool usage necessary
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Do not contain the exact tool name in the question
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Output Format}
+Your response should include:
+\PYG{k}{1.} \PYG{g+gs}{**Tool Analysis**}: Briefly analyze the MCP Server\PYGZsq{}s available tools and their main functionalities.
+\PYG{k}{2.} \PYG{g+gs}{**Target Tool**}: The specific tool name from the MCP Server that should be used to answer this question.
+\PYG{k}{3.} \PYG{g+gs}{**Question**}: A clear, realistic user question that requires tool usage.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} MCP Server Description}
+\PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}NAME\PYGZcb{}: \PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}DESCRIPTION\PYGZcb{}
+
+Available Tools:
+\PYGZob{}TOOL\PYGZus{}LIST\PYGZcb{}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}server\PYGZus{}analysis\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Briefly analyze the MCP Server\PYGZsq{}s available tools and their main functionalities. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/server\PYGZus{}analysis\PYGZgt{}
+  \PYGZlt{}target\PYGZus{}tool\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} The specific tool name from the MCP Server that should be used to answer this question. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/target\PYGZus{}tool\PYGZgt{}
+  \PYGZlt{}question\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} A clear, realistic user question that requires tool usage. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/question\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

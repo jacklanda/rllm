@@ -1,0 +1,58 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \footnotesize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8.5pt}
+
+        \textbf{System Prompt:}\\[2pt]
+        \texttt{You are an expert API designer and backend architect. Your job is to design machine-readable RESTful API documentation that can support all the given user tasks based on the existing database schema.}\\[6pt]
+
+        \textbf{User Prompt (Part 1/2):}\\[2pt]
+        \texttt{Design a complete, agent-friendly interface specification to support ALL the following tasks for a simplified \{scenario\_name\} based on}\\
+        \texttt{the existing database schema. The generated specification will be used to guide the detailed implementation of the interface layer.}\\[3pt]
+
+        \texttt{Note: A scenario can be a website, a mobile app, or a collection of tools and services. This is part of an automatic environment}\\
+        \texttt{synthesis pipeline where we generate executable tool-use environments.}\\[4pt]
+
+        \texttt{User Tasks: \{tasks\_list\}}\\
+        \texttt{Existing SQLite Database Schema: \{database\_schema\}}\\[4pt]
+
+        \texttt{Hard Requirements:}\\
+        \texttt{1. Design ATOMIC API endpoints - each endpoint should perform ONE specific, well-defined operation}\\
+        \texttt{2. The API spec MUST be compatible with FastAPI, SQLAlchemy ORM, and Pydantic v2}\\
+        \texttt{3. Maximize REUSABILITY - create base CRUD operations that can be composed together to fulfill the given tasks}\\
+        \texttt{4. The API MUST fully follow the database schema - explicitly use the exact table names, column names, and relationships from the schema}\\
+        \texttt{5. Use RESTful conventions (GET, POST, PUT, DELETE, PATCH) with proper resource paths}\\
+        \texttt{6. Group related endpoints logically by resource type}\\
+        \texttt{7. Prefer multiple small, composable endpoints over fewer complex endpoints}\\
+        \texttt{8. For complex tasks, design individual atomic operations that can be chained together}\\
+        \texttt{9. Ensure each endpoint maps directly to one or more tables in the provided database schema}\\
+        \texttt{10. DO NOT include any authentication endpoints (login, logout, register, token refresh) - assume user is already authenticated}\\
+        \texttt{11. All operations implicitly use the current authenticated user with user\_id=1}\\
+        \texttt{12. For user-specific data, always filter by user\_id=1 automatically - do not require user\_id as a parameter}\\
+        \texttt{13. Return ONLY valid JSON, no additional text}\\[4pt]
+
+        \texttt{Agent-Friendly Requirements (REQUIRED for every endpoint):}\\
+        \texttt{- summary: a one-line purpose (<= 80 chars) - clear and actionable for AI agents}\\
+        \texttt{- description: SINGLE LINE (<= 200 chars; no line breaks) - explains what the endpoint does and when to use it}\\
+        \texttt{- operation\_id: unique, snake\_case identifier - agents use this to identify and call endpoints programmatically}\\
+        \texttt{- tags: logical grouping array (e.g., [``products''], [``orders'']) - helps agents discover related endpoints}\\
+        \texttt{- request\_params: complete parameter specifications with type, param\_type (query/path/body), required flag, description, and example}\\
+        \texttt{- response: detailed response schema with field types, descriptions, and examples - enables agents to parse and understand responses}\\[4pt]
+
+        \texttt{Request Parameter Requirements:}\\
+        \texttt{- Each parameter MUST include: type, param\_type, required, description, example}\\
+        \texttt{- param\_type MUST be one of: ``query'', ``path'', ``body''}\\
+        \texttt{- Use descriptive names that clearly indicate the parameter's purpose}\\
+        \texttt{- Provide realistic examples that demonstrate expected values}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for interface specification generation (part 1 of 2).}
+    \label{fig:gen-api-1}
+\end{figure*}

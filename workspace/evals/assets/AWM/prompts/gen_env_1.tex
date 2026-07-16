@@ -1,0 +1,61 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \footnotesize
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \textbf{System Prompt:}\\[2pt]
+        \texttt{You are an expert FastAPI backend developer specializing in RESTful APIs that are agent-friendly: every endpoint must include clear}\\
+        \texttt{OpenAPI metadata, complete request/response typing, and machine-readable docs. You generate clean, executable FastAPI endpoint}\\
+        \texttt{implementations from an API specification and a SQLite database schema. You strictly follow the user prompt's constraints and return output}\\
+        \texttt{in the exact required format.}\\[6pt]
+
+        \textbf{User Prompt (Part 1/3):}\\[2pt]
+        \texttt{Generate a single, fully self-contained interface implementation (one Python file using FastAPI and exposed via MCP) that simulates a}\\
+        \texttt{simplified version of \{scenario\_name\} based on the provided interface specification and database schema.}\\[3pt]
+
+        \texttt{Note: A scenario can be a website, a mobile app, or a collection of tools and services. This is part of an automatic environment}\\
+        \texttt{synthesis pipeline where we generate executable tool-use environments.}\\[4pt]
+
+        \texttt{Assumptions:}\\
+        \texttt{- Python version: \{PYTHON\_VERSION\}}\\
+        \texttt{- FastAPI version compatible with Pydantic v2 (do NOT use v1-only features such as `orm\_mode` in Config)}\\[3pt]
+
+        \texttt{API Specification: \{api\_spec\}}\\
+        \texttt{Database Schema: \{database\_schema\}}\\[4pt]
+
+        \texttt{Environment \& Configuration Requirements:}\\
+        \texttt{- Import os and read the SQLite database URL from environment variable `DATABASE\_PATH`}\\
+        \texttt{- If `DATABASE\_PATH` is not set or empty, default to: sqlite:///xxxx.db}\\
+        \texttt{- In the uvicorn entry point, read HOST from environment variable `HOST` (default to ``127.0.0.1'' if not set)}\\
+        \texttt{- In the uvicorn entry point, read PORT from environment variable `PORT` (default to 8000 if not set), and cast it to int}\\[3pt]
+
+        \texttt{SQLAlchemy Setup Requirements:}\\
+        \texttt{- Use SQLAlchemy ORM with declarative\_base for all tables}\\
+        \texttt{- Database URL: use the value of DATABASE\_PATH (or the default described above). The DATABASE\_PATH is a complete URL so do not add}\\
+        \texttt{~~any prefixes (e.g., sqlite://) or suffixes to the URL}\\
+        \texttt{- Create engine and SessionLocal (sessionmaker) for database sessions}\\
+        \texttt{- Define Base = declarative\_base() for ORM inheritance}\\
+        \texttt{- Define ORM models for every table present in the database schema (no extra tables/columns)}\\
+        \texttt{- Call Base.metadata.create\_all(engine) after all ORM models are defined}\\
+        \texttt{- NEVER define ORM attributes named `metadata`, `query`, or `query\_class`. If the schema has a column with one of these names, use a}\\
+        \texttt{~~safe Python attribute name with a trailing underscore (e.g. `metadata\_`) and map it to the real column name via Column(``metadata'', ...)}\\
+        \texttt{- Do NOT define any other ORM class attribute that conflicts with SQLAlchemy declarative internals}\\
+        \texttt{- When there are multiple foreign key paths between two tables, either:}\\
+        \texttt{~~- specify relationship(..., foreign\_keys=[...]) explicitly to avoid AmbiguousForeignKeysError, OR}\\
+        \texttt{~~- omit the relationship entirely and access related rows via explicit queries instead of relationship()}\\
+        \texttt{- When importing from SQLAlchemy, only use standard, public symbols that actually exist and are needed. Do NOT import or reference}\\
+        \texttt{~~non-existent or internal symbols such as `PRIMARY\_KEY\_CONSTRAINT` or any other invented uppercase constants}\\
+        \texttt{- Import ORM-related helpers from sqlalchemy.orm (for example: declarative\_base, relationship, sessionmaker). Do not import ORM}\\
+        \texttt{~~internals from sqlalchemy.\_\_init\_\_}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for interface implementation generation (part 1 of 3).}
+    \label{fig:gen-env-1}
+\end{figure*}

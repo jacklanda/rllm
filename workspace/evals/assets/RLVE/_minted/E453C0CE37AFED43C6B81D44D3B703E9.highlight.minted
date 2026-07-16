@@ -1,0 +1,54 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Task}
+Generate a \PYG{g+gs}{**Tool Use Question**} based on the provided MCP Server and its tool descriptions.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Objective}
+Analyze the provided MCP Server and its available tools, then create a realistic user question that would naturally require the use of \PYG{g+gs}{**\PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools**} from this MCP Server to solve completely.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Guidelines}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Realism}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that represent real\PYGZhy{}world scenarios where users would need to interact with the MCP Server\PYGZsq{}s tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should sound natural and authentic, as if asked by someone genuinely needing to accomplish a task
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider common use cases, problems, or workflows that would require the functionality provided by the MCP Server\PYGZsq{}s tools
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Tool Selection}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Focus on \PYG{g+gs}{**\PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools**} from the MCP Server that would work together to answer the question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should require a sequence or combination of tool calls to solve completely
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Choose tools based on how they complement each other and create a logical workflow
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Consider each tool\PYGZsq{}s description and purpose when crafting the question that requires multiple steps
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Question Complexity}
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Create questions that are complex enough to warrant using \PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }The question should have multiple components or require several steps to solve
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Include relevant context or constraints that make the multi\PYGZhy{}tool usage necessary
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Do not contain the exact tool names in the question
+\PYG{k}{\PYGZhy{}}\PYG{+w}{ }Ensure the question cannot be reasonably answered with just a single tool
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{}\PYGZsh{} Output Format}
+Your response should include:
+\PYG{k}{1.} \PYG{g+gs}{**Tool Analysis**}: Briefly analyze the MCP Server\PYGZsq{}s available tools and their main functionalities.
+\PYG{k}{2.} \PYG{g+gs}{**Target Tools**}: The specific tool names from the MCP Server that should be used together to answer this question, in the order they would likely be called.
+\PYG{k}{3.} \PYG{g+gs}{**Question**}: A clear, realistic user question that requires multiple tool usage.
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} MCP Server Description}
+\PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}NAME\PYGZcb{}: \PYGZob{}MCP\PYGZus{}SERVER\PYGZus{}DESCRIPTION\PYGZcb{}
+
+Available Tools:
+\PYGZob{}TOOL\PYGZus{}LIST\PYGZcb{}
+
+\PYG{g+gu}{\PYGZsh{}\PYGZsh{} Output}
+Ensure your question requires exactly \PYGZob{}NUM\PYGZus{}TOOLS\PYGZcb{} tools to solve completely. Provide your response in the following XML format:
+
+\PYGZlt{}response\PYGZgt{}
+  \PYGZlt{}server\PYGZus{}analysis\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} Briefly analyze the MCP Server\PYGZsq{}s available tools and their main functionalities. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/server\PYGZus{}analysis\PYGZgt{}
+  \PYGZlt{}target\PYGZus{}tools\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} The specific tool names from the MCP Server that should be used together to answer this question, listed in order. e.g., \PYGZlt{}tool\PYGZgt{}create\PYGZus{}twitter\PYGZus{}post\PYGZlt{}/tool\PYGZgt{} \PYGZlt{}tool\PYGZgt{}get\PYGZus{}last\PYGZus{}tweet\PYGZlt{}/tool\PYGZgt{} \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/target\PYGZus{}tools\PYGZgt{}
+  \PYGZlt{}question\PYGZgt{}
+    \PYGZlt{}!\PYGZhy{}\PYGZhy{} A clear, realistic user question that requires multiple tool usage. \PYGZhy{}\PYGZhy{}\PYGZgt{}
+  \PYGZlt{}/question\PYGZgt{}
+\PYGZlt{}/response\PYGZgt{}
+\end{MintedVerbatim}

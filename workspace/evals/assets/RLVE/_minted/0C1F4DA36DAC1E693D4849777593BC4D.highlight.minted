@@ -1,0 +1,27 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{+w}{    }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}uuid\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}3ac8fdcc\PYGZhy{}b9b5\PYGZhy{}50d2\PYGZhy{}a840\PYGZhy{}947a42b558d2\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}subset\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}single\PYGZhy{}turn\PYGZhy{}original\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}messages\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}[\PYGZob{}...long JSON string of messages...\PYGZcb{}]\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}question\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}I\PYGZsq{}m reviewing my company\PYGZsq{}s policy document that needs quarterly updates for compliance purposes. I need to first understand its current structure with all sections and subsections, then update every occurrence of \PYGZsq{}Q3 2024\PYGZsq{} to \PYGZsq{}Q1 2025\PYGZsq{} throughout the document, and finally add explanatory footnotes to the last 3 sections that reference our new regulatory guidance document published last month. Can you help me accomplish these updates systematically?\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}target\PYGZus{}tools\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}get\PYGZus{}document\PYGZus{}outline, search\PYGZus{}and\PYGZus{}replace, add\PYGZus{}footnote\PYGZus{}to\PYGZus{}document\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}question\PYGZus{}quality\PYGZus{}assessment\PYGZus{}kimik2w4a16\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}tool\PYGZus{}selection\PYGZus{}difficulty\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}tool\PYGZus{}selection\PYGZus{}uniqueness\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}question\PYGZus{}quality\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{4}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}scenario\PYGZus{}realism\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{5}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}verifiable\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{4}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}stability\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{5}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}overall\PYGZus{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mf}{4.0}
+\PYG{+w}{      }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}response\PYGZus{}quality\PYGZus{}assessment\PYGZus{}oss120b\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}completeness\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{2}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}conciseness\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}reasoning\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}...\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nt}{\PYGZdq{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{+w}{ }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}overall\PYGZus{}score\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mf}{2.5}\PYG{p}{,}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}desired\PYGZus{}tools\PYGZus{}used\PYGZus{}percentage\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mf}{0.3333}\PYG{p}{,}
+\PYG{+w}{        }\PYG{n+nt}{\PYGZdq{}order\PYGZus{}correctness\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{k+kc}{false}
+\PYG{+w}{      }\PYG{p}{\PYGZcb{},}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}messages\PYGZus{}num\PYGZus{}rounds\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+m+mi}{9}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nt}{\PYGZdq{}metadata\PYGZdq{}}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}\PYGZob{}...long metadata JSON string...\PYGZcb{}\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

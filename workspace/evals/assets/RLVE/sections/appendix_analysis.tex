@@ -1,0 +1,78 @@
+\newpage
+\section{More on Dataset Analysis}
+\label{app:more-data-analysis}
+
+\subsection{Featured Servers in \dataname}
+\label{app:featured-server-list}
+
+Table \ref{tab:server_info} demonstrates featured servers of \datanamen. We note that these featured servers span a wide range of domains, making combinations possible for complex tool use tasks.
+
+\begin{table}[h]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{l l l c}
+\toprule
+\textbf{Server Name} & \textbf{Repository Name} & \textbf{Domain} & \textbf{Tools Count} \\
+\midrule
+OKX Server & esshka/okx-mcp & Cryptocurrency \& Blockchain & 2 \\
+AI Research Assistant - Semantic Scholar & Access via Smithery \footnote{http://lit-review-assistant.streamlit.app/} & Web Search \& Research & 10 \\
+Book Search Server & Access via Smithery \footnote{https://smithery.ai/server/@Busra-ozer/book-search-mcp} & Web Search \& Research & 1 \\
+PubMed MCP Server & {JackKuo666/PubMed-MCP-Server} & Web Search \& Research & 4 \\
+Flux ImageGen Server & {falahgs/flux-imagegen-mcp-server} & AI/ML Tools & 3 \\
+Pokémcp & {NaveenBandarage/poke-mcp} & Data Analysis \& Processing & 4 \\
+Hotel Booking Server & {jinkoso/jinko-mcp} & E-commerce & 6 \\
+Cloudflare Playwright & {cloudflare/playwright-mcp} & Browser Automation & 24 \\
+Time MCP Server & {yokingma/time-mcp} & Time \& Calendar & 6 \\
+Exa Search & {exa-labs/exa-mcp-server} & Web Search \& Research & 8 \\
+Weather Forecast Server & {iremaltunay55/deneme} & Weather & 5 \\
+Advanced Calculator Server & {alan5543/calculator-mcp} & Data Analysis \& Processing & 17 \\
+Dictionary Server & {ceydasimsekk/dictionarymcp} & Others & 1 \\
+Airbnb Search and Listing Details Server & {AkekaratP/mcp-server-airbnb} & Web Search \& Research & 2 \\
+Code Runner MCP Server & {formulahendry/mcp-server-code-runner} & Development Tools & 1 \\
+Movie Recommender & {iremert/movie-recommender-mcp} & Content Creation & 1 \\
+United States Weather & {smithery-ai/mcp-servers} & Weather & 6 \\
+Context7 & {upstash/context7-mcp} & Development Tools & 2 \\
+Think Tool Server & {PhillipRt/think-mcp-server} & Memory Management & 1 \\
+OpenAPI MCP Server & {janwilmake/openapi-mcp-server} & API Integration & 2 \\
+Film Information Server & {zehranurugurr/film\_mcp} & Content Creation & 1 \\
+Trends Hub & {baranwang/mcp-trends-hub} & News \& Media & 21 \\
+ClinicalTrials MCP Server & {JackKuo666/ClinicalTrials-MCP-Server} & Health \& Fitness & 7 \\
+Drawing Tool for AI Assistants & {flrngel/mcp-painter} & Content Creation & 4 \\
+LeetCode & {jinzcdev/leetcode-mcp-server} & Development Tools & 9 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Featured Server Information}
+\label{tab:server_info}
+\end{table}
+
+\subsection{More on MCP Server Analysis in \datanamen}
+\label{app:top-mcps}
+
+Figure~\ref{fig:top-mcp-servers} shows the distribution of the most frequently used MCP servers in our dataset, highlighting the diversity of servers and domains covered in \datanamen. Figure~\ref{fig:tools-per-server} shows the distribution of tool counts across the 495 MCP servers employed by \dataname, revealing that most servers expose only a limited number of tools, with the majority containing fewer than 10 tools.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/top_mcp_servers.pdf}
+    \caption{Distribution of the most frequently occurring MCP servers in the \dataname dataset.}
+    \label{fig:top-mcp-servers}
+\end{figure}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/tools_per_server_histogram.pdf}
+    \caption{Tools Number distribution across MCP servers}
+    \label{fig:tools-per-server}
+\end{figure}
+
+\subsection{Emedding Visualization}
+\label{app:embedding-visualization}
+
+Figure~\ref{fig:mcp-servers-category-analysis} presents embedding visualization via Embedding Atlas \citep{ren2025scalable} using the \texttt{Xenova/multilingual-e5-small} embedding model with UMAP projection \cite{McInnes2018UMAPUM}. The visualization demonstrates that \dataname covers a wide range of topics. In addition, the proposed \dataname extensions (e.g., diversification) effectively increase the overall dataset coverage.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/toucan_atlas_50k.pdf}
+    \caption{This figure is the visualization of 50K random-sampled \dataname instances via Embedding Atlas \citep{ren2025scalable}.}
+    \label{fig:mcp-servers-category-analysis}
+\end{figure}

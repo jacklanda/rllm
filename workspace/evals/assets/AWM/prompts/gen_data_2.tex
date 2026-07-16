@@ -1,0 +1,65 @@
+\begin{figure*}[p]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \small
+        \vspace{2pt}
+        \setlength{\baselineskip}{8pt}
+
+        \textbf{User Prompt (Part 2/2):}\\[4pt]
+
+        \texttt{Hard Requirements:}\\
+        \texttt{1. You must strictly follow the provided database schema - use EXACT table names, column names, and valid column counts. Do NOT}\\
+        \texttt{~~~invent new tables or columns.}\\
+        \texttt{2. Generate INSERT statements for ALL tables necessary to support the tasks, but ONLY for tables that exist in the schema.}\\
+        \texttt{3. Ensure data integrity: respect foreign key relationships and constraints.}\\
+        \texttt{4. Follow SQLite syntax for INSERT statements.}\\
+        \texttt{5. Insert data in the correct order to satisfy foreign key constraints.}\\
+        \texttt{6. If a users table exists, ALWAYS create user with id=1 as the first entry - this is the current authenticated user.}\\
+        \texttt{7. DO NOT include authentication fields like password\_hash, token, session, even if they appear in the schema.}\\
+        \texttt{8. For user-owned data (orders, posts, etc.), create MOST data for user\_id=1.}\\
+        \texttt{9. For each table in the output, provide a brief reasoning (<= 100 words) in its ``reasoning'' field explaining how that table's insert}\\
+        \texttt{~~~statements support the given user tasks and comply with the database schema.}\\
+        \texttt{10. Return ONLY valid JSON, no additional text. Do NOT include comments, ellipsis (``...''), or wrap the JSON in backticks or code fences.}\\
+        \texttt{11. Each element in ``insert\_statements'' MUST be a single SQL INSERT statement string, ending with a single semicolon, and MUST NOT}\\
+        \texttt{~~~~contain multiple statements or any JSON/text before or after the SQL.}\\
+        \texttt{12. All items in ``insert\_statements'' MUST be plain strings (SQL statements only), not objects or nested JSON structures.}\\[4pt]
+
+        \texttt{INSERT Statement Format (MANDATORY):}\\
+        \texttt{- Always explicitly list the column names you are inserting into in each INSERT statement}\\
+        \texttt{- Format: INSERT INTO table\_name (col1, col2, ..., colN) VALUES (val1, val2, ..., valN);}\\
+        \texttt{- The number of listed columns MUST equal the number of values}\\
+        \texttt{- The parentheses after the table name MUST contain ONLY column names, never literal values}\\
+        \texttt{- For NULL values, use NULL (not empty string)}\\
+        \texttt{- For boolean columns, use 0 or 1}\\
+        \texttt{- For optional columns with defaults or autoincrement primary keys, either include them with a value or omit both the column and the}\\
+        \texttt{~~corresponding value from the INSERT}\\[4pt]
+
+        \texttt{Agent Task Coverage Requirements:}\\
+        \texttt{1. For SEARCH/FILTER tasks: create diverse data that matches AND does not match search criteria}\\
+        \texttt{2. For LIST/GET tasks: create multiple records (at least 5-10) to return meaningful results}\\
+        \texttt{3. For CREATE/POST tasks: ensure all referenced entities (users, categories, etc.) exist}\\
+        \texttt{4. For UPDATE/PATCH tasks: create existing records that can be modified}\\
+        \texttt{5. For DELETE tasks: create expendable records that can be safely deleted}\\
+        \texttt{6. For AGGREGATION tasks (count, sum, avg): create sufficient data volume for meaningful statistics}\\
+        \texttt{7. For RELATIONSHIP tasks: ensure all foreign key references are valid and queryable}\\[4pt]
+
+        \texttt{Data Quality Requirements:}\\
+        \texttt{1. Use realistic values (real product names, proper email formats, realistic prices, etc.)}\\
+        \texttt{2. Create temporal diversity (records from different dates/times)}\\
+        \texttt{3. Include status variations (active/inactive, pending/completed, etc.)}\\
+        \texttt{4. Cover numeric ranges (low/medium/high prices, quantities, ratings)}\\
+        \texttt{5. Include text variations (short/long descriptions, different categories)}\\
+        \texttt{6. For timestamps, use ISO 8601 format: YYYY-MM-DD HH:MM:SS or datetime('now', '-N days')}\\
+        \texttt{7. Create enough data volume to support robust testing}\\[4pt]
+
+        \texttt{Output format: \{``tables'': [\{``table\_name'': ``users'', ``reasoning'': ``Brief explanation...'', ``insert\_statements'': [``INSERT INTO ...'', ...]\}, ...]\}}
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Figure}
+    \caption{Prompts for sample data generation (part 2 of 2).}
+    \label{fig:gen-data-2}
+\end{figure*}

@@ -1,0 +1,27 @@
+\begin{table}[t]
+\centering
+\caption{Quality analysis of 100 sampled environments. We compare \synth with EnvScaler using two LLM judges (GPT-5.1 and Claude-4.5-Sonnet). Top section shows scores (1--5 scale, $\uparrow$ higher is better). The bottom shows code bug analysis ($\downarrow$ lower is better). Note that bugs may only affect a few tools and edge use cases.}
+\label{tab:ana_quality}
+\small
+\resizebox{0.88\columnwidth}{!}{%
+\begin{tabular}{@{}l|cc|cc@{}}
+\toprule
+& \multicolumn{2}{c}{GPT-5.1} & \multicolumn{2}{c}{Claude 4.5} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Metric} & \textbf{\synth} & EnvScaler & \textbf{\synth} & EnvScaler \\
+\midrule
+\multicolumn{5}{c}{\textit{LLM-as-a-Judge Scores ($\uparrow$)}} \\
+\midrule
+Task Feasibility & \textbf{3.68}{\scriptsize $\pm$1.02} & 2.94{\scriptsize $\pm$1.25} & \textbf{3.99}{\scriptsize $\pm$0.81} & 3.14{\scriptsize $\pm$1.29} \\
+Data Alignment & \textbf{4.04}{\scriptsize $\pm$0.91} & 3.73{\scriptsize $\pm$0.89} & \textbf{4.84}{\scriptsize $\pm$0.50} & 4.11{\scriptsize $\pm$1.02} \\
+Toolset Completeness & \textbf{3.65}{\scriptsize $\pm$0.87} & 2.89{\scriptsize $\pm$0.79} & \textbf{4.98}{\scriptsize $\pm$0.14} & 4.06{\scriptsize $\pm$0.87} \\
+\midrule
+\multicolumn{5}{c}{\textit{Bug Analysis ($\downarrow$)}} \\
+\midrule
+Envs w/ Bugs & \textbf{74\%} & 88\% & 83\% & 83\% \\
+\# Bugs per Env & 4.13 & \textbf{1.82} & 2.70 & \textbf{2.21} \\
+Blocked Tasks & \textbf{14.0\%} & 57.1\% & \textbf{11.5\%} & 46.8\% \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

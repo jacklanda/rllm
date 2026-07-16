@@ -1,0 +1,1149 @@
+2026-05-14 12:05:07.106 | WARNING  | vita.utils.utils:<module>:21 - No .env file found
+2026-05-14 12:05:16.986 | INFO     | vita.registry:<module>:158 - Registering default components...
+2026-05-14 12:05:16.987 | INFO     | vita.registry:<module>:170 - Default components registered successfully. Registry info: {
+  "domains": [
+    "delivery",
+    "ota",
+    "instore"
+  ],
+  "agents": [
+    "llm_agent",
+    "llm_solo_agent"
+  ],
+  "users": [
+    "user_simulator",
+    "dummy_user"
+  ],
+  "task_sets": [
+    "delivery",
+    "ota",
+    "instore",
+    "cross_domain"
+  ]
+}
+Available models: ['default', 'assistant-agent', 'user-agent', 'evaluator-agent']
+╭────────────────────────── Simulation Configuration ──────────────────────────╮
+│ Domain: ota                                                                  │
+│ Task Set: Default                                                            │
+│ Task IDs: All                                                                │
+│ Number of trials: 1                                                          │
+│ Max steps: 128                                                               │
+│ Max errors: 10                                                               │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Agent Configuration ──╮╭── User Configuration ───╮╭── Additional Settings ──╮
+│ Implementation:        ││ Implementation:         ││ Save To: mcp-step40_ota │
+│ llm_agent              ││ user_simulator          ││ Max Concurrency: 32     │
+│ Model: assistant-agent ││ Model: user-agent       ││                         │
+│ LLM Arguments:         ││ LLM Arguments:          ││                         │
+│ {                      ││ {                       ││                         │
+│   "backend":           ││   "backend":            ││                         │
+│ "vllm_local",          ││ "litellm_http",         ││                         │
+│   "api_key":           ││   "api_key":            ││                         │
+│ "sk-8UdjlB0JCiItilvBFM ││ "sk-8UdjlB0JCiItilvBFMR ││                         │
+│ RgVA",                 ││ gVA",                   ││                         │
+│   "base_url":          ││   "base_url":           ││                         │
+╰────────────────────────╯╰─────────────────────────╯╰─────────────────────────╯
+2026-05-14 12:05:17.080 | INFO     | vita.run:run_tasks:341 - Saving simulation batch to /share/nlp/liuyang/workspace/gem/evals/benchmarks/vitabench/data/simulations/mcp-step40_ota
+
+0/100 (trial 1/1) Running task D0812006, trial 1
+2026-05-14 12:05:17.136 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812006, Agent: llm_agent, User: user_simulator
+
+1/100 (trial 1/1) Running task 70808001, trial 1
+2026-05-14 12:05:17.139 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70808001, Agent: llm_agent, User: user_simulator
+
+2/100 (trial 1/1) Running task 70812007, trial 1
+2026-05-14 12:05:17.141 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70812007, Agent: llm_agent, User: user_simulator
+
+3/100 (trial 1/1) Running task 70812008, trial 1
+2026-05-14 12:05:17.142 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70812008, Agent: llm_agent, User: user_simulator
+
+4/100 (trial 1/1) Running task 70811003, trial 1
+2026-05-14 12:05:17.152 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70811003, Agent: llm_agent, User: user_simulator
+
+5/100 (trial 1/1) Running task 10812009, trial 1
+2026-05-14 12:05:17.157 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 10812009, Agent: llm_agent, User: user_simulator
+
+6/100 (trial 1/1) Running task D0812008, trial 1
+2026-05-14 12:05:17.172 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812008, Agent: llm_agent, User: user_simulator
+
+7/100 (trial 1/1) Running task D0812003, trial 1
+2026-05-14 12:05:17.175 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812003, Agent: llm_agent, User: user_simulator
+
+8/100 (trial 1/1) Running task 70811004, trial 1
+2026-05-14 12:05:17.181 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70811004, Agent: llm_agent, User: user_simulator
+
+9/100 (trial 1/1) Running task 70805002, trial 1
+2026-05-14 12:05:17.198 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70805002, Agent: llm_agent, User: user_simulator
+
+10/100 (trial 1/1) Running task A0812009, trial 1
+2026-05-14 12:05:17.215 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: A0812009, Agent: llm_agent, User: user_simulator
+
+11/100 (trial 1/1) Running task 70812009, trial 1
+2026-05-14 12:05:17.252 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70812009, Agent: llm_agent, User: user_simulator
+
+12/100 (trial 1/1) Running task D0806004, trial 1
+2026-05-14 12:05:17.277 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2026-07-21 13:15:27
+
+2026-05-14 12:05:17.286 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0806004, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.291 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2027-06-28 12:23:11
+
+2026-05-14 12:05:17.318 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2029-09-06 17:52:36
+
+13/100 (trial 1/1) Running task 70807004, trial 1
+2026-05-14 12:05:17.401 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807004, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.428 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-06-09 15:17:53
+
+14/100 (trial 1/1) Running task D0812002, trial 1
+2026-05-14 12:05:17.466 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812002, Agent: llm_agent, User: user_simulator
+
+15/100 (trial 1/1) Running task A0812008, trial 1
+2026-05-14 12:05:17.467 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: A0812008, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.478 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-05-16 16:18:21
+
+16/100 (trial 1/1) Running task 70811001, trial 1
+2026-05-14 12:05:17.485 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70811001, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.489 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-02-19 11:17:35
+
+17/100 (trial 1/1) Running task 70811006, trial 1
+2026-05-14 12:05:17.520 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70811006, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.538 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-02-06 00:56:41
+
+18/100 (trial 1/1) Running task A0812007, trial 1
+2026-05-14 12:05:17.553 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: A0812007, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.582 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2027-08-11 14:23:49
+
+19/100 (trial 1/1) Running task A0812005, trial 1
+2026-05-14 12:05:17.589 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: A0812005, Agent: llm_agent, User: user_simulator
+
+20/100 (trial 1/1) Running task 70812005, trial 1
+2026-05-14 12:05:17.595 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70812005, Agent: llm_agent, User: user_simulator
+
+21/100 (trial 1/1) Running task 70812001, trial 1
+2026-05-14 12:05:17.625 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70812001, Agent: llm_agent, User: user_simulator
+
+22/100 (trial 1/1) Running task A0812006, trial 1
+2026-05-14 12:05:17.661 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: A0812006, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.691 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2022-03-04 09:15:00
+
+2026-05-14 12:05:17.694 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-03-19 15:16:33
+
+23/100 (trial 1/1) Running task D0812004, trial 1
+2026-05-14 12:05:17.723 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812004, Agent: llm_agent, User: user_simulator
+
+24/100 (trial 1/1) Running task 10812008, trial 1
+2026-05-14 12:05:17.732 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 10812008, Agent: llm_agent, User: user_simulator
+
+25/100 (trial 1/1) Running task 70808005, trial 1
+2026-05-14 12:05:17.737 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70808005, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.760 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-09-19 20:31:26
+
+2026-05-14 12:05:17.779 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2022-05-13 09:30:00
+
+2026-05-14 12:05:17.789 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-04-26 19:22:11
+
+26/100 (trial 1/1) Running task 70807010, trial 1
+2026-05-14 12:05:17.802 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807010, Agent: llm_agent, User: user_simulator
+
+27/100 (trial 1/1) Running task 70806003, trial 1
+2026-05-14 12:05:17.813 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70806003, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.818 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2024-08-09 14:30:00
+
+2026-05-14 12:05:17.827 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-12-18 17:31:49
+
+2026-05-14 12:05:17.852 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-07-25 19:56:53
+
+28/100 (trial 1/1) Running task D0811011, trial 1
+2026-05-14 12:05:17.861 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0811011, Agent: llm_agent, User: user_simulator
+
+29/100 (trial 1/1) Running task 70807007, trial 1
+2026-05-14 12:05:17.890 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807007, Agent: llm_agent, User: user_simulator
+
+30/100 (trial 1/1) Running task K0808001, trial 1
+2026-05-14 12:05:17.913 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-08-09 23:23:01
+
+2026-05-14 12:05:17.934 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: K0808001, Agent: llm_agent, User: user_simulator
+
+31/100 (trial 1/1) Running task D0808012, trial 1
+2026-05-14 12:05:17.950 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2026-04-03 14:14:59
+
+2026-05-14 12:05:17.954 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0808012, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:05:17.962 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-09-16 22:53:13
+
+2026-05-14 12:05:17.972 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-09-11 16:04:12
+
+2026-05-14 12:05:17.984 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-06-22 15:54:02
+
+2026-05-14 12:05:17.990 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2027-03-25 12:26:13
+
+2026-05-14 12:05:18.021 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-08-12 15:36:44
+
+2026-05-14 12:05:18.037 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-04-01 14:30:00
+
+2026-05-14 12:05:18.081 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2021-06-21 21:31:56
+
+2026-05-14 12:05:18.114 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2026-08-23 11:21:53
+
+2026-05-14 12:05:18.121 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-06-03 17:17:55
+
+2026-05-14 12:05:18.143 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-05-23 21:22:46
+
+2026-05-14 12:05:18.147 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2026-09-17 15:43:59
+
+2026-05-14 12:05:18.154 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-02-27 11:50:39
+
+2026-05-14 12:05:18.162 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-01-02 15:20:49
+
+2026-05-14 12:05:18.175 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-04-06 10:35:43
+
+INFO 05-14 12:05:20 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 32768, 'gpu_memory_utilization': 0.85, 'disable_log_stats': True, 'enforce_eager': True, 'model': '/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model'}
+INFO 05-14 12:05:20 [model.py:549] Resolved architecture: Qwen3ForCausalLM
+INFO 05-14 12:05:20 [model.py:2013] Downcasting torch.float32 to torch.bfloat16.
+INFO 05-14 12:05:20 [model.py:1678] Using max model len 32768
+INFO 05-14 12:05:20 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 05-14 12:05:20 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 05-14 12:05:20 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-14 12:05:20 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-14 12:05:22 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 05-14 12:05:22 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant
+(EngineCore pid=2636941) INFO 05-14 12:05:23 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', speculative_config=None, tokenizer='/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2636941) INFO 05-14 12:05:24 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://10.141.0.101:42905 backend=nccl
+(EngineCore pid=2636941) INFO 05-14 12:05:25 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=2636941) INFO 05-14 12:05:25 [gpu_model_runner.py:4735] Starting to load model /share/nlp/liuyang/workspace/gem/rllm/checkpoints/FusedRL/mcp-grpo-4b-dev2/global_step_40/hf_model...
+(EngineCore pid=2636941) INFO 05-14 12:05:26 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=2636941) INFO 05-14 12:05:26 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=2636941) INFO 05-14 12:05:26 [weight_utils.py:848] Prefetching checkpoint files into page cache started (in background)
+(EngineCore pid=2636941) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(EngineCore pid=2636941) INFO 05-14 12:05:29 [weight_utils.py:825] Prefetching checkpoint files: 10% (1/1)
+(EngineCore pid=2636941) INFO 05-14 12:05:29 [weight_utils.py:843] Prefetching checkpoint files into page cache finished in 2.46s
+(EngineCore pid=2636941) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:04<00:00,  4.22s/it]
+(EngineCore pid=2636941) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:04<00:00,  4.22s/it]
+(EngineCore pid=2636941) 
+(EngineCore pid=2636941) INFO 05-14 12:05:31 [default_loader.py:384] Loading weights took 4.70 seconds
+(EngineCore pid=2636941) INFO 05-14 12:05:32 [gpu_model_runner.py:4820] Model loading took 7.61 GiB memory and 5.343751 seconds
+(EngineCore pid=2636941) INFO 05-14 12:05:34 [gpu_worker.py:436] Available KV cache memory: 59.02 GiB
+(EngineCore pid=2636941) INFO 05-14 12:05:34 [kv_cache_utils.py:1319] GPU KV cache size: 429,760 tokens
+(EngineCore pid=2636941) INFO 05-14 12:05:34 [kv_cache_utils.py:1324] Maximum concurrency for 32,768 tokens per request: 13.12x
+(EngineCore pid=2636941) INFO 05-14 12:05:34 [core.py:283] init engine (profile, create kv cache, warmup model) took 2.05 seconds
+(EngineCore pid=2636941) WARNING 05-14 12:05:34 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=2636941) WARNING 05-14 12:05:34 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=2636941) INFO 05-14 12:05:34 [vllm.py:1025] Cudagraph is disabled under eager mode
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]INFO 05-14 12:05:34 [hf.py:314] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 11.50it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.03s/it, est. speed input: 77.23 toks/s, output: 44.51 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.03s/it, est. speed input: 77.23 toks/s, output: 44.51 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.03s/it, est. speed input: 77.23 toks/s, output: 44.51 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.60it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:20<00:00, 20.10s/it, est. speed input: 355.11 toks/s, output: 44.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:20<00:00, 20.10s/it, est. speed input: 355.11 toks/s, output: 44.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:20<00:00, 20.10s/it, est. speed input: 355.11 toks/s, output: 44.43 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 48.96it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.29s/it, est. speed input: 114.48 toks/s, output: 44.41 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.29s/it, est. speed input: 114.48 toks/s, output: 44.41 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.29s/it, est. speed input: 114.48 toks/s, output: 44.41 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.56it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.72s/it, est. speed input: 253.93 toks/s, output: 45.92 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.72s/it, est. speed input: 253.93 toks/s, output: 45.92 toks/s]Processed prompts: 100%|██████████| 1/1 [00:27<00:00, 27.72s/it, est. speed input: 253.93 toks/s, output: 45.92 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 65.68it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:09:01.453 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: 70812007, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 70812007                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 218.18s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: Departure train's date should be June 24, 2023 ❌                       │
+│         No discussion or action regarding train booking or departure date in │
+│ this window.                                                                 │
+│ - 1: Departure train's arrival time should be before 10:00 AM on June 24,    │
+│ 2023 ❌                                                                      │
+│         No discussion or action regarding train arrival time in this window. │
+│ - 2: Departure train's tickets should be for Zhuhai to Yangjiang ❌          │
+│         No discussion or action regarding train route in this window.        │
+│ - 3: Departure train's tickets quantity should be 2 ❌                       │
+│         No discussion or action regarding train ticket quantity in this      │
+│ window.                                                                      │
+│ - 4: Return train's departure date should be June 25, 2023 ❌                │
+│         No discussion or action regarding return train booking or departure  │
+│ date in this window.                                                         │
+│ - 5: Return train's departure time should be between 7:00 PM and 8:00 PM on  │
+│ June 25, 2023 ❌                                                             │
+│         No discussion or action regarding return train departure time in     │
+│ this window.                                                                 │
+│ - 6: Return train's tickets should be for Yangjiang to Zhuhai ❌             │
+│         No discussion or action regarding return train route in this window. │
+│ - 7: Return train's tickets quantity should be 2 ❌                          │
+│         No discussion or action regarding return train ticket quantity in    │
+│ this window.                                                                 │
+│ - 8: The ordered attraction tickets should be for parasailing ❌             │
+│         No discussion or action regarding attraction tickets or parasailing  │
+│ in this window.                                                              │
+│ - 9: The ordered attraction tickets should include one Parasailing Only      │
+│ Adult Ticket ❌                                                              │
+│         No discussion or action regarding attraction ticket types in this    │
+│ window.                                                                      │
+│ - 10: The ordered attraction tickets should include one College Entrance     │
+│ Exam Graduate Discount Ticket ❌                                             │
+│         No discussion or action regarding attraction ticket discounts in     │
+│ this window.                                                                 │
+│ - 11: The ordered attraction tickets' usage date should be June 24, 2023 ❌  │
+│         No discussion or action regarding attraction ticket usage date in    │
+│ this window.                                                                 │
+│ - 12: The ordered hotel should be five-star ❌                               │
+│         No discussion or action regarding hotel booking or star rating in    │
+│ this window.                                                                 │
+│ - 13: The ordered hotel should provide buffet ❌                             │
+│         No discussion or action regarding hotel buffet in this window.       │
+│ - 14: The ordered hotel room type should be twin room ❌                     │
+│         No discussion or action regarding hotel room type in this window.    │
+│ - 15: The ordered hotel room quantity should be 1 ❌                         │
+│         No discussion or action regarding hotel room quantity in this        │
+│ window.                                                                      │
+│ - 16: Hotel check-in date should be June 24, 2023 ❌                         │
+│         No discussion or action regarding hotel check-in date in this        │
+│ window.                                                                      │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+32/100 (trial 1/1) Running task D0812005, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.74s/it, est. speed input: 79.55 toks/s, output: 46.16 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.74s/it, est. speed input: 79.55 toks/s, output: 46.16 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.74s/it, est. speed input: 79.55 toks/s, output: 46.16 toks/s]
+2026-05-14 12:09:01.737 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812005, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:09:01.762 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2027-06-27 14:15:38
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.97it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.33s/it, est. speed input: 81.52 toks/s, output: 47.44 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.33s/it, est. speed input: 81.52 toks/s, output: 47.44 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.34s/it, est. speed input: 81.52 toks/s, output: 47.44 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.42it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:12:01.107 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: 70807004, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 70807004                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 392.36s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The flight ticket from Chongqing to Zhangjiajie should depart on June   │
+│ 25, 2022 ❌                                                                  │
+│         No mention of flight booking or departure date in this window.       │
+│ - 1: The number of flight tickets from Chongqing to Zhangjiajie should be 1  │
+│ ❌                                                                           │
+│         No mention of flight booking or ticket quantity in this window.      │
+│ - 2: The flight ticket type from Chongqing to Zhangjiajie should be Economy  │
+│ Class ❌                                                                     │
+│         No mention of flight booking or ticket type in this window.          │
+│ - 3: Need to filter flights to Zhangjiajie, find the combination of flights  │
+│ from Shenzhen and Chongqing with the shortest interval between arrival       │
+│ times. The result is MU2287 and CZ3967, so the Chongqing to Zhangjiajie      │
+│ flight in the order should be MU2287 ❌                                      │
+│         No mention of flight selection or filtering in this window.          │
+│ - 4: The flight ticket from Shenzhen to Zhangjiajie should depart on June    │
+│ 25, 2022 ❌                                                                  │
+│         No mention of flight booking or departure date in this window.       │
+│ - 5: The number of flight tickets from Shenzhen to Zhangjiajie should be 2   │
+│ ❌                                                                           │
+│         No mention of flight booking or ticket quantity in this window.      │
+│ - 6: The flight ticket type from Shenzhen to Zhangjiajie should be Economy   │
+│ Class ❌                                                                     │
+│         No mention of flight booking or ticket type in this window.          │
+│ - 7: Need to filter flights to Zhangjiajie, find the combination of flights  │
+│ from Shenzhen and Chongqing with the shortest interval between arrival       │
+│ times. The result is MU2287 and CZ3967, so the Shenzhen to Zhangjiajie       │
+│ flight in the order should be CZ3967 ❌                                      │
+│         No mention of flight selection or filtering in this window.          │
+│ - 8: The attraction ordered should be Zhangjiajie National Forest Park ❌    │
+│         No mention of attraction ticket booking in this window.              │
+│ - 9: The date of the attraction tickets should be June 26, 2022 ❌           │
+│         No mention of attraction ticket booking or date in this window.      │
+│ - 10: The number of attraction tickets should be 3 ❌                        │
+│         No mention of attraction ticket booking or quantity in this window.  │
+│ - 11: The distance from the hotel to Zhangjiajie National Forest Park        │
+│ Visitor Center should be within 1km (inclusive) ❌                           │
+│         No mention of hotel booking or location in this window.              │
+│ - 12: The hotel order should include 2 nights of King Room, with booking     │
+│ dates on June 25, 2022 and June 26, 2022 ❌                                  │
+│         No mention of hotel booking or room type in this window.             │
+│ - 13: The hotel order should include 2 nights of Twin Room, with booking     │
+│ dates on June 25, 2022 and June 26, 2022 ❌                                  │
+│         No mention of hotel booking or room type in this window.             │
+│ - 14: The flight ticket from Zhangjiajie to Shenzhen should depart on June   │
+│ 27, 2022 ❌                                                                  │
+│         No mention of return flight booking or departure date in this        │
+│ window.                                                                      │
+│ - 15: The number of flight tickets from Zhangjiajie to Shenzhen should be 3  │
+│ ❌                                                                           │
+│         No mention of return flight booking or ticket quantity in this       │
+│ window.                                                                      │
+│ - 16: The flight ticket type from Zhangjiajie to Shenzhen should be Economy  │
+│ Class ❌                                                                     │
+│         No mention of return flight booking or ticket type in this window.   │
+│ - 17: The flight ticket from Chongqing to Zhangjiajie should have a          │
+│ departure date of June 25, 2022 ❌                                           │
+│         No mention of flight booking or departure date in this window.       │
+│ - 18: The quantity of flight tickets from Chongqing to Zhangjiajie should be │
+│ 1 ❌                                                                         │
+│         No mention of flight booking or ticket quantity in this window.      │
+│ - 19: Need to filter flights with Zhangjiajie as the destination, and find   │
+│ the combination of flights departing from Shenzhen and Chongqing             │
+│ respectively with the shortest arrival time interval. The result is MU2287   │
+│ and CZ3967, so the flight from Chongqing to Zhangjiajie in the order should  │
+│ be MU2287 ❌                                                                 │
+│         No mention of flight selection or filtering in this window.          │
+│ - 20: The flight tickets from Shenzhen to Zhangjiajie should have a          │
+│ departure date of June 25, 2022 ❌                                           │
+│         No mention of flight booking or departure date in this window.       │
+│ - 21: The quantity of flight tickets from Shenzhen to Zhangjiajie should be  │
+│ 2 ❌                                                                         │
+│         No mention of flight booking or ticket quantity in this window.      │
+│ - 22: Need to filter flights with Zhangjiajie as the destination, and find   │
+│ the combination of flights departing from Shenzhen and Chongqing             │
+│ respectively with the shortest arrival time interval. The result is MU2287   │
+│ and CZ3967, so the flight from Shenzhen to Zhangjiajie in the order should   │
+│ be CZ3967 ❌                                                                 │
+│         No mention of flight selection or filtering in this window.          │
+│ - 23: The attraction to order should be Zhangjiajie National Forest Park ❌  │
+│         No mention of attraction ticket booking in this window.              │
+│ - 24: The usage date for the attraction tickets should be June 26, 2022 ❌   │
+│         No mention of attraction ticket booking or date in this window.      │
+│ - 25: The quantity of attraction tickets should be 3 ❌                      │
+│         No mention of attraction ticket booking or quantity in this window.  │
+│ - 26: The distance from the booked hotel to the Zhangjiajie National Forest  │
+│ Park Visitor Center should be within 1km (including 1km) ❌                  │
+│         No mention of hotel booking or location in this window.              │
+│ - 27: The hotel order should include a King Room for 2 nights, with booking  │
+│ dates of June 25, 2022 and June 26, 2022 ❌                                  │
+│         No mention of hotel booking or room type in this window.             │
+│ - 28: The hotel order should include a Twin Room for 2 nights, with booking  │
+│ dates of June 25, 2022 and June 26, 2022 ❌                                  │
+│         No mention of hotel booking or room type in this window.             │
+│ - 29: The flight tickets from Zhangjiajie to Shenzhen should have a          │
+│ departure date of June 27, 2022 ❌                                           │
+│         No mention of return flight booking or departure date in this        │
+│ window.                                                                      │
+│ - 30: The quantity of flight tickets from Zhangjiajie to Shenzhen should be  │
+│ 3 ❌                                                                         │
+│         No mention of return flight booking or ticket quantity in this       │
+│ window.                                                                      │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+33/100 (trial 1/1) Running task 70807003, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:24<00:00, 84.12s/it, est. speed input: 83.61 toks/s, output: 48.69 toks/s]Processed prompts: 100%|██████████| 1/1 [01:24<00:00, 84.12s/it, est. speed input: 83.61 toks/s, output: 48.69 toks/s]Processed prompts: 100%|██████████| 1/1 [01:24<00:00, 84.12s/it, est. speed input: 83.61 toks/s, output: 48.69 toks/s]
+2026-05-14 12:12:01.427 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807003, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:12:01.465 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2023-06-20 11:19:08
+
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 61.45it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.67s/it, est. speed input: 328.65 toks/s, output: 48.65 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.67s/it, est. speed input: 328.65 toks/s, output: 48.65 toks/s]Processed prompts: 100%|██████████| 1/1 [00:21<00:00, 21.67s/it, est. speed input: 328.65 toks/s, output: 48.65 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.82it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:13:49.482 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: 70812009, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 70812009                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 476.45s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The outbound train should be High-Speed Rail ❌                         │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 1: The outbound train tickets should be from Linyi to Dezhou ❌            │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 2: The departure date of the outbound train tickets should be 2023-04-29   │
+│ ❌                                                                           │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 3: The departure time of the outbound train should be between 07:00-08:00  │
+│ ❌                                                                           │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 4: The seat type in the outbound train ticket order should be Second Class │
+│ Seat ❌                                                                      │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 5: The quantity in the outbound train ticket order should be 2 ❌          │
+│         No outbound train booking or recommendation has been made in this    │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 6: The return train should be High-Speed Rail ❌                           │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 7: The return train tickets should be from Dezhou to Linyi ❌              │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 8: The departure date of the return train tickets should be 2023-04-30 ❌  │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 9: The arrival time of the return train should be around 12:00 ❌          │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 10: The seat type in the return train ticket order should be Second Class  │
+│ Seat ❌                                                                      │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 11: The quantity in the return train ticket order should be 2 ❌           │
+│         No return train booking or recommendation has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 12: The attraction ordered should be Dezhou Happy Flower Valley ❌         │
+│         No attraction booking or recommendation has been made in this        │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 13: Need to check the age range for senior tickets at Dezhou Happy Flower  │
+│ Valley, the result is that people over 60 years old can enjoy senior ticket  │
+│ discounts, and the attraction order should include 1 senior ticket ❌        │
+│         No attraction booking or age policy check has been made in this      │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 14: The attraction order should include 1 adult ticket ❌                  │
+│         No attraction booking or recommendation has been made in this        │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 15: The date of the attraction tickets should be 2023-04-29 ❌             │
+│         No attraction booking or recommendation has been made in this        │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 16: The distance between the hotel ordered and Dezhou Railway Station,     │
+│ Hubin Middle Avenue, Decheng District, Dezhou, Shandong Province should be   │
+│ less than or equal to 3 kilometers ❌                                        │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 17: The hotel ordered should provide Free Luggage Storage service ❌       │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 18: The check-in date of the hotel order should be 2023-04-29 ❌           │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 19: The quantity in the hotel order should be 1 ❌                         │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 20: The room type in the hotel order should be Twin Room ❌                │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 21: The outbound ticket should be from Linyi to Dezhou ❌                  │
+│         No outbound ticket booking or recommendation has been made in this   │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 22: The departure date of the outbound ticket should be 2023-04-29 ❌      │
+│         No outbound ticket booking or recommendation has been made in this   │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 23: The departure time of the outbound ticket should be between            │
+│ 07:00-08:00 ❌                                                               │
+│         No outbound ticket booking or recommendation has been made in this   │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 24: The seat type of the outbound ticket in the order should be Second     │
+│ Class Seat ❌                                                                │
+│         No outbound ticket booking or recommendation has been made in this   │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 25: The quantity of the outbound ticket in the order should be 2 ❌        │
+│         No outbound ticket booking or recommendation has been made in this   │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 26: The return ticket should be from Dezhou to Linyi ❌                    │
+│         No return ticket booking or recommendation has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 27: The departure date of the return ticket should be 2023-04-30 ❌        │
+│         No return ticket booking or recommendation has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 28: The arrival time of the return ticket should be around 12:00 ❌        │
+│         No return ticket booking or recommendation has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 29: The seat type of the return ticket in the order should be Second Class │
+│ Seat ❌                                                                      │
+│         No return ticket booking or recommendation has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 30: The quantity of the return ticket in the order should be 2 ❌          │
+│         No return ticket booking or recommendation has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 31: The scenic spot to be ordered should be Dezhou Happy Flower Valley ❌  │
+│         No scenic spot booking or recommendation has been made in this       │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 32: Need to check the age range for senior tickets at Dezhou Happy Flower  │
+│ Valley, the result shows that people aged 60 and above can enjoy senior      │
+│ ticket discount, and the scenic spot order should include 1 senior ticket ❌ │
+│         No scenic spot age policy check or booking has been made in this     │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 33: The scenic spot order should include 1 adult ticket ❌                 │
+│         No scenic spot booking or recommendation has been made in this       │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 34: The ticket date of the scenic spot order should be 2023-04-29 ❌       │
+│         No scenic spot booking or recommendation has been made in this       │
+│ window. The conversation only includes greetings and meta-reasoning by the   │
+│ assistant.                                                                   │
+│ - 35: The hotel to be booked should be within 3 kilometers of Dezhou Railway │
+│ Station, Hubin Middle Avenue, Decheng District, Dezhou, Shandong Province ❌ │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│ - 36: The hotel to be booked should provide Free Luggage Storage service ❌  │
+│         No hotel booking or recommendation has been made in this window. The │
+│ conversation only includes greetings and meta-reasoning by the assistant.    │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+34/100 (trial 1/1) Running task 70811002, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.10s/it, est. speed input: 79.89 toks/s, output: 46.49 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.10s/it, est. speed input: 79.89 toks/s, output: 46.49 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.10s/it, est. speed input: 79.89 toks/s, output: 46.49 toks/s]
+2026-05-14 12:13:49.827 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70811002, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:13:49.856 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2027-06-02 23:32:25
+
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 61.81it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:15:10.196 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: 70811004, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 70811004                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 586.32s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The outbound train ticket should be from Nanchang to Wuyuan ❌          │
+│         No assistant action regarding train tickets in this window; rubric   │
+│ not evaluated yet.                                                           │
+│ - 1: The departure date for the outbound train ticket should be 2022-03-05   │
+│ ❌                                                                           │
+│         No assistant action regarding train tickets in this window; rubric   │
+│ not evaluated yet.                                                           │
+│ - 2: The arrival time for the outbound train should be around 11:00 AM ❌    │
+│         No assistant action regarding train tickets in this window; rubric   │
+│ not evaluated yet.                                                           │
+│ - 3: Check the price of business class seats for the outbound train within   │
+│ the available options, the result shows 255 yuan per ticket, 510 yuan for    │
+│ two tickets, which exceeds 500 yuan, so the outbound train tickets should    │
+│ select 3 second class seats ❌                                               │
+│         No assistant action regarding train seat selection or price checking │
+│ in this window; rubric not evaluated yet.                                    │
+│ - 4: The hotel brand should be Atour or Ji Hotel or Vienna ❌                │
+│         No assistant action regarding hotel booking or brand selection in    │
+│ this window; rubric not evaluated yet.                                       │
+│ - 5: The distance between the booked hotel and Jiangling Rapeseed Flower     │
+│ Field, Jiangling Village, Wuyuan County, Shangrao City, Jiangxi Province     │
+│ should be less than or equal to 12 kilometers ❌                             │
+│         No assistant action regarding hotel booking or distance checking in  │
+│ this window; rubric not evaluated yet.                                       │
+│ - 6: The room type in the hotel order should be a king room ❌               │
+│         No assistant action regarding hotel room type in this window; rubric │
+│ not evaluated yet.                                                           │
+│ - 7: The check-in date for the hotel order should be 2022-03-05 ❌           │
+│         No assistant action regarding hotel check-in date in this window;    │
+│ rubric not evaluated yet.                                                    │
+│ - 8: The return train ticket should be from Wuyuan to Nanchang ❌            │
+│         No assistant action regarding return train tickets in this window;   │
+│ rubric not evaluated yet.                                                    │
+│ - 9: The departure date for the return train ticket should be 2022-03-06 ❌  │
+│         No assistant action regarding return train ticket date in this       │
+│ window; rubric not evaluated yet.                                            │
+│ - 10: The arrival time for the return train should be around 17:00 ❌        │
+│         No assistant action regarding return train arrival time in this      │
+│ window; rubric not evaluated yet.                                            │
+│ - 11: Need to check the price of business class seats for the return train   │
+│ within the available options, the result shows 178 yuan per ticket, 356 yuan │
+│ for two tickets, which is within 500 yuan, so the return train tickets       │
+│ should select two business class seats ❌                                    │
+│         No assistant action regarding return train seat selection or price   │
+│ checking in this window; rubric not evaluated yet.                           │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+35/100 (trial 1/1) Running task 70807008, trial 1
+Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.49s/it, est. speed input: 671.09 toks/s, output: 46.12 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.49s/it, est. speed input: 671.09 toks/s, output: 46.12 toks/s]Processed prompts: 100%|██████████| 1/1 [00:10<00:00, 10.49s/it, est. speed input: 671.09 toks/s, output: 46.12 toks/s]
+2026-05-14 12:15:10.472 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807008, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:15:10.498 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2028-02-13 21:29:13
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.38it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.07s/it, est. speed input: 308.04 toks/s, output: 45.87 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.07s/it, est. speed input: 308.04 toks/s, output: 45.87 toks/s]Processed prompts: 100%|██████████| 1/1 [00:23<00:00, 23.07s/it, est. speed input: 308.04 toks/s, output: 45.87 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.59it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:25<00:00, 85.42s/it, est. speed input: 82.69 toks/s, output: 47.95 toks/s]Processed prompts: 100%|██████████| 1/1 [01:25<00:00, 85.42s/it, est. speed input: 82.69 toks/s, output: 47.95 toks/s]Processed prompts: 100%|██████████| 1/1 [01:25<00:00, 85.42s/it, est. speed input: 82.69 toks/s, output: 47.95 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 61.07it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:17:22.649 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: D0808012, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: D0808012                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 704.98s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The train ticket order is for a trip from Shenzhen to Nanjing (Fujian)  │
+│ ❌                                                                           │
+│         No train ticket order has been discussed or placed in this window.   │
+│ - 1: The departure time of the train in the ticket order is February 28,     │
+│ 2025 ❌                                                                      │
+│         No train ticket order or departure date has been discussed or placed │
+│ in this window.                                                              │
+│ - 2: The train tickets in the order are Second Class Seats ❌                │
+│         No train ticket order or seat class has been discussed or placed in  │
+│ this window.                                                                 │
+│ - 3: The number of train tickets in the order is 2 ❌                        │
+│         No train ticket order or ticket quantity has been discussed or       │
+│ placed in this window.                                                       │
+│ - 4: The booked hotel is within 3km of the Tianluokeng Tulou Cluster Scenic  │
+│ Area ❌                                                                      │
+│         No hotel booking has been discussed or placed in this window.        │
+│ - 5: The hotel booking dates should be February 28, 2025 and March 1, 2025   │
+│ ❌                                                                           │
+│         No hotel booking or dates have been discussed or placed in this      │
+│ window.                                                                      │
+│ - 6: The booked hotel must have Hakka features ❌                            │
+│         No hotel booking or features have been discussed or placed in this   │
+│ window.                                                                      │
+│ - 7: The booked hotel must have a non-smoking floor ❌                       │
+│         No hotel booking or features have been discussed or placed in this   │
+│ window.                                                                      │
+│ - 8: The nightly rate of the booked hotel room should be around 600 yuan ❌  │
+│         No hotel booking or price has been discussed or placed in this       │
+│ window.                                                                      │
+│ - 9: Check the calendar to confirm the specific date of the Dragon Head      │
+│ Festival (February 2nd in lunar calendar is March 1st, 2025), the booking    │
+│ date for the scenic spot tickets is March 1, 2025 ❌                         │
+│         No calendar check or festival date confirmation has been performed   │
+│ in this window.                                                              │
+│ - 10: The tickets purchased are for the Yunshui Yao Ancient Town scenic area │
+│ ❌                                                                           │
+│         No scenic area ticket purchase has been discussed or placed in this  │
+│ window.                                                                      │
+│ - 11: The tickets purchased are adult tickets ❌                             │
+│         No scenic area ticket purchase or ticket type has been discussed or  │
+│ placed in this window.                                                       │
+│ - 12: The number of tickets purchased is 2 ❌                                │
+│         No scenic area ticket purchase or ticket quantity has been discussed │
+│ or placed in this window.                                                    │
+│ - 13: The train ticket in the order is from Shenzhen to Nanjing (Fujian) ❌  │
+│         No train ticket order has been discussed or placed in this window.   │
+│ - 14: The train ticket purchased in the order is Second Class Seat ❌        │
+│         No train ticket order or seat class has been discussed or placed in  │
+│ this window.                                                                 │
+│ - 15: The quantity of tickets in the train order is 2 ❌                     │
+│         No train ticket order or ticket quantity has been discussed or       │
+│ placed in this window.                                                       │
+│ - 16: The booked hotel should have Hakka Features ❌                         │
+│         No hotel booking or features have been discussed or placed in this   │
+│ window.                                                                      │
+│ - 17: The booked hotel should have Non-smoking Floor ❌                      │
+│         No hotel booking or features have been discussed or placed in this   │
+│ window.                                                                      │
+│ - 18: The price of the hotel room should be around 600 yuan per night ❌     │
+│         No hotel booking or price has been discussed or placed in this       │
+│ window.                                                                      │
+│ - 19: Check the calendar to confirm the specific date of the Longtou         │
+│ Festival (February 2nd of lunar calendar 2025 is March 1st), the booking     │
+│ time for the scenic area tickets is March 1, 2025 ❌                         │
+│         No calendar check or festival date confirmation has been performed   │
+│ in this window.                                                              │
+│ - 20: The purchased tickets are for the Yunshui Yao Ancient Town Scenic Area │
+│ ❌                                                                           │
+│         No scenic area ticket purchase has been discussed or placed in this  │
+│ window.                                                                      │
+│ - 21: The purchased tickets are Adult Ticket ❌                              │
+│         No scenic area ticket purchase or ticket type has been discussed or  │
+│ placed in this window.                                                       │
+│ - 22: The quantity of tickets purchased is 2 ❌                              │
+│         No scenic area ticket purchase or ticket quantity has been discussed │
+│ or placed in this window.                                                    │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+36/100 (trial 1/1) Running task 10812007, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:21<00:00, 81.23s/it, est. speed input: 87.80 toks/s, output: 46.88 toks/s]Processed prompts: 100%|██████████| 1/1 [01:21<00:00, 81.23s/it, est. speed input: 87.80 toks/s, output: 46.88 toks/s]Processed prompts: 100%|██████████| 1/1 [01:21<00:00, 81.23s/it, est. speed input: 87.80 toks/s, output: 46.88 toks/s]
+2026-05-14 12:17:22.944 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 10812007, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:17:22.969 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-14 18:56:22
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 67.15it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.49s/it, est. speed input: 79.80 toks/s, output: 46.29 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.49s/it, est. speed input: 79.80 toks/s, output: 46.29 toks/s]Processed prompts: 100%|██████████| 1/1 [01:28<00:00, 88.49s/it, est. speed input: 79.80 toks/s, output: 46.29 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 69.70it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:30<00:00, 90.99s/it, est. speed input: 77.56 toks/s, output: 45.01 toks/s]Processed prompts: 100%|██████████| 1/1 [01:30<00:00, 90.99s/it, est. speed input: 77.56 toks/s, output: 45.01 toks/s]Processed prompts: 100%|██████████| 1/1 [01:30<00:00, 91.00s/it, est. speed input: 77.56 toks/s, output: 45.01 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 62.64it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:21:29.771 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: 70805002, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: 70805002                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 966.02s                                                            │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: Flight order status should be cancelled ❌                              │
+│         No mention of flight cancellation or any related action in this      │
+│ window [1-3].                                                                │
+│ - 1: Train departure date should be July 30, 2025 ❌                         │
+│         No mention of train booking or departure date in this window [1-3].  │
+│ - 2: Train ticket should be for Tianjin to Hangzhou ❌                       │
+│         No mention of train route or ticket booking in this window [1-3].    │
+│ - 3: On July 30, 2025, the lowest-priced seats (Second Class Seats) on the   │
+│ earliest train G1677 from Tianjin to Hangzhou are sold out, so the order     │
+│ should be for train G1635 departing 2-3 hours later ❌                       │
+│         No mention of train selection or seat availability in this window    │
+│ [1-3].                                                                       │
+│ - 4: Train seat type should be Second Class Seat ❌                          │
+│         No mention of seat type or train booking in this window [1-3].       │
+│ - 5: The distance from Ningsheng Li, Intersection of Weijin South Road and   │
+│ Cangqiong Road, Nankai District, Tianjin to Tianjin Railway Station is about │
+│ 6 kilometers ❌                                                              │
+│         No mention of address or distance calculation in this window [1-3].  │
+│ - 6: Flight booking status should be cancelled ❌                            │
+│         No mention of flight cancellation or booking status in this window   │
+│ [1-3].                                                                       │
+│ - 7: Train ticket should be for a route from Tianjin to Hangzhou ❌          │
+│         No mention of train route or ticket booking in this window [1-3].    │
+│ - 8: On July 30, 2025, the cheapest seat type (Second Class Seat) on the     │
+│ earliest train G1677 from Tianjin to Hangzhou is sold out, so the booked     │
+│ train should be G1635, which departs 2-3 hours later ❌                      │
+│         No mention of train selection or seat availability in this window    │
+│ [1-3].                                                                       │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+37/100 (trial 1/1) Running task D0812001, trial 1
+Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.04s/it, est. speed input: 79.51 toks/s, output: 46.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.04s/it, est. speed input: 79.51 toks/s, output: 46.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.04s/it, est. speed input: 79.51 toks/s, output: 46.00 toks/s]
+2026-05-14 12:21:30.061 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812001, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:21:30.088 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-08-02 11:17:45
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 64.55it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.64s/it, est. speed input: 151.61 toks/s, output: 44.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.64s/it, est. speed input: 151.61 toks/s, output: 44.43 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.64s/it, est. speed input: 151.61 toks/s, output: 44.43 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 70.47it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.99s/it, est. speed input: 76.82 toks/s, output: 44.05 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.99s/it, est. speed input: 76.82 toks/s, output: 44.05 toks/s]Processed prompts: 100%|██████████| 1/1 [01:32<00:00, 92.99s/it, est. speed input: 76.82 toks/s, output: 44.05 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 70.45it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.77s/it, est. speed input: 79.21 toks/s, output: 45.63 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.77s/it, est. speed input: 79.21 toks/s, output: 45.63 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.77s/it, est. speed input: 79.21 toks/s, output: 45.63 toks/s]
+Processing window 1/1 with 3 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 66.48it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:26:52.031 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: D0812004, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.0}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: D0812004                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 1284.30s                                                           │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.0000                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: The flight in the airplane order is from Hefei to Taiyuan ❌            │
+│         No flight order has been placed or recommended yet; the assistant is │
+│ still clarifying the departure city with the user. [2][3]                    │
+│ - 1: The booked flight ticket should be for June 17, 2023 ❌                 │
+│         No flight ticket has been booked or recommended yet; the assistant   │
+│ is still clarifying the departure city with the user. [2][3]                 │
+│ - 2: The flight in the airplane order should arrive in the afternoon ❌      │
+│         No flight order has been placed or recommended yet; the assistant is │
+│ still clarifying the departure city with the user. [2][3]                    │
+│ - 3: The train in the train ticket order is from Taiyuan to Fenyang ❌       │
+│         No train ticket order has been placed or recommended yet; the        │
+│ assistant is still working on the flight segment. [2][3]                     │
+│ - 4: The booked train ticket date should be June 18, 2023 ❌                 │
+│         No train ticket has been booked or recommended yet; the assistant is │
+│ still working on the flight segment. [2][3]                                  │
+│ - 5: The departure time of the train in the train ticket order should be the │
+│ earliest one of that day ❌                                                  │
+│         No train ticket has been booked or recommended yet; the assistant is │
+│ still working on the flight segment. [2][3]                                  │
+│ - 6: The train ticket in the train ticket order should be for an upper berth │
+│ ❌                                                                           │
+│         No train ticket has been booked or recommended yet; the assistant is │
+│ still working on the flight segment. [2][3]                                  │
+│ - 7: The booked hotel should be within 2km of Taiyuan Railway Station,       │
+│ Jianshe South Road, Yingze District, Taiyuan, Shanxi Province ❌             │
+│         No hotel booking has been made or recommended yet; the assistant is  │
+│ still working on the flight segment. [2][3]                                  │
+│ - 8: The booked hotel should have good soundproofing ❌                      │
+│         No hotel booking has been made or recommended yet; the assistant is  │
+│ still working on the flight segment. [2][3]                                  │
+│ - 9: The booked hotel should provide wake-up call service ❌                 │
+│         No hotel booking has been made or recommended yet; the assistant is  │
+│ still working on the flight segment. [2][3]                                  │
+│ - 10: The hotel reservation date is June 17, 2023 ❌                         │
+│         No hotel booking has been made or recommended yet; the assistant is  │
+│ still working on the flight segment. [2][3]                                  │
+│ - 11: The room type in the hotel order should not exceed 200 yuan ❌         │
+│         No hotel booking has been made or recommended yet; the assistant is  │
+│ still working on the flight segment. [2][3]                                  │
+│ - 12: The attraction in the attraction order should match the type that the  │
+│ user most frequently visits (query results show natural scenic attractions)  │
+│ ❌                                                                           │
+│         No attraction search or recommendation has been made yet; the        │
+│ assistant is still working on the flight segment. [2][3]                     │
+│ - 13: The attraction in the attraction order should offer rafting ❌         │
+│         No attraction search or recommendation has been made yet; the        │
+│ assistant is still working on the flight segment. [2][3]                     │
+│ - 14: The ticket purchased in the attraction order should be an adult ticket │
+│ ❌                                                                           │
+│         No attraction ticket purchase has been made yet; the assistant is    │
+│ still working on the flight segment. [2][3]                                  │
+│ - 15: The ticket purchased in the attraction order should include rafting ❌ │
+│         No attraction ticket purchase has been made yet; the assistant is    │
+│ still working on the flight segment. [2][3]                                  │
+│ - 16: The ticket date should be set on the Dragon Boat Festival holiday;     │
+│ according to the query, the Dragon Boat Festival is on June 22, 2023, so the │
+│ purchased ticket date is June 22, 2023 ❌                                    │
+│         No attraction ticket purchase has been made yet; the assistant is    │
+│ still working on the flight segment. [2][3]                                  │
+│ - 17: The booked air ticket should be for June 17, 2023 ❌                   │
+│         No flight ticket has been booked or recommended yet; the assistant   │
+│ is still clarifying the departure city with the user. [2][3]                 │
+│ - 18: The train departure time in the train ticket order should be the       │
+│ earliest one of the day ❌                                                   │
+│         No train ticket has been booked or recommended yet; the assistant is │
+│ still working on the flight segment. [2][3]                                  │
+│ - 19: The train ticket booked in the train ticket order should be an upper   │
+│ berth ❌                                                                     │
+│         No train ticket has been booked or recommended yet; the assistant is │
+│ still working on the flight segment. [2][3]                                  │
+│ - 20: The scenic spot in the attraction order should match the user's most   │
+│ frequently visited type (query results show natural scenic spots) ❌         │
+│         No attraction search or recommendation has been made yet; the        │
+│ assistant is still working on the flight segment. [2][3]                     │
+│ - 21: The scenic spot in the attraction order should offer rafting ❌        │
+│         No attraction search or recommendation has been made yet; the        │
+│ assistant is still working on the flight segment. [2][3]                     │
+│ - 22: The ticket date should be on the Dragon Boat Festival holiday, which   │
+│ is June 22, 2023 according to the query, so the purchased ticket date is     │
+│ June 22, 2023 ❌                                                             │
+│         No attraction ticket purchase has been made yet; the assistant is    │
+│ still working on the flight segment. [2][3]                                  │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+38/100 (trial 1/1) Running task D0812009, trial 1
+Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.48s/it, est. speed input: 152.62 toks/s, output: 47.64 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.48s/it, est. speed input: 152.62 toks/s, output: 47.64 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.48s/it, est. speed input: 152.62 toks/s, output: 47.64 toks/s]
+2026-05-14 12:26:52.325 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: D0812009, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:26:52.350 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2025-06-21 19:45:58
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 69.81it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.98s/it, est. speed input: 244.60 toks/s, output: 47.68 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.98s/it, est. speed input: 244.60 toks/s, output: 47.68 toks/s]Processed prompts: 100%|██████████| 1/1 [00:28<00:00, 28.98s/it, est. speed input: 244.60 toks/s, output: 47.68 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 70.65it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.73s/it, est. speed input: 225.58 toks/s, output: 46.11 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.73s/it, est. speed input: 225.58 toks/s, output: 46.11 toks/s]Processed prompts: 100%|██████████| 1/1 [00:31<00:00, 31.73s/it, est. speed input: 225.58 toks/s, output: 46.11 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 77.12it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.20s/it, est. speed input: 81.63 toks/s, output: 46.97 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.20s/it, est. speed input: 81.63 toks/s, output: 46.97 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.20s/it, est. speed input: 81.63 toks/s, output: 46.97 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.68it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:20<00:00, 80.16s/it, est. speed input: 88.55 toks/s, output: 46.99 toks/s]Processed prompts: 100%|██████████| 1/1 [01:20<00:00, 80.16s/it, est. speed input: 88.55 toks/s, output: 46.99 toks/s]Processed prompts: 100%|██████████| 1/1 [01:20<00:00, 80.16s/it, est. speed input: 88.55 toks/s, output: 46.99 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 79.17it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.70s/it, est. speed input: 80.97 toks/s, output: 46.70 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.70s/it, est. speed input: 80.97 toks/s, output: 46.70 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.70s/it, est. speed input: 80.97 toks/s, output: 46.70 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 72.34it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.99s/it, est. speed input: 89.23 toks/s, output: 49.30 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.99s/it, est. speed input: 89.23 toks/s, output: 49.30 toks/s]Processed prompts: 100%|██████████| 1/1 [01:19<00:00, 79.99s/it, est. speed input: 89.23 toks/s, output: 49.30 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 70.10it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.81s/it, est. speed input: 111.41 toks/s, output: 47.96 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.81s/it, est. speed input: 111.41 toks/s, output: 47.96 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.81s/it, est. speed input: 111.41 toks/s, output: 47.96 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 69.63it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.71s/it, est. speed input: 123.12 toks/s, output: 47.07 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.71s/it, est. speed input: 123.12 toks/s, output: 47.07 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.71s/it, est. speed input: 123.12 toks/s, output: 47.07 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 75.83it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:53<00:00, 53.79s/it, est. speed input: 131.00 toks/s, output: 46.59 toks/s]Processed prompts: 100%|██████████| 1/1 [00:53<00:00, 53.79s/it, est. speed input: 131.00 toks/s, output: 46.59 toks/s]Processed prompts: 100%|██████████| 1/1 [00:53<00:00, 53.79s/it, est. speed input: 131.00 toks/s, output: 46.59 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 68.31it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:59<00:00, 59.65s/it, est. speed input: 119.81 toks/s, output: 46.45 toks/s]Processed prompts: 100%|██████████| 1/1 [00:59<00:00, 59.65s/it, est. speed input: 119.81 toks/s, output: 46.45 toks/s]Processed prompts: 100%|██████████| 1/1 [00:59<00:00, 59.66s/it, est. speed input: 119.81 toks/s, output: 46.45 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 66.45it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.76s/it, est. speed input: 82.13 toks/s, output: 47.21 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.76s/it, est. speed input: 82.13 toks/s, output: 47.21 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.76s/it, est. speed input: 82.13 toks/s, output: 47.21 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.07it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:55<00:00, 55.24s/it, est. speed input: 129.45 toks/s, output: 47.57 toks/s]Processed prompts: 100%|██████████| 1/1 [00:55<00:00, 55.24s/it, est. speed input: 129.45 toks/s, output: 47.57 toks/s]Processed prompts: 100%|██████████| 1/1 [00:55<00:00, 55.24s/it, est. speed input: 129.45 toks/s, output: 47.57 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 46.70it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.12s/it, est. speed input: 129.88 toks/s, output: 47.02 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.12s/it, est. speed input: 129.88 toks/s, output: 47.02 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.12s/it, est. speed input: 129.88 toks/s, output: 47.02 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 61.50it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.41s/it, est. speed input: 134.77 toks/s, output: 48.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.41s/it, est. speed input: 134.77 toks/s, output: 48.52 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.41s/it, est. speed input: 134.77 toks/s, output: 48.52 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 53.47it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.37s/it, est. speed input: 152.85 toks/s, output: 48.49 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.37s/it, est. speed input: 152.85 toks/s, output: 48.49 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.37s/it, est. speed input: 152.85 toks/s, output: 48.49 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.49it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:45<00:00, 45.31s/it, est. speed input: 155.91 toks/s, output: 48.73 toks/s]Processed prompts: 100%|██████████| 1/1 [00:45<00:00, 45.31s/it, est. speed input: 155.91 toks/s, output: 48.73 toks/s]Processed prompts: 100%|██████████| 1/1 [00:45<00:00, 45.31s/it, est. speed input: 155.91 toks/s, output: 48.73 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 51.42it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.17s/it, est. speed input: 146.15 toks/s, output: 43.74 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.17s/it, est. speed input: 146.15 toks/s, output: 43.74 toks/s]Processed prompts: 100%|██████████| 1/1 [01:17<00:00, 77.17s/it, est. speed input: 146.15 toks/s, output: 43.74 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 75.71it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.04s/it, est. speed input: 154.29 toks/s, output: 43.20 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.04s/it, est. speed input: 154.29 toks/s, output: 43.20 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.04s/it, est. speed input: 154.29 toks/s, output: 43.20 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 57.31it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.39s/it, est. speed input: 508.61 toks/s, output: 43.24 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.39s/it, est. speed input: 508.61 toks/s, output: 43.24 toks/s]Processed prompts: 100%|██████████| 1/1 [00:17<00:00, 17.39s/it, est. speed input: 508.61 toks/s, output: 43.24 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 74.83it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.23s/it, est. speed input: 82.95 toks/s, output: 47.50 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.23s/it, est. speed input: 82.95 toks/s, output: 47.50 toks/s]Processed prompts: 100%|██████████| 1/1 [01:26<00:00, 86.23s/it, est. speed input: 82.95 toks/s, output: 47.50 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 76.08it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.91s/it, est. speed input: 96.62 toks/s, output: 46.96 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.91s/it, est. speed input: 96.62 toks/s, output: 46.96 toks/s]Processed prompts: 100%|██████████| 1/1 [01:13<00:00, 73.91s/it, est. speed input: 96.62 toks/s, output: 46.96 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 78.75it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.13s/it, est. speed input: 640.45 toks/s, output: 45.12 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.13s/it, est. speed input: 640.45 toks/s, output: 45.12 toks/s]Processed prompts: 100%|██████████| 1/1 [00:11<00:00, 11.13s/it, est. speed input: 640.45 toks/s, output: 45.12 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 51.82it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:40<00:00, 40.42s/it, est. speed input: 247.09 toks/s, output: 44.88 toks/s]Processed prompts: 100%|██████████| 1/1 [00:40<00:00, 40.42s/it, est. speed input: 247.09 toks/s, output: 44.88 toks/s]Processed prompts: 100%|██████████| 1/1 [00:40<00:00, 40.42s/it, est. speed input: 247.09 toks/s, output: 44.88 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 72.31it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.66s/it, est. speed input: 240.61 toks/s, output: 48.01 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.66s/it, est. speed input: 240.61 toks/s, output: 48.01 toks/s]Processed prompts: 100%|██████████| 1/1 [00:29<00:00, 29.66s/it, est. speed input: 240.61 toks/s, output: 48.01 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 52.58it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:07<00:00,  7.78s/it, est. speed input: 1411.80 toks/s, output: 49.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:07<00:00,  7.78s/it, est. speed input: 1411.80 toks/s, output: 49.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:07<00:00,  7.78s/it, est. speed input: 1411.80 toks/s, output: 49.13 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 54.78it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.11s/it, est. speed input: 180.74 toks/s, output: 49.30 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.11s/it, est. speed input: 180.74 toks/s, output: 49.30 toks/s]Processed prompts: 100%|██████████| 1/1 [01:02<00:00, 62.11s/it, est. speed input: 180.74 toks/s, output: 49.30 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 71.19it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 204.18 toks/s, output: 48.57 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 204.18 toks/s, output: 48.57 toks/s]Processed prompts: 100%|██████████| 1/1 [00:34<00:00, 34.73s/it, est. speed input: 204.18 toks/s, output: 48.57 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 55.15it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.70s/it, est. speed input: 195.30 toks/s, output: 46.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.70s/it, est. speed input: 195.30 toks/s, output: 46.97 toks/s]Processed prompts: 100%|██████████| 1/1 [00:57<00:00, 57.70s/it, est. speed input: 195.30 toks/s, output: 46.97 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 54.50it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:47<00:00, 47.02s/it, est. speed input: 206.66 toks/s, output: 46.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:47<00:00, 47.02s/it, est. speed input: 206.66 toks/s, output: 46.13 toks/s]Processed prompts: 100%|██████████| 1/1 [00:47<00:00, 47.02s/it, est. speed input: 206.66 toks/s, output: 46.13 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 49.12it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.36s/it, est. speed input: 244.59 toks/s, output: 47.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.36s/it, est. speed input: 244.59 toks/s, output: 47.21 toks/s]Processed prompts: 100%|██████████| 1/1 [00:46<00:00, 46.36s/it, est. speed input: 244.59 toks/s, output: 47.21 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 72.08it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.45s/it, est. speed input: 111.99 toks/s, output: 48.76 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.45s/it, est. speed input: 111.99 toks/s, output: 48.76 toks/s]Processed prompts: 100%|██████████| 1/1 [01:03<00:00, 63.45s/it, est. speed input: 111.99 toks/s, output: 48.76 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 51.58it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [00:25<00:00, 25.34s/it, est. speed input: 465.16 toks/s, output: 48.69 toks/s]Processed prompts: 100%|██████████| 1/1 [00:25<00:00, 25.34s/it, est. speed input: 465.16 toks/s, output: 48.69 toks/s]Processed prompts: 100%|██████████| 1/1 [00:25<00:00, 25.34s/it, est. speed input: 465.16 toks/s, output: 48.69 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 51.74it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.31s/it, est. speed input: 146.88 toks/s, output: 48.11 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.31s/it, est. speed input: 146.88 toks/s, output: 48.11 toks/s]Processed prompts: 100%|██████████| 1/1 [01:14<00:00, 74.31s/it, est. speed input: 146.88 toks/s, output: 48.11 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 56.54it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.47s/it, est. speed input: 102.25 toks/s, output: 45.78 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.47s/it, est. speed input: 102.25 toks/s, output: 45.78 toks/s]Processed prompts: 100%|██████████| 1/1 [01:29<00:00, 89.48s/it, est. speed input: 102.25 toks/s, output: 45.78 toks/s]
+Processing window 1/1 with 5 messages
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 40.29it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]2026-05-14 12:59:49.604 | INFO     | vita.run:_run_task_internal:623 - FINISHED SIMULATION: Domain: ota, Task: A0812008, Agent: LLMAgent, User: UserSimulator. Reward: 0.0 | {<RewardType.NL_ASSERTION: 'NL_ASSERTION'>: 0.3333333333333333}
+
+╭──────────────────────────── Simulation Overview ─────────────────────────────╮
+│ Task ID: A0812008                                                            │
+│ Trial: 0                                                                     │
+│ Duration: 3264.95s                                                           │
+│ Termination Reason: agent_stop                                               │
+│ Agent Cost: $0.0000                                                          │
+│ User Cost: $0.0000                                                           │
+│ Reward: ❌ 0.0000                                                            │
+│ Reward Breakdown:                                                            │
+│   NL_ASSERTION: 0.3333                                                       │
+│                                                                              │
+│ NL Assertions:                                                               │
+│ - 0: Need to check the weather in Zhuhai on May 16, 2026, with the highest   │
+│ temperature of 35°C, which exceeds 33°C. The attraction to order should be   │
+│ Zhuhai Chimelong Ocean Kingdom ❌                                            │
+│         No weather check or attraction ordering was performed in this        │
+│ window. Only hotel search and recommendations were discussed. [2][3][5]      │
+│ - 1: The tickets in the attraction order should include a fireworks show ❌  │
+│         No attraction ticket ordering or mention of fireworks show tickets   │
+│ occurred in this window. [2][3][5]                                           │
+│ - 2: The date of the tickets in the attraction order should be May 16, 2026  │
+│ ❌                                                                           │
+│         No attraction ticket ordering or date specification occurred in this │
+│ window. [2][3][5]                                                            │
+│ - 3: The ticket type in the attraction order should be adult tickets ❌      │
+│         No attraction ticket ordering or ticket type specification occurred  │
+│ in this window. [2][3][5]                                                    │
+│ - 4: The hotel room type should be an Ocean View Room ✅                     │
+│         The assistant recommended the Hong Kong-Zhuhai-Macao Bridge Seaview  │
+│ Resort Hotel, which offers Ocean View Rooms as per the tags and description. │
+│ [5] Status updated to true.                                                  │
+│ - 5: The hotel room type should be a King Room ✅                            │
+│         The assistant recommended the Hong Kong-Zhuhai-Macao Bridge Seaview  │
+│ Resort Hotel, which offers King Rooms as per the tags and description. [5]   │
+│ Status updated to true.                                                      │
+│ - 6: The hotel room must have a view of the Hong Kong-Zhuhai-Macao Bridge ✅ │
+│         The assistant recommended the Hong Kong-Zhuhai-Macao Bridge Seaview  │
+│ Resort Hotel, which explicitly offers rooms with a view of the Hong          │
+│ Kong-Zhuhai-Macao Bridge. [5] Status updated to true.                        │
+│ - 7: The hotel order date should be May 16, 2026 ❌                          │
+│         The assistant recommended a hotel for the night of the 16th, but did │
+│ not actually place an order or check availability for May 16, 2026. [5]      │
+│ Status remains false.                                                        │
+│ - 8: Need to check the ticket price of Zhuhai Chimelong Ocean Kingdom, which │
+│ is 850 yuan for Adult Ticket (Including Fireworks Show and Indoor Light      │
+│ Show), exceeding the user's budget of 800 yuan per person ❌                 │
+│         No ticket price check for Zhuhai Chimelong Ocean Kingdom was         │
+│ performed in this window. [2][3][5]                                          │
+│                                                                              │
+│ Additional Info:                                                             │
+│ evaluation_method: sliding_window                                            │
+│ num_windows: 1                                                               │
+│ window_size: 10                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+39/100 (trial 1/1) Running task 70807009, trial 1
+Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.30s/it, est. speed input: 796.54 toks/s, output: 48.50 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.30s/it, est. speed input: 796.54 toks/s, output: 48.50 toks/s]Processed prompts: 100%|██████████| 1/1 [00:15<00:00, 15.30s/it, est. speed input: 796.54 toks/s, output: 48.50 toks/s]
+2026-05-14 12:59:49.909 | INFO     | vita.run:_run_task_internal:546 - STARTING SIMULATION: Domain: ota, Task: 70807009, Agent: llm_agent, User: user_simulator
+
+2026-05-14 12:59:49.936 | INFO     | vita.run:_run_task_internal:560 - || Time Set To: 2026-06-30 21:13:56
+
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 47.68it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.57s/it, est. speed input: 130.75 toks/s, output: 46.78 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.57s/it, est. speed input: 130.75 toks/s, output: 46.78 toks/s]Processed prompts: 100%|██████████| 1/1 [01:27<00:00, 87.57s/it, est. speed input: 130.75 toks/s, output: 46.78 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 52.12it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.47s/it, est. speed input: 143.72 toks/s, output: 44.51 toks/s]Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.47s/it, est. speed input: 143.72 toks/s, output: 44.51 toks/s]Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.47s/it, est. speed input: 143.72 toks/s, output: 44.51 toks/s]
+Rendering conversations:   0%|          | 0/1 [00:00<?, ?it/s]Rendering conversations: 100%|██████████| 1/1 [00:00<00:00, 45.90it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]ERROR 05-14 13:03:30 [core_client.py:667] Engine core proc EngineCore died unexpectedly, shutting down client.

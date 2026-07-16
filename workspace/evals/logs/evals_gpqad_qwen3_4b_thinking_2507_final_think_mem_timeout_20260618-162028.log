@@ -1,0 +1,1808 @@
+===== 2026-06-18 16:20:28 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.188GiB / 1.472TiB mem_pct 0.28% cpu 5.73% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:20:59 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.203GiB / 1.472TiB mem_pct 0.28% cpu 9.00% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:21:31 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.23GiB / 1.472TiB mem_pct 0.28% cpu 37.41% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:22:03 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.231GiB / 1.472TiB mem_pct 0.28% cpu 82.50% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:22:35 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.262GiB / 1.472TiB mem_pct 0.28% cpu 0.00% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:23:06 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.29GiB / 1.472TiB mem_pct 0.28% cpu 6.65% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:23:38 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.306GiB / 1.472TiB mem_pct 0.29% cpu 7.17% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:24:10 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.324GiB / 1.472TiB mem_pct 0.29% cpu 9.88% pids 1090
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        31Gi       1.3Ti        13Gi       172Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:24:41 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 4.972GiB / 1.472TiB mem_pct 0.33% cpu 1142.51% pids 2098
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        32Gi       1.3Ti        13Gi       173Gi       1.4Ti
+0, PPU-ZW810E, 2, 98304, 0
+1, PPU-ZW810E, 2, 98304, 0
+2, PPU-ZW810E, 2, 98304, 0
+3, PPU-ZW810E, 2, 98304, 0
+4, PPU-ZW810E, 2, 98304, 0
+5, PPU-ZW810E, 2, 98304, 0
+6, PPU-ZW810E, 2, 98304, 0
+7, PPU-ZW810E, 2, 98304, 0
+8, PPU-ZW810E, 2, 98304, 0
+9, PPU-ZW810E, 2, 98304, 0
+10, PPU-ZW810E, 2, 98304, 0
+11, PPU-ZW810E, 2, 98304, 0
+12, PPU-ZW810E, 2, 98304, 0
+13, PPU-ZW810E, 2, 98304, 0
+14, PPU-ZW810E, 2, 98304, 0
+15, PPU-ZW810E, 2, 98304, 0
+
+===== 2026-06-18 16:25:13 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 21.76GiB / 1.472TiB mem_pct 1.44% cpu 7.07% pids 2122
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        48Gi       1.3Ti        13Gi       173Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:25:45 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 28.3GiB / 1.472TiB mem_pct 1.88% cpu 245.86% pids 2114
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        55Gi       1.2Ti        13Gi       173Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:26:17 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 33.78GiB / 1.472TiB mem_pct 2.24% cpu 624.02% pids 2114
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        61Gi       1.2Ti        13Gi       174Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:26:48 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 40.38GiB / 1.472TiB mem_pct 2.68% cpu 120.63% pids 2194
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        67Gi       1.2Ti        13Gi       174Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:27:20 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 46.5GiB / 1.472TiB mem_pct 3.09% cpu 111.36% pids 4210
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        74Gi       1.2Ti        13Gi       174Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:27:52 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 48.29GiB / 1.472TiB mem_pct 3.20% cpu 239.63% pids 4210
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti        75Gi       1.2Ti        13Gi       174Gi       1.4Ti
+0, PPU-ZW810E, 131, 98304, 0
+1, PPU-ZW810E, 131, 98304, 0
+2, PPU-ZW810E, 131, 98304, 0
+3, PPU-ZW810E, 131, 98304, 0
+4, PPU-ZW810E, 131, 98304, 0
+5, PPU-ZW810E, 131, 98304, 0
+6, PPU-ZW810E, 131, 98304, 0
+7, PPU-ZW810E, 131, 98304, 0
+8, PPU-ZW810E, 131, 98304, 0
+9, PPU-ZW810E, 131, 98304, 0
+10, PPU-ZW810E, 131, 98304, 0
+11, PPU-ZW810E, 131, 98304, 0
+12, PPU-ZW810E, 131, 98304, 0
+13, PPU-ZW810E, 131, 98304, 0
+14, PPU-ZW810E, 131, 98304, 0
+15, PPU-ZW810E, 131, 98304, 0
+
+===== 2026-06-18 16:28:24 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 77.55GiB / 1.472TiB mem_pct 5.15% cpu 56.03% pids 4305
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       105Gi       1.2Ti        13Gi       174Gi       1.3Ti
+0, PPU-ZW810E, 388, 98304, 0
+1, PPU-ZW810E, 388, 98304, 0
+2, PPU-ZW810E, 388, 98304, 0
+3, PPU-ZW810E, 388, 98304, 0
+4, PPU-ZW810E, 388, 98304, 0
+5, PPU-ZW810E, 388, 98304, 0
+6, PPU-ZW810E, 388, 98304, 0
+7, PPU-ZW810E, 388, 98304, 0
+8, PPU-ZW810E, 388, 98304, 0
+9, PPU-ZW810E, 388, 98304, 0
+10, PPU-ZW810E, 388, 98304, 0
+11, PPU-ZW810E, 388, 98304, 0
+12, PPU-ZW810E, 388, 98304, 0
+13, PPU-ZW810E, 388, 98304, 0
+14, PPU-ZW810E, 388, 98304, 0
+15, PPU-ZW810E, 388, 98304, 0
+
+===== 2026-06-18 16:28:55 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 78.64GiB / 1.472TiB mem_pct 5.22% cpu 162.48% pids 6258
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       106Gi       1.2Ti        13Gi       174Gi       1.3Ti
+0, PPU-ZW810E, 388, 98304, 0
+1, PPU-ZW810E, 388, 98304, 0
+2, PPU-ZW810E, 388, 98304, 0
+3, PPU-ZW810E, 388, 98304, 0
+4, PPU-ZW810E, 388, 98304, 0
+5, PPU-ZW810E, 388, 98304, 0
+6, PPU-ZW810E, 388, 98304, 0
+7, PPU-ZW810E, 388, 98304, 0
+8, PPU-ZW810E, 388, 98304, 0
+9, PPU-ZW810E, 388, 98304, 0
+10, PPU-ZW810E, 388, 98304, 0
+11, PPU-ZW810E, 388, 98304, 0
+12, PPU-ZW810E, 388, 98304, 0
+13, PPU-ZW810E, 388, 98304, 0
+14, PPU-ZW810E, 388, 98304, 0
+15, PPU-ZW810E, 388, 98304, 0
+
+===== 2026-06-18 16:29:27 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 94.81GiB / 1.472TiB mem_pct 6.29% cpu 280.10% pids 6279
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       122Gi       1.2Ti        13Gi       174Gi       1.3Ti
+0, PPU-ZW810E, 388, 98304, 0
+1, PPU-ZW810E, 388, 98304, 0
+2, PPU-ZW810E, 388, 98304, 0
+3, PPU-ZW810E, 388, 98304, 0
+4, PPU-ZW810E, 388, 98304, 0
+5, PPU-ZW810E, 388, 98304, 0
+6, PPU-ZW810E, 388, 98304, 0
+7, PPU-ZW810E, 388, 98304, 0
+8, PPU-ZW810E, 388, 98304, 0
+9, PPU-ZW810E, 388, 98304, 0
+10, PPU-ZW810E, 388, 98304, 0
+11, PPU-ZW810E, 388, 98304, 0
+12, PPU-ZW810E, 388, 98304, 0
+13, PPU-ZW810E, 388, 98304, 0
+14, PPU-ZW810E, 420, 98304, 0
+15, PPU-ZW810E, 388, 98304, 0
+
+===== 2026-06-18 16:29:59 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 143.3GiB / 1.472TiB mem_pct 9.51% cpu 537.96% pids 6642
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       171Gi       1.1Ti        13Gi       174Gi       1.3Ti
+0, PPU-ZW810E, 420, 98304, 0
+1, PPU-ZW810E, 420, 98304, 0
+2, PPU-ZW810E, 421, 98304, 0
+3, PPU-ZW810E, 421, 98304, 0
+4, PPU-ZW810E, 420, 98304, 0
+5, PPU-ZW810E, 420, 98304, 0
+6, PPU-ZW810E, 421, 98304, 0
+7, PPU-ZW810E, 421, 98304, 0
+8, PPU-ZW810E, 420, 98304, 0
+9, PPU-ZW810E, 420, 98304, 0
+10, PPU-ZW810E, 421, 98304, 0
+11, PPU-ZW810E, 421, 98304, 0
+12, PPU-ZW810E, 420, 98304, 0
+13, PPU-ZW810E, 420, 98304, 0
+14, PPU-ZW810E, 421, 98304, 0
+15, PPU-ZW810E, 421, 98304, 0
+
+===== 2026-06-18 16:30:31 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 144GiB / 1.472TiB mem_pct 9.55% cpu 667.36% pids 6674
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       171Gi       1.1Ti        13Gi       180Gi       1.3Ti
+0, PPU-ZW810E, 8320, 98304, 2
+1, PPU-ZW810E, 8320, 98304, 2
+2, PPU-ZW810E, 8321, 98304, 0
+3, PPU-ZW810E, 8321, 98304, 4
+4, PPU-ZW810E, 8320, 98304, 4
+5, PPU-ZW810E, 8320, 98304, 0
+6, PPU-ZW810E, 8321, 98304, 4
+7, PPU-ZW810E, 8321, 98304, 2
+8, PPU-ZW810E, 8320, 98304, 2
+9, PPU-ZW810E, 8320, 98304, 4
+10, PPU-ZW810E, 8321, 98304, 2
+11, PPU-ZW810E, 8321, 98304, 2
+12, PPU-ZW810E, 8320, 98304, 4
+13, PPU-ZW810E, 8320, 98304, 4
+14, PPU-ZW810E, 8321, 98304, 2
+15, PPU-ZW810E, 8321, 98304, 2
+
+===== 2026-06-18 16:31:02 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.4GiB / 1.472TiB mem_pct 11.17% cpu 58.66% pids 10914
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       188Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14288, 98304, 0
+1, PPU-ZW810E, 14288, 98304, 0
+2, PPU-ZW810E, 14289, 98304, 0
+3, PPU-ZW810E, 14289, 98304, 0
+4, PPU-ZW810E, 14288, 98304, 0
+5, PPU-ZW810E, 14288, 98304, 0
+6, PPU-ZW810E, 14289, 98304, 0
+7, PPU-ZW810E, 14289, 98304, 0
+8, PPU-ZW810E, 14288, 98304, 0
+9, PPU-ZW810E, 14288, 98304, 0
+10, PPU-ZW810E, 14289, 98304, 0
+11, PPU-ZW810E, 14289, 98304, 0
+12, PPU-ZW810E, 14288, 98304, 0
+13, PPU-ZW810E, 14288, 98304, 0
+14, PPU-ZW810E, 14289, 98304, 0
+15, PPU-ZW810E, 14289, 98304, 0
+
+===== 2026-06-18 16:31:34 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.3GiB / 1.472TiB mem_pct 11.17% cpu 67.99% pids 10890
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       187Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14288, 98304, 0
+1, PPU-ZW810E, 14288, 98304, 0
+2, PPU-ZW810E, 14289, 98304, 0
+3, PPU-ZW810E, 14289, 98304, 0
+4, PPU-ZW810E, 14288, 98304, 0
+5, PPU-ZW810E, 14288, 98304, 0
+6, PPU-ZW810E, 14289, 98304, 0
+7, PPU-ZW810E, 14289, 98304, 0
+8, PPU-ZW810E, 14288, 98304, 0
+9, PPU-ZW810E, 14288, 98304, 0
+10, PPU-ZW810E, 14289, 98304, 0
+11, PPU-ZW810E, 14289, 98304, 0
+12, PPU-ZW810E, 14288, 98304, 0
+13, PPU-ZW810E, 14288, 98304, 0
+14, PPU-ZW810E, 14289, 98304, 0
+15, PPU-ZW810E, 14289, 98304, 0
+
+===== 2026-06-18 16:32:06 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.5GiB / 1.472TiB mem_pct 11.18% cpu 14.94% pids 10899
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       187Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14288, 98304, 0
+1, PPU-ZW810E, 14288, 98304, 0
+2, PPU-ZW810E, 14289, 98304, 0
+3, PPU-ZW810E, 14289, 98304, 0
+4, PPU-ZW810E, 14288, 98304, 0
+5, PPU-ZW810E, 14288, 98304, 0
+6, PPU-ZW810E, 14289, 98304, 0
+7, PPU-ZW810E, 14289, 98304, 0
+8, PPU-ZW810E, 14288, 98304, 0
+9, PPU-ZW810E, 14288, 98304, 0
+10, PPU-ZW810E, 14289, 98304, 0
+11, PPU-ZW810E, 14289, 98304, 0
+12, PPU-ZW810E, 14288, 98304, 0
+13, PPU-ZW810E, 14288, 98304, 0
+14, PPU-ZW810E, 14289, 98304, 0
+15, PPU-ZW810E, 14289, 98304, 0
+
+===== 2026-06-18 16:32:38 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.6GiB / 1.472TiB mem_pct 11.18% cpu 107.62% pids 10890
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       187Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14288, 98304, 0
+1, PPU-ZW810E, 14288, 98304, 0
+2, PPU-ZW810E, 14289, 98304, 0
+3, PPU-ZW810E, 14289, 98304, 0
+4, PPU-ZW810E, 14288, 98304, 0
+5, PPU-ZW810E, 14288, 98304, 0
+6, PPU-ZW810E, 14289, 98304, 0
+7, PPU-ZW810E, 14289, 98304, 0
+8, PPU-ZW810E, 14288, 98304, 0
+9, PPU-ZW810E, 14288, 98304, 0
+10, PPU-ZW810E, 14289, 98304, 0
+11, PPU-ZW810E, 14289, 98304, 0
+12, PPU-ZW810E, 14288, 98304, 0
+13, PPU-ZW810E, 14288, 98304, 0
+14, PPU-ZW810E, 14289, 98304, 0
+15, PPU-ZW810E, 14289, 98304, 0
+
+===== 2026-06-18 16:33:09 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.5GiB / 1.472TiB mem_pct 11.18% cpu 58.38% pids 10892
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       187Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14288, 98304, 0
+1, PPU-ZW810E, 14288, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14289, 98304, 0
+4, PPU-ZW810E, 14288, 98304, 0
+5, PPU-ZW810E, 14288, 98304, 0
+6, PPU-ZW810E, 14289, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14288, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14289, 98304, 0
+11, PPU-ZW810E, 14289, 98304, 0
+12, PPU-ZW810E, 14288, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14289, 98304, 0
+
+===== 2026-06-18 16:33:41 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 168.7GiB / 1.472TiB mem_pct 11.20% cpu 102.79% pids 10891
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       188Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:34:13 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.4GiB / 1.472TiB mem_pct 11.24% cpu 98.16% pids 13210
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:34:45 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.6GiB / 1.472TiB mem_pct 11.25% cpu 205.98% pids 13200
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:35:17 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.6GiB / 1.472TiB mem_pct 11.26% cpu 222.91% pids 13200
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:35:48 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.5GiB / 1.472TiB mem_pct 11.25% cpu 106.99% pids 13194
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       188Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:36:20 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.6GiB / 1.472TiB mem_pct 11.25% cpu 106.50% pids 13194
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:36:52 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.9GiB / 1.472TiB mem_pct 11.28% cpu 105.33% pids 13195
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:37:24 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 169.5GiB / 1.472TiB mem_pct 11.25% cpu 1688.58% pids 13186
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       189Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14308, 98304, 0
+1, PPU-ZW810E, 14308, 98304, 0
+2, PPU-ZW810E, 14309, 98304, 0
+3, PPU-ZW810E, 14309, 98304, 0
+4, PPU-ZW810E, 14308, 98304, 0
+5, PPU-ZW810E, 14308, 98304, 0
+6, PPU-ZW810E, 14309, 98304, 0
+7, PPU-ZW810E, 14309, 98304, 0
+8, PPU-ZW810E, 14308, 98304, 0
+9, PPU-ZW810E, 14308, 98304, 0
+10, PPU-ZW810E, 14309, 98304, 0
+11, PPU-ZW810E, 14309, 98304, 0
+12, PPU-ZW810E, 14308, 98304, 0
+13, PPU-ZW810E, 14308, 98304, 0
+14, PPU-ZW810E, 14309, 98304, 0
+15, PPU-ZW810E, 14309, 98304, 0
+
+===== 2026-06-18 16:37:55 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1620.14% pids 13411
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 30
+1, PPU-ZW810E, 14510, 98304, 34
+2, PPU-ZW810E, 14485, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 20
+4, PPU-ZW810E, 14350, 98304, 28
+5, PPU-ZW810E, 14350, 98304, 34
+6, PPU-ZW810E, 14351, 98304, 32
+7, PPU-ZW810E, 14485, 98304, 30
+8, PPU-ZW810E, 14350, 98304, 24
+9, PPU-ZW810E, 14350, 98304, 24
+10, PPU-ZW810E, 14487, 98304, 36
+11, PPU-ZW810E, 14485, 98304, 30
+12, PPU-ZW810E, 14348, 98304, 32
+13, PPU-ZW810E, 14486, 98304, 34
+14, PPU-ZW810E, 14351, 98304, 24
+15, PPU-ZW810E, 14487, 98304, 26
+
+===== 2026-06-18 16:38:27 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1620.16% pids 13417
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 18
+1, PPU-ZW810E, 14510, 98304, 24
+2, PPU-ZW810E, 14485, 98304, 26
+3, PPU-ZW810E, 14349, 98304, 34
+4, PPU-ZW810E, 14350, 98304, 24
+5, PPU-ZW810E, 14358, 98304, 24
+6, PPU-ZW810E, 14351, 98304, 30
+7, PPU-ZW810E, 14485, 98304, 16
+8, PPU-ZW810E, 14350, 98304, 26
+9, PPU-ZW810E, 14350, 98304, 18
+10, PPU-ZW810E, 14487, 98304, 26
+11, PPU-ZW810E, 14485, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 36
+13, PPU-ZW810E, 14486, 98304, 38
+14, PPU-ZW810E, 14351, 98304, 20
+15, PPU-ZW810E, 14487, 98304, 26
+
+===== 2026-06-18 16:38:59 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1622.79% pids 13421
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 24
+1, PPU-ZW810E, 14510, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 18
+3, PPU-ZW810E, 14349, 98304, 18
+4, PPU-ZW810E, 14350, 98304, 30
+5, PPU-ZW810E, 14358, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 22
+7, PPU-ZW810E, 14485, 98304, 28
+8, PPU-ZW810E, 14350, 98304, 20
+9, PPU-ZW810E, 14350, 98304, 16
+10, PPU-ZW810E, 14487, 98304, 42
+11, PPU-ZW810E, 14485, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 18
+13, PPU-ZW810E, 14486, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 22
+15, PPU-ZW810E, 14487, 98304, 26
+
+===== 2026-06-18 16:39:31 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1621.12% pids 13425
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 42
+1, PPU-ZW810E, 14510, 98304, 36
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 30
+4, PPU-ZW810E, 14350, 98304, 26
+5, PPU-ZW810E, 14358, 98304, 28
+6, PPU-ZW810E, 14359, 98304, 30
+7, PPU-ZW810E, 14485, 98304, 18
+8, PPU-ZW810E, 14358, 98304, 30
+9, PPU-ZW810E, 14350, 98304, 42
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14485, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14486, 98304, 36
+14, PPU-ZW810E, 14351, 98304, 24
+15, PPU-ZW810E, 14487, 98304, 22
+
+===== 2026-06-18 16:40:02 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1619.77% pids 13425
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 24
+1, PPU-ZW810E, 14510, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 28
+4, PPU-ZW810E, 14350, 98304, 30
+5, PPU-ZW810E, 14358, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 22
+7, PPU-ZW810E, 14485, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 22
+9, PPU-ZW810E, 14350, 98304, 26
+10, PPU-ZW810E, 14487, 98304, 24
+11, PPU-ZW810E, 14485, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 20
+13, PPU-ZW810E, 14486, 98304, 8
+14, PPU-ZW810E, 14351, 98304, 26
+15, PPU-ZW810E, 14487, 98304, 32
+
+===== 2026-06-18 16:40:34 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1620.60% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 20
+1, PPU-ZW810E, 14510, 98304, 20
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 32
+4, PPU-ZW810E, 14350, 98304, 20
+5, PPU-ZW810E, 14358, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 26
+7, PPU-ZW810E, 14485, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14350, 98304, 30
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14485, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 32
+13, PPU-ZW810E, 14486, 98304, 24
+14, PPU-ZW810E, 14351, 98304, 30
+15, PPU-ZW810E, 14487, 98304, 34
+
+===== 2026-06-18 16:41:06 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1617.51% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 30
+2, PPU-ZW810E, 14493, 98304, 20
+3, PPU-ZW810E, 14349, 98304, 26
+4, PPU-ZW810E, 14350, 98304, 30
+5, PPU-ZW810E, 14358, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 46
+7, PPU-ZW810E, 14485, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 30
+9, PPU-ZW810E, 14350, 98304, 32
+10, PPU-ZW810E, 14487, 98304, 22
+11, PPU-ZW810E, 14485, 98304, 36
+12, PPU-ZW810E, 14348, 98304, 34
+13, PPU-ZW810E, 14486, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 20
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:41:38 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1623.19% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 22
+1, PPU-ZW810E, 14518, 98304, 22
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14349, 98304, 34
+4, PPU-ZW810E, 14350, 98304, 44
+5, PPU-ZW810E, 14358, 98304, 34
+6, PPU-ZW810E, 14359, 98304, 18
+7, PPU-ZW810E, 14485, 98304, 14
+8, PPU-ZW810E, 14358, 98304, 22
+9, PPU-ZW810E, 14350, 98304, 34
+10, PPU-ZW810E, 14487, 98304, 18
+11, PPU-ZW810E, 14485, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 20
+13, PPU-ZW810E, 14486, 98304, 34
+14, PPU-ZW810E, 14351, 98304, 30
+15, PPU-ZW810E, 14495, 98304, 32
+
+===== 2026-06-18 16:42:09 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1620.40% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14349, 98304, 22
+4, PPU-ZW810E, 14350, 98304, 42
+5, PPU-ZW810E, 14358, 98304, 26
+6, PPU-ZW810E, 14359, 98304, 34
+7, PPU-ZW810E, 14485, 98304, 32
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14350, 98304, 28
+10, PPU-ZW810E, 14487, 98304, 38
+11, PPU-ZW810E, 14485, 98304, 18
+12, PPU-ZW810E, 14348, 98304, 30
+13, PPU-ZW810E, 14486, 98304, 40
+14, PPU-ZW810E, 14351, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 16:42:41 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1623.19% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 28
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 20
+3, PPU-ZW810E, 14349, 98304, 20
+4, PPU-ZW810E, 14350, 98304, 30
+5, PPU-ZW810E, 14358, 98304, 22
+6, PPU-ZW810E, 14359, 98304, 22
+7, PPU-ZW810E, 14485, 98304, 16
+8, PPU-ZW810E, 14358, 98304, 30
+9, PPU-ZW810E, 14350, 98304, 30
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14485, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14486, 98304, 40
+14, PPU-ZW810E, 14351, 98304, 22
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:43:13 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.33% cpu 1622.93% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14486, 98304, 40
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14349, 98304, 32
+4, PPU-ZW810E, 14350, 98304, 20
+5, PPU-ZW810E, 14358, 98304, 22
+6, PPU-ZW810E, 14359, 98304, 24
+7, PPU-ZW810E, 14485, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 34
+9, PPU-ZW810E, 14350, 98304, 20
+10, PPU-ZW810E, 14487, 98304, 22
+11, PPU-ZW810E, 14493, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14486, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 38
+
+===== 2026-06-18 16:43:44 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1621.21% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14349, 98304, 20
+4, PPU-ZW810E, 14350, 98304, 22
+5, PPU-ZW810E, 14358, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 26
+7, PPU-ZW810E, 14485, 98304, 34
+8, PPU-ZW810E, 14358, 98304, 20
+9, PPU-ZW810E, 14350, 98304, 22
+10, PPU-ZW810E, 14487, 98304, 24
+11, PPU-ZW810E, 14493, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 24
+13, PPU-ZW810E, 14486, 98304, 26
+14, PPU-ZW810E, 14351, 98304, 18
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 16:44:16 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1621.34% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14349, 98304, 30
+4, PPU-ZW810E, 14350, 98304, 32
+5, PPU-ZW810E, 14358, 98304, 12
+6, PPU-ZW810E, 14359, 98304, 38
+7, PPU-ZW810E, 14485, 98304, 20
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14350, 98304, 26
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14493, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14486, 98304, 24
+14, PPU-ZW810E, 14351, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 16
+
+===== 2026-06-18 16:44:48 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1618.52% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 22
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 36
+3, PPU-ZW810E, 14349, 98304, 36
+4, PPU-ZW810E, 14350, 98304, 32
+5, PPU-ZW810E, 14358, 98304, 26
+6, PPU-ZW810E, 14359, 98304, 30
+7, PPU-ZW810E, 14485, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 14
+9, PPU-ZW810E, 14350, 98304, 32
+10, PPU-ZW810E, 14487, 98304, 30
+11, PPU-ZW810E, 14493, 98304, 30
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14486, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 24
+15, PPU-ZW810E, 14495, 98304, 40
+
+===== 2026-06-18 16:45:20 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1619.95% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14349, 98304, 28
+4, PPU-ZW810E, 14350, 98304, 32
+5, PPU-ZW810E, 14358, 98304, 26
+6, PPU-ZW810E, 14359, 98304, 34
+7, PPU-ZW810E, 14493, 98304, 34
+8, PPU-ZW810E, 14358, 98304, 32
+9, PPU-ZW810E, 14350, 98304, 20
+10, PPU-ZW810E, 14487, 98304, 34
+11, PPU-ZW810E, 14493, 98304, 20
+12, PPU-ZW810E, 14348, 98304, 34
+13, PPU-ZW810E, 14486, 98304, 26
+14, PPU-ZW810E, 14351, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 16:45:51 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1616.33% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 52
+2, PPU-ZW810E, 14493, 98304, 36
+3, PPU-ZW810E, 14349, 98304, 36
+4, PPU-ZW810E, 14350, 98304, 36
+5, PPU-ZW810E, 14358, 98304, 42
+6, PPU-ZW810E, 14359, 98304, 32
+7, PPU-ZW810E, 14493, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14493, 98304, 34
+12, PPU-ZW810E, 14348, 98304, 38
+13, PPU-ZW810E, 14486, 98304, 20
+14, PPU-ZW810E, 14351, 98304, 16
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:46:23 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.8GiB / 1.472TiB mem_pct 11.34% cpu 1615.93% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 24
+1, PPU-ZW810E, 14518, 98304, 36
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 30
+4, PPU-ZW810E, 14350, 98304, 40
+5, PPU-ZW810E, 14358, 98304, 38
+6, PPU-ZW810E, 14359, 98304, 24
+7, PPU-ZW810E, 14493, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 32
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14487, 98304, 28
+11, PPU-ZW810E, 14493, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 48
+14, PPU-ZW810E, 14351, 98304, 20
+15, PPU-ZW810E, 14495, 98304, 16
+
+===== 2026-06-18 16:46:55 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1620.84% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 28
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14349, 98304, 34
+4, PPU-ZW810E, 14350, 98304, 34
+5, PPU-ZW810E, 14358, 98304, 32
+6, PPU-ZW810E, 14359, 98304, 34
+7, PPU-ZW810E, 14493, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 26
+10, PPU-ZW810E, 14495, 98304, 24
+11, PPU-ZW810E, 14493, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 16
+14, PPU-ZW810E, 14351, 98304, 24
+15, PPU-ZW810E, 14495, 98304, 22
+
+===== 2026-06-18 16:47:27 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.48% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 38
+1, PPU-ZW810E, 14518, 98304, 44
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 20
+4, PPU-ZW810E, 14350, 98304, 26
+5, PPU-ZW810E, 14358, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 38
+7, PPU-ZW810E, 14493, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 18
+9, PPU-ZW810E, 14358, 98304, 20
+10, PPU-ZW810E, 14495, 98304, 24
+11, PPU-ZW810E, 14493, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 34
+13, PPU-ZW810E, 14494, 98304, 22
+14, PPU-ZW810E, 14351, 98304, 18
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 16:47:58 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1615.89% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 18
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 28
+4, PPU-ZW810E, 14350, 98304, 36
+5, PPU-ZW810E, 14358, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 20
+7, PPU-ZW810E, 14493, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14495, 98304, 20
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 18
+14, PPU-ZW810E, 14351, 98304, 36
+15, PPU-ZW810E, 14495, 98304, 46
+
+===== 2026-06-18 16:48:30 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1617.14% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 30
+2, PPU-ZW810E, 14493, 98304, 26
+3, PPU-ZW810E, 14349, 98304, 22
+4, PPU-ZW810E, 14350, 98304, 28
+5, PPU-ZW810E, 14358, 98304, 22
+6, PPU-ZW810E, 14359, 98304, 52
+7, PPU-ZW810E, 14493, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14495, 98304, 28
+11, PPU-ZW810E, 14523, 98304, 14
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 24
+14, PPU-ZW810E, 14351, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 30
+
+===== 2026-06-18 16:49:02 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1620.96% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 32
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14349, 98304, 32
+4, PPU-ZW810E, 14350, 98304, 28
+5, PPU-ZW810E, 14358, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 32
+7, PPU-ZW810E, 14493, 98304, 16
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14495, 98304, 20
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 34
+13, PPU-ZW810E, 14494, 98304, 24
+14, PPU-ZW810E, 14351, 98304, 30
+15, PPU-ZW810E, 14495, 98304, 30
+
+===== 2026-06-18 16:49:34 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.85% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 28
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 12
+3, PPU-ZW810E, 14349, 98304, 32
+4, PPU-ZW810E, 14350, 98304, 30
+5, PPU-ZW810E, 14358, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 28
+7, PPU-ZW810E, 14523, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 22
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 16
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 24
+14, PPU-ZW810E, 14351, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 14
+
+===== 2026-06-18 16:50:05 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.38% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 36
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14349, 98304, 32
+4, PPU-ZW810E, 14350, 98304, 26
+5, PPU-ZW810E, 14358, 98304, 32
+6, PPU-ZW810E, 14359, 98304, 38
+7, PPU-ZW810E, 14523, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 32
+9, PPU-ZW810E, 14358, 98304, 32
+10, PPU-ZW810E, 14729, 98304, 36
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 32
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 32
+
+===== 2026-06-18 16:50:37 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.53% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 20
+1, PPU-ZW810E, 14518, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 26
+3, PPU-ZW810E, 14349, 98304, 26
+4, PPU-ZW810E, 14358, 98304, 26
+5, PPU-ZW810E, 14358, 98304, 36
+6, PPU-ZW810E, 14359, 98304, 24
+7, PPU-ZW810E, 14523, 98304, 42
+8, PPU-ZW810E, 14358, 98304, 20
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:51:09 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1617.32% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14349, 98304, 36
+4, PPU-ZW810E, 14358, 98304, 32
+5, PPU-ZW810E, 14358, 98304, 32
+6, PPU-ZW810E, 14359, 98304, 26
+7, PPU-ZW810E, 14523, 98304, 22
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 32
+10, PPU-ZW810E, 14729, 98304, 24
+11, PPU-ZW810E, 14523, 98304, 32
+12, PPU-ZW810E, 14348, 98304, 12
+13, PPU-ZW810E, 14494, 98304, 32
+14, PPU-ZW810E, 14351, 98304, 22
+15, PPU-ZW810E, 14495, 98304, 32
+
+===== 2026-06-18 16:51:41 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1621.05% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 34
+1, PPU-ZW810E, 14518, 98304, 30
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14357, 98304, 18
+4, PPU-ZW810E, 14358, 98304, 26
+5, PPU-ZW810E, 14358, 98304, 36
+6, PPU-ZW810E, 14359, 98304, 44
+7, PPU-ZW810E, 14523, 98304, 38
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 18
+10, PPU-ZW810E, 14729, 98304, 22
+11, PPU-ZW810E, 14523, 98304, 32
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 18
+14, PPU-ZW810E, 14351, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 42
+
+===== 2026-06-18 16:52:12 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1614.61% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 40
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 34
+3, PPU-ZW810E, 14357, 98304, 24
+4, PPU-ZW810E, 14358, 98304, 32
+5, PPU-ZW810E, 14358, 98304, 22
+6, PPU-ZW810E, 14359, 98304, 26
+7, PPU-ZW810E, 14523, 98304, 34
+8, PPU-ZW810E, 14358, 98304, 20
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14729, 98304, 34
+11, PPU-ZW810E, 14523, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14494, 98304, 30
+14, PPU-ZW810E, 14351, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 24
+
+===== 2026-06-18 16:52:44 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1621.44% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 38
+5, PPU-ZW810E, 14520, 98304, 18
+6, PPU-ZW810E, 14359, 98304, 30
+7, PPU-ZW810E, 14523, 98304, 34
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 38
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14494, 98304, 22
+14, PPU-ZW810E, 14351, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:53:16 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1615.47% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 24
+1, PPU-ZW810E, 14518, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 38
+4, PPU-ZW810E, 14358, 98304, 36
+5, PPU-ZW810E, 14520, 98304, 38
+6, PPU-ZW810E, 14359, 98304, 20
+7, PPU-ZW810E, 14523, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 36
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 24
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14351, 98304, 24
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:53:48 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.49% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 24
+3, PPU-ZW810E, 14357, 98304, 22
+4, PPU-ZW810E, 14358, 98304, 26
+5, PPU-ZW810E, 14520, 98304, 36
+6, PPU-ZW810E, 14359, 98304, 30
+7, PPU-ZW810E, 14523, 98304, 22
+8, PPU-ZW810E, 14358, 98304, 36
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 36
+11, PPU-ZW810E, 14523, 98304, 20
+12, PPU-ZW810E, 14348, 98304, 20
+13, PPU-ZW810E, 14494, 98304, 16
+14, PPU-ZW810E, 14351, 98304, 18
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 16:54:19 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1623.87% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 22
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 26
+3, PPU-ZW810E, 14357, 98304, 28
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14520, 98304, 30
+6, PPU-ZW810E, 14359, 98304, 48
+7, PPU-ZW810E, 14523, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 36
+11, PPU-ZW810E, 14523, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14494, 98304, 30
+14, PPU-ZW810E, 14359, 98304, 34
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 16:54:51 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1615.93% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 40
+3, PPU-ZW810E, 14357, 98304, 32
+4, PPU-ZW810E, 14358, 98304, 20
+5, PPU-ZW810E, 14520, 98304, 28
+6, PPU-ZW810E, 14359, 98304, 16
+7, PPU-ZW810E, 14523, 98304, 42
+8, PPU-ZW810E, 14358, 98304, 16
+9, PPU-ZW810E, 14358, 98304, 20
+10, PPU-ZW810E, 14729, 98304, 30
+11, PPU-ZW810E, 14523, 98304, 36
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14359, 98304, 20
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 16:55:23 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.24% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 16
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 32
+4, PPU-ZW810E, 14358, 98304, 22
+5, PPU-ZW810E, 14520, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 22
+7, PPU-ZW810E, 14735, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 32
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 24
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14359, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 24
+
+===== 2026-06-18 16:55:55 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1621.45% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 26
+3, PPU-ZW810E, 14357, 98304, 36
+4, PPU-ZW810E, 14358, 98304, 28
+5, PPU-ZW810E, 14520, 98304, 26
+6, PPU-ZW810E, 14359, 98304, 18
+7, PPU-ZW810E, 14735, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 32
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 22
+11, PPU-ZW810E, 14523, 98304, 16
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 34
+14, PPU-ZW810E, 14359, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 16:56:26 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.82% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 34
+1, PPU-ZW810E, 14518, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 26
+3, PPU-ZW810E, 14357, 98304, 38
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14520, 98304, 26
+6, PPU-ZW810E, 14359, 98304, 22
+7, PPU-ZW810E, 14735, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 22
+9, PPU-ZW810E, 14358, 98304, 32
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 24
+13, PPU-ZW810E, 14494, 98304, 22
+14, PPU-ZW810E, 14359, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 22
+
+===== 2026-06-18 16:56:58 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.63% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 36
+2, PPU-ZW810E, 14493, 98304, 22
+3, PPU-ZW810E, 14357, 98304, 20
+4, PPU-ZW810E, 14358, 98304, 36
+5, PPU-ZW810E, 14520, 98304, 24
+6, PPU-ZW810E, 14359, 98304, 34
+7, PPU-ZW810E, 14735, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 36
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14729, 98304, 24
+11, PPU-ZW810E, 14523, 98304, 22
+12, PPU-ZW810E, 14348, 98304, 30
+13, PPU-ZW810E, 14494, 98304, 32
+14, PPU-ZW810E, 14359, 98304, 30
+15, PPU-ZW810E, 14495, 98304, 26
+
+===== 2026-06-18 16:57:30 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1617.64% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 28
+1, PPU-ZW810E, 14518, 98304, 18
+2, PPU-ZW810E, 14493, 98304, 22
+3, PPU-ZW810E, 14357, 98304, 28
+4, PPU-ZW810E, 14358, 98304, 36
+5, PPU-ZW810E, 14520, 98304, 34
+6, PPU-ZW810E, 14725, 98304, 30
+7, PPU-ZW810E, 14735, 98304, 42
+8, PPU-ZW810E, 14358, 98304, 30
+9, PPU-ZW810E, 14358, 98304, 44
+10, PPU-ZW810E, 14729, 98304, 32
+11, PPU-ZW810E, 14523, 98304, 36
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 20
+14, PPU-ZW810E, 14359, 98304, 24
+15, PPU-ZW810E, 14495, 98304, 26
+
+===== 2026-06-18 16:58:02 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.74% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 32
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 42
+4, PPU-ZW810E, 14358, 98304, 24
+5, PPU-ZW810E, 14732, 98304, 20
+6, PPU-ZW810E, 14725, 98304, 26
+7, PPU-ZW810E, 14735, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14729, 98304, 34
+11, PPU-ZW810E, 14523, 98304, 38
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14494, 98304, 16
+14, PPU-ZW810E, 14359, 98304, 30
+15, PPU-ZW810E, 14495, 98304, 22
+
+===== 2026-06-18 16:58:33 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1625.11% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 28
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 32
+4, PPU-ZW810E, 14358, 98304, 28
+5, PPU-ZW810E, 14732, 98304, 24
+6, PPU-ZW810E, 14725, 98304, 30
+7, PPU-ZW810E, 14735, 98304, 22
+8, PPU-ZW810E, 14358, 98304, 30
+9, PPU-ZW810E, 14358, 98304, 20
+10, PPU-ZW810E, 14729, 98304, 28
+11, PPU-ZW810E, 14523, 98304, 34
+12, PPU-ZW810E, 14348, 98304, 32
+13, PPU-ZW810E, 14494, 98304, 34
+14, PPU-ZW810E, 14359, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 16:59:05 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1622.40% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 20
+1, PPU-ZW810E, 14518, 98304, 24
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 42
+5, PPU-ZW810E, 14732, 98304, 34
+6, PPU-ZW810E, 14725, 98304, 38
+7, PPU-ZW810E, 14735, 98304, 22
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 26
+10, PPU-ZW810E, 14729, 98304, 20
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 24
+14, PPU-ZW810E, 14359, 98304, 30
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 16:59:37 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.26% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 24
+1, PPU-ZW810E, 14518, 98304, 38
+2, PPU-ZW810E, 14493, 98304, 32
+3, PPU-ZW810E, 14357, 98304, 28
+4, PPU-ZW810E, 14358, 98304, 22
+5, PPU-ZW810E, 14732, 98304, 38
+6, PPU-ZW810E, 14725, 98304, 26
+7, PPU-ZW810E, 14735, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 38
+9, PPU-ZW810E, 14358, 98304, 26
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 24
+13, PPU-ZW810E, 14494, 98304, 30
+14, PPU-ZW810E, 14359, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 17:00:09 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.94% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 30
+1, PPU-ZW810E, 14518, 98304, 34
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 34
+4, PPU-ZW810E, 14358, 98304, 34
+5, PPU-ZW810E, 14732, 98304, 16
+6, PPU-ZW810E, 14725, 98304, 24
+7, PPU-ZW810E, 14735, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 26
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 32
+12, PPU-ZW810E, 14348, 98304, 18
+13, PPU-ZW810E, 14494, 98304, 22
+14, PPU-ZW810E, 14359, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 30
+
+===== 2026-06-18 17:00:40 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.34% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 40
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 24
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14732, 98304, 28
+6, PPU-ZW810E, 14725, 98304, 22
+7, PPU-ZW810E, 14735, 98304, 32
+8, PPU-ZW810E, 14358, 98304, 22
+9, PPU-ZW810E, 14358, 98304, 28
+10, PPU-ZW810E, 14729, 98304, 18
+11, PPU-ZW810E, 14523, 98304, 28
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 40
+14, PPU-ZW810E, 14359, 98304, 18
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 17:01:12 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1616.97% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 32
+1, PPU-ZW810E, 14518, 98304, 20
+2, PPU-ZW810E, 14493, 98304, 34
+3, PPU-ZW810E, 14357, 98304, 32
+4, PPU-ZW810E, 14358, 98304, 24
+5, PPU-ZW810E, 14732, 98304, 24
+6, PPU-ZW810E, 14725, 98304, 36
+7, PPU-ZW810E, 14735, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 34
+9, PPU-ZW810E, 14358, 98304, 28
+10, PPU-ZW810E, 14729, 98304, 34
+11, PPU-ZW810E, 14523, 98304, 34
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 28
+14, PPU-ZW810E, 14359, 98304, 24
+15, PPU-ZW810E, 14495, 98304, 26
+
+===== 2026-06-18 17:01:44 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1621.26% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 22
+1, PPU-ZW810E, 14518, 98304, 30
+2, PPU-ZW810E, 14493, 98304, 32
+3, PPU-ZW810E, 14357, 98304, 32
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14732, 98304, 44
+6, PPU-ZW810E, 14725, 98304, 34
+7, PPU-ZW810E, 14735, 98304, 28
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 22
+10, PPU-ZW810E, 14729, 98304, 24
+11, PPU-ZW810E, 14523, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 30
+13, PPU-ZW810E, 14494, 98304, 26
+14, PPU-ZW810E, 14359, 98304, 20
+15, PPU-ZW810E, 14495, 98304, 20
+
+===== 2026-06-18 17:02:15 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1617.05% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 20
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 22
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 28
+5, PPU-ZW810E, 14732, 98304, 28
+6, PPU-ZW810E, 14725, 98304, 30
+7, PPU-ZW810E, 14735, 98304, 26
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 28
+10, PPU-ZW810E, 14729, 98304, 20
+11, PPU-ZW810E, 14523, 98304, 24
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 16
+14, PPU-ZW810E, 14359, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 18
+
+===== 2026-06-18 17:02:47 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.27% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 20
+3, PPU-ZW810E, 14357, 98304, 24
+4, PPU-ZW810E, 14358, 98304, 34
+5, PPU-ZW810E, 14732, 98304, 34
+6, PPU-ZW810E, 14725, 98304, 30
+7, PPU-ZW810E, 14735, 98304, 22
+8, PPU-ZW810E, 14358, 98304, 26
+9, PPU-ZW810E, 14358, 98304, 28
+10, PPU-ZW810E, 14729, 98304, 18
+11, PPU-ZW810E, 14523, 98304, 22
+12, PPU-ZW810E, 14348, 98304, 32
+13, PPU-ZW810E, 14494, 98304, 42
+14, PPU-ZW810E, 14359, 98304, 28
+15, PPU-ZW810E, 14495, 98304, 26
+
+===== 2026-06-18 17:03:19 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1619.38% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 32
+1, PPU-ZW810E, 14518, 98304, 28
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14732, 98304, 28
+6, PPU-ZW810E, 14725, 98304, 34
+7, PPU-ZW810E, 14735, 98304, 18
+8, PPU-ZW810E, 14358, 98304, 28
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14729, 98304, 32
+11, PPU-ZW810E, 14523, 98304, 30
+12, PPU-ZW810E, 14348, 98304, 26
+13, PPU-ZW810E, 14494, 98304, 24
+14, PPU-ZW810E, 14359, 98304, 34
+15, PPU-ZW810E, 14495, 98304, 32
+
+===== 2026-06-18 17:03:51 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.09% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 20
+1, PPU-ZW810E, 14518, 98304, 18
+2, PPU-ZW810E, 14493, 98304, 16
+3, PPU-ZW810E, 14357, 98304, 44
+4, PPU-ZW810E, 14358, 98304, 24
+5, PPU-ZW810E, 14732, 98304, 16
+6, PPU-ZW810E, 14725, 98304, 42
+7, PPU-ZW810E, 14735, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 20
+9, PPU-ZW810E, 14358, 98304, 24
+10, PPU-ZW810E, 14729, 98304, 24
+11, PPU-ZW810E, 14523, 98304, 40
+12, PPU-ZW810E, 14348, 98304, 34
+13, PPU-ZW810E, 14494, 98304, 30
+14, PPU-ZW810E, 14359, 98304, 32
+15, PPU-ZW810E, 14495, 98304, 16
+
+===== 2026-06-18 17:04:22 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1620.40% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 26
+2, PPU-ZW810E, 14493, 98304, 28
+3, PPU-ZW810E, 14357, 98304, 42
+4, PPU-ZW810E, 14358, 98304, 22
+5, PPU-ZW810E, 14732, 98304, 30
+6, PPU-ZW810E, 14725, 98304, 42
+7, PPU-ZW810E, 14735, 98304, 30
+8, PPU-ZW810E, 14358, 98304, 40
+9, PPU-ZW810E, 14358, 98304, 30
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 26
+12, PPU-ZW810E, 14348, 98304, 30
+13, PPU-ZW810E, 14494, 98304, 32
+14, PPU-ZW810E, 14359, 98304, 14
+15, PPU-ZW810E, 14495, 98304, 28
+
+===== 2026-06-18 17:04:54 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1621.24% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 32
+1, PPU-ZW810E, 14518, 98304, 32
+2, PPU-ZW810E, 14493, 98304, 36
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 30
+5, PPU-ZW810E, 14732, 98304, 24
+6, PPU-ZW810E, 14725, 98304, 32
+7, PPU-ZW810E, 14735, 98304, 34
+8, PPU-ZW810E, 14358, 98304, 18
+9, PPU-ZW810E, 14358, 98304, 50
+10, PPU-ZW810E, 14729, 98304, 44
+11, PPU-ZW810E, 14523, 98304, 32
+12, PPU-ZW810E, 14348, 98304, 22
+13, PPU-ZW810E, 14494, 98304, 30
+14, PPU-ZW810E, 14359, 98304, 34
+15, PPU-ZW810E, 14495, 98304, 14
+
+===== 2026-06-18 17:05:26 =====
+container evals_gpqad_qwen3_4b_thinking_2507_final_think mem 170.9GiB / 1.472TiB mem_pct 11.34% cpu 1618.09% pids 13428
+              total        used        free      shared  buff/cache   available
+Mem:          1.5Ti       190Gi       1.1Ti        13Gi       183Gi       1.3Ti
+0, PPU-ZW810E, 14494, 98304, 26
+1, PPU-ZW810E, 14518, 98304, 30
+2, PPU-ZW810E, 14493, 98304, 30
+3, PPU-ZW810E, 14357, 98304, 30
+4, PPU-ZW810E, 14358, 98304, 22
+5, PPU-ZW810E, 14732, 98304, 36
+6, PPU-ZW810E, 14725, 98304, 34
+7, PPU-ZW810E, 14735, 98304, 24
+8, PPU-ZW810E, 14358, 98304, 24
+9, PPU-ZW810E, 14358, 98304, 34
+10, PPU-ZW810E, 14729, 98304, 26
+11, PPU-ZW810E, 14523, 98304, 44
+12, PPU-ZW810E, 14348, 98304, 28
+13, PPU-ZW810E, 14494, 98304, 32
+14, PPU-ZW810E, 14359, 98304, 26
+15, PPU-ZW810E, 14495, 98304, 34
+
+===== 2026-06-18 17:05:58 container stopped =====
+

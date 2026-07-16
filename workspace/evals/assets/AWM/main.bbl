@@ -1,0 +1,354 @@
+\begin{thebibliography}{63}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[{Anthropic}(2024)]{anthropic_mcp_2024}
+{Anthropic}.
+\newblock Introducing the model context protocol, November 2024.
+\newblock URL \url{https://www.anthropic.com/news/model-context-protocol}.
+
+\bibitem[Anthropic(2025{\natexlab{a}})]{claude45}
+Anthropic.
+\newblock Introducing claude-4.5-sonnet, September 2025{\natexlab{a}}.
+\newblock URL \url{https://www.anthropic.com/news/claude-sonnet-4-5}.
+
+\bibitem[Anthropic(2025{\natexlab{b}})]{claude_ce}
+Anthropic.
+\newblock Effective context engineering for ai agents, September 2025{\natexlab{b}}.
+\newblock URL \url{https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents}.
+
+\bibitem[Barres et~al.(2025)Barres, Dong, Ray, Si, and Narasimhan]{taubench2}
+Barres, V., Dong, H., Ray, S., Si, X., and Narasimhan, K.
+\newblock $\tau$2-{Bench}: Evaluating {Conversational} {Agents} in a {Dual}-{Control} {Environment}.
+\newblock \emph{arXiv.org}, abs/2506.07982, 2025.
+
+\bibitem[Cai et~al.(2025)Cai, Fang, Wu, Li, Wang, Jiang, Su, Zhang, Yin, Zhang, Feng, Xie, and Wang]{autoforge}
+Cai, S., Fang, R., Wu, J., Li, B., Wang, X., Jiang, Y., Su, L., Zhang, L., Yin, W., Zhang, Z., Feng, F., Xie, P., and Wang, X.
+\newblock Autoforge: Automated environment synthesis for agentic reinforcement learning, 2025.
+\newblock URL \url{https://arxiv.org/abs/2512.22857}.
+
+\bibitem[Chen et~al.(2021)Chen, Tworek, Jun, Yuan, de~Oliveira~Pinto, Kaplan, Edwards, Burda, Joseph, Brockman, Ray, Puri, Krueger, Petrov, Khlaaf, Sastry, Mishkin, Chan, Gray, Ryder, Pavlov, Power, et~al.]{humaneval}
+Chen, M., Tworek, J., Jun, H., Yuan, Q., de~Oliveira~Pinto, H.~P., Kaplan, J., Edwards, H., Burda, Y., Joseph, N., Brockman, G., Ray, A., Puri, R., Krueger, G., Petrov, M., Khlaaf, H., Sastry, G., Mishkin, P., Chan, B., Gray, S., Ryder, N., Pavlov, M., Power, A., et~al.
+\newblock Evaluating large language models trained on code, 2021.
+\newblock URL \url{https://arxiv.org/abs/2107.03374}.
+
+\bibitem[Chen et~al.(2024)Chen, Liu, Wang, Zhang, Liu, Lin, Chen, and Zhao]{chen2024agent}
+Chen, Z., Liu, K., Wang, Q., Zhang, W., Liu, J., Lin, D., Chen, K., and Zhao, F.
+\newblock Agent-flan: Designing data and methods of effective agent tuning for large language models.
+\newblock \emph{arXiv preprint arXiv:2403.12881}, 2024.
+
+\bibitem[Chen et~al.(2025)Chen, Zhao, Zhang, Liu, Qi, Wu, Kalluri, Cao, Xiong, Tong, Yao, Li, Zhu, Li, Song, Li, Weston, and Huynh]{chen2025scalingagentlearningexperience}
+Chen, Z., Zhao, Z., Zhang, K., Liu, B., Qi, Q., Wu, Y., Kalluri, T., Cao, S., Xiong, Y., Tong, H., Yao, H., Li, H., Zhu, J., Li, X., Song, D., Li, B., Weston, J., and Huynh, D.
+\newblock Scaling agent learning via experience synthesis, 2025.
+\newblock URL \url{https://arxiv.org/abs/2511.03773}.
+
+\bibitem[Comanici et~al.(2025)Comanici, Bieber, Schaekermann, Pasupat, Sachdeva, Dhillon, Blistein, Ram, Zhang, Rosen, Marris, Petulla, Gaffney, Aharoni, et~al.]{gemini2.5}
+Comanici, G., Bieber, E., Schaekermann, M., Pasupat, I., Sachdeva, N., Dhillon, I., Blistein, M., Ram, O., Zhang, D., Rosen, E., Marris, L., Petulla, S., Gaffney, C., Aharoni, A., et~al.
+\newblock Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality, long context, and next generation agentic capabilities, 2025.
+\newblock URL \url{https://arxiv.org/abs/2507.06261}.
+
+\bibitem[Cuadron et~al.(2025)Cuadron, Yu, Liu, and Gupta]{verified_tau2}
+Cuadron, A., Yu, P., Liu, Y., and Gupta, A.
+\newblock Saber: Small actions, big errors - safeguarding mutating steps in llm agents, 2025.
+\newblock URL \url{https://arxiv.org/abs/2512.07850}.
+
+\bibitem[{DeepSeek-AI} et~al.(2025){DeepSeek-AI}, Liu, Mei, Lin, Xue, Wang, Xu, Wu, Zhang, Lin, Dong, Lu, Zhao, Deng, Xu, Ruan, et~al.]{deepseek-v3.2}
+{DeepSeek-AI}, Liu, A., Mei, A., Lin, B., Xue, B., Wang, B., Xu, B., Wu, B., Zhang, B., Lin, C., Dong, C., Lu, C., Zhao, C., Deng, C., Xu, C., Ruan, C., et~al.
+\newblock Deepseek-{V3}.2: Pushing the {Frontier} of {Open} {Large} {Language} {Models}.
+\newblock \emph{https://api-docs.deepseek.com/news/news251201}, 2025.
+
+\bibitem[Dulac-Arnold et~al.(2021)Dulac-Arnold, Levine, Mankowitz, Li, Paduraru, Gowal, and Hester]{rlchallengesinrealworld}
+Dulac-Arnold, G., Levine, N., Mankowitz, D.~J., Li, J., Paduraru, C., Gowal, S., and Hester, T.
+\newblock Challenges of real-world reinforcement learning: definitions, benchmarks and analysis.
+\newblock \emph{Mach. Learn.}, 110\penalty0 (9):\penalty0 2419–2468, September 2021.
+\newblock ISSN 0885-6125.
+\newblock \doi{10.1007/s10994-021-05961-4}.
+\newblock URL \url{https://doi.org/10.1007/s10994-021-05961-4}.
+
+\bibitem[Esfandiarpoor et~al.(2025)Esfandiarpoor, Suryanarayanan, Bach, Chowdhary, and Aue]{themcpcompany}
+Esfandiarpoor, R., Suryanarayanan, V., Bach, S.~H., Chowdhary, V., and Aue, A.
+\newblock Themcpcompany: Creating general-purpose agents with task-specific tools, 2025.
+\newblock URL \url{https://arxiv.org/abs/2510.19286}.
+
+\bibitem[Fan et~al.(2025)Fan, Ding, Zhang, and Mo]{fan2025mcptoolbenchlargescaleai}
+Fan, S., Ding, X., Zhang, L., and Mo, L.
+\newblock Mcptoolbench++: A large scale ai agent model context protocol mcp tool use benchmark, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.07575}.
+
+\bibitem[Fang et~al.(2025)Fang, Cai, Li, Wu, Li, Yin, Wang, Wang, Su, Zhang, Wu, Tao, Jiang, Xie, Huang, and Zhou]{tongyi-environment}
+Fang, R., Cai, S., Li, B., Wu, J., Li, G., Yin, W., Wang, X., Wang, X., Su, L., Zhang, Z., Wu, S., Tao, Z., Jiang, Y., Xie, P., Huang, F., and Zhou, J.
+\newblock Towards {General} {Agentic} {Intelligence} via {Environment} {Scaling}.
+\newblock \emph{arXiv.org}, abs/2509.13311, 2025.
+
+\bibitem[Feng et~al.(2025)Feng, Zhang, Zhang, Lu, Liu, and Wang]{feng2025webworldmodels}
+Feng, J., Zhang, Y., Zhang, C., Lu, Y., Liu, S., and Wang, M.
+\newblock Web world models, 2025.
+\newblock URL \url{https://arxiv.org/abs/2512.23676}.
+
+\bibitem[Gaffney et~al.(2022)Gaffney, Prammer, Brasfield, Hipp, Kennedy, and Patel]{sqlite}
+Gaffney, K.~P., Prammer, M., Brasfield, L., Hipp, D.~R., Kennedy, D., and Patel, J.~M.
+\newblock Sqlite: past, present, and future.
+\newblock \emph{Proc. VLDB Endow.}, 15\penalty0 (12):\penalty0 3535–3547, August 2022.
+\newblock ISSN 2150-8097.
+\newblock \doi{10.14778/3554821.3554842}.
+\newblock URL \url{https://doi.org/10.14778/3554821.3554842}.
+
+\bibitem[Guo et~al.(2025)Guo, Yang, Zhang, Song, Zhang, Xu, Zhu, Ma, Wang, Bi, et~al.]{deepseek-r1}
+Guo, D., Yang, D., Zhang, H., Song, J., Zhang, R., Xu, R., Zhu, Q., Ma, S., Wang, P., Bi, X., et~al.
+\newblock Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning.
+\newblock \emph{arXiv preprint arXiv:2501.12948}, 2025.
+
+\bibitem[hattami et~al.(2025)hattami, Thakkar, Chapados, and Pal]{hattami2025webarena}
+hattami, A.~E., Thakkar, M., Chapados, N., and Pal, C.
+\newblock Webarena verified: Reliable evaluation for web agents.
+\newblock In \emph{Workshop on Scaling Environments for Agents}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=94tlGxmqkN}.
+
+\bibitem[Hu et~al.(2025)Hu, Wu, Shen, Liu, Zhu, Wang, Jiang, Wang, Chen, Chen, Fang, Xianyu, Cao, Xu, and Liu]{openrlhf}
+Hu, J., Wu, X., Shen, W., Liu, J.~K., Zhu, Z., Wang, W., Jiang, S., Wang, H., Chen, H., Chen, B., Fang, W., Xianyu, Cao, Y., Xu, H., and Liu, Y.
+\newblock Openrlhf: An easy-to-use, scalable and high-performance rlhf framework, 2025.
+\newblock URL \url{https://arxiv.org/abs/2405.11143}.
+
+\bibitem[Kalai et~al.(2025)Kalai, Nachum, Vempala, and Zhang]{kalai2025languagemodelshallucinate}
+Kalai, A.~T., Nachum, O., Vempala, S.~S., and Zhang, E.
+\newblock Why language models hallucinate, 2025.
+\newblock URL \url{https://arxiv.org/abs/2509.04664}.
+
+\bibitem[Li et~al.(2025{\natexlab{a}})Li, Zhang, Yin, Zhang, Ou, Wu, Yin, Li, Tao, Wang, et~al.]{li2025websailor}
+Li, K., Zhang, Z., Yin, H., Zhang, L., Ou, L., Wu, J., Yin, W., Li, B., Tao, Z., Wang, X., et~al.
+\newblock Websailor: Navigating super-human reasoning for web agent.
+\newblock \emph{arXiv preprint arXiv:2507.02592}, 2025{\natexlab{a}}.
+
+\bibitem[Li et~al.(2025{\natexlab{b}})Li, Inan, Yue, Chen, Wutschitz, Kulkarni, Poovendran, Sim, and Rajmohan]{li2025simulatingenvironmentsreasoningmodels}
+Li, Y., Inan, H.~A., Yue, X., Chen, W.-N., Wutschitz, L., Kulkarni, J., Poovendran, R., Sim, R., and Rajmohan, S.
+\newblock Simulating environments with reasoning models for agent training, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2511.01824}.
+
+\bibitem[Li et~al.(2025{\natexlab{c}})Li, Wang, Qiu, Yin, Zhang, Qian, Li, Ma, Chen, Ji, and Wang]{li2025wordworldlargelanguage}
+Li, Y., Wang, H., Qiu, J., Yin, Z., Zhang, D., Qian, C., Li, Z., Ma, P., Chen, G., Ji, H., and Wang, M.
+\newblock From word to world: Can large language models be implicit text-based world models?, 2025{\natexlab{c}}.
+\newblock URL \url{https://arxiv.org/abs/2512.18832}.
+
+\bibitem[Liu et~al.(2024{\natexlab{a}})Liu, Lin, Hewitt, Paranjape, Bevilacqua, Petroni, and Liang]{liu-etal-2024-lost}
+Liu, N.~F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., and Liang, P.
+\newblock Lost in the middle: How language models use long contexts.
+\newblock \emph{Transactions of the Association for Computational Linguistics}, 12:\penalty0 157--173, 2024{\natexlab{a}}.
+\newblock \doi{10.1162/tacl_a_00638}.
+\newblock URL \url{https://aclanthology.org/2024.tacl-1.9/}.
+
+\bibitem[Liu et~al.(2025)Liu, Huang, Zeng, Hao, Yu, Li, Wang, Gan, Liu, Yu, Wang, Wang, Ning, Hou, et~al.]{toolace}
+Liu, W., Huang, X., Zeng, X., Hao, X., Yu, S., Li, D., Wang, S., Gan, W., Liu, Z., Yu, Y., Wang, Z., Wang, Y., Ning, W., Hou, Y., et~al.
+\newblock Toolace: Winning the points of llm function calling, 2025.
+\newblock URL \url{https://arxiv.org/abs/2409.00920}.
+
+\bibitem[Liu et~al.(2024{\natexlab{b}})Liu, Hoang, Zhang, Zhu, Lan, Kokane, Tan, Yao, Liu, Feng, N, Yang, Savarese, Niebles, Wang, Heinecke, and Xiong]{liu2024apigen}
+Liu, Z., Hoang, T.~Q., Zhang, J., Zhu, M., Lan, T., Kokane, S., Tan, J., Yao, W., Liu, Z., Feng, Y., N, R.~R., Yang, L., Savarese, S., Niebles, J.~C., Wang, H., Heinecke, S., and Xiong, C.
+\newblock {APIG}en: Automated {PI}peline for generating verifiable and diverse function-calling datasets.
+\newblock In \emph{The Thirty-eight Conference on Neural Information Processing Systems Datasets and Benchmarks Track}, 2024{\natexlab{b}}.
+\newblock URL \url{https://openreview.net/forum?id=Jfg3vw2bjx}.
+
+\bibitem[Lu et~al.(2025)Lu, Holleis, Zhang, Aumayer, Nan, Bai, Ma, Ma, Li, Yin, Wang, and Pang]{lu-etal-2025-toolsandbox}
+Lu, J., Holleis, T., Zhang, Y., Aumayer, B., Nan, F., Bai, H., Ma, S., Ma, S., Li, M., Yin, G., Wang, Z., and Pang, R.
+\newblock {T}ool{S}andbox: A stateful, conversational, interactive evaluation benchmark for {LLM} tool use capabilities.
+\newblock In Chiruzzo, L., Ritter, A., and Wang, L. (eds.), \emph{Findings of the Association for Computational Linguistics: NAACL 2025}, pp.\  1160--1183, Albuquerque, New Mexico, April 2025. Association for Computational Linguistics.
+\newblock ISBN 979-8-89176-195-7.
+\newblock \doi{10.18653/v1/2025.findings-naacl.65}.
+\newblock URL \url{https://aclanthology.org/2025.findings-naacl.65/}.
+
+\bibitem[Luo et~al.(2025)Luo, Shen, Yang, Zhao, Jwalapuram, Saha, Sahoo, Savarese, Xiong, and Li]{mcpuniverse}
+Luo, Z., Shen, Z., Yang, W., Zhao, Z., Jwalapuram, P., Saha, A., Sahoo, D., Savarese, S., Xiong, C., and Li, J.
+\newblock Mcp-universe: Benchmarking large language models with real-world model context protocol servers, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.14704}.
+
+\bibitem[Mo et~al.(2025)Mo, Zhong, Chen, Chen, Lu, Lin, He, Han, and Sun]{mo2025livemcpbenchagentsnavigateocean}
+Mo, G., Zhong, W., Chen, J., Chen, X., Lu, Y., Lin, H., He, B., Han, X., and Sun, L.
+\newblock Livemcpbench: Can agents navigate an ocean of mcp tools?, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.01780}.
+
+\bibitem[Nakano et~al.(2021)Nakano, Hilton, Balaji, Wu, Ouyang, Kim, Hesse, Jain, Kosaraju, Saunders, et~al.]{nakano2021webgpt}
+Nakano, R., Hilton, J., Balaji, S., Wu, J., Ouyang, L., Kim, C., Hesse, C., Jain, S., Kosaraju, V., Saunders, W., et~al.
+\newblock Webgpt: Browser-assisted question-answering with human feedback.
+\newblock \emph{arXiv preprint arXiv:2112.09332}, 2021.
+
+\bibitem[{OpenAI}(2024)]{openai2024swebenchverified}
+{OpenAI}.
+\newblock Introducing swe-bench verified.
+\newblock \url{https://openai.com/index/introducing-swe-bench-verified/}, August 2024.
+\newblock Published August 13, 2024; updated February 24, 2025.
+
+\bibitem[OpenAI(2025)]{openai_gpt5_2025}
+OpenAI.
+\newblock Introducing gpt-5, August 2025.
+\newblock URL \url{https://openai.com/index/introducing-gpt-5/}.
+
+\bibitem[Patil et~al.(2024)Patil, Zhang, Wang, and Gonzalez]{patil2024gorilla}
+Patil, S.~G., Zhang, T., Wang, X., and Gonzalez, J.~E.
+\newblock Gorilla: Large language model connected with massive {API}s.
+\newblock In \emph{The Thirty-eighth Annual Conference on Neural Information Processing Systems}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=tBRNC6YemY}.
+
+\bibitem[Patil et~al.(2025)Patil, Mao, Yan, Ji, Suresh, Stoica, and Gonzalez]{bfcl}
+Patil, S.~G., Mao, H., Yan, F., Ji, C. C.-J., Suresh, V., Stoica, I., and Gonzalez, J.~E.
+\newblock The berkeley function calling leaderboard ({BFCL}): From tool use to agentic evaluation of large language models.
+\newblock In \emph{Forty-second International Conference on Machine Learning}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=2GmDdhBdDk}.
+
+\bibitem[Prabhakar et~al.(2025)Prabhakar, Liu, Zhu, Zhang, Awalgaonkar, Wang, Liu, Chen, Hoang, Niebles, et~al.]{apigen-mt}
+Prabhakar, A., Liu, Z., Zhu, M., Zhang, J., Awalgaonkar, T., Wang, S., Liu, Z., Chen, H., Hoang, T., Niebles, J.~C., et~al.
+\newblock Apigen-mt: Agentic pipeline for multi-turn data generation via simulated agent-human interplay.
+\newblock \emph{arXiv preprint arXiv:2504.03601}, 2025.
+
+\bibitem[Qin et~al.(2024)Qin, Liang, Ye, Zhu, Yan, Lu, Lin, Cong, Tang, Qian, Zhao, Hong, Tian, Xie, Zhou, Gerstein, dahai li, Liu, and Sun]{qin2024toolllm}
+Qin, Y., Liang, S., Ye, Y., Zhu, K., Yan, L., Lu, Y., Lin, Y., Cong, X., Tang, X., Qian, B., Zhao, S., Hong, L., Tian, R., Xie, R., Zhou, J., Gerstein, M., dahai li, Liu, Z., and Sun, M.
+\newblock Tool{LLM}: Facilitating large language models to master 16000+ real-world {API}s.
+\newblock In \emph{The Twelfth International Conference on Learning Representations}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=dHng2O0Jjr}.
+
+\bibitem[Schick et~al.(2023)Schick, Dwivedi-Yu, Dessi, Raileanu, Lomeli, Hambro, Zettlemoyer, Cancedda, and Scialom]{schick2023toolformer}
+Schick, T., Dwivedi-Yu, J., Dessi, R., Raileanu, R., Lomeli, M., Hambro, E., Zettlemoyer, L., Cancedda, N., and Scialom, T.
+\newblock Toolformer: Language models can teach themselves to use tools.
+\newblock In \emph{Thirty-seventh Conference on Neural Information Processing Systems}, 2023.
+\newblock URL \url{https://openreview.net/forum?id=Yacmpz84TH}.
+
+\bibitem[Shao et~al.(2024)Shao, Wang, Zhu, Xu, Song, Bi, Zhang, Zhang, Li, Wu, et~al.]{shao2024deepseekmath}
+Shao, Z., Wang, P., Zhu, Q., Xu, R., Song, J., Bi, X., Zhang, H., Zhang, M., Li, Y., Wu, Y., et~al.
+\newblock Deepseekmath: Pushing the limits of mathematical reasoning in open language models.
+\newblock \emph{arXiv preprint arXiv:2402.03300}, 2024.
+
+\bibitem[Sheng et~al.(2024)Sheng, Zhang, Ye, Wu, Zhang, Zhang, Peng, Lin, and Wu]{verl}
+Sheng, G., Zhang, C., Ye, Z., Wu, X., Zhang, W., Zhang, R., Peng, Y., Lin, H., and Wu, C.
+\newblock Hybridflow: A flexible and efficient rlhf framework.
+\newblock \emph{arXiv preprint arXiv: 2409.19256}, 2024.
+
+\bibitem[Song et~al.(2026)Song, Chang, Dong, Zhu, Dou, and Wen]{envscaler}
+Song, X., Chang, H., Dong, G., Zhu, Y., Dou, Z., and Wen, J.-R.
+\newblock Envscaler: Scaling {Tool}-{Interactive} {Environments} for {LLM} {Agent} via {Programmatic} {Synthesis}.
+\newblock \emph{arXiv}, 2026.
+
+\bibitem[Song et~al.(2024)Song, Xiong, Zhao, Zhu, Wu, Wang, Li, Peng, and Li]{song-etal-2024-agentbank}
+Song, Y., Xiong, W., Zhao, X., Zhu, D., Wu, W., Wang, K., Li, C., Peng, W., and Li, S.
+\newblock {A}gent{B}ank: Towards generalized {LLM} agents via fine-tuning on 50000+ interaction trajectories.
+\newblock In Al-Onaizan, Y., Bansal, M., and Chen, Y.-N. (eds.), \emph{Findings of the Association for Computational Linguistics: EMNLP 2024}, pp.\  2124--2141, Miami, Florida, USA, November 2024. Association for Computational Linguistics.
+\newblock \doi{10.18653/v1/2024.findings-emnlp.116}.
+\newblock URL \url{https://aclanthology.org/2024.findings-emnlp.116/}.
+
+\bibitem[Su et~al.(2024)Su, Ahmed, Lu, Pan, Bo, and Liu]{rope}
+Su, J., Ahmed, M., Lu, Y., Pan, S., Bo, W., and Liu, Y.
+\newblock Roformer: Enhanced transformer with rotary position embedding.
+\newblock \emph{Neurocomputing}, 568:\penalty0 127063, 2024.
+\newblock ISSN 0925-2312.
+\newblock \doi{https://doi.org/10.1016/j.neucom.2023.127063}.
+\newblock URL \url{https://www.sciencedirect.com/science/article/pii/S0925231223011864}.
+
+\bibitem[Sullivan et~al.(2025)Sullivan, Hartmann, and Koller]{sullivan-etal-2025-procedural}
+Sullivan, M., Hartmann, M., and Koller, A.
+\newblock Procedural environment generation for tool-use agents.
+\newblock In Christodoulopoulos, C., Chakraborty, T., Rose, C., and Peng, V. (eds.), \emph{Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing}, pp.\  18544--18562, Suzhou, China, November 2025. Association for Computational Linguistics.
+\newblock ISBN 979-8-89176-332-6.
+\newblock \doi{10.18653/v1/2025.emnlp-main.936}.
+\newblock URL \url{https://aclanthology.org/2025.emnlp-main.936/}.
+
+\bibitem[Tang et~al.(2024)Tang, Key, and Ellis]{tang2024worldcoder}
+Tang, H., Key, D.~Y., and Ellis, K.
+\newblock Worldcoder, a model-based {LLM} agent: Building world models by writing code and interacting with the environment.
+\newblock In \emph{The Thirty-eighth Annual Conference on Neural Information Processing Systems}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=QGJSXMhVaL}.
+
+\bibitem[Team et~al.(2025)Team, Bai, Bao, Chen, Chen, Chen, Chen, Chen, Chen, Chen, Chen, Cui, Ding, Dong, Du, Du, Du, Du, Fan, Feng, Fu, Gao, Gao, Gao, et~al.]{kimik2}
+Team, K., Bai, Y., Bao, Y., Chen, G., Chen, J., Chen, N., Chen, R., Chen, Y., Chen, Y., Chen, Y., Chen, Z., Cui, J., Ding, H., Dong, M., Du, A., Du, C., Du, D., Du, Y., Fan, Y., Feng, Y., Fu, K., Gao, B., Gao, H., Gao, P., et~al.
+\newblock Kimi k2: Open agentic intelligence, 2025.
+\newblock URL \url{https://arxiv.org/abs/2507.20534}.
+
+\bibitem[Wang et~al.(2024)Wang, Todd, Xiao, Yuan, C{\^o}t{\'e}, Clark, and Jansen]{wang-etal-2024-language}
+Wang, R., Todd, G., Xiao, Z., Yuan, X., C{\^o}t{\'e}, M.-A., Clark, P., and Jansen, P.
+\newblock Can language models serve as text-based world simulators?
+\newblock In Ku, L.-W., Martins, A., and Srikumar, V. (eds.), \emph{Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers)}, pp.\  1--17, Bangkok, Thailand, August 2024. Association for Computational Linguistics.
+\newblock \doi{10.18653/v1/2024.acl-short.1}.
+\newblock URL \url{https://aclanthology.org/2024.acl-short.1/}.
+
+\bibitem[Wang et~al.(2025{\natexlab{a}})Wang, Genadi, Bouardi, Wang, Koto, Liu, Baldwin, and Li]{wang2025agentfly}
+Wang, R., Genadi, R.~A., Bouardi, B.~E., Wang, Y., Koto, F., Liu, Z., Baldwin, T., and Li, H.
+\newblock Agentfly: Extensible and scalable reinforcement learning for lm agents, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2507.14897}.
+
+\bibitem[Wang et~al.(2023)Wang, Kordi, Mishra, Liu, Smith, Khashabi, and Hajishirzi]{selfinstruct}
+Wang, Y., Kordi, Y., Mishra, S., Liu, A., Smith, N.~A., Khashabi, D., and Hajishirzi, H.
+\newblock Self-instruct: Aligning language models with self-generated instructions, 2023.
+\newblock URL \url{https://arxiv.org/abs/2212.10560}.
+
+\bibitem[Wang et~al.(2025{\natexlab{b}})Wang, Wang, Wang, Zhang, Li, Yang, Jin, Yu, Nguyen, Liu, Gottlieb, Lu, Cho, Wu, Fei-Fei, Wang, Choi, and Li]{wang2025ragenunderstandingselfevolutionllm}
+Wang, Z., Wang, K., Wang, Q., Zhang, P., Li, L., Yang, Z., Jin, X., Yu, K., Nguyen, M.~N., Liu, L., Gottlieb, E., Lu, Y., Cho, K., Wu, J., Fei-Fei, L., Wang, L., Choi, Y., and Li, M.
+\newblock Ragen: Understanding self-evolution in llm agents via multi-turn reinforcement learning, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2504.20073}.
+
+\bibitem[Wang et~al.(2026)Wang, Liang, Zhang, Wu, Han, Bastos, Wang, Bansal, Peng, Gao, Rajmohan, and Yao]{wang2026adapting}
+Wang, Z., Liang, Y., Zhang, X., Wu, Q., Han, S., Bastos, A., Wang, R., Bansal, C., Peng, B., Gao, J., Rajmohan, S., and Yao, H.
+\newblock Adapting web agents with synthetic supervision, 2026.
+\newblock URL \url{https://arxiv.org/abs/2511.06101}.
+
+\bibitem[Xie et~al.(2025)Xie, Xu, Zhao, and Song]{agentsynth}
+Xie, J., Xu, D., Zhao, X., and Song, D.
+\newblock Agentsynth: Scalable task generation for generalist computer-use agents, 2025.
+\newblock URL \url{https://arxiv.org/abs/2506.14205}.
+
+\bibitem[Xu et~al.(2024{\natexlab{a}})Xu, Song, Li, Tang, Jain, Bao, Wang, Zhou, Guo, Cao, Yang, Lu, Martin, Su, Maben, Mehta, Chi, Jang, Xie, Zhou, and Neubig]{agentcompany}
+Xu, F.~F., Song, Y., Li, B., Tang, Y., Jain, K., Bao, M., Wang, Z.~Z., Zhou, X., Guo, Z., Cao, M., Yang, M., Lu, H.~Y., Martin, A., Su, Z., Maben, L., Mehta, R., Chi, W., Jang, L., Xie, Y., Zhou, S., and Neubig, G.
+\newblock Theagentcompany: Benchmarking llm agents on consequential real world tasks, 2024{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2412.14161}.
+
+\bibitem[Xu et~al.(2024{\natexlab{b}})Xu, Lu, Shen, Wang, Wang, Mao, Xiong, and Yu]{xu2024agenttrek}
+Xu, Y., Lu, D., Shen, Z., Wang, J., Wang, Z., Mao, Y., Xiong, C., and Yu, T.
+\newblock Agenttrek: Agent trajectory synthesis via guiding replay with web tutorials.
+\newblock \emph{arXiv preprint arXiv:2412.09605}, 2024{\natexlab{b}}.
+
+\bibitem[Yang et~al.(2025)Yang, Li, Yang, Zhang, Hui, Zheng, Yu, Gao, Huang, Lv, Zheng, Liu, Zhou, Huang, Hu, Ge, Wei, Lin, Tang, Yang, Tu, Zhang, Yang, Yang, Zhou, Zhou, Lin, et~al.]{qwen3}
+Yang, A., Li, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Gao, C., Huang, C., Lv, C., Zheng, C., Liu, D., Zhou, F., Huang, F., Hu, F., Ge, H., Wei, H., Lin, H., Tang, J., Yang, J., Tu, J., Zhang, J., Yang, J., Yang, J., Zhou, J., Zhou, J., Lin, J., et~al.
+\newblock Qwen3 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.09388}.
+
+\bibitem[Yang et~al.(2024)Yang, Jimenez, Wettig, Lieret, Yao, Narasimhan, and Press]{sweagent}
+Yang, J., Jimenez, C.~E., Wettig, A., Lieret, K., Yao, S., Narasimhan, K.~R., and Press, O.
+\newblock {SWE}-agent: Agent-computer interfaces enable automated software engineering.
+\newblock In \emph{The Thirty-eighth Annual Conference on Neural Information Processing Systems}, 2024.
+\newblock URL \url{https://openreview.net/forum?id=mXpq6ut8J3}.
+
+\bibitem[Yao et~al.(2025)Yao, Liu, Zhang, Dong, Shang, and Gao]{yao2025offpolicy}
+Yao, F., Liu, L., Zhang, D., Dong, C., Shang, J., and Gao, J.
+\newblock Your efficient rl framework secretly brings you off-policy rl training, August 2025.
+\newblock URL \url{https://fengyao.notion.site/off-policy-rl}.
+
+\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and Cao]{react}
+Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., and Cao, Y.
+\newblock React: Synergizing reasoning and acting in language models, 2023.
+\newblock URL \url{https://arxiv.org/abs/2210.03629}.
+
+\bibitem[Yao et~al.(2024)Yao, Shinn, Razavi, and Narasimhan]{taubench}
+Yao, S., Shinn, N., Razavi, P., and Narasimhan, K.
+\newblock $\tau$-bench: A {Benchmark} for {Tool}-{Agent}-{User} {Interaction} in {Real}-{World} {Domains}.
+\newblock \emph{arXiv.org}, abs/2406.12045, 2024.
+
+\bibitem[Yu et~al.(2025)Yu, Zhang, Zhu, Yuan, Zuo, Yue, Dai, Fan, Liu, Liu, Liu, Lin, Lin, Ma, Sheng, Tong, Zhang, Zhang, Zhang, Zhu, Zhu, Chen, Chen, Wang, Yu, Song, Wei, Zhou, Liu, Ma, Zhang, Yan, Qiao, Wu, and Wang]{dapo}
+Yu, Q., Zhang, Z., Zhu, R., Yuan, Y., Zuo, X., Yue, Y., Dai, W., Fan, T., Liu, G., Liu, L., Liu, X., Lin, H., Lin, Z., Ma, B., Sheng, G., Tong, Y., Zhang, C., Zhang, M., Zhang, W., Zhu, H., Zhu, J., Chen, J., Chen, J., Wang, C., Yu, H., Song, Y., Wei, X., Zhou, H., Liu, J., Ma, W.-Y., Zhang, Y.-Q., Yan, L., Qiao, M., Wu, Y., and Wang, M.
+\newblock Dapo: An open-source llm reinforcement learning system at scale, 2025.
+\newblock URL \url{https://arxiv.org/abs/2503.14476}.
+
+\bibitem[Zhang et~al.(2025{\natexlab{a}})Zhang, Peng, Kong, Yang, Wu, Yu, Xiang, Ruan, Wang, Song, Liu, Tang, Liu, Wu, and Luo]{autoenv}
+Zhang, J., Peng, Y., Kong, F., Yang, C., Wu, Y., Yu, Z., Xiang, J., Ruan, J., Wang, J., Song, M., Liu, H., Tang, X., Liu, B., Wu, C., and Luo, Y.
+\newblock Autoenv: Automated environments for measuring cross-environment agent learning, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2511.19304}.
+
+\bibitem[Zhang et~al.(2025{\natexlab{b}})Zhang, Hu, Upasani, Ma, Hong, Kamanuru, Rainton, Wu, Ji, Li, Thakker, Zou, and Olukotun]{zhang2025agenticcontextengineeringevolving}
+Zhang, Q., Hu, C., Upasani, S., Ma, B., Hong, F., Kamanuru, V., Rainton, J., Wu, C., Ji, M., Li, H., Thakker, U., Zou, J., and Olukotun, K.
+\newblock Agentic context engineering: Evolving contexts for self-improving language models, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2510.04618}.
+
+\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li, Li, Xing, Zhang, Gonzalez, and Stoica]{llmasajudge}
+Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z., Li, Z., Li, D., Xing, E., Zhang, H., Gonzalez, J.~E., and Stoica, I.
+\newblock Judging llm-as-a-judge with mt-bench and chatbot arena.
+\newblock In Oh, A., Naumann, T., Globerson, A., Saenko, K., Hardt, M., and Levine, S. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~36, pp.\  46595--46623. Curran Associates, Inc., 2023.
+\newblock URL \url{https://proceedings.neurips.cc/paper_files/paper/2023/file/91f18a1287b398d378ef22505bf41832-Paper-Datasets_and_Benchmarks.pdf}.
+
+\end{thebibliography}

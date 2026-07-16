@@ -1,0 +1,120 @@
+
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2026_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{paralist}
+\usepackage{enumitem}
+\usepackage[latin1]{inputenc}
+\usepackage[normalem]{ulem}  % strikeout text
+\usepackage{siunitx} % pretty quantities 23,456
+\sisetup{
+  group-separator = {,},   % what to use as separator
+  group-minimum-digits = 4 % start grouping from 4 digits onward
+}
+\usepackage{pifont} % Checkmark crossmark
+\usepackage{xcolor} % Checkmark crossmark
+\usepackage{makecell}
+\usepackage{wrapfig}
+\usepackage{minted}
+\usemintedstyle{borland}  % or colorful, friendly, monokai, etc.
+\usepackage{subcaption}
+
+\newcommand\zhangchen[1]{{\color{purple}[\textbf{Zhangchen: #1}]}}
+\newcommand\adriana[1]{{\color{pink}[\textbf{Adriana: #1}]}}
+
+\newcommand{\withsup}[2]{#1\textsuperscript{\textcolor{green!70!black}{\scriptsize +#2\%}}}
+
+\title{
+\fontsize{16.9}{20}\selectfont
+TOUCAN: Synthesizing 1.5M Tool-Agentic Data from Real-World MCP Environments}
+
+% Authors must not appear in the submitted version. They should be hidden
+% as long as the \iclrfinalcopy macro remains commented out below.
+% Non-anonymous submissions will be rejected without review.
+
+\newcommand{\github}{\raisebox{-1.5pt}{\includegraphics[height=1em]{images/github-logo.pdf}}}
+\newcommand{\huggingface}{\raisebox{-1.5pt}{\includegraphics[height=1em]{images/hf-logo.pdf}}}
+
+\author{Zhangchen Xu$^\spadesuit$ \qquad Adriana Meza Soria $^\diamondsuit$ \qquad Shawn Tan$^\diamondsuit$
+\qquad  Anurag Roy $^\diamondsuit$ ~\vspace{0.4em} \\
+\textbf{Ashish Sunil Agrawal$^\diamondsuit$ \qquad  Radha Poovendran$^\spadesuit$ \qquad  Rameswar Panda$^\diamondsuit$}
+~\vspace{0.5em}\\
+$^\spadesuit$University of Washington \qquad
+$^\diamondsuit$MIT-IBM Watson AI Lab \vspace{0.5em}
+\\
+{\small{\github{} {\texttt{\url{https://github.com/TheAgentArk/Toucan}}}}} \\
+{\small{\huggingface{} {\texttt{\url{https://hf.co/datasets/Agent-Ark/Toucan-1.5M}}} 
+}}}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\dataname}[0]{\textsc{Toucan~}}
+\newcommand{\datanamen}[0]{\textsc{Toucan}}
+\definecolor{taskannocolor}{HTML}{e6d5a3}
+\definecolor{trajannocolor}{HTML}{b1d8e5}
+
+%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\iclrfinalcopy
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Large Language Model (LLM) agents are rapidly emerging as powerful systems for automating tasks across domains. Yet progress in the open-source community is constrained by the lack of high quality permissively licensed tool-agentic training data. Existing datasets are often limited in diversity, realism, and complexity, particularly regarding multi-tool and multi-turn interactions. To address this gap, we introduce \datanamen, the largest publicly available tool-agentic dataset to date, containing 1.5 million trajectories synthesized from nearly 500 real-world Model Context Protocols (MCPs). Unlike prior work, \dataname leverages authentic MCP environments to generate diverse, realistic, and challenging tasks with trajectories involving real tool execution. Our pipeline first produces a broad spectrum of tool-use queries using five distinct models, applies model-based quality filtering, and then generates agentic trajectories with three teacher models using two agentic frameworks. Rigorous rule-based and model-based validation ensures high-quality outputs. We also introduce three extension mechanisms to further diversify tasks and simulate multi-turn conversations. Models fine-tuned on \dataname outperform larger closed-source counterparts on the BFCL V3 benchmark and push the Pareto frontier forward on MCP-Universe Bench.
+\end{abstract}
+
+\input{sections/intro.tex}
+\input{sections/related_work.tex}
+\input{sections/dataset.tex}
+% \input{sections/dataset_analysis}
+\input{sections/experiments.tex}
+\input{sections/future.tex}
+\input{sections/use_of_llms.tex}
+\input{sections/ethics.tex}
+\input{sections/reproducibility.tex}
+
+% \subsubsection*{Acknowledgments}
+% Use unnumbered third level headings for the acknowledgments. All
+% acknowledgments, including those to funding agencies, go at the end of the paper.
+
+
+\bibliography{iclr2026_conference}
+\bibliographystyle{iclr2026_conference}
+
+\appendix
+\newpage
+
+\input{sections/appendix_schema.tex}
+\input{sections/appendix_analysis.tex}
+\input{sections/appendix_exp.tex}
+\input{sections/appendix_prompt.tex}
+
+% \subsection{Assets}
+% \begin{itemize}
+%     \item checkpoints internal: /proj/checkpoints/zhangchen/tool-rl-dev/sft_models
+%     \item All data internal: /proj/checkpoints/zhangchen/tool-rl-dev/data
+%     \item Offial Release: /proj/checkpoints/zhangchen/tool-rl-dev/data/7.Final_Release \/ we release raw (after rule-based trajectory filtering) and filtered (high quality subsset, after llm annotation) \/train: after applying ms-sw format for sft (so same as filtered)
+%     \item Raw Data: (1) https://huggingface.co/datasets/zhangchenxu/WildMCP-KimiK2 (2) https://huggingface.co/datasets/zhangchenxu/WildMCP-OSS (3) https://huggingface.co/datasets/zhangchenxu/WildMCP-Qwen3
+%     \item All public HF assets: models, public datasets: HF org name focused on tool and agent!!!
+%     \item GitHub repo:
+%         Private: \url{https://github.com/zhangchen-xu/tool-rl-dev}
+%         Public: TBD once we have the name
+%     \item benchmark results spreadsheet: \url{https://drive.google.com/drive/folders/1-8gO3oPLrjfImqkHjntqupK8_2Wg2GV_?usp=drive_link}
+    
+% \end{itemize}
+\end{document}

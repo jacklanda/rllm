@@ -1,0 +1,148 @@
+\clearpage
+\section{Dataset Schema and Examples}
+\label{app:dataset-schema}
+
+An instance of \dataname contains the following columns:
+\begin{itemize}
+    \item \textbf{uuid:} Unique sample identifier.
+    \item \textbf{subset:} Annotation specifying which pipeline was used to generate the trajectory. Options:
+    (1) \textit{single-turn-original:} only the core processing (Stage 1 to 5) described in Section~\ref{sec:toucan-overview} are applied, (2) \textit{irrelevant:} a server shuffle process applied on top of the \textit{single-turn-original} pipeline, (3) \textit{single-turn-diversify:} a question diversification process applied on top of the \textit{single-turn-original} pipeline, and (4) \textit{multi-turn:} a multi-turn extension of the \textit{single-turn-original} and \textit{single-turn-diversify} subsets.
+    \item \textbf{messages:} The trajectory formatted with the chat template from the original LLM-agent used for generation. The system prompt includes the associated list of tools.
+    \item \textbf{question:} The user task crafted to generate the trajectory.
+    \item \textbf{target\_tools:} The MCP tools used as seeds for question generation.
+    \item \textbf{question\_quality\_assessment:} Task evaluation by an LLM-as-judge, covering quality, difficulty, realism, and uniqueness.
+    \item \textbf{response\_quality\_assessment:} Response evaluation by an LLM-as-judge, covering completeness and conciseness.
+    \item \textbf{message\_num\_rounds:} Total number of messages, including turns of all types.
+    \item \textbf{metadata:} Original MCP server data collected and used as seed for generation, as well as respective LLM annotations.
+\end{itemize}
+
+This is the structure of an instance in \dataname:
+\begin{minted}
+[fontsize=\footnotesize,
+ breaklines,
+ breakanywhere]
+{json}
+    {
+      "uuid": "3ac8fdcc-b9b5-50d2-a840-947a42b558d2",
+      "subset": "single-turn-original",
+      "messages": "[{...long JSON string of messages...}]",
+      "question": "I'm reviewing my company's policy document that needs quarterly updates for compliance purposes. I need to first understand its current structure with all sections and subsections, then update every occurrence of 'Q3 2024' to 'Q1 2025' throughout the document, and finally add explanatory footnotes to the last 3 sections that reference our new regulatory guidance document published last month. Can you help me accomplish these updates systematically?",
+      "target_tools": "get_document_outline, search_and_replace, add_footnote_to_document",
+      "question_quality_assessment_kimik2w4a16": {
+        "tool_selection_difficulty": { "reasoning": "...", "score": 3 },
+        "tool_selection_uniqueness": { "reasoning": "...", "score": 3 },
+        "question_quality": { "reasoning": "...", "score": 4 },
+        "scenario_realism": { "reasoning": "...", "score": 5 },
+        "verifiable": { "reasoning": "...", "score": 4 },
+        "stability": { "reasoning": "...", "score": 5 },
+        "overall_score": 4.0
+      },
+      "response_quality_assessment_oss120b": {
+        "completeness": { "reasoning": "...", "score": 2 },
+        "conciseness": { "reasoning": "...", "score": 3 },
+        "overall_score": 2.5,
+        "desired_tools_used_percentage": 0.3333,
+        "order_correctness": false
+      },
+      "messages_num_rounds": 9,
+      "metadata": "{...long metadata JSON string...}"
+    }
+\end{minted}
+
+Below, we present a \dataname trajectory, chat template tokens from the model generator and emojis have been removed, and some sections (e.g., tool list, tool output, assistant response) have been abbreviated to improve readability.
+
+\label{app:trajectory-example}
+\begin{minted}
+[fontsize=\footnotesize,
+ breaklines,
+ breakanywhere]
+{json}
+[
+  {
+    "role": "system",
+    "content": "{... contains the list of tools ... }"
+  },
+  {
+    "role": "user",
+    "content": "Can you explain what ENS (Ethereum Name Service) represents in the context of a transaction and why a name like 'blockscout.eth' might appear instead of a raw address?"
+  },
+  {
+    "role": "assistant",
+    "content": "I'll explain what ENS (Ethereum Name Service) represents, and show you how it resolves a name like 'blockscout.eth' into its actual Ethereum address."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "function_call": {
+      "name": "blockscout-mcp-server-__unlock_blockchain_analysis__",
+      "arguments": "{}"
+    }
+  },
+  {
+    "role": "function",
+    "content": "{... long tool output ...}"
+  },
+  {
+    "role": "assistant",
+    "content": "Now, let me resolve 'blockscout.eth' to show the actual address it represents."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "function_call": {
+      "name": "blockscout-mcp-server-get_address_by_ens_name",
+      "arguments": "{\"name\": \"blockscout.eth\"}"
+    }
+  },
+  {
+    "role": "function",
+    "name": "blockscout-mcp-server-get_address_by_ens_name",
+    "content": "{\n  \"data\": {\n    \"resolved_address\": \"0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975\"\n  },\n  \"data_description\": null,\n  \"notes\": null,\n  \"instructions\": null,\n  \"pagination\": null\n}"
+  },
+  {
+    "role": "assistant",
+    "content": "{... parsed assistant response ...}"
+  },
+  {
+    "role": "user",
+    "content": "Based on that explanation, could you look up the ENS name 'blockscout.eth' and provide the Ethereum address it resolves to?"
+  },
+  {
+    "role": "assistant",
+    "content": "I already resolved that for you in my previous response! When I called the ENS lookup tool, `\"blockscout.eth\"` resolved to the Ethereum address:\n\n`0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975`"
+  }
+]
+\end{minted}
+
+In the previous trajectory example, we abbreviated the assistant's parsed response for readability. The full response is shown below.
+
+\label{app:parsed-assistant-resonse}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines, breakanywhere]{markdown}
+## What ENS (Ethereum Name Service) Represents in Transactions
+
+ENS stands for **Ethereum Name Service**, and it functions much like "DNS for Ethereum addresses." It allows users to register human-readable names (like "blockscout.eth") that map to complex hexadecimal blockchain addresses.
+
+### Key Points About ENS:
+
+1. **Human-Readable Names for Complex Addresses**
+   - Instead of displaying `0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975` (which is the raw address for blockscout.eth), interfaces show the friendly "blockscout.eth"
+   - This reduces errors from copy/pasting long hex addresses
+
+2. **Reverse Resolution**
+   - When you see "blockscout.eth" in transaction data, wallet labels, or block explorers, it means:
+     - ENS has been configured with this name
+     - The system has performed a reverse lookup to find the name associated with the address
+
+3. **Self-Sovereign Identity**
+   - ENS names are owned and controlled by users through smart contracts
+   - They can be transferred, updated, or associated with additional metadata (social profiles, avatars, etc.)
+
+### Why "blockscout.eth" Appears Instead of Raw Address:
+
+- **User Experience**: "blockscout.eth" is immediately recognizable and memorable
+- **Trust Verification**: Users can verify they're interacting with the legitimate Blockscout entity rather than a random address
+- **Branding**: Organizations use ENS names for consistent branding across DeFi protocols and wallet interfaces
+- **Error Prevention**: Reduces costly mistakes when users verify transaction recipients
+
+Every time you see an ENS name like "blockscout.eth" in a transaction, the underlying system has actually resolved this to the precise blockchain address `0x441e1e47a6Fa2DBfD3cd9b54291E9AB3a58D7975`-the ENS simply provides a human-friendly layer on top of the raw cryptographic identity.
+\end{minted}

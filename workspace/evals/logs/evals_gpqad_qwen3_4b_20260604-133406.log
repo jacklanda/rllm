@@ -1,0 +1,53 @@
+=================================
+PPU SDK Version:    v2.1.0
+CUDA Wrapper:       cuda-13.0
+PyTorch Version:    2.9.0
+NGC Version:        pytorch:-py3
+Python Version:     Python 3.12.3
+=================================
+Setup environment for CUDA
+[INFO] Get Dockerfile at /Dockerfile
+Driver Version                              : 1.5.1-1d747a
+HGGC Version                                : 13.0
+SDK Version                                 : 2.1.0-a5f865
+PPU 00000000:A8:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:A7:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:A9:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:AA:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:65:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:66:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:64:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:63:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E8:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E7:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:E9:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:EA:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:25:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:26:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:24:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+PPU 00000000:23:00.0                        
+    VBIOS Version                           : 1.6.11-e093d8
+[eval] Running quietly; full log: /tmp/eval.LGFxl4.log
+Agentic evaluation summary
+Benchmark | N tasks | Samples/task | Accuracy | Pass@1 | Pass^1 | Elapsed (s)
+gpqa_diamond | 128 | 1 | 20.3 (±0.0) | 20.3 (±0.0) | 20.3 (±40.2) | 908.1
+[green]Overall summary -> output/Qwen3-4B/overall_summary.json
+/usr/local/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+bash: line 2: --ray-replicas: command not found
+bash: line 3: --enable-thinking: command not found

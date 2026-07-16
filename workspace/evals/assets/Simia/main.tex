@@ -1,0 +1,174 @@
+
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[preprint]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+% tables and figures
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{wrapfig}
+\usepackage{rotating}
+
+
+
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\usepackage{pgf}
+
+
+% \usepackage[numbers,sort&compress]{natbib}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{makecell}
+
+
+\usepackage[most,skins,theorems]{tcolorbox}
+\tcbset{
+  aibox/.style={
+    width=\linewidth,
+    % top=8pt,
+    % bottom=4pt,
+    colback=blue!6!white,
+    colframe=black,
+    colbacktitle=black,
+    enhanced,
+    center,
+    attach boxed title to top left={yshift=-0.1in,xshift=0.15in},
+    boxed title style={boxrule=0pt,colframe=white,},
+    minipage boxed title=0.825\linewidth, % 
+  },
+  promptstyle/.style={enhanced,colback=white,colframe=black,colbacktitle=gray!20,
+    coltitle=black,rounded corners,sharp corners=north,boxrule=0.5pt,
+    drop shadow=black!50!white,attach boxed title to top left={xshift=-2mm,yshift=-2mm},
+    boxed title style={rounded corners,size=small,colback=gray!20}},
+  replystyleg/.style={enhanced,colback=green!15,colframe=black,colbacktitle=green!30,
+    coltitle=black,boxrule=0.5pt,drop shadow=black!50!white,rounded corners,
+    sharp corners=north,attach boxed title to top right={xshift=-2mm,yshift=-2mm},
+    boxed title style={rounded corners,size=small,colback=green!40}},
+  replystyler/.style={enhanced,colback=red!15,colframe=black,colbacktitle=red!40,
+    coltitle=black,boxrule=0.5pt,drop shadow=black!50!white,rounded corners,
+    sharp corners=north,attach boxed title to top right={xshift=-2mm,yshift=-2mm},
+    boxed title style={rounded corners,size=small,colback=red!40}}
+}
+\newtcolorbox{AIbox}[2][]{aibox,title=#2,#1}
+\newtcolorbox{promptbox}[1][]{promptstyle,title=Prompt,#1}
+
+
+
+
+% \title{Simulating Environments with Large Language Models \\ for Agent Training}
+\title{Simulating Environments with Reasoning Models for Agent Training}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+\author{
+\textbf{Yuetai Li}\textsuperscript{$\clubsuit$}\thanks{Work done during an internship at Microsoft.} \;\;\;  
+\textbf{Huseyin A Inan}\textsuperscript{$\spadesuit$} \;\;\; 
+\textbf{Xiang Yue}\textsuperscript{$\diamondsuit$} \;\;\; 
+\textbf{Wei-Ning Chen}\textsuperscript{$\spadesuit$} \;\;\; 
+\textbf{Lukas Wutschitz}\textsuperscript{$\spadesuit$} \;\;\; \\
+\textbf{Janardhan Kulkarni}\textsuperscript{$\spadesuit$} \;\;\; 
+\textbf{Radha Poovendran}\textsuperscript{$\clubsuit$}
+\textbf{Robert Sim}\textsuperscript{$\spadesuit$} \;\;\; 
+\textbf{Saravan Rajmohan}\textsuperscript{$\spadesuit$} \;\;\; \\
+  \textsuperscript{$\clubsuit$}University of Washington \; 
+  \textsuperscript{$\spadesuit$}Microsoft \;
+  \textsuperscript{$\diamondsuit$}Carnegie Mellon University \; \\
+  \texttt{\{yuetaili,rp3\}@uw.edu},\\
+  \texttt{\{huinan,weiningchen,luwutsch,jakul,rsim,saravar\}@microsoft.com},\\
+  \texttt{xyue2@andrew.cmu.edu}
+  ~ \\
+   \textbf{Huggingface}: \url{https://huggingface.co/Simia-Agent} \\ 
+   \textbf{Github}: \url{https://github.com/microsoft/Simia-Agent-Training} \\
+   ~ \\
+   ~ \\
+}
+
+
+
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+\input{sections/abstract_v2}
+\end{abstract}
+
+\input{sections/intro}
+
+
+\input{sections/methodology}
+\input{sections/experiment}
+
+\input{sections/conclusion}
+
+
+\bibliography{acl2026}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\appendix
+
+\input{sections/appendix}
+
+
+\end{document}

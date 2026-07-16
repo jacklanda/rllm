@@ -1,0 +1,62 @@
+\begin{figure*}[t]
+    \centering
+    \setlength{\fboxrule}{0.8pt}
+    \fbox{%
+        \begin{minipage}{0.97\textwidth}
+        \small
+        \vspace{2pt}
+        \setlength{\baselineskip}{9pt}
+
+        \texttt{\textbf{[System Prompt]}}\\[3pt]
+        \texttt{You are an expert Python and SQL developer. Your job is to generate Python code that uses SQLite queries to verify if a user task was completed successfully. You only output UTF-8 encoded strings and English text.}\\[6pt]
+
+        \texttt{\textbf{[User Prompt]}}\\[3pt]
+        \texttt{You need to generate a Python function with SQLite queries to collect useful information from the given databases to verify if a user task was completed. You are provided with the environment name, the user task to verify, the database schema, and the initial database state.}\\[6pt]
+
+        \texttt{Simplified API Server Name: \{scenario\}}\\
+        \texttt{User Task to Verify: \{task\}}\\
+        \texttt{Database Dump (Initial State, before the agent takes any action): \{db\_dump\}}\\[6pt]
+
+        \texttt{---}\\[3pt]
+        \texttt{\#\#\# Requirements}\\
+        \texttt{1. Generate a complete Python function that takes initial\_db\_path and final\_db\_path as parameters.}\\
+        \texttt{2. The function should connect to the SQLite database and execute queries to return useful information to assist another LLM to judge the task completion.}\\
+        \texttt{3. You can use complex SQLite query combinations and Python logic. The function must return a dictionary containing useful information for judging task completion.}\\
+        \texttt{4. The function and queries should follow the database dump. Do not invent new tables or columns.}\\
+        \texttt{5. Use the sqlite3 library, and import any other libraries you need.}\\
+        \texttt{6. You will be provided with two database states: the initial state and the final state after agent execution. Use the initial state to compare with the final state.}\\
+        \texttt{7. You must NOT modify the databases in any way. You can only read from them.}\\
+        \texttt{8. Ensure the returned dictionary can be JSON serialized. Use only string, int, float, bool, list, and dict types.}\\
+        \texttt{9. You must output a dictionary including: reasoning, python\_code, function\_name, success\_criteria, failure\_criteria.}\\[6pt]
+        \texttt{\#\#\# Example Structure}\\[3pt]
+        \texttt{def verify\_task(initial\_db\_path: str, final\_db\_path: str) -> dict:}\\
+        \texttt{~~~~import sqlite3}\\[2pt]
+        \texttt{~~~~conn\_initial = sqlite3.connect(initial\_db\_path)}\\
+        \texttt{~~~~conn\_final = sqlite3.connect(final\_db\_path)}\\[2pt]
+        \texttt{~~~~\# Query initial and final database states}\\
+        \texttt{~~~~\# Compare states to extract task-relevant signals}\\
+        \texttt{~~~~\# ...}\\[2pt]
+        \texttt{~~~~conn\_initial.close()}\\
+        \texttt{~~~~conn\_final.close()}\\[2pt]
+        \texttt{~~~~return \{}\\
+        \texttt{~~~~~~~~\# Return any valuable data to help determine task completion.}\\
+        \texttt{~~~~~~~~\# Ensure this dictionary can be JSON serialized.}\\
+        \texttt{~~~~\}}\\[6pt]
+
+        \texttt{---}\\[3pt]
+        \texttt{\#\#\# Output Format (must be valid JSON, no markdown fences)}\\
+        \texttt{\{}\\
+        \texttt{~~"reasoning": "Explanation of why the function can verify task success or failure",}\\
+        \texttt{~~"python\_code": "Complete Python function code as a string",}\\
+        \texttt{~~"function\_name": "verify\_task",}\\
+        \texttt{~~"success\_criteria": "Description of expected results indicating task success",}\\
+        \texttt{~~"failure\_criteria": "Description of expected results indicating task failure"}\\
+        \texttt{\}}\\[3pt]
+
+        \vspace{1pt}
+        \end{minipage}
+    }
+    \captionsetup{labelformat=default, name=Table}
+    \caption{Prompt for verification code generation used for providing verification signals from the database states.}
+    \label{tab:verification-prompt-2}
+\end{figure*}

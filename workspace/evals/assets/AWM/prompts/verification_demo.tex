@@ -1,0 +1,119 @@
+
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}{0.97\textwidth}
+\begin{lstlisting}[style=pythonstyle, firstnumber=1]
+# =============================================================================
+# Scenario: Spotify (Music Streaming Platform)
+# Task: "Search for the song 'Blinding Lights' by The Weeknd and save it to
+#        my existing playlist called 'Driving Vibes'."
+# =============================================================================
+
+def verify_task(initial_db_path: str, final_db_path: str) -> dict:
+    """
+    Verification function that compares initial and final database states
+    to determine if the task was completed successfully.
+    
+    Returns a dictionary with task-relevant signals for LLM-as-a-Judge.
+    """
+    import sqlite3
+
+    def get_conn(path):
+        return sqlite3.connect(path)
+
+    def fetchone_dict(cur, query, params=()):
+        cur.execute(query, params)
+        row = cur.fetchone()
+        if row is None:
+            return None
+        cols = [c[0] for c in cur.description]
+        return {cols[i]: row[i] for i in range(len(cols))}
+
+    def fetchall_dicts(cur, query, params=()):
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cols = [c[0] for c in cur.description]
+        return [{cols[i]: row[i] for i in range(len(cols))} for row in rows]
+
+    # Connect to both databases (read-only)
+    conn_initial = get_conn(initial_db_path)
+    conn_final = get_conn(final_db_path)
+
+    try:
+        cur_init = conn_initial.cursor()
+        cur_final = conn_final.cursor()
+
+        # Step 1: Identify the current user
+        current_user = fetchone_dict(
+            cur_final,
+            "SELECT id, username FROM users WHERE username = ?",
+            ("current_user",),
+        )
+        user_id = current_user["id"] if current_user else None
+\end{lstlisting}
+\end{minipage}
+\caption{Synthesized verification code for Spotify environment (Part 1 / 2): Task description, helper functions, and user identification. The function takes two database paths (initial and final states) and returns task-relevant signals for verification.}
+\label{fig:verification-code-part1}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\begin{minipage}{0.97\textwidth}
+\begin{lstlisting}[style=pythonstyle, firstnumber=50]
+        # Step 2: Locate the playlist 'Driving Vibes' in both database states
+        playlist_query = """
+            SELECT id, owner_user_id, name, description, created_at, updated_at
+            FROM playlists WHERE owner_user_id = ? AND name = ?
+        """
+        playlist_initial = fetchone_dict(cur_init, playlist_query, (user_id, "Driving Vibes"))
+        playlist_final = fetchone_dict(cur_final, playlist_query, (user_id, "Driving Vibes"))
+        playlist_id = playlist_final["id"] if playlist_final else None
+
+        # Step 3: Find the track 'Blinding Lights' by The Weeknd
+        track_query = """
+            SELECT t.id AS track_id, t.title, a.name AS artist_name
+            FROM tracks t
+            JOIN track_artists ta ON ta.track_id = t.id
+            JOIN artists a ON a.id = ta.artist_id
+            WHERE t.title = ? AND a.name = ?
+        """
+        track_final = fetchone_dict(cur_final, track_query, ("Blinding Lights", "The Weeknd"))
+        track_id = track_final["track_id"] if track_final else None
+
+        # Step 4: Get playlist tracks before and after agent execution
+        playlist_tracks_query = """
+            SELECT pt.track_id, pt.position, t.title AS track_title
+            FROM playlist_tracks pt
+            JOIN tracks t ON t.id = pt.track_id
+            WHERE pt.playlist_id = ? ORDER BY pt.position
+        """
+        tracks_initial = fetchall_dicts(cur_init, playlist_tracks_query, (playlist_id,)) if playlist_id else []
+        tracks_final = fetchall_dicts(cur_final, playlist_tracks_query, (playlist_id,)) if playlist_id else []
+
+        # Step 5: Determine if 'Blinding Lights' was added to the playlist
+        initial_track_ids = {t["track_id"] for t in tracks_initial}
+        final_track_ids = {t["track_id"] for t in tracks_final}
+        newly_added_tracks = [t for t in tracks_final if t["track_id"] not in initial_track_ids]
+        blinding_lights_added = track_id in final_track_ids and track_id not in initial_track_ids
+
+        # Step 6: Build result dictionary with task-relevant signals
+        result = {
+            "environment": "spotify",
+            "task_description": "Search for 'Blinding Lights' by The Weeknd and save to 'Driving Vibes'",
+            "playlist_exists": playlist_final is not None,
+            "track_exists": track_final is not None,
+            "playlist_tracks_before": len(tracks_initial),
+            "playlist_tracks_after": len(tracks_final),
+            "newly_added_tracks": newly_added_tracks,
+            "blinding_lights_added_to_playlist": blinding_lights_added,
+        }
+        return result
+    finally:
+        conn_initial.close()
+        conn_final.close()
+\end{lstlisting}
+\end{minipage}
+\caption{Synthesized verification code for Spotify environment (Part 2 / 2): Core verification logic that queries the playlist and track tables, compares initial and final states, and returns structured signals. The key output \texttt{blinding\_lights\_added\_to\_playlist} indicates whether the target track was successfully added.}
+\label{fig:verification-code-part2}
+\end{figure*}

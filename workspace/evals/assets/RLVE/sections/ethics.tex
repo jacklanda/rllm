@@ -1,0 +1,11 @@
+\section{Ethics Statement}
+
+Developers planning to use \texttt{Toucan} for LLM fine-tuning should take into account certain considerations.
+
+\textbf{Data Ownership and Licensing.} The MCP server specification files used to build \dataname were collected in June 2025 from \url{https://smithery.ai/}, a public platform hosting such specifications. These files were voluntarily published by their owners in accordance with the platform's privacy notice. Given the case a legitimate owner requests removal of their content from our dataset, we will honor that request through a take down process available via our GitHub repository.
+
+\textbf{Sensitive Information.} The risk of exposing sensitive data in specification files is minimal, as they generally rely on placeholders rather than real information. However, human error may still lead to the inclusion of URLs, tokens, or email addresses. To mitigate this, we apply a pre-filtering stage with rule-based verifiers that detect common patterns of personally identifiable information (PII).  
+
+\textbf{Data Evolution.} Our data were collected in June 2025, so \dataname captures real-world tool-use scenarios available at that time. For example, responses from search MCP servers reflect information current through June 2025. To facilitate future updates and customization, we provide our modular data pipeline, allowing researchers and practitioners to expand domain coverage and tailor tool representations for their applications.
+
+\textbf{LLM Hallucinations.} Only tasks and annotations in \dataname were generated with LLMs; trajectories were produced using LLMs in combination with agent frameworks and remote MCP servers. This integration ensures reliable tool call executions and responses, reducing the likelihood of code errors from hallucinations. Nevertheless, hallucinations remain a general risk when using LLMs, and outputs from models fine-tuned with \dataname should always be verified by humans. 
